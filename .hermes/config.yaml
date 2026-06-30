@@ -1,0 +1,23 @@
+# Hermes config for FallenEarth multi-agent workflow
+# Shared memory + automatic Remedy orchestrator layer is active.
+
+shared_memory_root: "C:\\Users\\Administrator\\FallenEarth"
+
+# Skills (including the key remedy orchestrator) are available from:
+# - Global: ~/.hermes/skills/
+# - Project: ./skills/
+
+# Automatic behavior is driven by:
+# - AGENTS.md (root) — "you are Remedy automatic conductor"
+# - REMEDY.md (root)
+# - skills/remedy/SKILL.md
+# - CLAUDE.md (for any Claude Code workers)
+# - docs/HANDOFF_PROTOCOL.md + memory/ handoffs/dispatches
+
+# When you start Hermes as Remedy in this folder, it should:
+# Auto-load latest handoff + docs + memory
+# Maintain NEXT_TASKS and state
+# Decompose Godot tasks, route, dispatch (files + optional terminal launch), ingest
+
+# Existing .hermes/plans/ usage is preserved for Hermes-internal plans.
+# Cross-agent coordination uses memory/SESSION_NOTES/ + dispatches/.
