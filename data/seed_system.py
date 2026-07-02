@@ -223,7 +223,8 @@ class DeterministicRNG:
                     break
             if seed_value is not None:
                 return DeterministicRNG(seed=seed_value)
-        # Handle edge case where dict has no matching keys and isn't a simple int list
+        # Non-dict data (e.g. list/int JSON); return None to signal failure
+        return None
 
     def __iter__(self):
         """Make RNG iterable - generates random numbers on each next()."""
@@ -241,8 +242,14 @@ class DeterministicRNG:
         return a + int((b - a + 1) * self.uniform())
 
     def uniform(self) -> float:
-        """Reset RNG to current seed state."""
-        pass
+        """Return a random float in [0.0, 1.0)."""
+        if hasattr(self.rng, 'uniform'):
+            return self.rng.uniform()
+        # Fallback: compute from underlying state directly
+        t = (self.rng._state << 23) ^ (self.rng._state >> 43)
+        self.rng._state ^= t ^ ((t >> 17) & 0x7FFFFFFF)
+        numerator = self.rng._state & 0xFFFFFFFF
+        return numerator / 4294967296.0
 
 
 # Module-level convenience functions for quick usage
@@ -262,5 +269,5 @@ def next_random(rng: DeterministicRNG = None, *, max_val: int = (1 << 32)) -> in
         Random integer in [0, max_val).
     """
     if rng is None:
-        return init_rng()._rng.randint(0, max_val)
-    return rng._rng.randint(0, max_val)
+        return init_rng().rng.randint(0, max_val)
+    return rng.rng.randint(0, max_val)

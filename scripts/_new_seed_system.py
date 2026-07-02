@@ -42,7 +42,29 @@ class SeedSystem:
         self.rng = XORShift(99887766)
 
     def _load_seed(self, category):
+        """Load seed for the given category from disk."""
         try:
             data = self.SEED_FILE.read_text()
             stored = json.loads(data) if data.strip() else {}
-            return stor
+            return stored.get(category)
+        except (FileNotFoundError, json.JSONDecodeError, IOError):
+            return None
+
+    def save_seed(self, category, value):
+        """Save a seed value for the given category to disk."""
+        try:
+            existing = {}
+            if self.SEED_FILE.exists():
+                data = self.SEED_FILE.read_text()
+                existing = json.loads(data) if data.strip() else {}
+            existing[category] = value
+            self.SEED_FILE.write_text(json.dumps(existing, indent=2))
+        except (FileNotFoundError, IOError):
+            pass
+
+
+# Module-level convenience function to create a default RNG instance.
+# NOTE: The canonical seed system is in data/seed_system.py.
+def create_rng(seed=None):
+    """Create a new DeterministicRNG from the canonical seed system."""
+    return XORShift(seed or 99887766)

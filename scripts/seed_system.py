@@ -22,9 +22,18 @@ class XORShift32:
             self.state = self._encode_seed(seed)
 
     def _encode_seed(self, seed: int | str) -> int:
-        """Convert string seed to initial state."""
+        """Convert string seed to initial state using a stable algorithm.
+
+        Uses FNV-1a (64-bit folded to 32 bits) so that string seeds produce
+        deterministic results across Python processes (unlike built-in hash()).
+        """
         if isinstance(seed, str):
-            return hash(seed) & 0xFFFFFFFF
+            # FNV-1a 64-bit fold to 32 bits — deterministic across runs
+            h = 0xcbf29ce484222325  # FNV offset basis (64-bit)
+            for ch in seed.encode('utf-8'):
+                h ^= ch
+                h = (h * 0x100000001b3) & 0xFFFFFFFFFFFFFFFF
+            return (h ^ (h >> 32)) & 0xFFFFFFFF
         return seed & 0xFFFFFFFF
 
     def next(self) -> int:

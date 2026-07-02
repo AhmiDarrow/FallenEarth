@@ -81,19 +81,22 @@ func load_from_slot(slot_id: int) -> Dictionary:
 		return {}
 
 	var raw_text = file.get_as_text()
+	file.close()  # Close before parsing to avoid resource leak
+
 	var parse_result: Variant = JSON.parse_string(raw_text)
 	if typeof(parse_result) != TYPE_DICTIONARY or parse_result.is_empty():
 		push_error("[SaveManager] Error parsing save slot %d (invalid or empty JSON)" % slot_id)
 		save_load_failed.emit(slot_id, "Parse failed")
 		return {}
 
+	# parse_result is guaranteed to be a Dictionary by the check above
 	var json_result: Dictionary = parse_result as Dictionary
-	if json_result == null:
+	if not json_result.is_empty():
+		return json_result
+	else:
 		push_warning("[SaveManager] Corrupt data detected in slot %d (%s)" % [slot_id, path])
 		recover_from_corruption(slot_id)
 		return {}
-
-	return json_result
 
 
 func has_save_in_slot(slot_id: int) -> bool:
@@ -108,6 +111,7 @@ func list_all_slots() -> Array[Dictionary]:
 		if FileAccess.file_exists(path):
 			var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 			var parsed: Variant = JSON.parse_string(file.get_as_text())
+			file.close()  # Close after reading to avoid resource leak
 			var data: Dictionary = parsed if (parsed is Dictionary) else {}
 			# Robust name extraction for old/new save shapes
 			var char_part: Variant = data.get("character", data.get("game_state", {}))

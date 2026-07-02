@@ -31,8 +31,8 @@ class AppearanceSystem:
     """Manages appearance options and class defaults."""
 
     PARTS = [
-        AppearancePart("hair", ["bald", "short_spiky", "long_flowing"], "short_spiky"),
-        AppearancePart("eyes", ["blue", "green", "brown"], "hazel"),
+        AppearancePart("hair", ["bald", "short_spiky", "long_flowing", "messy_short", "afro"], "short_spiky"),
+        AppearancePart("eyes", ["blue", "green", "brown", "hazel"], "hazel"),
         AppearancePart("skin", ["pale", "medium_tan", "dark_brown"], "medium_tan"),
         AppearancePart("body", ["slim", "athletic", "muscular"], "athletic"),
     ]
@@ -79,8 +79,8 @@ class AppearanceSystem:
 
         # Validate each field value against allowed options
         valid_options_map = {
-            "hair": ["bald", "short_spiky", "long_flowing"],
-            "eyes": ["blue", "green", "brown"],
+            "hair": ["bald", "short_spiky", "long_flowing", "messy_short", "afro"],
+            "eyes": ["blue", "green", "brown", "hazel"],
             "skin": ["pale", "medium_tan", "dark_brown"],
             "body_type": ["slim", "athletic", "muscular"],
         }

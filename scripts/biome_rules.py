@@ -33,7 +33,10 @@ def get_biome_config(name: str) -> BiomeConfig | None:
     if normalized in BIOME_CONFIGS:
         return BIOME_CONFIGS[normalized]
     aliases = {"icecap": "ice_cap", "tundras": "tundra"}
-    return BIOME_CONFIGS.get(aliases.get(normalized))
+    mapped = aliases.get(normalized)
+    if mapped is None:
+        return None
+    return BIOME_CONFIGS.get(mapped, None)
 
 
 def get_biome_index(name: str) -> int:
