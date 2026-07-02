@@ -1,0 +1,30 @@
+{
+  "overworld": {
+    "neutral": [
+      {"name": "Ashveil Grazer", "type": "herd_beast", "description": "Slow fungal herd beast.", "hp": 60, "armor": 2, "threat_range": 3},
+      {"name": "Lumen Drifter", "type": "float_jelly", "description": "Bioluminescent floating jelly that provides light.", "hp": 40, "armor": 0, "threat_range": 5},
+      {"name": "Rustcarapace Scuttler", "type": "scavenger_crab", "description": "Armored scrap cleaner.", "hp": 80, "armor": 8, "threat_range": 2},
+      {"name": "Silkroot Tapper", "type": "stationary_plant", "description": "Rooted resin producer.", "hp": 50, "armor": 3, "threat_range": 1, "drop_item": "resin"},
+      {"name": "Echo Chorister", "type": "colony_beast", "description": "Singing burrow colony.", "hp": 70, "armor": 4, "threat_range": 4}
+    ],
+    "aggressive": [
+      {"name": "Charnel Stalker", "type": "pack_predator", "description": "Pack-hunting quadruped predator with tendrils.", "hp": 90, "armor": 5, "attack_damage": 15, "threat_range": 8},
+      {"name": "Voidspine Leech", "type": "energy_drainer", "description": "Parasitic energy drainer.", "hp": 70, "armor": 3, "attack_damage": 12, "drain_rate": 5, "threat_range": 6},
+      {"name": "Mycelial Behemoth", "type": "spore_hulk", "description": "Massive spore-hurling hulk.", "hp": 200, "armor": 12, "attack_damage": 25, "threat_range": 10},
+      {"name": "Glimmer Swarm", "type": "coordinated_insects", "description": "Coordinated acidic insects.", "hp": 30, "armor": 1, "attack_damage": 8, "threat_range": 7, "swarm_count_min": 3, "swarm_count_max": 8},
+      {"name": "Ferroclaw Reaver", "type": "magnetic_horror", "description": "Ferro-organic horror with magnetic and drilling traits.", "hp": 150, "armor": 15, "attack_damage": 30, "threat_range": 9}
+    ]
+  },
+  "underearth_parts": {
+    "head_types": ["exposed_cranium", "chitin_cap", "glowing_eyes", "circuit_mask", "void_shroud"],
+    "body_types": ["spined_back", "segmented_plating", "bioluminescent_core", "multiple_limbs", "floating_segments"],
+    "limb_types": ["claw_talons", "drill_appendages", "tentacle_grappled", "skittering_joints", "maglev_glide"],
+    "tail_types": ["barbed_whip", "spore_dispenser", "electro_shock_protrusion", "magnetic_drum", "bioluminescent_attractor"]
+  },
+  "tameable_fruits": [
+    {"name": "Ashfruit", "element": "Fire", "combat_bonus": {"damage_mult": 1.2}, "mount_bonus": {"movement_speed_mult": 1.3}},
+    {"name": "Voidbloom", "element": "Void", "combat_bonus": {"fear_chance_pct": 0.25}, "mount_bonus": {"teleport_cooldown_sec": 30, "teleport_range_tiles": 8}},
+    {"name": "Ironroot", "element": "Earth", "combat_bonus": {"armor_add": 10, "hp_mult": 1.2}, "mount_bonus": {"inventory_weight_mult": 1.5}},
+    {"name": "Stormgourd", "element": "Lightning", "combat_bonus": {"stun_chance_pct": 0.15}, "mount_bonus": {"attack_speed_mult": 1.3}}
+  ]
+}

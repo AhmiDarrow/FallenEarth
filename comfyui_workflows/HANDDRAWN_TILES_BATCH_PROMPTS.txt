@@ -1,0 +1,38 @@
+HANDDRAWN TILES - BATCH PROMPTS (use with handdrawn_tileset_workflow.json)
+
+Base positive (copy and customize per biome):
+"2D hand-drawn style combining Stardew Valley charming detailed hand-drawn environments with gritty cosmic horror, RimWorld inspired readable top-down game assets, cozy yet grim post-apocalyptic sci-fi Earth IV wasteland survival, [BIOME SPECIFICS], seamless top-down hex tile texture, hand-crafted illustrated look with detailed textures, tileable, consistent dramatic lighting, rich muted colors with eerie highlights, no characters, no text, high quality game asset"
+
+Examples (replace [BIOME SPECIFICS] and add to base):
+
+Ash Wastes:
+barren toxic dust plains, twisted irradiated scrub, constant wind-blown ash, cracked earth, low visibility
+
+Rust Canyons:
+deep canyons filled with rusted wreckage, unstable ground, high rift activity, rusted metal debris
+
+Neon Bogs:
+polluted wetlands with glowing flora, bioluminescent plants, toxic sludge, electrified water
+
+Scorched Plains:
+cracked earth and constant oppressive heat, baked glass-like surfaces, extreme heat, heat haze
+
+Ironwood Thicket:
+dense metallic trees and vines, living iron and chrome growths, impaling vines, magnetic storms
+
+Glass Dunes:
+shimmering sand made of melted glass, crystal formations, glass storms, prismatic reflections
+
+Corpse Fields:
+old battlegrounds littered with bones and wreckage, mass graves, rusting tanks, bone fields
+
+Stormspire Highlands:
+high plateaus with constant lightning and fierce winds, ancient towers crackling with power, lightning glass
+
+Toxin Marshes:
+heavily polluted swamps with chemical runoff, neurotoxins, corrosive sludge, sinking islands
+
+Dead City Outskirts:
+ruined megacity edges, collapsed skyscrapers and subways, massive rift zones, overgrown streets
+
+Generate 8-12 variations per prompt type (base ground, debris/rocky, vegetation/feature, rift-influenced, transition edges).

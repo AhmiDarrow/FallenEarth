@@ -1,0 +1,101 @@
+[gd_scene load_steps=1 format=3]
+
+[ext_resource type="Script" path="res://scripts/HubWorld.gd" id="1_hb"]
+
+[node name="HubWorld" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_hb")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.02, 0.04, 1)
+
+[node name="WorldGrid" type="Node2D" parent="."]
+
+[node name="Camera2D" type="Camera2D" parent="WorldGrid"]
+position = Vector2(640, 360)
+zoom = Vector2(1, 1)
+
+[node name="Vignette" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0, 0, 0, 0.4)
+visibility_mode = 1
+
+[node name="CharInfoBar" type="HBoxContainer" parent="."]
+anchors_preset = 15
+anchor_left = 0.1
+anchor_top = 0.02
+anchor_right = 0.9
+anchor_bottom = 0.07
+layout_mode = 1
+theme_override_constants/separation = 8
+size_flags_horizontal = 3
+
+[node name="CharLabel" type="RichTextLabel" parent="CharInfoBar"]
+bbcode_enabled = true
+text = "[b]No character[/b]"
+autowrap_mode = 4
+horizontal_alignment = 1
+size_flags_horizontal = 3
+
+[node name="TileInfoPanel" type="VBoxContainer" parent="."]
+anchors_preset = 0
+anchor_left = 0.02
+anchor_top = 0.08
+anchor_right = 0.28
+anchor_bottom = 0.35
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 4
+
+[node name="TileInfoLabel" type="RichTextLabel" parent="TileInfoPanel"]
+bbcode_enabled = true
+text = "[i]Tile info[/i]"
+autowrap_mode = 3
+fit_content = true
+size_flags_horizontal = 3
+
+[node name="RiftInfoLabel" type="RichTextLabel" parent="TileInfoPanel"]
+bbcode_enabled = true
+text = "[i]Rift status[/i]"
+autowrap_mode = 3
+fit_content = true
+size_flags_horizontal = 3
+
+[node name="BottomBar" type="HBoxContainer" parent="."]
+anchors_preset = 15
+anchor_left = 0.2
+anchor_top = 0.92
+anchor_right = 0.8
+anchor_bottom = 0.98
+layout_mode = 1
+theme_override_constants/separation = 16
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="WorldMap" type="Button" parent="BottomBar"]
+custom_minimum_size = Vector2(160, 45)
+text = "🗺 WORLD MAP"
+
+[node name="EnterRift" type="Button" parent="BottomBar"]
+custom_minimum_size = Vector2(160, 45)
+text = "▶ENTER RIFT"
+
+[node name="BackToMenu" type="Button" parent="BottomBar"]
+custom_minimum_size = Vector2(160, 45)
+text = "🏠 MENU"
+

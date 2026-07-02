@@ -1,0 +1,132 @@
+[
+  {
+    "name": "Ash Wastes",
+    "description": "Barren, toxic dust plains. The common starter biome outside settlements. Twisted, irradiated scrub with constant wind-blown ash, low visibility, and nutrient-scarce soil.",
+    "rift_chance": 0.25,
+    "danger_level": "medium",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["mutant", "human"],
+      "threat_multiplier": 1.3
+    },
+    "survival_risks": ["Irradiation", "Dehydration", "Dust Storms", "Resource Scarcity"],
+    "resources": ["rusted_scrap", "irradiated_rations", "fungal_mats", "rad_mushrooms"],
+    "features": ["toxic_dust", "cracked_earth", "wind_swept_scrub"]
+  },
+  {
+    "name": "Rust Canyons",
+    "description": "Deep canyons filled with rusted wreckage from the old corporate wars. High rift chance due to the fractures in reality here. Excellent for scavenging but extremely hazardous.",
+    "rift_chance": 0.70,
+    "danger_level": "high",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["human", "cyborg"],
+      "threat_multiplier": 1.6
+    },
+    "survival_risks": ["Structural Collapse", "Rusted Shrapnel", "Feral Scavengers", "High Rift Activity"],
+    "resources": ["rusted_wreckage", "pre_war_parts", "scrap_metal", "corroded_electronics"],
+    "features": ["deep_canyons", "rusted_hulks", "unstable_bridges", "high_rift_density"]
+  },
+  {
+    "name": "Neon Bogs",
+    "description": "Polluted wetlands with glowing flora. Bioluminescent plants and failing pre-Collapse power lines create an eerie, beautiful, and deadly landscape full of hidden toxins and rifts.",
+    "rift_chance": 0.40,
+    "danger_level": "medium-high",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["sentientai", "vesperid"],
+      "threat_multiplier": 1.4
+    },
+    "survival_risks": ["Toxic Sludge", "Electrified Water", "Bioluminescent Predators", "Sinkholes"],
+    "resources": ["neon_flora", "glowing_resin", "circuit_scrap", "bioluminescent_ooze"],
+    "features": ["glowing_wetlands", "sunken_ruins", "power_lines", "fog_pockets"]
+  },
+  {
+    "name": "Scorched Plains",
+    "description": "Cracked earth and constant oppressive heat. Low rift chance but punishing environment with little cover. Former farmlands and highways baked into glass-like surfaces.",
+    "rift_chance": 0.12,
+    "danger_level": "medium",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["mutant", "revenant"],
+      "threat_multiplier": 1.1
+    },
+    "survival_risks": ["Extreme Heat", "Dehydration", "Mirage Disorientation", "Fire Storms"],
+    "resources": ["heat_resistant_minerals", "dried_fungi", "charred_wreckage", "glass_shards"],
+    "features": ["cracked_earth", "heat_haze", "sun_baked_ruins", "sparse_vegetation"]
+  },
+  {
+    "name": "Ironwood Thicket",
+    "description": "Dense metallic trees and vines. The forest has been transmuted by Underearth energies into living iron and chrome-like growths. Hard to traverse, full of ambush points.",
+    "rift_chance": 0.30,
+    "danger_level": "high",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["vesperid", "chthon"],
+      "threat_multiplier": 1.7
+    },
+    "survival_risks": ["Impaling Vines", "Magnetic Storms", "Ironroot Predators", "Navigation Loss"],
+    "resources": ["ironwood_bark", "metallic_vines", "ferro_resin", "living_metal_samples"],
+    "features": ["dense_metallic_forest", "vine_canopy", "magnetic_nodes", "twisted_trees"]
+  },
+  {
+    "name": "Glass Dunes",
+    "description": "Shimmering sand made of melted glass from ancient cataclysmic heat. High rift chance. The dunes sing in the wind and hide ancient structures and lethal crystal formations.",
+    "rift_chance": 0.75,
+    "danger_level": "high",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["human", "cyborg"],
+      "threat_multiplier": 1.5
+    },
+    "survival_risks": ["Glass Storms", "Mirages", "Crystal Cuts", "Buried Rifts", "Dehydration"],
+    "resources": ["glass_shards", "melted_alloys", "prismatic_crystals", "buried_tech"],
+    "features": ["singing_dunes", "glass_crystals", "sunken_structures", "prismatic_reflections"]
+  },
+  {
+    "name": "Corpse Fields",
+    "description": "Old battlegrounds littered with bones and wreckage. The earth itself remembers the wars. High concentration of remains makes this a favored hunting ground for certain horrors and Revenants.",
+    "rift_chance": 0.55,
+    "danger_level": "high",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["revenant", "nullborn"],
+      "threat_multiplier": 1.8
+    },
+    "survival_risks": ["Revenant Packs", "Unstable Ground", "Bone Traps", "Plague Pits", "High Rift Activity"],
+    "resources": ["ancient_bones", "war_scrap", "dog_tags", "undisturbed_caches"],
+    "features": ["mass_graves", "rusting_tanks", "bone_fields", "crater_lakes"]
+  },
+  {
+    "name": "Stormspire Highlands",
+    "description": "High plateaus with constant lightning and fierce winds. Very high rift chance. Ancient communication towers and corporate spires still crackle with power. Extremely dangerous but rich in energy resources.",
+    "rift_chance": 0.92,
+    "danger_level": "extreme",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["sentientai", "cyborg"],
+      "threat_multiplier": 2.1
+    },
+    "survival_risks": ["Constant Lightning", "High Winds", "Frequent Rifts", "EMP Surges", "Falls"],
+    "resources": ["storm_charged_cells", "lightning_glass", "tower_components", "volatile_energy"],
+    "features": ["lightning_towers", "wind_swept_plateaus", "frequent_rifts", "crackling_spires"]
+  },
+  {
+    "name": "Toxin Marshes",
+    "description": "Heavily polluted swamps thick with chemical runoff and Underearth bio-contamination. The water and air are lethal. Home to resilient and mutated life adapted to the poison.",
+    "rift_chance": 0.65,
+    "danger_level": "high",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["chthon", "vesperid"],
+      "threat_multiplier": 1.9
+    },
+    "survival_risks": ["Neurotoxins", "Corrosive Sludge", "Parasitic Infestations", "Drowning", "Hallucinations"],
+    "resources": ["toxic_sludge_paste", "venom_glands", "mutated_fungi", "chemical_residues"],
+    "features": ["poisoned_waters", "sinking_islands", "bioluminescent_ooze", "gas_vents"]
+  },
+  {
+    "name": "Dead City Outskirts",
+    "description": "Ruined megacity edges — extremely dangerous. Collapsed skyscrapers, collapsed subways, and countless rifts make this the most perilous surface biome. Only the desperate or well-armed enter.",
+    "rift_chance": 0.88,
+    "danger_level": "extreme",
+    "wildlife_modifiers": {
+      "preferred_race_tags": ["revenant", "cyborg", "nullborn"],
+      "threat_multiplier": 2.3
+    },
+    "survival_risks": ["Collapsed Structures", "Feral Gangs", "Frequent Massive Rifts", "Radiation Pockets", "Unknown Horrors"],
+    "resources": ["pre-collapse_tech", "black_market_caches", "corporate_vaults", "high_grade_scrap"],
+    "features": ["ruined_skyscrapers", "subway_entrances", "massive_rift_zones", "overgrown_streets"]
+  }
+]

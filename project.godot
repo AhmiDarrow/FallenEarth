@@ -1,0 +1,40 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Fallen Earth"
+config/version="0.2.0"
+run/main_scene="res://scenes/ui/Splash.tscn"
+config/features=PackedStringArray("4.3", "Forward Plus")
+#Iconomittedfornow(nographicalassetsyet)#config/icon="res://icon.svg"
+
+[autoload]
+
+SaveManager="*res://scripts/SaveManager.gd"
+GameState="*res://scripts/GameState.gd"
+RaceManager="*res://scripts/RaceManager.gd"
+ClassManager="*res://scripts/ClassManager.gd"
+AppearanceManager="*res://scripts/AppearanceManager.gd"
+DisplayManager="*res://scripts/DisplayManager.gd"
+GameManager="*res://scripts/GameManager.gd"
+RiftRunner="*res://scripts/RiftRunner.gd"
+NPCManager="*res://scripts/NPCManager.gd"
+MissionManager="*res://scripts/MissionManager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/initial_position=1
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+window/size/initial_width=1280
+window/size/initial_height=720

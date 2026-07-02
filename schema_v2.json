@@ -1,0 +1,29 @@
+{
+  "version": "2.0",
+  "description": "Refactored Schema definition for Fallen Earth core data, focusing on strict JSON syntax and clear component separation.",
+  "components": {
+    "Race": {
+      "validators": ["name(string)", "base_stats(object)", "visual_tag(string)", "origin_zone(enum)", "description(string)"],
+      "details": {
+        "base_stats.str": {"min": 1, "type": "integer"},
+        "base_stats.dex": {"min": 1, "type": "integer"},
+        "base_stats.con": {"min": 1, "type": "integer"},
+        "base_stats.int": {"min": 1, "type": "integer"},
+        "base_stats.wis": {"min": 1, "type": "integer"},
+        "base_stats.cha": {"min": 1, "type": "integer"}
+      }
+    },
+    "Faction": {
+      "validators": ["name:string", "origin_key:enum", "motto:string", "starting_rep:integer", "npc_types:array<string>"],
+      "details": {
+        "starting_rep": {"type": "integer"}
+      }
+    },
+    "Biome": {
+      "validators": ["name:string", "description:string", "wildlife_modifiers:object", "survival_risks:array<string>"],
+      "details": {
+        "wildlife_modifiers.threat_multiplier": {"type": "float", "min": 0.1}
+      }
+    }
+  }
+}

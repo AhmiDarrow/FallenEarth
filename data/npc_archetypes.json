@@ -1,0 +1,155 @@
+{
+  "mercenary": {
+    "display_role": "Mercenary",
+    "class_weights": {"Striker": 4, "Scavenger": 2, "Warden": 2},
+    "vendor_specialty": "weapons",
+    "trait_pool": ["gruff", "loyal", "reckless", "disciplined", "battle_hardened"],
+    "rep_required": 30,
+    "level_required": 3,
+    "rarity": "uncommon"
+  },
+  "engineer": {
+    "display_role": "Engineer",
+    "class_weights": {"Technician": 5, "Survivor": 2},
+    "vendor_specialty": "tech_parts",
+    "trait_pool": ["inventive", "meticulous", "cautious", "pragmatic", "tinkerer"],
+    "rep_required": 25,
+    "level_required": 2,
+    "rarity": "common"
+  },
+  "cultist": {
+    "display_role": "Cultist",
+    "class_weights": {"Riftbinder": 4, "Survivor": 2},
+    "vendor_specialty": "ritual_goods",
+    "trait_pool": ["fanatical", "cryptic", "devoted", "unsettling", "zealous"],
+    "rep_required": 35,
+    "level_required": 4,
+    "rarity": "rare"
+  },
+  "shaman": {
+    "display_role": "Shaman",
+    "class_weights": {"Riftbinder": 3, "Survivor": 3, "Warden": 1},
+    "vendor_specialty": "herbs_and_charms",
+    "trait_pool": ["wise", "mystical", "patient", "cryptic", "spiritual"],
+    "rep_required": 30,
+    "level_required": 3,
+    "rarity": "uncommon"
+  },
+  "raider": {
+    "display_role": "Raider",
+    "class_weights": {"Striker": 3, "Scavenger": 4},
+    "vendor_specialty": "contraband",
+    "trait_pool": ["ruthless", "cunning", "volatile", "greedy", "fearless"],
+    "rep_required": 40,
+    "level_required": 4,
+    "rarity": "rare"
+  },
+  "smuggler": {
+    "display_role": "Smuggler",
+    "class_weights": {"Scavenger": 4, "Survivor": 2},
+    "vendor_specialty": "contraband",
+    "trait_pool": ["sly", "charming", "opportunistic", "paranoid", "well_connected"],
+    "rep_required": 25,
+    "level_required": 2,
+    "rarity": "common"
+  },
+  "archivist": {
+    "display_role": "Archivist",
+    "class_weights": {"Survivor": 3, "Technician": 2, "Riftbinder": 1},
+    "vendor_specialty": "lore_scrolls",
+    "trait_pool": ["scholarly", "curious", "reserved", "obsessive", "meticulous"],
+    "rep_required": 20,
+    "level_required": 2,
+    "rarity": "common"
+  },
+  "tech_cultist": {
+    "display_role": "Tech Cultist",
+    "class_weights": {"Technician": 4, "Riftbinder": 2},
+    "vendor_specialty": "cybernetics",
+    "trait_pool": ["fanatical", "inventive", "cybernetic", "charismatic", "unstable"],
+    "rep_required": 35,
+    "level_required": 4,
+    "rarity": "rare"
+  },
+  "negotiator": {
+    "display_role": "Negotiator",
+    "class_weights": {"Survivor": 4, "Scavenger": 2},
+    "vendor_specialty": "supplies",
+    "trait_pool": ["diplomatic", "calm", "persuasive", "pragmatic", "patient"],
+    "rep_required": 15,
+    "level_required": 1,
+    "rarity": "common"
+  },
+  "settler": {
+    "display_role": "Settler",
+    "class_weights": {"Survivor": 4, "Warden": 2, "Scavenger": 1},
+    "vendor_specialty": "supplies",
+    "trait_pool": ["hardworking", "hopeful", "practical", "neighborly", "resilient"],
+    "rep_required": 10,
+    "level_required": 1,
+    "rarity": "common"
+  },
+  "blacksmith": {
+    "display_role": "Blacksmith",
+    "class_weights": {"Striker": 2, "Warden": 3, "Survivor": 2},
+    "vendor_specialty": "weapons",
+    "trait_pool": ["stubborn", "skilled", "gruff", "proud", "reliable"],
+    "rep_required": 30,
+    "level_required": 3,
+    "rarity": "uncommon"
+  },
+  "trader": {
+    "display_role": "Trader",
+    "class_weights": {"Survivor": 4, "Scavenger": 2},
+    "vendor_specialty": "general_goods",
+    "trait_pool": ["shrewd", "friendly", "greedy", "well_traveled", "cautious"],
+    "rep_required": 15,
+    "level_required": 1,
+    "rarity": "common"
+  },
+  "broker": {
+    "display_role": "Information Broker",
+    "class_weights": {"Scavenger": 3, "Survivor": 3, "Technician": 1},
+    "vendor_specialty": "intel",
+    "trait_pool": ["secretive", "observant", "cunning", "detached", "well_connected"],
+    "rep_required": 25,
+    "level_required": 3,
+    "rarity": "uncommon"
+  },
+  "spy": {
+    "display_role": "Spy",
+    "class_weights": {"Scavenger": 4, "Survivor": 2, "Riftbinder": 1},
+    "vendor_specialty": "intel",
+    "trait_pool": ["secretive", "cunning", "paranoid", "observant", "ruthless"],
+    "rep_required": 35,
+    "level_required": 4,
+    "rarity": "rare"
+  },
+  "caravan_guard": {
+    "display_role": "Caravan Guard",
+    "class_weights": {"Warden": 3, "Striker": 3, "Scavenger": 1},
+    "vendor_specialty": "supplies",
+    "trait_pool": ["loyal", "watchful", "disciplined", "gruff", "reliable"],
+    "rep_required": 20,
+    "level_required": 2,
+    "rarity": "common"
+  },
+  "historian": {
+    "display_role": "Historian",
+    "class_weights": {"Survivor": 4, "Riftbinder": 1, "Technician": 1},
+    "vendor_specialty": "lore_scrolls",
+    "trait_pool": ["scholarly", "nostalgic", "patient", "eloquent", "curious"],
+    "rep_required": 20,
+    "level_required": 2,
+    "rarity": "common"
+  },
+  "wanderer": {
+    "display_role": "Wanderer",
+    "class_weights": {"Survivor": 3, "Scavenger": 3, "Striker": 1, "Technician": 1},
+    "vendor_specialty": "general_goods",
+    "trait_pool": ["restless", "independent", "worldly", "cautious", "enigmatic"],
+    "rep_required": 5,
+    "level_required": 1,
+    "rarity": "common"
+  }
+}

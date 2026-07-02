@@ -1,0 +1,112 @@
+[gd_scene load_steps=1 format=3]
+
+[ext_resource type="Script" path="res://scripts/RiftInstance.gd" id="1_rift"]
+
+[node name="RiftInstance" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_rift")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.015, 0.04, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 40.0
+offset_top = 20.0
+offset_right = -40.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HeaderLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 36)
+bbcode_enabled = true
+text = "[center][b]RIFT DUNGEON[/b] — Procedural Exploration[/center]"
+fit_content = true
+
+[node name="StatusLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 50)
+bbcode_enabled = true
+text = "[b]Loading rift...[/b]"
+autowrap_mode = 3
+fit_content = true
+
+[node name="GridPanel" type="Panel" parent="MainVBox"]
+custom_minimum_size = Vector2(460, 320)
+size_flags_horizontal = 4
+size_flags_vertical = 0
+
+[node name="GridContainer" type="GridContainer" parent="GridPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -120.0
+offset_top = -120.0
+offset_right = 120.0
+offset_bottom = 120.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/h_separation = 4
+theme_override_constants/v_separation = 4
+
+[node name="InstructionsLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 28)
+bbcode_enabled = true
+text = "[center]Select ◎, move adjacent. Reach ◆ core to close rift.[/center]"
+fit_content = true
+
+[node name="LogLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 72)
+bbcode_enabled = true
+text = ""
+autowrap_mode = 3
+fit_content = true
+
+[node name="ActionsHBox" type="HBoxContainer" parent="MainVBox"]
+size_flags_horizontal = 4
+theme_override_constants/separation = 12
+
+[node name="EndTurnButton" type="Button" parent="ActionsHBox"]
+custom_minimum_size = Vector2(130, 38)
+text = "End Turn"
+
+[node name="ClearRiftButton" type="Button" parent="ActionsHBox"]
+custom_minimum_size = Vector2(130, 38)
+text = "Close Rift Core"
+
+[node name="BackButton" type="Button" parent="ActionsHBox"]
+custom_minimum_size = Vector2(130, 38)
+text = "⬅ Back to Hub"
+
+[node name="LootPanel" type="VBoxContainer" parent="MainVBox"]
+visible = false
+size_flags_horizontal = 4
+
+[node name="LootTitle" type="RichTextLabel" parent="LootPanel"]
+bbcode_enabled = true
+text = "[b]LOOT RESULTS[/b]"
+fit_content = true
+
+[node name="LootLabel" type="RichTextLabel" parent="LootPanel"]
+custom_minimum_size = Vector2(420, 90)
+bbcode_enabled = true
+text = ""
+autowrap_mode = 3
+fit_content = true

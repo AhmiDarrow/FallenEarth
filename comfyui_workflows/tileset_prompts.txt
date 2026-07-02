@@ -1,0 +1,48 @@
+Fallen Earth Tileset Generation Prompts
+
+Use with tileset_generation_workflow.json or tileset_workflow_v2.json
+
+Always use the master_style_reference.png in the IPAdapter node for uniformity.
+
+General Negative Prompt (use in all):
+blurry, lowres, bad anatomy, watermark, text, deformed, cartoon, oversaturated, inconsistent style, ugly, pixel artifacts (if not desired)
+
+=== BIOME PROMPTS ===
+
+Ash Wastes:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Ash Wastes biome, barren toxic dust plains, twisted irradiated scrub, constant wind-blown ash, cracked earth, low visibility, nutrient-scarce soil, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Rust Canyons:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Rust Canyons biome, deep canyons filled with rusted wreckage from old corporate wars, high rift activity, excellent for scavenging, extremely hazardous, rusted metal debris, unstable ground, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Neon Bogs:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Neon Bogs biome, polluted wetlands with glowing flora, bioluminescent plants, failing pre-Collapse power lines, eerie beautiful deadly landscape, hidden toxins and rifts, toxic sludge, electrified water, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Scorched Plains:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Scorched Plains biome, cracked earth and constant oppressive heat, low rift chance, punishing environment with little cover, former farmlands and highways baked into glass-like surfaces, extreme heat, dehydration, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Ironwood Thicket:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Ironwood Thicket biome, dense metallic trees and vines, forest transmuted by Underearth energies into living iron and chrome-like growths, hard to traverse, full of ambush points, impaling vines, magnetic storms, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Glass Dunes:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Glass Dunes biome, shimmering sand made of melted glass from ancient cataclysmic heat, high rift chance, the dunes sing in the wind, hide ancient structures and lethal crystal formations, glass storms, mirages, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Corpse Fields:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Corpse Fields biome, old battlegrounds littered with bones and wreckage, the earth itself remembers the wars, high concentration of remains, favored hunting ground for horrors and Revenants, mass graves, rusting tanks, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Stormspire Highlands:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Stormspire Highlands biome, high plateaus with constant lightning and fierce winds, very high rift chance, ancient communication towers and corporate spires still crackle with power, extremely dangerous, storm charged cells, lightning glass, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Toxin Marshes:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Toxin Marshes biome, heavily polluted swamps thick with chemical runoff and Underearth bio-contamination, water and air lethal, home to resilient mutated life, neurotoxins, corrosive sludge, parasitic infestations, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+Dead City Outskirts:
+"seamless top-down hex tile texture for post-apocalyptic wasteland, Dead City Outskirts biome, ruined megacity edges, extremely dangerous, collapsed skyscrapers, collapsed subways, countless rifts, most perilous surface biome, collapsed structures, feral gangs, frequent massive rifts, grim sci-fi horror, consistent with master style reference, detailed ground texture, tileable"
+
+=== GENERATION TIPS ===
+- Generate 8-16 variations per tile type (ground, transition, feature)
+- Use the master_style_reference.png at IPAdapter strength 0.8-1.0
+- Use pixel-art-xl LoRA at 0.7-1.0
+- After generation, upscale with 4x-UltraSharp if needed
+- Curate for consistency and seamlessness
+- Save organized by biome in assets/tilesets/

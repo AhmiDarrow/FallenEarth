@@ -1,0 +1,146 @@
+[
+  {
+    "name": "Scavenger",
+    "description": "Survival skirmisher. Gains mobility, ranged scrap arts, and wasteland mastery up to Lv.256.",
+    "stat_mods": {"str": 1, "con": 2, "dex": 1},
+    "skills": ["foraging_expert", "scrap_recycler", "waste_resistant"],
+    "progression": {
+      "max_level": 256,
+      "growth": {"hp": 7, "mp": 1, "str": 0.12, "dex": 0.18, "con": 0.14, "int": 0.06, "wis": 0.08, "cha": 0.05, "attack_bonus": 0.06, "armor_bonus": 0.04, "speed_bonus": 0.06, "move_bonus": 0.08}
+    },
+    "combat": {
+      "role": "skirmisher",
+      "move_bonus": 1, "jump_bonus": 1, "speed_bonus": 1,
+      "mp_max": 28, "weapon_range": 1, "attack_bonus": 1, "armor_bonus": 0,
+      "reaction": "counter_scrap",
+      "abilities": [
+        {"id": "rust_slash", "name": "Rust Slash", "unlock_level": 1, "mp_cost": 6, "range": 1, "type": "physical", "damage_mult": 1.35, "description": "Scrap-coated blade strike."},
+        {"id": "salvage_shield", "name": "Salvage Shield", "unlock_level": 8, "mp_cost": 8, "range": 0, "type": "buff_self", "armor_add": 5, "duration_turns": 3, "description": "Bolt scrap plates for armor."},
+        {"id": "scrap_toss", "name": "Scrap Toss", "unlock_level": 20, "mp_cost": 10, "range": 3, "type": "physical", "damage_mult": 1.15, "description": "Hurl salvaged shrapnel."},
+        {"id": "scrap_volley", "name": "Scrap Volley", "unlock_level": 64, "mp_cost": 14, "range": 3, "type": "physical", "damage_mult": 1.45, "description": "Barrage of rusted metal."},
+        {"id": "wasteland_reflex", "name": "Wasteland Reflex", "unlock_level": 128, "mp_cost": 12, "range": 0, "type": "buff_self", "attack_add": 6, "duration_turns": 3, "description": "Survival instincts spike speed and power."},
+        {"id": "master_scrap", "name": "Master Scrapper", "unlock_level": 256, "mp_cost": 24, "range": 2, "type": "physical", "damage_mult": 2.1, "description": "Ultimate scrap storm — Lv.256 capstone."}
+      ]
+    }
+  },
+  {
+    "name": "Technician",
+    "description": "Gadgeteer scaling tech damage and drone support from Lv.1 to Lv.256.",
+    "stat_mods": {"int": 3, "wis": 1, "dex": 1},
+    "skills": ["gadgeteer", "soul_link_override", "drone_coder"],
+    "progression": {
+      "max_level": 256,
+      "growth": {"hp": 5, "mp": 2, "str": 0.05, "dex": 0.10, "con": 0.08, "int": 0.20, "wis": 0.12, "cha": 0.06, "attack_bonus": 0.04, "armor_bonus": 0.05, "speed_bonus": 0.04, "move_bonus": 0.04}
+    },
+    "combat": {
+      "role": "gadgeteer",
+      "move_bonus": 0, "jump_bonus": 0, "speed_bonus": 0,
+      "mp_max": 36, "weapon_range": 2, "attack_bonus": 0, "armor_bonus": 1,
+      "reaction": "auto_repair",
+      "abilities": [
+        {"id": "pulse_shot", "name": "Pulse Shot", "unlock_level": 1, "mp_cost": 8, "range": 2, "type": "magical", "damage_mult": 1.4, "description": "Soul-link pulse bolt."},
+        {"id": "field_repair", "name": "Field Repair", "unlock_level": 8, "mp_cost": 12, "range": 0, "type": "heal_self", "heal_amount": 25, "description": "Patch wounds with med-gel."},
+        {"id": "drone_strike", "name": "Drone Strike", "unlock_level": 20, "mp_cost": 14, "range": 3, "type": "magical", "damage_mult": 1.65, "description": "Micro-drone precision hit."},
+        {"id": "overload_pulse", "name": "Overload Pulse", "unlock_level": 64, "mp_cost": 18, "range": 3, "type": "magical", "damage_mult": 1.85, "description": "Overclocked energy discharge."},
+        {"id": "hardlight_barrier", "name": "Hardlight Barrier", "unlock_level": 128, "mp_cost": 16, "range": 0, "type": "buff_self", "armor_add": 9, "duration_turns": 3, "description": "Projected tech shield."},
+        {"id": "omega_drone", "name": "Omega Drone", "unlock_level": 256, "mp_cost": 28, "range": 4, "type": "magical", "damage_mult": 2.2, "description": "Capstone drone swarm strike."}
+      ]
+    }
+  },
+  {
+    "name": "Survivor",
+    "description": "Balanced fighter with steady growth in all combat stats through Lv.256.",
+    "stat_mods": {"con": 1, "wis": 1, "cha": 1},
+    "skills": ["adaptive_fighter", "basic_comms", "emergency_medic"],
+    "progression": {
+      "max_level": 256,
+      "growth": {"hp": 8, "mp": 1, "str": 0.10, "dex": 0.10, "con": 0.12, "int": 0.08, "wis": 0.12, "cha": 0.10, "attack_bonus": 0.06, "armor_bonus": 0.06, "speed_bonus": 0.05, "move_bonus": 0.05}
+    },
+    "combat": {
+      "role": "adaptive",
+      "move_bonus": 0, "jump_bonus": 0, "speed_bonus": 0,
+      "mp_max": 30, "weapon_range": 1, "attack_bonus": 1, "armor_bonus": 1,
+      "reaction": "last_stand",
+      "abilities": [
+        {"id": "adaptive_strike", "name": "Adaptive Strike", "unlock_level": 1, "mp_cost": 7, "range": 1, "type": "physical", "damage_mult": 1.3, "description": "Exploit enemy opening."},
+        {"id": "steady_guard", "name": "Steady Guard", "unlock_level": 8, "mp_cost": 6, "range": 0, "type": "buff_self", "armor_add": 3, "duration_turns": 2, "description": "Brace for blows."},
+        {"id": "emergency_patch", "name": "Emergency Patch", "unlock_level": 20, "mp_cost": 10, "range": 0, "type": "heal_self", "heal_amount": 20, "description": "Quick combat triage."},
+        {"id": "endure", "name": "Endure", "unlock_level": 64, "mp_cost": 12, "range": 0, "type": "heal_self", "heal_amount": 45, "description": "Dig deep and recover HP."},
+        {"id": "rally", "name": "Rally", "unlock_level": 128, "mp_cost": 14, "range": 0, "type": "buff_self", "attack_add": 5, "armor_add": 4, "duration_turns": 3, "description": "Steel your resolve."},
+        {"id": "last_breath", "name": "Last Breath", "unlock_level": 256, "mp_cost": 22, "range": 1, "type": "physical", "damage_mult": 2.0, "description": "Capstone survival strike."}
+      ]
+    }
+  },
+  {
+    "name": "Striker",
+    "description": "Burst melee DPS. Attack and speed growth peak at Lv.256.",
+    "stat_mods": {"str": 3, "dex": 1, "con": 0},
+    "skills": ["power_strike", "flank_hunter", "adrenal_rush"],
+    "progression": {
+      "max_level": 256,
+      "growth": {"hp": 6, "mp": 1, "str": 0.22, "dex": 0.14, "con": 0.08, "int": 0.04, "wis": 0.06, "cha": 0.06, "attack_bonus": 0.12, "armor_bonus": 0.03, "speed_bonus": 0.10, "move_bonus": 0.06}
+    },
+    "combat": {
+      "role": "striker",
+      "move_bonus": 0, "jump_bonus": 0, "speed_bonus": 2,
+      "mp_max": 24, "weapon_range": 1, "attack_bonus": 3, "armor_bonus": 0,
+      "reaction": "counter_blade",
+      "abilities": [
+        {"id": "power_slash", "name": "Power Slash", "unlock_level": 1, "mp_cost": 8, "range": 1, "type": "physical", "damage_mult": 1.55, "description": "Heavy melee cleave."},
+        {"id": "battle_cry", "name": "Battle Cry", "unlock_level": 8, "mp_cost": 6, "range": 0, "type": "buff_self", "attack_add": 4, "duration_turns": 2, "description": "Spike attack power."},
+        {"id": "flank_charge", "name": "Flank Charge", "unlock_level": 20, "mp_cost": 12, "range": 2, "type": "physical", "damage_mult": 1.45, "description": "Close and strike from the side."},
+        {"id": "blade_cyclone", "name": "Blade Cyclone", "unlock_level": 64, "mp_cost": 16, "range": 1, "type": "physical", "damage_mult": 1.75, "description": "Whirling blade assault."},
+        {"id": "adrenal_surge", "name": "Adrenal Surge", "unlock_level": 128, "mp_cost": 14, "range": 0, "type": "buff_self", "attack_add": 8, "duration_turns": 2, "description": "Massive attack spike."},
+        {"id": "annihilation", "name": "Annihilation", "unlock_level": 256, "mp_cost": 26, "range": 2, "type": "physical", "damage_mult": 2.3, "description": "Lv.256 capstone devastation."}
+      ]
+    }
+  },
+  {
+    "name": "Riftbinder",
+    "description": "Void caster with deepest MP pool and spell unlocks through Lv.256.",
+    "stat_mods": {"int": 2, "wis": 2, "cha": 1},
+    "skills": ["void_channel", "rift_sense", "soul_weave"],
+    "progression": {
+      "max_level": 256,
+      "growth": {"hp": 4, "mp": 3, "str": 0.04, "dex": 0.06, "con": 0.06, "int": 0.22, "wis": 0.18, "cha": 0.10, "attack_bonus": 0.04, "armor_bonus": 0.03, "speed_bonus": 0.03, "move_bonus": 0.03}
+    },
+    "combat": {
+      "role": "caster",
+      "move_bonus": -1, "jump_bonus": 0, "speed_bonus": -1,
+      "mp_max": 44, "weapon_range": 2, "attack_bonus": 0, "armor_bonus": 0,
+      "reaction": "void_ward",
+      "abilities": [
+        {"id": "void_bolt", "name": "Void Bolt", "unlock_level": 1, "mp_cost": 10, "range": 3, "type": "magical", "damage_mult": 1.5, "description": "Unstable void energy."},
+        {"id": "soul_drain", "name": "Soul Drain", "unlock_level": 8, "mp_cost": 12, "range": 2, "type": "magical", "damage_mult": 1.2, "heal_self_pct": 0.5, "description": "Drain foe to heal self."},
+        {"id": "rift_lance", "name": "Rift Lance", "unlock_level": 20, "mp_cost": 16, "range": 2, "type": "magical", "damage_mult": 1.85, "description": "Concentrated rift spike."},
+        {"id": "void_rain", "name": "Void Rain", "unlock_level": 64, "mp_cost": 20, "range": 3, "type": "magical", "damage_mult": 1.7, "description": "Area-pressed void shards."},
+        {"id": "rift_ward", "name": "Rift Ward", "unlock_level": 128, "mp_cost": 18, "range": 0, "type": "buff_self", "armor_add": 6, "duration_turns": 4, "description": "Void membrane protection."},
+        {"id": "cataclysm", "name": "Cataclysm", "unlock_level": 256, "mp_cost": 32, "range": 4, "type": "magical", "damage_mult": 2.4, "description": "Lv.256 rift collapse spell."}
+      ]
+    }
+  },
+  {
+    "name": "Warden",
+    "description": "Frontline bulwark. HP and armor scaling to Lv.256.",
+    "stat_mods": {"con": 3, "str": 1, "wis": 0},
+    "skills": ["bulwark", "threat_control", "fortify"],
+    "progression": {
+      "max_level": 256,
+      "growth": {"hp": 10, "mp": 1, "str": 0.12, "dex": 0.06, "con": 0.20, "int": 0.04, "wis": 0.08, "cha": 0.05, "attack_bonus": 0.06, "armor_bonus": 0.10, "speed_bonus": 0.02, "move_bonus": 0.03}
+    },
+    "combat": {
+      "role": "tank",
+      "move_bonus": -1, "jump_bonus": 1, "speed_bonus": -2,
+      "mp_max": 26, "weapon_range": 1, "attack_bonus": 1, "armor_bonus": 4,
+      "reaction": "shield_wall",
+      "abilities": [
+        {"id": "shield_bash", "name": "Shield Bash", "unlock_level": 1, "mp_cost": 7, "range": 1, "type": "physical", "damage_mult": 1.2, "description": "Staggering shield slam."},
+        {"id": "fortify", "name": "Fortify", "unlock_level": 8, "mp_cost": 9, "range": 0, "type": "buff_self", "armor_add": 7, "duration_turns": 3, "description": "Reinforced plating stance."},
+        {"id": "crushing_blow", "name": "Crushing Blow", "unlock_level": 20, "mp_cost": 14, "range": 1, "type": "physical", "damage_mult": 1.75, "description": "Devastating overhead strike."},
+        {"id": "bulwark", "name": "Bulwark", "unlock_level": 64, "mp_cost": 12, "range": 0, "type": "buff_self", "armor_add": 12, "duration_turns": 3, "description": "Immovable defensive wall."},
+        {"id": "iron_resolve", "name": "Iron Resolve", "unlock_level": 128, "mp_cost": 15, "range": 0, "type": "heal_self", "heal_amount": 55, "description": "Draw on iron will to recover."},
+        {"id": "bastion", "name": "Bastion", "unlock_level": 256, "mp_cost": 24, "range": 1, "type": "physical", "damage_mult": 2.0, "description": "Lv.256 capstone fortress strike."}
+      ]
+    }
+  }
+]

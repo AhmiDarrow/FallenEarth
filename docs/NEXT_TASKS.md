@@ -1,39 +1,82 @@
-# NEXT_TASKS — Fallen Earth (Prioritized Atomic)
+# NEXT_TASKS — Fallen Earth
 
-Living list. Max ~5-7 visible. Remedy maintains this automatically. Pull from dev_plan.md and current handoff.
+**Version:** 0.2.0 · **Updated:** 2026-07-01 · **Phase:** 6 in progress
 
-## Current Priorities (Seeded from dev_plan + existing files)
+*Aligns with `docs/VERSION.md`, `CHANGELOG.md`, and `memory/CURRENT_STATE.md`.*
 
-1. **Core Data Validation & Loading** (foundational)
-   - Ensure all data/*.json load cleanly in Godot (schema checks or simple parser in a manager).
-   - Add basic validation script (Python or GDScript) for races, biomes, factions, mobs.
-   - Wire initial autoloads (GameState, at least one Manager) in project.godot.
+---
 
-2. **World Generation Scaffolding**
-   - Implement basic biome tile mapping from biomes.json.
-   - Create WorldGenerator.gd logic for simple overworld grid or hex preview (no full 3D yet).
-   - Add seed handling and preview UI stub (extend existing scenes or new).
+## TOP PRIORITY — Next Session
 
-3. **Character Creation Flow** (high priority per plan)
-   - Race selection + stats from races.json + RaceManager.gd.
-   - Class selection from character_classes.json.
-   - Basic appearance preview using AppearanceManager.
-   - Simple character creation scene flow (menu → creation → save stub).
+### P0 — Manual verification
 
-4. **Save/Load Foundation**
-   - Implement basic JSON save to user:// for player data (appearance, stats, inventory stub).
-   - Load flow from MainMenu → existing game state.
-   - Integrate SaveManager.gd.
+| ID | Task | Status |
+|----|------|--------|
+| 7 | **F5 playthrough** — New Game → World Gen → pick hex → Character Create → local map (WASD) → World Map travel → enter rift → dungeon → close → return to entry local pos. Log Godot Output errors. | ⏳ READY |
 
-5. **Minimal Overworld + Rift Stub**
-   - Basic player movement in a placeholder hub scene using data-driven biome info.
-   - Trigger for entering a "rift" (simple scene change or instance stub).
-   - Touch/aggro hook that leads to a tactical combat placeholder.
+### P1 — Phase 6 coding (assets parallel)
 
-## Done / Archived
-- Initial data JSONs populated (races, biomes, factions, mobs, classes, story).
-- Basic manager script stubs and project structure.
-- Multi-agent handoff + automatic Remedy system bootstrapped (2026-06-29).
+| ID | Task | Status |
+|----|------|--------|
+| 9 | **Settlement building** — Build mode on local map; place structures at `(local_x, local_y)`; persist in `hex_state.settlement`; toggle via key/button. | ⏳ PENDING |
+| 10 | **Tile overlay hook** — When asset agent delivers PNGs, overlay `TileSetBuilder` / `WorldGenerator.get_tile_visual()` in `LocalMapRenderer` (replace ColorRect cells). | ⏳ BLOCKED on assets |
+| 11 | **World map polish** — Pan/zoom on `WorldMapScreen`; discovered % per hex; optional faction territory tint. | ⏳ PENDING |
 
-## Guidance for Remedy
-When decomposing, keep tasks atomic and reference specific files (e.g., "Extend WorldGenerator.gd to load biomes.json and generate a 32x32 tile array"). Always end with handoff + state update.
+### P2 — Quality of life
+
+| ID | Task | Status |
+|----|------|--------|
+| 12 | **Autosave during exploration** — Periodic `GameState.save_game(0)` from `HubWorld` (e.g. every 2 min or on hex cross). | ⏳ PENDING |
+| 13 | **MainMenu load UI** — Display slot list with character name / region / play time. | ⏳ PENDING |
+
+---
+
+## COMPLETED (v0.2.0 — do not re-implement)
+
+### Phase 4 — World gen + two-layer maps ✅
+
+| ID | Task | Notes |
+|----|------|-------|
+| 1 | Hex sphere world generation | `WorldGenerator.gd` — axial hex, climate biomes |
+| 2 | Starting grid selection | `WorldGeneration.tscn` — RimWorld-style site browse |
+| 3 | Game flow reorder | Menu → WorldGen → CharacterSelect → HubWorld |
+| 4 | Two-layer world | `WorldMapScreen` (strategic) + `HubWorld` (512×512 local) + edge travel |
+
+### Phase 5 — Rifts ✅
+
+| ID | Task | Notes |
+|----|------|-------|
+| 5 | Rift spawning at local coords | `RiftRunner` — `local_x/y`, world map ⚡ markers |
+| 6 | Dungeon + close + return | `RiftInstance` — restore `entry_local_x/y`; save `rift_state` |
+| 8 | Chunk streaming | `LocalMapRenderer.gd` — 32×32 cell chunks |
+
+### Also shipped in 0.2.0 ✅
+
+- FFT tactical combat (`CombatManager`, `TacticalCombat`)
+- Six classes + Lv.1–256 progression
+- Procedural NPCs + recruitment (`NPCManager`)
+- Procedural missions (`MissionManager`) with local mob placement
+- Save/load: `hex_states`, `discovered_hexes`, `overworld_mobs`, missions, NPCs
+
+---
+
+## TECH DEBT (resolved — reference only)
+
+- ~~Remove `nul` junk files~~ ✅
+- ~~Add `.gitignore`~~ ✅
+- ~~Save/load shape unification~~ ✅ (v0.2.0)
+- ~~GDScript strict-type compile cascade~~ ✅
+
+---
+
+## Asset work (parallel agent — not coding queue)
+
+- Hand-drawn tilesets per biome (ComfyUI)
+- Character sprites (24 race×gender combos)
+- UI panels/icons
+- Integration point: `LocalMapRenderer` overlay + `CharacterVisual`
+
+---
+
+*Milestone: v0.2.0 shipped (code). Next: F5 verify → settlement → tile overlay.*
+*Reminder: end sessions with `prepare-handoff`; update `CHANGELOG.md` on release.*

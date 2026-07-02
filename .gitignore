@@ -1,0 +1,55 @@
+# Godot 4 generated
+.godot/
+export_presets.cfg
+*.import
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Project specific
+nul
+nul.*
+*.bak
+*.tmp
+
+# Hermes / multi-agent temp (review artifacts and plans may stay tracked)
+.hermes/
+.hermes/tests/
+*.log
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Godot user data / saves (runtime only)
+user://
+saves/
+
+# Misc build / cache
+*.pyc
+*.pyd
+__pycache__
+cache/

@@ -1,0 +1,106 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/WorldGeneration.gd" id="1_wg"]
+
+[sub_resource type="StyleBoxFlat" id="button_normal"]
+bg_color = Color(0.2, 0.15, 0.3, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.6, 0.5, 0.8, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
+[node name="WorldGeneration" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_wg")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.04, 0.02, 0.06, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -200.0
+offset_right = 300.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 16
+
+[node name="TitleLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 60)
+bbcode_enabled = true
+text = "[center][b]WORLD GENERATION[/b][/center]"
+horizontal_alignment = 1
+
+[node name="Instructions" type="RichTextLabel" parent="MainVBox"]
+bbcode_enabled = true
+text = "[center]Choose a seed to generate the hexagonal sphere world (RimWorld inspired: biomes from lat/temp/elev/rain).
+Then select your starting grid/tile like choosing a colony site.
+World gen first, then character creation, then overworld at chosen hex.[/center]"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="SeedHBox" type="HBoxContainer" parent="MainVBox"]
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="SeedLabel" type="Label" parent="MainVBox/SeedHBox"]
+text = "Seed:"
+
+[node name="SeedEdit" type="LineEdit" parent="MainVBox/SeedHBox"]
+custom_minimum_size = Vector2(300, 0)
+size_flags_horizontal = 3
+text = "UNDEREARTH_001"
+placeholder_text = "Enter world seed"
+
+[node name="RandomButton" type="Button" parent="MainVBox/SeedHBox"]
+custom_minimum_size = Vector2(100, 40)
+theme_override_styles/normal = SubResource("button_normal")
+text = "Random"
+
+[node name="ButtonsHBox" type="HBoxContainer" parent="MainVBox"]
+theme_override_constants/separation = 20
+alignment = 1
+
+[node name="GenerateButton" type="Button" parent="MainVBox/ButtonsHBox"]
+custom_minimum_size = Vector2(180, 50)
+theme_override_styles/normal = SubResource("button_normal")
+text = "Generate World"
+
+[node name="ContinueButton" type="Button" parent="MainVBox/ButtonsHBox"]
+custom_minimum_size = Vector2(180, 50)
+theme_override_styles/normal = SubResource("button_normal")
+text = "Continue to Character"
+
+[node name="StatusLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 80)
+bbcode_enabled = true
+text = "[i]Ready to generate...[/i]"
+horizontal_alignment = 1
+autowrap_mode = 3
+
+[node name="CandidatesLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 30)
+bbcode_enabled = true
+text = "[center][b]Choose Starting Grid (RimWorld-style):[/b][/center]"
+visible = false
+
+[node name="CandidatesContainer" type="VBoxContainer" parent="MainVBox"]
+visible = false
+theme_override_constants/separation = 8

@@ -1,0 +1,62 @@
+{
+  "upworld": {
+    "Human": {
+      "base_stats": {"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10},
+      "visual_tag": "human",
+      "description": "Baseline survivors from the surface cities. Jack-of-all-trades with no severe weaknesses. Neutral faction standing.",
+      "origin": "Upworld",
+      "flavor": "Balanced stats."
+    },
+    "Mutant": {
+      "base_stats": {"str": 12, "dex": 8, "con": 13, "int": 7, "wis": 9, "cha": 8},
+      "visual_tag": "mutant",
+      "description": "Radiation-scarred adaptors hardened by the wastes. +Health, +RAD resist, −Hunger cap. Tough but constantly hungry.",
+      "origin": "Upworld",
+      "flavor": "Tough but always hungry."
+    },
+    "SentientAI": {
+      "base_stats": {"str": 6, "dex": 10, "con": 6, "int": 14, "wis": 11, "cha": 9},
+      "visual_tag": "ai",
+      "description": "Conscious machine minds housed in synthetic bodies. +Energy (stamina), −Health. High stamina, fragile frame. No food drain bonus.",
+      "origin": "Upworld",
+      "flavor": "High stamina, fragile frame."
+    },
+    "Cyborg": {
+      "base_stats": {"str": 11, "dex": 9, "con": 11, "int": 12, "wis": 8, "cha": 8},
+      "visual_tag": "cyborg",
+      "description": "Chrome grafted onto flesh. +Health, −Energy. Durable frame with power-hungry implants. Tech synergy.",
+      "origin": "Upworld",
+      "flavor": "Durable but power-hungry."
+    }
+  },
+  "underworld": {
+    "Chthon": {
+      "base_stats": {"str": 9, "dex": 11, "con": 10, "int": 9, "wis": 12, "cha": 7},
+      "visual_tag": "chthon",
+      "description": "Pale, elongated humanoids adapted to darkness. Many have glowing veins and subtle mutations. +Hunger resistance, +RAD resist, −Energy. Closest to “surface humans” but deeply changed by the Underearth.",
+      "origin": "Underworld",
+      "flavor": "Adapted to darkness."
+    },
+    "Vesperid": {
+      "base_stats": {"str": 11, "dex": 12, "con": 9, "int": 8, "wis": 10, "cha": 6},
+      "visual_tag": "vesperid",
+      "description": "Insectoid-human hybrids with chitin plating and compound eyes. +Health, +RAD resist, −Hunger. Often seen as eerie or monstrous by Upworlders. Extremely durable.",
+      "origin": "Underworld",
+      "flavor": "Insectoid-human hybrids."
+    },
+    "Nullborn": {
+      "base_stats": {"str": 7, "dex": 10, "con": 7, "int": 13, "wis": 11, "cha": 10},
+      "visual_tag": "nullborn",
+      "description": "Beings touched by the void between realities. Their forms flicker; unnatural calm. +Energy, +RAD resist, −Health. Extremely rare. Some say they are partially unmade.",
+      "origin": "Underworld",
+      "flavor": "Void-touched, flickering."
+    },
+    "Revenant": {
+      "base_stats": {"str": 13, "dex": 7, "con": 12, "int": 6, "wis": 9, "cha": 5},
+      "visual_tag": "revenant",
+      "description": "Reanimated corpses kept alive by Underearth tech or parasites. +Health, +Hunger resist, −Energy. Not truly undead — more like “biologically repurposed.” Hard to kill, costly to sustain.",
+      "origin": "Underworld",
+      "flavor": "Biologically repurposed corpses."
+    }
+  }
+}

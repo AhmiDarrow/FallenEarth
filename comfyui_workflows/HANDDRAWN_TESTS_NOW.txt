@@ -1,0 +1,31 @@
+=== RETRY: 2D Hand-Drawn Art Style Tests ===
+
+User: "the art style should be 2d handdrawn"
+
+Shift from pixel to traditional 2D hand-drawn / illustrated style.
+Keep RimWorld + Stardew Valley inspiration but rendered as hand-drawn 2D (not pixel).
+
+5 NEW TEST WORKFLOWS CREATED:
+style_test_handdrawn_01_balanced.json
+style_test_handdrawn_02_illustrative.json
+style_test_handdrawn_03_rimworld_iconic.json
+style_test_handdrawn_04_stardew_charming.json
+style_test_handdrawn_05_gritty_horror.json
+
+(These are copies of your generator with updated hand-drawn prompts. Pixel LoRA strength lowered significantly.)
+
+QUICK START:
+1. Load one JSON in ComfyUI.
+2. Generate multiple (vary seed, batch 2-4 if desired).
+3. Review in output folder (prefixed FallenEarth_Style/handdrawn_test_XX).
+
+Full research, analysis, and exact prompts in:
+2D_HANDDRAWN_STYLE_TESTS.md
+
+Plain prompts also available in the doc.
+
+After testing, tell me the winner (or notes like "01 but more illustrative like 02").
+
+We'll lock it and proceed to real asset generation.
+
+All local ComfyUI. Go!

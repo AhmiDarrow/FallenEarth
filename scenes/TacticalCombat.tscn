@@ -1,0 +1,118 @@
+[gd_scene load_steps=1 format=3]
+
+[ext_resource type="Script" path="res://scripts/TacticalCombat.gd" id="1_tc"]
+
+[node name="TacticalCombat" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_tc")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0.015, 0.04, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 30.0
+offset_top = 16.0
+offset_right = -30.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 32)
+bbcode_enabled = true
+text = "[center][b]TACTICAL COMBAT[/b] — Final Fantasy Tactics rules[/center]"
+fit_content = true
+
+[node name="StatusLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 56)
+bbcode_enabled = true
+autowrap_mode = 3
+fit_content = true
+
+[node name="TurnOrderLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 24)
+bbcode_enabled = true
+fit_content = true
+
+[node name="GridPanel" type="Panel" parent="MainVBox"]
+custom_minimum_size = Vector2(300, 300)
+size_flags_horizontal = 4
+
+[node name="GridContainer" type="GridContainer" parent="MainVBox/GridPanel"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -140.0
+offset_top = -140.0
+offset_right = 140.0
+offset_bottom = 140.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/h_separation = 3
+theme_override_constants/v_separation = 3
+
+[node name="InstructionsLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 28)
+bbcode_enabled = true
+fit_content = true
+
+[node name="LogLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 64)
+bbcode_enabled = true
+autowrap_mode = 3
+fit_content = true
+
+[node name="ActionsHBox" type="HBoxContainer" parent="MainVBox"]
+size_flags_horizontal = 4
+theme_override_constants/separation = 10
+
+[node name="SkillButton" type="Button" parent="MainVBox/ActionsHBox"]
+custom_minimum_size = Vector2(90, 36)
+text = "Skill"
+
+[node name="SkillMenu" type="PopupMenu" parent="MainVBox/ActionsHBox"]
+
+[node name="AttackButton" type="Button" parent="MainVBox/ActionsHBox"]
+custom_minimum_size = Vector2(90, 36)
+text = "Attack"
+
+[node name="WaitButton" type="Button" parent="MainVBox/ActionsHBox"]
+custom_minimum_size = Vector2(100, 36)
+text = "Wait"
+
+[node name="FinishButton" type="Button" parent="MainVBox/ActionsHBox"]
+custom_minimum_size = Vector2(100, 36)
+text = "Finish Turn"
+
+[node name="RetreatButton" type="Button" parent="MainVBox/ActionsHBox"]
+custom_minimum_size = Vector2(100, 36)
+text = "Retreat"
+
+[node name="ResultPanel" type="VBoxContainer" parent="MainVBox"]
+visible = false
+size_flags_horizontal = 4
+
+[node name="ResultLabel" type="RichTextLabel" parent="MainVBox/ResultPanel"]
+bbcode_enabled = true
+autowrap_mode = 3
+fit_content = true
+
+[node name="ContinueButton" type="Button" parent="MainVBox/ResultPanel"]
+custom_minimum_size = Vector2(180, 40)
+text = "Continue"

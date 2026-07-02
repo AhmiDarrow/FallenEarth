@@ -1,0 +1,177 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/CharacterSelection.gd" id="1_cs"]
+
+[node name="CharacterSelection" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cs")
+
+[node name="BackgroundColor" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.03, 0.02, 0.04, 1)
+
+[node name="MainVBox" type="VBoxContainer" parent="."]
+anchors_preset = 0
+anchor_left = 0.15
+anchor_top = 0.1
+anchor_right = 0.85
+anchor_bottom = 0.9
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
+grow_horizontal = 2
+grow_vertical = 2
+layout_mode = 1
+theme_override_constants/separation = 8
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="TitleLabel" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(400, 50)
+horizontal_alignment = 1
+autowrap_mode = 4
+size_flags_horizontal = 4
+bbcode_enabled = true
+text = "[center][b]FALLEN EARTH[/b][br]Create Your Character[/br][/center]"
+
+[node name="NameHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="NameLabel" type="Label" parent="MainVBox/NameHBox"]
+layout_mode = 2
+text = "Your Name:"
+
+[node name="NameEdit" type="LineEdit" parent="MainVBox/NameHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+custom_minimum_size = Vector2(200, 30)
+placeholder_text = "Enter your name (optional, defaults to Recruit)"
+max_length = 32
+
+[node name="RaceHeader" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 28)
+bbcode_enabled = true
+text = "[b]Select Your Origin & Race:[/b]"
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="RacesHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+size_flags_vertical = 3
+
+[node name="UpworldPanel" type="PanelContainer" parent="MainVBox/RacesHBox"]
+custom_minimum_size = Vector2(280, 140)
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="UpworldVBox" type="VBoxContainer" parent="MainVBox/RacesHBox/UpworldPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UpworldLabel" type="RichTextLabel" parent="MainVBox/RacesHBox/UpworldPanel/UpworldVBox"]
+custom_minimum_size = Vector2(0, 26)
+bbcode_enabled = true
+text = "[b]Upworld[/b]"
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="UpworldScroll" type="ScrollContainer" parent="MainVBox/RacesHBox/UpworldPanel/UpworldVBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UpworldButtonList" type="VBoxContainer" parent="MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 3
+
+[node name="UnderworldPanel" type="PanelContainer" parent="MainVBox/RacesHBox"]
+custom_minimum_size = Vector2(280, 140)
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="UnderworldVBox" type="VBoxContainer" parent="MainVBox/RacesHBox/UnderworldPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UnderworldLabel" type="RichTextLabel" parent="MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox"]
+custom_minimum_size = Vector2(0, 26)
+bbcode_enabled = true
+text = "[b]Underworld[/b]"
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="UnderworldScroll" type="ScrollContainer" parent="MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UnderworldButtonList" type="VBoxContainer" parent="MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 3
+
+[node name="ClassHeader" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 28)
+bbcode_enabled = true
+text = "[b]Select Your Class:[/b]"
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="ClassPanel" type="PanelContainer" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 100)
+size_flags_horizontal = 3
+size_flags_vertical = 1
+
+[node name="ClassVBox" type="VBoxContainer" parent="MainVBox/ClassPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ClassLabel" type="RichTextLabel" parent="MainVBox/ClassPanel/ClassVBox"]
+custom_minimum_size = Vector2(0, 26)
+bbcode_enabled = true
+text = "[b]Archetype[/b]"
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="ClassScrollContainer" type="ScrollContainer" parent="MainVBox/ClassPanel/ClassVBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ClassButtonList" type="VBoxContainer" parent="MainVBox/ClassPanel/ClassVBox/ClassScrollContainer"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+
+[node name="SelectionSummary" type="RichTextLabel" parent="MainVBox"]
+custom_minimum_size = Vector2(0, 28)
+bbcode_enabled = true
+text = "[i]Select race + class (name optional) then click Confirm below[/i]"
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="BottomBar" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="ConfirmButton" type="Button" parent="MainVBox/BottomBar"]
+custom_minimum_size = Vector2(220, 48)
+text = "✔ Confirm & Enter the Wastes"
+
+[node name="ResetButton" type="Button" parent="MainVBox/BottomBar"]
+custom_minimum_size = Vector2(80, 48)
+text = "Reset"

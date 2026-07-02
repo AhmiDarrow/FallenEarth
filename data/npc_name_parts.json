@@ -1,0 +1,36 @@
+{
+  "upworld": {
+    "first": ["Kira", "Marcus", "Elena", "Jax", "Rhea", "Cole", "Nadia", "Viktor", "Sera", "Dane", "Mira", "Orin", "Tess", "Bran", "Lyra", "Garrick"],
+    "nick": ["Rustjack", "Ashborn", "Wirehand", "Dustwalker", "Scraprat", "Ironveil", "Grit", "Null-Eye", "Chrome", "Sparks", "Grave", "Hollow"],
+    "last": ["Morrow", "Vance", "Kell", "Ashford", "Renn", "Voss", "Hale", "Cross", "Mercer", "Stone", "Ward", "Drake", "Fenn", "Locke"]
+  },
+  "underworld": {
+    "first": ["Thalen", "Vex", "Nyra", "Keth", "Orrin", "Syl", "Morvek", "Isha", "Drev", "Ulma", "Cael", "Phex", "Lorn", "Vael"],
+    "nick": ["Palehand", "Veinlight", "Chitin", "Void-Touched", "Deepborn", "Echo", "Spore", "Null", "Flicker", "Gravemind", "Husk"],
+    "last": ["Vesper", "Chthon", "Null", "Grave", "Mire", "Spire", "Dusk", "Rift", "Hollow", "Veil", "Crypt", "Ashdeep"]
+  },
+  "neutral": {
+    "first": ["Ash", "Rook", "Sable", "Quinn", "Pike", "Wren", "Cinder", "Flint", "Nova", "Rune", "Slate", "Vale"],
+    "nick": ["the Drifter", "Two-Scrap", "Ghost", "the Broker", "Last-Light", "Rift-Scar", "Dust", "the Quiet"],
+    "last": ["Walker", "Crow", "Shade", "Marrow", "Glint", "Waste", "Trail", "Mark", "Ledger", "Spire"]
+  },
+  "titles": {
+    "mercenary": ["the Blade", "of the Accord", "the Hired"],
+    "engineer": ["the Tinkerer", "Gearwright", "of the Forge"],
+    "cultist": ["the Devout", "of the Veil", "the Whisperer"],
+    "shaman": ["the Seer", "Bone-Speaker", "of the Deep"],
+    "raider": ["the Cutthroat", "of the Serpents", "the Reaver"],
+    "smuggler": ["the Runner", "Black-Route", "the Courier"],
+    "archivist": ["the Keeper", "of Records", "the Scribe"],
+    "tech_cultist": ["the Augmented", "of the Choir", "Circuit-Saint"],
+    "negotiator": ["the Mediator", "of the Parliament", "the Voice"],
+    "settler": ["the Homesteader", "of the Dust", "the Builder"],
+    "blacksmith": ["the Smith", "Ironhand", "of the Circuit"],
+    "trader": ["the Merchant", "of the Caravan", "the Peddler"],
+    "broker": ["the Broker", "of Secrets", "the Ledger"],
+    "spy": ["the Shadow", "the Watcher", "the Ghost"],
+    "caravan_guard": ["the Shield", "of the Road", "the Sentinel"],
+    "historian": ["the Chronicler", "of Echoes", "the Archivist"],
+    "wanderer": ["the Drifter", "of Nowhere", "the Lost"]
+  }
+}

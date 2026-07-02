@@ -1,0 +1,10 @@
+{
+  "gender": ["male", "female", "nonbinary"],
+  "head": ["bald", "short_hair", "long_hair", "spiked", "hooded", "helmet", "chitin_plates", "circuit_mask"],
+  "body": ["light_armor", "heavy_armor", "rags", "jumpsuit", "chitin_plating", "synthetic_mesh"],
+  "arms": ["standard", "cyber_grafted", "chitin_limbs", "power_bracers"],
+  "legs": ["standard", "augmented", "digitigrade", "armored_greaves"],
+  "skin_tone": ["pale", "tan", "dark", "ashen", "green_tint", "metallic_sheen", "bioluminescent"],
+  "hair_color": ["black", "brown", "red", "blond", "gray", "white", "neon_blue", "void_purple"],
+  "accessories": ["goggles", "scarf", "gloves", "soul_link_implant", "none"]
+}

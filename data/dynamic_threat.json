@@ -1,0 +1,9 @@
+{
+  "description": "Rift frequency and intensity scales with player settlement expansion. The more you build and stabilize, the more aggressively the Underearth pushes back. Creates natural tension between expansion and survival — there's no 'safe' endgame state. Only deeper into the dark.",
+  "base_interval_sec": 600,
+  "expansion_penalty_per_structure": 15,
+  "max_frequency_mod": 3.0,
+  "min_rift_interval_sec": 120,
+  "decay_rate_per_day_without_building": 0.98,
+  "notes": "Each settlement structure reduces the rift spawn interval by expansion_penalty_per_structure seconds, up to max_frequency_mod multiplier. Settlements that stop building for multiple days decay toward base_interval at decay_rate. Matches the Dynamic Threat System from lore."
+}

@@ -1,0 +1,11 @@
+{
+  "visual_style_seed": "UNDEREARTH_GRIM_HAND_2026_v1",
+  "world_generation_seeds": [
+    "ASHFALL_001",
+    "RIFTCORE_042",
+    "STORM_SPIRE_777",
+    "VOID_BLOOM_013"
+  ],
+  "default_player_seed": "workcamp_escape_01",
+  "notes": "Grim cyber-organic aesthetic seed from lore. Used for consistent procedural generation across biomes, rifts, and visuals."
+}

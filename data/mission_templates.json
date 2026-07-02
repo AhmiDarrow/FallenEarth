@@ -1,0 +1,89 @@
+{
+  "version": "1.0",
+  "scaling": {
+    "distance_min_hex": 2,
+    "distance_max_hex_base": 4,
+    "distance_per_level": 0.06,
+    "xp_base": 35,
+    "xp_per_level": 7,
+    "rep_base": 4,
+    "rep_per_level": 1,
+    "loot_base": 1,
+    "loot_every_n_levels": 12,
+    "max_active_missions": 3,
+    "offer_count_default": 2,
+    "expire_after_sec": 1800,
+    "difficulty_mult_per_tier": 0.12
+  },
+  "templates": [
+    {
+      "id": "hunt",
+      "display_name": "Bounty Hunt",
+      "objective_type": "kill_mob",
+      "weight": 30,
+      "base_difficulty": 1.0,
+      "spawn_mob": true,
+      "min_party_level": 1,
+      "briefing": "A hostile has been sighted near {biome}. Eliminate the threat and report back."
+    },
+    {
+      "id": "scout",
+      "display_name": "Recon Patrol",
+      "objective_type": "reach_tile",
+      "weight": 25,
+      "base_difficulty": 0.85,
+      "spawn_mob": false,
+      "min_party_level": 1,
+      "briefing": "Scout the hex at ({q}, {r}) in {biome}. Mark terrain hazards and return."
+    },
+    {
+      "id": "purge",
+      "display_name": "Purge Sweep",
+      "objective_type": "kill_count",
+      "weight": 20,
+      "base_difficulty": 1.1,
+      "spawn_mob": false,
+      "kill_target_base": 2,
+      "kill_per_level": 12,
+      "min_party_level": 4,
+      "briefing": "Clear {count} hostiles in or near {biome}. Faction patrols need the route safe."
+    },
+    {
+      "id": "salvage",
+      "display_name": "Salvage Run",
+      "objective_type": "win_combat_at_tile",
+      "weight": 15,
+      "base_difficulty": 1.05,
+      "spawn_mob": true,
+      "min_party_level": 2,
+      "briefing": "Recovered intel points to salvage at ({q}, {r}) in {biome}. Secure the site."
+    },
+    {
+      "id": "rift_breach",
+      "display_name": "Seal the Breach",
+      "objective_type": "clear_quest_rift",
+      "weight": 10,
+      "base_difficulty": 1.25,
+      "spawn_mob": false,
+      "min_party_level": 6,
+      "briefing": "A quest-marked rift tunnel opened at ({q}, {r}). Enter, clear the threat, and seal it."
+    }
+  ],
+  "title_prefixes": [
+    "Contract",
+    "Urgent",
+    "Faction Order",
+    "Field Op",
+    "Wasteland Job"
+  ],
+  "faction_flavor": {
+    "iron_accord": "Iron Accord command requests",
+    "hollow_covenant": "Hollow Covenant shamans demand",
+    "ash_serpents": "Ash Serpents want",
+    "veilwardens": "Veilwardens seek",
+    "neon_choir": "Neon Choir operatives need",
+    "dust_parliament": "Dust Parliament delegates ask",
+    "bone_circuit": "Bone Circuit brokers offer",
+    "independent": "A local contact needs"
+  }
+}

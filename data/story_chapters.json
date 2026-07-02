@@ -1,0 +1,11 @@
+{
+  "delivery_method": "rift_lore_discoveries",
+  "note": "Workcamp backstory revealed through scrolls, audio logs, and environmental storytelling in rifts. No exposition dumps. The player pieces together the corporate water wars, the breaking of the Underearth, and their own past.",
+  "chapters": [
+    {"id": 1, "trigger": "first_rift_clear", "format": "loose_scroll", "content_theme": "escape_and_bargaining — workcamp release, first taste of freedom and the cost of survival"},
+    {"id": 2, "trigger": "settlement_5_structures", "format": "worn_journal_puzzle_pieces", "content_theme": "workcamp_conditions — exploitation, Soul Link implantation, youth sold into labor"},
+    {"id": 3, "trigger": "first_underearth_core_reached", "format": "ghost_recording", "content_theme": "corporate_exploitation_of_depths — water wars, breaking open the ancient realm"},
+    {"id": 4, "trigger": "rift_frequency_exceeds_2x_base", "format": "environmental_scene_fall_back", "content_theme": "underneath_awakens_to_threat — dynamic threat, the Underearth pushing back against expansion"},
+    {"id": 5, "trigger": "hollow_covenant_rep_above_threshold", "format": "shaman_prophecy_mural", "content_theme": "true_nature_of_underearth_revealed — cosmic horror, blurred line between man/machine/monster, possible redemption or deeper horror"}
+  ]
+}

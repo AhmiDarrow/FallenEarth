@@ -1,0 +1,60 @@
+Fallen Earth Character Sprite Generation Prompts
+
+Use with character_sprites_workflow.json or character_sprite_consistent_workflow.json
+
+Key: Use BOTH master_style_reference.png AND a specific character reference image in the IPAdapter nodes for maximum consistency.
+
+=== RACE + CLASS PROMPTS ===
+
+Base format:
+"grim post-apocalyptic sci-fi [RACE] [CLASS], top-down 2.5D game sprite, detailed wasteland clothing with cybernetic and mutated elements, consistent with master style and character reference, high quality pixel art style sprite sheet asset, [specific pose or animation frame]"
+
+Races (from data/races.json):
+- Human: baseline survivors, balanced, jack-of-all-trades
+- Mutant: radiation-scarred, tough, +health, constantly hungry
+- SentientAI: conscious machine minds in synthetic bodies, high stamina, fragile
+- Cyborg: chrome grafted on flesh, durable but power-hungry
+- Chthon: pale elongated humanoids adapted to darkness, glowing veins
+- Vesperid: insectoid-human hybrids with chitin plating, eerie durable
+- Nullborn: beings touched by the void, forms flicker, unnatural calm
+- Revenant: reanimated corpses kept alive by Underearth tech/parasites
+
+Classes:
+- Scavenger: survival-focused, resource gathering, endurance
+- Technician: high-tech tinkering, gadgets, cyber-organic systems
+- Survivor: balanced all-purpose, tough adaptive fighters
+
+Examples:
+
+Human Scavenger:
+"grim post-apocalyptic sci-fi Human Scavenger, top-down 2.5D game sprite, baseline survivor in rugged patched clothing with scavenged gear, resource gathering tools, endurance focused, consistent with master style and character reference, high quality pixel art style sprite sheet asset, front view idle pose"
+
+Mutant Technician:
+"grim post-apocalyptic sci-fi Mutant Technician, top-down 2.5D game sprite, radiation-scarred tough survivor with cybernetic implants and gadget harness, high-tech tinkering tools, chitinous patches, consistent with master style and character reference, high quality pixel art style sprite sheet asset, side view walking animation frame"
+
+Cyborg Survivor:
+"grim post-apocalyptic sci-fi Cyborg Survivor, top-down 2.5D game sprite, chrome grafted flesh with power-hungry implants, balanced tough adaptive fighter in mixed armor, durable frame, consistent with master style and character reference, high quality pixel art style sprite sheet asset, back view attack pose"
+
+Chthon Vesperid:
+"grim post-apocalyptic sci-fi Chthon Vesperid, top-down 2.5D game sprite, pale elongated insectoid-human hybrid with chitin plating and compound eyes, eerie monstrous appearance, durable, glowing veins, consistent with master style and character reference, high quality pixel art style sprite sheet asset, front view hurt animation frame"
+
+=== ANIMATION FRAMES TO GENERATE PER CHARACTER ===
+For each race+class combo, generate consistent set:
+1. Idle - front
+2. Idle - side
+3. Idle - back
+4. Walk cycle - front (multiple frames)
+5. Walk cycle - side (multiple frames)
+6. Walk cycle - back (multiple frames)
+7. Attack (melee or ranged variant)
+8. Hurt / recoil
+9. Death / collapse
+
+Use OpenPose ControlNet with appropriate pose images for consistency.
+
+=== TIPS FOR UNIFORMITY ===
+- Generate all frames for one character in one session using the same references and seed range.
+- Use character reference image at high IPAdapter strength.
+- Master style reference at medium-high strength.
+- Pixel Art LoRA at 0.8
+- After generating full set, upscale if needed.
