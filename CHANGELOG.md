@@ -14,12 +14,28 @@ See `docs/VERSION.md` for phase map and save-format reference.
 - **Bug fix round (2026-07-02)** — seed system (`seed_system.py`, `_new_seed_system.py`, `data/seed_system.py`), save/load in `SaveManager.gd`, appearance system, biome rules, terrain generator.
 - Rift references renamed from `breach` → `rift` across docs, mission templates, and validation scripts.
 
+## [0.2.1] - 2026-07-02
+
+**Milestone:** Save/load reliability — autosave, manual save button, entry-time persistence.
+
+### Added
+#### Autosave system
+- `SaveManager.start_autosave_timer()` — starts a 120-second Timer child that fires every 2 minutes.
+- `SaveManager.full_autosave()` — writes complete state (character, appearance, equipment, world_data, player_position, hex_states, discovered_hexes, overworld_mobs, rift_state, world_npcs, faction_rep, recruited_npc_ids, missions) to AUTOSAVE_SLOT (slot 0).
+- `GameState` initializes autosave timer on `_ready()` and connects `auto_save_triggered` signal.
+
+#### Manual save in HubWorld
+- Dynamic SAVE button added to HubWorld `$BottomBar` at runtime — visible only when a character exists. Shows "SAVED!" / "FAILED" for 1.5 s after press.
+
+### Fixed
+- **Autosave was dead code** — `SaveManager._auto_save()` emitted a signal with no timer or caller. Now wired end-to-end: timer → signal → `full_autosave()` with full state payload. ✅
+- **No save on entering HubWorld** — added `_save_to_autoslot_if_can()` called at end of HubWorld._ready(). Covers both new-game-start and return-from-rift paths. ✅
+- **Save shape consistency verified** — load path handles both new top-level + old wrapped `game_state` shapes; headless startup has zero compile errors across all autoloads. ✅
+
 ### Planned
 - Settlement building on local map (build mode, `hex_state.settlement` persistence).
 - Hand-drawn tile overlay in `LocalMapRenderer` (blocked on asset delivery).
 - World map pan/zoom and discovered-% display.
-- Autosave during local exploration.
-- MainMenu load-slot UI polish.
 
 ### Pending verification
 - Manual F5 playthrough of full v0.2.0 loop (see `docs/NEXT_TASKS.md` #7).
@@ -102,6 +118,7 @@ See `docs/VERSION.md` for phase map and save-format reference.
 
 ---
 
-[Unreleased]: https://github.com/fallen-earth/fallen-earth/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/fallen-earth/fallen-earth/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/fallen-earth/fallen-earth/releases/tag/v0.2.1
 [0.2.0]: https://github.com/fallen-earth/fallen-earth/releases/tag/v0.2.0
 [0.0.1]: https://github.com/fallen-earth/fallen-earth/releases/tag/v0.0.1
