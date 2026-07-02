@@ -19,7 +19,7 @@ Vesperid: chitin accents, sturdy, compound eyes
 Nullborn: ethereal semi-transparent, slender, flickering
 Revenant: pale stitched, robust, tech patches
 
-Genders: male / female / nonbinary (subtle body/hair differences)
+Genders: male / female  (subtle body/hair differences)
 
 Poses to generate per combo:
 front view idle pose
