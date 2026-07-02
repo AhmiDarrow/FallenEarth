@@ -10,6 +10,10 @@ See `docs/VERSION.md` for phase map and save-format reference.
 
 ## [Unreleased]
 
+### Fixed
+- **Bug fix round (2026-07-02)** — seed system (`seed_system.py`, `_new_seed_system.py`, `data/seed_system.py`), save/load in `SaveManager.gd`, appearance system, biome rules, terrain generator.
+- Rift references renamed from `breach` → `rift` across docs, mission templates, and validation scripts.
+
 ### Planned
 - Settlement building on local map (build mode, `hex_state.settlement` persistence).
 - Hand-drawn tile overlay in `LocalMapRenderer` (blocked on asset delivery).

@@ -142,6 +142,74 @@ func _write_slot(slot_id: int, data: Dictionary) -> bool:
 	return true
 
 
+## Called by the autosave timer every 120 seconds.
+func _auto_save_tick() -> void:
+	auto_save_triggered.emit()
+
+
+## Call this once to start the autosave timer.
+var _autosave_timer: Timer = null
+
+func start_autosave_timer() -> void:
+	if is_instance_valid(_autosave_timer):
+		return
+	_autosave_timer = Timer.new()
+	_autosave_timer.wait_time = AUTOSAVE_INTERVAL_SEC
+	_autosave_timer.autostart = true
+	_autosave_timer.one_shot = false
+	add_child(_autosave_timer)
+	_autosave_timer.timeout.connect(_auto_save_tick)
+
+
+## Full-state autosave helper. GameState calls this from the autosave signal handler.
+func full_autosave(char_data: Dictionary, appearance: Dictionary, equipment: Dictionary,
+					world_data: Dictionary = {}, player_position: Dictionary = {},
+					hex_states: Dictionary = {}, discovered_hexes: Array = [],
+					overworld_mobs: Dictionary = {}, rift_state: Dictionary = {},
+					world_npcs: Dictionary = {}, faction_rep: Dictionary = {},
+					recruited_npc_ids: Array = [], missions: Dictionary = {}) -> bool:
+	var save_data := {"version": VERSION, "autosave": true, "slot": AUTOSAVE_SLOT}
+
+	if char_data is Dictionary and not char_data.is_empty():
+		save_data["character"] = char_data.duplicate(true)
+	else:
+		save_data["character"] = {}
+	save_data["appearance"] = appearance if appearance is Dictionary else {}
+	save_data["equipment"] = equipment if equipment is Dictionary else {}
+	save_data["game_state"] = {"active_scene": "", "save_slot": AUTOSAVE_SLOT}
+
+	if world_data is Dictionary and not world_data.is_empty():
+		save_data["world_data"] = world_data.duplicate(true)
+	save_data["player_position"] = player_position if player_position is Dictionary else {}
+	if hex_states is Dictionary:
+		var hex_out: Dictionary = {}
+		for key in hex_states:
+			var state: Dictionary = (hex_states[key] as Dictionary).duplicate(true)
+			state.erase("terrain")
+			hex_out[key] = state
+		save_data["hex_states"] = hex_out
+	else:
+		save_data["hex_states"] = {}
+
+	if discovered_hexes is Array:
+		save_data["discovered_hexes"] = discovered_hexes.duplicate()
+	if overworld_mobs is Dictionary:
+		save_data["overworld_mobs"] = overworld_mobs.duplicate(true)
+	if rift_state is Dictionary and not rift_state.is_empty():
+		save_data["rift_state"] = rift_state.duplicate(true)
+	if world_npcs is Dictionary and not world_npcs.is_empty():
+		save_data["world_npcs"] = world_npcs.duplicate(true)
+	if faction_rep is Dictionary:
+		save_data["faction_rep"] = faction_rep.duplicate(true)
+	if recruited_npc_ids is Array:
+		save_data["recruited_npc_ids"] = recruited_npc_ids.duplicate()
+	if missions is Dictionary and not missions.is_empty():
+		save_data["missions"] = missions.duplicate(true)
+
+	save_data["save_name"] = "Autosave"
+	return _write_slot(AUTOSAVE_SLOT, save_data)
+
+
 func recover_from_corruption(slot_id: int) -> void:
 	var backup_path := SAVE_DIR + "slot_%d.json.bak" % slot_id
 	var primary_path := SAVE_DIR + "slot_%d.json" % slot_id

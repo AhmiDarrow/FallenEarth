@@ -34,6 +34,7 @@ var _map_btn: Button = null
 var _recruit_btn: Button = null
 var _mission_btn: Button = null
 var _npc_info_label: RichTextLabel = null
+var _save_btn: Button = null
 var _mission_info_label: RichTextLabel = null
 var _npc_manager: Node = null
 var _mission_manager: Node = null
@@ -53,6 +54,15 @@ func _ready() -> void:
 	if is_instance_valid(_map_btn):
 		_map_btn.pressed.connect(_on_world_map_pressed)
 
+		# Manual save button
+		_save_btn = Button.new()
+		_save_btn.name = "SaveGame"
+		_save_btn.custom_minimum_size = Vector2(160, 45)
+		_save_btn.text = "SAVE"
+		_save_btn.disabled = true
+		_save_btn.pressed.connect(_on_save_pressed)
+		$BottomBar.add_child(_save_btn)
+
 	_rift_runner = get_node_or_null("/root/RiftRunner")
 	_npc_manager = get_node_or_null("/root/NPCManager")
 	_mission_manager = get_node_or_null("/root/MissionManager")
@@ -67,6 +77,7 @@ func _ready() -> void:
 		var char_data: Dictionary = gs.get_party_character_data()
 		if not char_data.is_empty():
 			_update_char_info(char_data)
+			_save_btn.disabled = false
 
 		_tile_map = gs.get_tile_map()
 		if _tile_map.is_empty() and gs.has_world():
@@ -102,6 +113,7 @@ func _ready() -> void:
 	_spawn_initial_rift_if_needed()
 	_ensure_world_npcs()
 	_seed_local_mobs()
+	_save_to_autoslot_if_can()
 
 
 func _process(delta: float) -> void:
@@ -702,3 +714,26 @@ func _on_back_to_menu_pressed() -> void:
 	var gm: GameManager = get_node_or_null("/root/GameManager") as GameManager
 	if is_instance_valid(gm):
 		gm.go_to_menu()
+
+
+
+func _save_to_autoslot_if_can() -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs) or gs.get_character_data().is_empty():
+		return
+	# Trigger a save to autoslot (slot 0)
+	gs.save_game(0)
+	print("[HubWorld] Saved to autoslot on entry.")
+
+func _on_save_pressed() -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs) or not _save_btn:
+		return
+	var success: bool = gs.save_game(0)
+	_save_btn.text = "SAVED!" if success else "FAILED"
+	_save_btn.disabled = true
+	await get_tree().create_timer(1.5).timeout
+	if _save_btn:
+		_save_btn.text = "SAVE"
+		_save_btn.disabled = false
+

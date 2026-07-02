@@ -49,6 +49,12 @@ func _ready() -> void:
 	_equipment_data = {}
 	print("[GameState] Initialized.")
 
+	# Start autosave timer on SaveManager autoload
+	var sm: SaveManager = get_node_or_null("/root/SaveManager")
+	if is_instance_valid(sm):
+		sm.start_autosave_timer()
+		sm.auto_save_triggered.connect(_on_autosave_tick)
+
 
 # ===================================================================
 # -- Character creation --
@@ -380,6 +386,40 @@ func load_game(slot_id: int) -> bool:
 	game_loaded.emit(slot_id, data)
 	last_save_slot_updated.emit(slot_id)
 	return true
+
+
+## Autosave — called by SaveManager's autosave timer signal.
+func auto_save() -> bool:
+	return save_game(last_save_slot)
+
+
+## Internal callback from SaveManager.auto_save_triggered.
+func _on_autosave_tick() -> void:
+	if not is_instance_valid(SaveManager):
+		return
+	if _character_data.is_empty():
+		return
+	# Write full state to AUTOSAVE_SLOT via SaveManager
+	var hex_out: Dictionary = {}
+	for key in _hex_states:
+		var s: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
+		s.erase("terrain")
+		hex_out[key] = s
+	SaveManager.full_autosave(
+		_character_data.duplicate(true),
+		_appearance_data.duplicate(true) if _appearance_data else {},
+		_equipment_data.duplicate(true) if _equipment_data else {},
+		_world_data.duplicate(true) if _world_data else {},
+		{"q": _player_q, "r": _player_r, "local_x": _local_x, "local_y": _local_y},
+		hex_out,
+		_discovered_hexes.duplicate(),
+		_overworld_mobs.duplicate(true) if _overworld_mobs else {},
+		{},
+		_world_npcs.duplicate(true) if _world_npcs else {},
+		_faction_rep.duplicate(true) if _faction_rep else {},
+		_recruited_npc_ids.duplicate(),
+		_mission_save.duplicate(true) if _mission_save else {}
+	)
 
 
 # ===================================================================
