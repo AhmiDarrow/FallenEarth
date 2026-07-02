@@ -206,7 +206,7 @@ Full list in `project.godot` autoload array (e.g., `DisplayManager`, `Appearance
 | Character sheets | Base underwear only; may need more detail for combat feel |
 | Equipment visuals | Single-pose overlays; full per-frame weapon/armor sheets would improve attack animations |
 | Combat | Placeholder flow in progress; AP system + stats integration pending |
-| Naming | `breach` vs `rift` inconsistency throughout code |
+| Naming | ✅ `breach` → `rift` renamed across all game files |
 | Godot quirks | blit format warnings, canvas z>MAX (non-blocking) |
 
 ---
@@ -214,7 +214,7 @@ Full list in `project.godot` autoload array (e.g., `DisplayManager`, `Appearance
 ## 🚀 Next Steps / Improvements
 
 1. Create per-frame overlay sheets for weapons/armor to match attack poses.
-2. Rename `breach` → `rift` across the codebase.
+
 3. Deepen tactical combat: grid movement, AP, terrain interaction.
 4. Expand resources/crafting procedural generation and item quality tiers.
 5. Add more animation polish (hurt reactions, breathing idle cycles).

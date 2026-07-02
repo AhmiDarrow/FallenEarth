@@ -59,8 +59,8 @@
       "briefing": "Recovered intel points to salvage at ({q}, {r}) in {biome}. Secure the site."
     },
     {
-      "id": "rift_breach",
-      "display_name": "Seal the Breach",
+      "id": "rift_seal",
+      "display_name": "Seal the Rift",
       "objective_type": "clear_quest_rift",
       "weight": 10,
       "base_difficulty": 1.25,
