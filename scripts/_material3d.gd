@@ -102,7 +102,7 @@ func _preload_materials():
 	]
 
 	for material_name in materials:
-		var material = preload("res://data/materials/" + material_name + ".tres")
+		var material = ResourceLoader.load("res://data/materials/" + material_name + ".tres")
 		if material:
 			# Preload the material to avoid caching
 			material._preload()
