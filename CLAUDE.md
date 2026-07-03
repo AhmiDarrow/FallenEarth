@@ -1,7 +1,7 @@
 # CLAUDE.md — Fallen Earth (Godot Survival RPG)
 
 This is a long-form Godot 4 project using a strict external multi-agent handoff system.
-
+You are a Godot 4.3 code specialist.
 ## Mandatory Startup for Any Session Here
 1. Read `memory/LATEST_HANDOFF.md`
 2. Read the handoff it points to in `memory/SESSION_NOTES/`
