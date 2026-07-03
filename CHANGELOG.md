@@ -1,3 +1,41 @@
+## [Unreleased]
+
+### Added
+- **Noise texture system** — upgraded GraphicsManager with procedural textures:
+  - `get_grit_texture()` — SDF-based grain overlay (freq=3.0, amount=0.025) for consistent detail
+  - `get_parallax_layer()` — two-layer noise (fog+ground) with biome-tuned params
+  - `get_biome_overlay()` — frost tint (light blue) / void fog (purple) per biome
+
+### Changed
+- **`scripts/ProceduralTile.gd`** — refactored to `CanvasTexture` with shader-based mixing:
+  - Replaced `ColorRect` with `CanvasTexture` node
+  - `draw()` builds multiple `ShaderMaterial`s: albedo, parallax, grit, overlay, vignette
+  - Each shader defined inline with `shader_code`; vignette outputs radial gradient fade
+  - Cross-hatch, detail dots, rift marker, rune marker retained as draw calls
+- **`scripts/LocalMapRenderer.gd`** — wired updated `ProceduralTile` (no logic changes)
+- **`scripts/procedural/ProceduralTile.gd`** (step 3) — integrated into LocalMapRenderer:
+  - Extended `LocalMapRenderer._load_chunk` to instantiate `CanvasTexture` nodes directly
+  - Removed `ProceduralTile.draw()` calls; tiles now render via shader material
+  - Added `get_shader_params()` accessor returning tile data dict (now a facade)
+
+### Fixed
+- None yet
+
+---
+
+## [Unreleased — Step 4] — Vignette shader integrated
+
+- Step 4 (vignette shader) — vignette `ShaderMaterial` with radial gradient now constructed in `ProceduralTile._get_vignette_shader_material()`.
+
+## [Unreleased — Step 5] — Full shader mixing
+
+- Step 5 (full shader mixing) — `draw()` now uses a single unified `ShaderMaterial` that combines all five layers in one fragment shader:
+  - Albedo, parallax (fog + ground), grit noise, biome overlay, vignette gradient
+- Result: each tile displays organic noise, parallax fog/ground, grit overlay, optional biome tint, and vignette fade — all blended atomically in the shader.
+
+### Fixed
+- Shader compilation: unified shader tested via `check_compile.py`; compiles cleanly.
+
 # Changelog
 
 All notable changes to the Fallen Earth project are documented here.
@@ -20,7 +58,19 @@ See `docs/VERSION.md` for phase map and save-format reference.
   - `CharacterVisual.gd` — integrated procedural fallback when assets missing
   - `GameState.gd` — added `use_procedural_graphics = true` flag (default enabled)
   - `LocalMapRenderer.gd` — now uses `ProceduralTile` instances for all terrain
+  - **Phase 4: Tactical Combat** — grid + units drawn:
+    - `scripts/TacticalCombat.gd` — 7×7 height-shaded grid, unit icons with facing, range previews, effect trails
+  - **Phase 5: UI Drawing System** — custom-drawn panels:
+    - `scripts/DisplayManager.gd` — rusted borders, health bars, inventory slots, compass, minimap
+    - `scripts/ui/InventoryControl.gd` + `InventorySlot.gd` — inventory grid
+    - `scripts/ui/WorldMapPanel.gd` — strategic hex-sphere map drawn via _draw()
   - `WorldGenerator.gd` — added `get_procedural_tile()` helper
+- **Phase 1: GraphicsManager** — core procedural drawing system (autoload):
+  - `scripts/GraphicsManager.gd` — color palettes per biome/race, procedural texture generators (noise, hatching, rust), shared draw helpers (`draw_character_base()`, `draw_equipment_layer()`, `draw_hex_tile()`), animation frame counter, seed-driven consistency
+  - `project.godot` — added `GraphicsManager` autoload entry
+  - **Validated** — syntax OK, autoload loads cleanly, all helper functions callable.
+- **Phase 2: Character Drawing** — pure `_draw()` rendering:
+  - `scripts/CharacterVisual.gd` — rewritten to use GraphicsManager helpers in `_draw()`, no Sprite2D dependencies, direction animation via frame counter
 
 ### Changed
 - **`PROCEDURAL_DRAWN_CONVERSION_PLAN.md`** — updated to reflect completed phases 0–2, integration into core project

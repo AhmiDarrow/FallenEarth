@@ -8,6 +8,7 @@ This is a long-form Godot 4 project using a strict external multi-agent handoff 
 3. Read `docs/PROJECT_OVERVIEW.md` and `docs/ARCHITECTURE.md`
 4. Read relevant sections of `memory/PROJECT_MEMORY.md` and `docs/NEXT_TASKS.md`
 5. Check for a dispatch in `memory/dispatches/claude/`
+Godot is located  C:\Users\Administrator\FallenEarth\Godot_v4.3-stable_win64.exe
 
 Then perform **only** the atomic task assigned. Do not expand scope.
 

@@ -1,5 +1,5 @@
 ## LocalMapRenderer — Chunked viewport renderer for 512×512 local maps.
-## Loads/unloads 64×64 cell chunks around the player; reuses ColorRect nodes.
+## Loads/unloads 64×64 cell chunks around the player; reuses CanvasTexture nodes.
 class_name LocalMapRenderer
 extends Node2D
 
@@ -81,21 +81,10 @@ func _load_chunk(cx: int, cy: int) -> void:
 			var tile: Dictionary = _map_data.get(local_key, {}) as Dictionary
 			var tile_key := "%d,%d" % [terrain, tile.get("terrain_type", 0)]
 			var tile_data: Dictionary = GameState.get_hex_state(x, y)
-			var procedural_tile: ProceduralTile = ProceduralTile.new()
+			var procedural_tile: CanvasTexture = ProceduralTile.new()
 			procedural_tile.name = "Tile_%s" % tile_key
 			procedural_tile.size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
-			procedural_tile.setup_for({
-				"biome": tile_data.get("biome", "Ash Wastes"),
-				"terrain_type": tile_data.get("terrain_type", terrain),
-				"terrain": tile_data.get("terrain", PackedByteArray()),
-				"explored_pct": tile_data.get("explored_pct", 0.0),
-				"has_rift": tile_data.get("has_rift", false),
-				"rift_type": tile_data.get("rift_type", 0),
-				"has_rocks": tile_data.get("has_rocks", false),
-				"has_vegetation": tile_data.get("has_vegetation", false),
-				"has_rune": tile_data.get("has_rune", false),
-			})
-			procedural_tile.draw()
+			procedural_tile.setup_for(tile_data)
 			chunk_root.add_child(procedural_tile)
 			cells[local_key] = procedural_tile
 

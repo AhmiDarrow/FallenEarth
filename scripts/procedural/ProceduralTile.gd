@@ -2,7 +2,7 @@
 ## Called from WorldGenerator / LocalMapRenderer when generating terrain.
 ## Supports: base ground, rock, vegetation, rift cracks, biome tints/patterns.
 
-extends ProceduralRenderer
+extends CanvasTexture
 
 # Tile metadata (data-driven)
 var biome: String = "Ash Wastes"
@@ -15,14 +15,41 @@ var has_rocks: bool = false
 var has_vegetation: bool = false
 var has_rune: bool = false
 
-# Runtime
-var _drawn: bool = false
+# Shader uniforms
+var shader: ShaderMaterial = null
 
-# Texture cache (simple PackedByteArray for procedural generation)
-var _tex: PackedByteArray = PackedByteArray()
+func _init() -> void:
+	shader = ShaderMaterial.new()
+	shader.shader_code = """
+shader_type canvas_texture;
 
-func _setup() -> void:
-	_generate_texture()
+uniform sampler2D uAlbedo;
+uniform sampler2D uParallax;
+uniform sampler2D uNoise;
+uniform sampler2D uOverlay;
+uniform vec4 uOverlayColor;
+uniform float uOverlayAmount;
+
+void fragment() {
+  vec3 albedo = texture(uAlbedo, uv).rgb;
+
+  vec3 parallax = texture(uParallax, uv).rgb;
+  parallax = mix(parallax, vec3(0.0), 0.55 * texture(uParallax, uv).a);
+
+  vec3 noise = texture(uNoise, uv).rgb * 0.4;
+
+  vec3 overlay = texture(uOverlay, uv).rgb;
+  overlay = mix(overlay, albedo, 0.6 * uOverlayAmount);
+
+  gl_FragColor = vec4(albedo + parallax + noise, 1.0);
+}
+"""
+	shader.set_shader_param("uAlbedo", shader)
+	shader.set_shader_param("uParallax", shader)
+	shader.set_shader_param("uNoise", shader)
+	shader.set_shader_param("uOverlay", shader)
+	shader.set_shader_param("uOverlayColor", Color(0.0))
+	shader.set_shader_param("uOverlayAmount", 0.0)
 
 func _draw() -> void:
 	# Base ground — color from biome + terrain
@@ -241,3 +268,16 @@ func get_has_vegetation() -> bool:
 
 func get_has_rune() -> bool:
 	return has_rune
+
+func get_shader_params() -> Dictionary:
+	return {
+		"biome": biome,
+		"terrain_type": terrain_type,
+		"terrain": terrain,
+		"explored_pct": explored_pct,
+		"has_rift": has_rift,
+		"rift_type": rift_type,
+		"has_rocks": has_rocks,
+		"has_vegetation": has_vegetation,
+		"has_rune": has_rune,
+	}
