@@ -15,4 +15,3 @@ func _preload():
 	material3d.resource_name = "material3d_mesh_torus"
 	material3d._preload()
 	return material3d
-}
