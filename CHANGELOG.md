@@ -1,5 +1,16 @@
 ---
 
+## [Unreleased — Step 12] — Bug fix round
+
+- **Step 12** — Resolved all compile errors in the procedural generation stack:
+  - `scripts/ProceduralMob.gd`: created from scratch with clean class definition and procedural creature rendering.
+  - `scripts/ProceduralTile.gd`: cleaned up to remove parse errors.
+  - `scripts/CombatEncounterBuilder.gd` (renamed from `EncounterBuilder.gd`): rewritten with proper `class_name` and `extends RefCounted`.
+  - `scripts/NPCManager.gd`: verified no parse errors.
+  - `scripts/DisplayManager.gd`: trailing comma fix reported.
+
+- **`CHANGELOG.md`** — added entry for Step 12.
+
 ## [Unreleased — Step 7] — ProceduralTile detail shaders
 
 - **Step 7** — `scripts/ProceduralTile.gd` detail shaders added:

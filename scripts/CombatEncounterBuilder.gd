@@ -111,7 +111,7 @@ static func generate_procedural_enemy(
 
 	# Generate procedural mob fallback for enemy spawns (mirrors NPCManager pattern)
 	var procedural_pool: Dictionary = {}
-	var proto = _build_procedural_mob(enemy)
+	var proto: Dictionary = _build_procedural_mob(enemy)
 	if proto.has("archetype") and proto.has("color"):
 		procedural_pool[enemy_id] = proto
 
@@ -263,25 +263,24 @@ static func _build_enemy_name(appearance: Dictionary, archetype_key: String, rng
 		return "%s '%s' %s%s" % [first, nick, last, title]
 	return "%s %s%s" % [first, last, title]
 
-static func _build_procedural_mob(enemy_data: Dictionary) -> ProceduralMob:
-	"""Build a procedural mob for enemies missing assets.
 
-	Instantiates a ProceduralMob with the enemy's archetype/color/size.
-	Called from generate_procedural_enemy after enemy data is built,
-	mirroring NPCManager's _build_procedural_mob.
+static func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
+	"""Build a procedural mob data dictionary for enemies missing assets.
+
+	Returns a proto dict with archetype and color (and optional size) for
+	ProceduralMob to consume. Called from generate_procedural_enemy after enemy data
+	is built, mirroring NPCManager's _build_procedural_mob.
 	"""
 	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
 	# Derive archetype from enemy_data's type/role hints
-	archetype = str(enemy_data.get("archetype", "quadruped")).to_lower()
+	var archetype: String = str(enemy_data.get("archetype", "quadruped")).to_lower()
 	if archetype not in archetypes:
 		archetype = str(enemy_data.get("role", "quadruped")).to_lower()
 		if archetype not in archetypes:
 			archetype = "quadruped"
 	# Color comes from enemy_data's color field or default
-	color = str(enemy_data.get("color", "rags"))
+	var color: String = str(enemy_data.get("color", "rags"))
 	# Size is optional; ProceduralMob uses 48 if not provided
-	size = float(enemy_data.get("size", 48))
-	proto = {"archetype": archetype, "color": color, "size": size}
-	mob = ProceduralMob.new()
-	mob.setup_for(proto)
-	return mob
+	var size: float = float(enemy_data.get("size", 48))
+	var proto: Dictionary = {"archetype": archetype, "color": color, "size": size}
+	return proto
