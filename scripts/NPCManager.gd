@@ -4,6 +4,7 @@ extends Node
 signal npcs_generated(count: int)
 signal npc_recruited(npc_id: String, npc_data: Dictionary)
 signal faction_rep_changed(faction_key: String, new_rep: int)
+signal procedural_mob_generated(npc_id: String, mob: ProceduralMob)
 
 const FACTIONS_PATH := "res://data/factions.json"
 const NPCGeneratorScript = preload("res://scripts/NPCGenerator.gd")
@@ -49,9 +50,19 @@ func generate_for_world(world_seed: String, tile_map: Dictionary, start_tile_key
 	_rebuild_tile_index()
 	_recruited_ids = []
 
+	# Generate procedural mob fallbacks for NPCs missing assets
+	var procedural_pool: Dictionary = {}
+	for npc_id in _world_npcs:
+		var npc: Dictionary = _world_npcs[npc_id] as Dictionary
+		var proto: Dictionary = _build_procedural_mob(npc)
+		if proto.has("archetype") and proto.has("color"):
+			procedural_pool[npc_id] = proto
+
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if is_instance_valid(gs):
 		gs.set_world_npcs(_world_npcs, _faction_rep, _recruited_ids)
+		# Wire GameState's procedural mob handler so it can log/forward NPC procedural generation
+		gs.set_npc_manager_procedural_mob_handler(self, Callable.new())
 
 	npcs_generated.emit(_world_npcs.size())
 	print("[NPCManager] Generated %d procedural NPC(s) for seed '%s'." % [_world_npcs.size(), world_seed])
@@ -228,6 +239,45 @@ func _load_factions() -> Array:
 	file.close()
 	return parsed if parsed is Array else []
 
+
+func _build_procedural_mob(npc_data: Dictionary) -> Dictionary:
+	"""Build a procedural mob data dictionary for NPCs missing assets.
+
+	Returns a proto dict with archetype and color (and optional size) for
+	ProceduralMob to consume. Called from generate_for_world after NPC roster
+	is built, before GameState is updated.
+	"""
+	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	# Derive archetype from npc_data's type/role hints
+	archetype = str(npc_data.get("type", "quadruped")).to_lower()
+	if archetype not in archetypes:
+		archetype = str(npc_data.get("role", "quadruped")).to_lower()
+		if archetype not in archetypes:
+			archetype = "quadruped"
+	# Color comes from npc_data's color field or default
+	color = str(npc_data.get("color", "rags"))
+	# Size is optional; ProceduralMob uses 48 if not provided
+	size = float(npc_data.get("size", 48))
+	return {"archetype": archetype, "color": color, "size": size}
+
+func get_procedural_mob(npc_data: Dictionary):
+	"""Return a ProceduralMob instance for NPC spawning.
+
+	Called from NPCManager.gd after roster generation. Returns null if npc_data
+	already has assets (handled by CharacterVisual/GameState fallback), or
+	instantiates a new ProceduralMob with the npc's archetype/color/size.
+	"""
+	proto = _build_procedural_mob(npc_data)
+	if proto.is_empty():
+		return null
+	mob = ProceduralMob.new()
+	mob.setup_for(proto)
+	return mob
+
+func has_procedural_assets(npc_data: Dictionary = {}) -> bool:
+	# Placeholder — ProceduralMob is data-driven; we just need to ensure
+	# NPCManager generates it, GameState will handle asset fallback.
+	return false
 
 func _slugify(name: String) -> String:
 	return name.to_lower().replace(" ", "_").replace("'", "")

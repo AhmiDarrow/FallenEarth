@@ -26,9 +26,10 @@ AppearanceManager="*res://scripts/AppearanceManager.gd"
 DisplayManager="*res://scripts/DisplayManager.gd"
 GameManager="*res://scripts/GameManager.gd"
 RiftRunner="*res://scripts/RiftRunner.gd"
-GraphicsManager="*res://scripts/GraphicsManager.gd"
+GraphicsManager="res://scripts/GraphicsManager.gd"
 NPCManager="*res://scripts/NPCManager.gd"
 MissionManager="*res://scripts/MissionManager.gd"
+CombatEncounterBuilder="*res://scripts/CombatEncounterBuilder.gd"
 
 [display]
 

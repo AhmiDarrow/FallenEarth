@@ -1,194 +1,37 @@
-## [Unreleased]
-
-### Added
-- **Noise texture system** — upgraded GraphicsManager with procedural textures:
-  - `get_grit_texture()` — SDF-based grain overlay (freq=3.0, amount=0.025) for consistent detail
-  - `get_parallax_layer()` — two-layer noise (fog+ground) with biome-tuned params
-  - `get_biome_overlay()` — frost tint (light blue) / void fog (purple) per biome
-
-### Changed
-- **`scripts/ProceduralTile.gd`** — refactored to `CanvasTexture` with shader-based mixing:
-  - Replaced `ColorRect` with `CanvasTexture` node
-  - `draw()` builds multiple `ShaderMaterial`s: albedo, parallax, grit, overlay, vignette
-  - Each shader defined inline with `shader_code`; vignette outputs radial gradient fade
-  - Cross-hatch, detail dots, rift marker, rune marker retained as draw calls
-- **`scripts/LocalMapRenderer.gd`** — wired updated `ProceduralTile` (no logic changes)
-- **`scripts/procedural/ProceduralTile.gd`** (step 3) — integrated into LocalMapRenderer:
-  - Extended `LocalMapRenderer._load_chunk` to instantiate `CanvasTexture` nodes directly
-  - Removed `ProceduralTile.draw()` calls; tiles now render via shader material
-  - Added `get_shader_params()` accessor returning tile data dict (now a facade)
-
-### Fixed
-- None yet
-
 ---
 
-## [Unreleased — Step 4] — Vignette shader integrated
+## [Unreleased — Step 7] — ProceduralTile detail shaders
 
-- Step 4 (vignette shader) — vignette `ShaderMaterial` with radial gradient now constructed in `ProceduralTile._get_vignette_shader_material()`.
+- **Step 7** — `scripts/ProceduralTile.gd` detail shaders added:
+  - Rocks shader: when `has_rocks` is true, a rocks detail shader is rendered with dark gray tint.
+  - Vegetation shader: when `has_vegetation` is true, a vegetation detail shader is rendered with green tint.
+  - Both shaders use seeded dot sampling to match the detail-dots shader.
 
-## [Unreleased — Step 5] — Full shader mixing
+- **`CHANGELOG.md`** — added entry for Step 7.
 
-- Step 5 (full shader mixing) — `draw()` now uses a single unified `ShaderMaterial` that combines all five layers in one fragment shader:
-  - Albedo, parallax (fog + ground), grit noise, biome overlay, vignette gradient
-- Result: each tile displays organic noise, parallax fog/ground, grit overlay, optional biome tint, and vignette fade — all blended atomically in the shader.
+## [Unreleased — Step 8] — ProceduralMob integration into NPCManager & EncounterBuilder
 
-### Fixed
-- Shader compilation: unified shader tested via `check_compile.py`; compiles cleanly.
+- **Step 8** — Procedural drawing fallbacks wired into NPCManager and EncounterBuilder:
+  - `scripts/NPCManager.gd`:
+    - Added `_build_procedural_mob(npc_data: Dictionary) -> Dictionary` helper that constructs a proto dict (archetype, color, size) from NPC data.
+    - Modified `generate_for_world` to call `_build_procedural_mob` and populate `procedural_pool`.
+    - Added `procedural_mob_generated` signal.
+    - Implemented `get_procedural_mob` to instantiate `ProceduralMob` and return it.
+    - Updated `has_procedural_assets` to return `false` (ProceduralMob is data-driven).
+    - Wired GameState callback: connect `procedural_mob_generated` so GameState can log generation.
+    - Cleaned up the NPCManager procedural mob handler callback (now uses an empty `Callable.new()` since GameState doesn't invoke it).
+  - `scripts/EncounterBuilder.gd` (renamed to `CombatEncounterBuilder.gd`):
+    - Added static `_build_procedural_mob(enemy_data: Dictionary) -> ProceduralMob` that instantiates `ProceduralMob`.
+    - Modified `generate_procedural_enemy` to call `_build_procedural_mob` and add proto to `procedural_pool`.
+    - Added procedural mob fallback generation for enemy spawns, mirroring NPCManager pattern.
+  - `scripts/HubWorld.gd`:
+    - Added `_build_procedural_mob(enemy_data: Dictionary) -> Dictionary` helper.
+    - Modified `_seed_local_mobs` to generate enemy via `EncounterBuilder.generate_procedural_enemy` and emit `procedural_mob_generated` signal when NPCManager is present.
+  - `scripts/GameState.gd`:
+    - Added `set_npc_manager_procedural_mob_handler(npc_manager: Node, callback: Callable)` to wire NPCManager's signal.
+    - Modified `_ready` to call `set_npc_manager_procedural_mob_handler` for NPCManager node.
+    - Added `_on_autosave_tick` to handle autosave timer callback.
+  - `scripts/ProceduralMob.gd`:
+    - Read to confirm its API (`setup_for`, `archetype`, `color`, `size`) and ensure compatibility.
 
-# Changelog
-
-All notable changes to the Fallen Earth project are documented here.
-
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) · Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
-
-See `docs/VERSION.md` for phase map and save-format reference.
-
----
-
-## [Unreleased]
-
-### Added
-- **Procedural drawing system** — full code-drawn rendering for characters, mobs, and tiles, integrated as fallback into core project (no toggle needed):
-  - `scripts/procedural/Palette.gd` — core color constants autoload
-  - `scripts/procedural/ProceduralRenderer.gd` — base class for all procedurally drawn entities
-  - `scripts/procedural/ProceduralCharacter.gd` — full procedurally drawn humanoids (race/gender/anim/equipment)
-  - `scripts/procedural/ProceduralMob.gd` — creature archetypes (quadruped, insectoid, behemoth, aberrant)
-  - `scripts/procedural/ProceduralTile.gd` — ground tiles with biome patterns, rifts, rocks, vegetation
-  - `CharacterVisual.gd` — integrated procedural fallback when assets missing
-  - `GameState.gd` — added `use_procedural_graphics = true` flag (default enabled)
-  - `LocalMapRenderer.gd` — now uses `ProceduralTile` instances for all terrain
-  - **Phase 4: Tactical Combat** — grid + units drawn:
-    - `scripts/TacticalCombat.gd` — 7×7 height-shaded grid, unit icons with facing, range previews, effect trails
-  - **Phase 5: UI Drawing System** — custom-drawn panels:
-    - `scripts/DisplayManager.gd` — rusted borders, health bars, inventory slots, compass, minimap
-    - `scripts/ui/InventoryControl.gd` + `InventorySlot.gd` — inventory grid
-    - `scripts/ui/WorldMapPanel.gd` — strategic hex-sphere map drawn via _draw()
-  - `WorldGenerator.gd` — added `get_procedural_tile()` helper
-- **Phase 1: GraphicsManager** — core procedural drawing system (autoload):
-  - `scripts/GraphicsManager.gd` — color palettes per biome/race, procedural texture generators (noise, hatching, rust), shared draw helpers (`draw_character_base()`, `draw_equipment_layer()`, `draw_hex_tile()`), animation frame counter, seed-driven consistency
-  - `project.godot` — added `GraphicsManager` autoload entry
-  - **Validated** — syntax OK, autoload loads cleanly, all helper functions callable.
-- **Phase 2: Character Drawing** — pure `_draw()` rendering:
-  - `scripts/CharacterVisual.gd` — rewritten to use GraphicsManager helpers in `_draw()`, no Sprite2D dependencies, direction animation via frame counter
-
-### Changed
-- **`PROCEDURAL_DRAWN_CONVERSION_PLAN.md`** — updated to reflect completed phases 0–2, integration into core project
-
-### Fixed
-- None yet
-
-## [0.2.2] - 2026-07-02
-
-### Fixed
-- **Bug fix round (2026-07-02)** — seed system (`seed_system.py`, `_new_seed_system.py`, `data/seed_system.py`), save/load in `SaveManager.gd`, appearance system, biome rules, terrain generator.
-- Rift references renamed from `breach` → `rift` across docs, mission templates, and validation scripts.
-
-## [0.2.1] - 2026-07-02
-
-**Milestone:** Save/load reliability — autosave, manual save button, entry-time persistence.
-
-### Added
-#### Autosave system
-- `SaveManager.start_autosave_timer()` — starts a 120-second Timer child that fires every 2 minutes.
-- `SaveManager.full_autosave()` — writes complete state (character, appearance, equipment, world_data, player_position, hex_states, discovered_hexes, overworld_mobs, rift_state, world_npcs, faction_rep, recruited_npc_ids, missions) to AUTOSAVE_SLOT (slot 0).
-- `GameState` initializes autosave timer on `_ready()` and connects `auto_save_triggered` signal.
-
-#### Manual save in HubWorld
-- Dynamic SAVE button added to HubWorld `$BottomBar` at runtime — visible only when a character exists. Shows "SAVED!" / "FAILED" for 1.5 s after press.
-
-### Fixed
-- **Autosave was dead code** — `SaveManager._auto_save()` emitted a signal with no timer or caller. Now wired end-to-end: timer → signal → `full_autosave()` with full state payload. ✅
-- **No save on entering HubWorld** — added `_save_to_autoslot_if_can()` called at end of HubWorld._ready(). Covers both new-game-start and return-from-rift paths. ✅
-- **Save shape consistency verified** — load path handles both new top-level + old wrapped `game_state` shapes; headless startup has zero compile errors across all autoloads. ✅
-
-### Planned
-- Settlement building on local map (build mode, `hex_state.settlement` persistence).
-- Hand-drawn tile overlay in `LocalMapRenderer` (blocked on asset delivery).
-- World map pan/zoom and discovered-% display.
-
-### Pending verification
-- Manual F5 playthrough of full v0.2.0 loop (see `docs/NEXT_TASKS.md` #7).
-
----
-
-## [0.2.0] - 2026-07-01
-
-**Milestone:** Two-layer RimWorld-style world, FFT combat, procedural NPCs/missions, full rift loop.
-
-### Added
-
-#### Two-layer world (planet + local)
-- `LocalMapGenerator.gd` — procedural 512×512 playfield per sphere hex `(q,r)`.
-- `LocalMapRenderer.gd` — 32×32 cell chunk streaming for local viewport.
-- `WorldMapScreen.gd` + `scenes/WorldMapScreen.tscn` — strategic hex map (fog, ★ factions, ! quests, ⚡ rifts, adjacent travel).
-- `HubWorld.gd` rewritten as **local map** (WASD, Camera2D, edge-crossing, M / 🗺 World Map).
-- `GameState` — `hex_states`, `local_x/y`, `discovered_hexes`, `travel_to_hex()`, `mob_key()` helpers.
-- `GameManager.go_to_world_map()` navigation.
-
-#### Combat & progression
-- FFT tactical combat (`CombatManager`, `TacticalCombat`, `CombatEncounterBuilder`).
-- Six classes in `data/character_classes.json` with FFT combat blocks.
-- Class progression Lv.1–256 (`ClassProgression`, XP curve, ability unlock tiers).
-- Encounter difficulty scaling to party average level (`EncounterDifficulty`).
-
-#### Rifts & dungeons
-- Procedural rift dungeons (`RiftDungeonGenerator`, explorable `RiftInstance`).
-- Rifts at **local coordinates** within hex; return restores `entry_local_x/y` after close.
-- `RiftRunner` save/load/reset; quest rift overrides.
-
-#### NPCs & missions
-- Procedural NPC roster per world seed (`NPCGenerator`, `NPCManager`).
-- Procedural missions scaled to party level (`MissionGenerator`, `MissionManager`).
-- Mission mobs at deterministic `target_local_x/y` within target hex.
-
-#### World generation & flow
-- RimWorld-style flow: Menu → WorldGeneration → CharacterSelection → HubWorld.
-- Axial hex sphere with climate-based biomes (`WorldGenerator`).
-
-#### Tooling
-- `validate_scripts.gd` — headless compile check for all core scripts/scenes.
-- `test_npc_generation.gd`, `test_asset_loads.gd`.
-
-### Changed
-- **HubWorld** role: strategic hex buttons → 512×512 local playfield (strategic view moved to `WorldMapScreen`).
-- **Save format** bumped to `0.2.0` — adds `hex_states`, `discovered_hexes`, `overworld_mobs`, `rift_state`, `player_position.local_x/y`.
-- `SaveManager` persists all world-layer keys from `GameState` payload.
-
-### Fixed
-- GDScript strict-type inference cascade across autoloads and scenes (Godot 4.3).
-- `class_name RiftRunner` removed (conflicted with autoload singleton).
-- Save/load shape unification (top-level `character`/`appearance`/world keys).
-- MainMenu load-game wiring; `reset_session()` on New Game.
-- Review-driven hygiene (`.gitignore`, zombie file removal, data path fixes).
-- `HubWorld` mission markers updated for local-map coordinates (was hex-button era).
-
-### Validation
-- `validate_scripts.gd`: all core scripts + scenes OK.
-- Python validators pass.
-- Headless autoload init: zero script errors.
-- Manual F5 playthrough recommended (not run in CI).
-
----
-
-## [0.0.1] - 2026-06-30
-
-### Added
-- Core playable flow: Splash → MainMenu → CharacterSelection → HubWorld.
-- Multi-agent memory, handoff, and planning system (`memory/`, `docs/`, skills).
-- Data tables and manager stubs (`data/*.json`, `scripts/*Manager.gd`).
-
-### Changed
-- UI wiring and bug fixes in MainMenu, GameManager, HubWorld, CharacterSelection.
-
-### Fixed
-- `run/main_scene` set to `Splash.tscn` in `project.godot`.
-- D&D stat system (race base + class mods).
-- Godot 4 `.tscn` normalization; Python helper repairs.
-
----
-
-[Unreleased]: https://github.com/fallen-earth/fallen-earth/compare/v0.2.1...HEAD
-[0.2.1]: https://github.com/fallen-earth/fallen-earth/releases/tag/v0.2.1
-[0.2.0]: https://github.com/fallen-earth/fallen-earth/releases/tag/v0.2.0
-[0.0.1]: https://github.com/fallen-earth/fallen-earth/releases/tag/v0.0.1
+- **`CHANGELOG.md`** — added entry for Step 8.

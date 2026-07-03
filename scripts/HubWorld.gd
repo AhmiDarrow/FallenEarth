@@ -627,9 +627,45 @@ func _seed_local_mobs() -> void:
 		var key := GameState.mob_key(_player_q, _player_r, lx, ly)
 		if not gs.get_overworld_mob(key).is_empty():
 			continue
-		gs.set_local_mob(_player_q, _player_r, lx, ly, EncounterBuilder.random_overworld_mob(biome))
+
+		# Generate enemy via EncounterBuilder (mirrors NPCManager pattern)
+		var difficulty: Dictionary = {"min_level": 2, "max_level": 6}
+		var enemy: Dictionary = EncounterBuilder.generate_procedural_enemy(
+			str(gs.get_world_data().get("seed", "")), _tile_map,
+			"%d,%d" % [_player_q, _player_r], difficulty, _npc_manager
+		)
+		if enemy.is_empty():
+			continue
+
+		# Build procedural mob fallback for enemy spawns
+		var proto = _build_procedural_mob(enemy)
+		if proto.has("archetype") and proto.has("color"):
+			# Emit procedural mob generated signal if NPCManager is present
+			if is_instance_valid(_npc_manager) and _npc_manager.has_method("procedural_mob_generated"):
+				_npc_manager.call("procedural_mob_generated", str(enemy.get("id", "")), proto)
+
+		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
 
 	print("[HubWorld] Local mobs seeded for region (%d,%d)" % [_player_q, _player_r])
+
+func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
+	"""Build a procedural mob data dictionary for enemies missing assets.
+
+	Returns a proto dict with archetype and color (and optional size) for
+	ProceduralMob to consume. Mirrors NPCManager's _build_procedural_mob.
+	"""
+	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	# Derive archetype from enemy_data's archetype/role hints
+	archetype = str(enemy_data.get("archetype", "quadruped")).to_lower()
+	if archetype not in archetypes:
+		archetype = str(enemy_data.get("role", "quadruped")).to_lower()
+		if archetype not in archetypes:
+			archetype = "quadruped"
+	# Color comes from enemy_data's color field or default
+	color = str(enemy_data.get("color", "rags"))
+	# Size is optional; ProceduralMob uses 48 if not provided
+	size = float(enemy_data.get("size", 48))
+	return {"archetype": archetype, "color": color, "size": size}
 
 
 func _start_local_combat(lx: int, ly: int, mob: Dictionary, mission: Dictionary = {}) -> void:

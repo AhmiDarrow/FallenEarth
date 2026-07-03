@@ -231,7 +231,7 @@ func draw_minimap(rect: Rect2, player_pos: Vector2, visible_tiles: Dictionary) -
 		var cy := (tile["y"] - 16) * rect.size.y / 32
 		var color := tile.get("biome", "Ash Wastes")
 		match color:
-			"Ash Wastes": color = Color(0.22, 0.20, 0.22),
+			"Ash Wastes": color = Color(0.22, 0.20, 0.22)
 			"Fungal Gardens": color = Color(0.18, 0.32, 0.20),
 			"Ruined City": color = Color(0.32, 0.28, 0.30),
 			"Void Shallows": color = Color(0.20, 0.18, 0.32),

@@ -57,6 +57,39 @@ func _ready() -> void:
 		sm.start_autosave_timer()
 		sm.auto_save_triggered.connect(_on_autosave_tick)
 
+	# Wire NPCManager's procedural_mob_generated signal
+	var nm: Node = get_node_or_null("/root/NPCManager")
+	if is_instance_valid(nm):
+		set_npc_manager_procedural_mob_handler(nm, func(nm_: Node, proto: Dictionary):
+			print("[GameState] Procedural mob generated from NPCManager: archetype=%s, color=%s" % [proto.get("archetype", ""), proto.get("color", "")]))
+
+func _on_autosave_tick() -> void:
+	if not is_instance_valid(SaveManager):
+		return
+	if _character_data.is_empty():
+		return
+	# Write full state to AUTOSAVE_SLOT via SaveManager
+	var hex_out: Dictionary = {}
+	for key in _hex_states:
+		var s: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
+		s.erase("terrain")
+		hex_out[key] = s
+	SaveManager.full_autosave(
+		_character_data.duplicate(true),
+		_appearance_data.duplicate(true) if _appearance_data else {},
+		_equipment_data.duplicate(true) if _equipment_data else {},
+		_world_data.duplicate(true) if _world_data else {},
+		{"q": _player_q, "r": _player_r, "local_x": _local_x, "local_y": _local_y},
+		hex_out,
+		_discovered_hexes.duplicate(),
+		_overworld_mobs.duplicate(true) if _overworld_mobs else {},
+		{},
+		_world_npcs.duplicate(true) if _world_npcs else {},
+		_faction_rep.duplicate(true) if _faction_rep else {},
+		_recruited_npc_ids.duplicate(),
+		_mission_save.duplicate(true) if _mission_save else {}
+	)
+
 
 # ===================================================================
 # -- Character creation --
@@ -396,7 +429,7 @@ func auto_save() -> bool:
 
 
 ## Internal callback from SaveManager.auto_save_triggered.
-func _on_autosave_tick() -> void:
+func _autosave_tick_handler() -> void:
 	if not is_instance_valid(SaveManager):
 		return
 	if _character_data.is_empty():
@@ -725,6 +758,18 @@ func set_world_npcs(
 		for entry in recruited_ids:
 			_recruited_npc_ids.append(str(entry))
 
+
+func set_npc_manager_procedural_mob_handler(npc_manager: Node, callback: Callable) -> void:
+	"""Wire NPCManager's procedural_mob_generated signal to a GameState callback.
+
+	Called in GameState._ready() so that when NPCManager creates procedural mobs
+	for NPCs missing assets, GameState can forward the data to any listener (e.g.
+	HubWorld) via a GameState signal. The callback is invoked with the NPCManager
+	instance and the proto dict (archetype/color/size).
+	"""
+	if not npc_manager or not npc_manager.has_method("procedural_mob_generated"):
+		return
+	npc_manager.connect("procedural_mob_generated", callback)
 
 func get_world_npcs() -> Dictionary:
 	return _world_npcs.duplicate(true)

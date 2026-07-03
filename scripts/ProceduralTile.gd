@@ -1,5 +1,4 @@
-class_name ProceduralTile
-extends CanvasTexture
+class_name ProceduralTile extends CanvasTexture
 
 ## Procedurally drawn tile for local map / overworld.
 ## Uses GraphicsManager helpers for consistent style, now with shader-based mixing.
@@ -76,7 +75,7 @@ func _build_shader_params() -> void:
 	shader_params["vignette"] = _get_vignette_shader_material()
 
 func _get_vignette_shader_material() -> ShaderMaterial:
-	var shader := Shader.new()
+	var shader := ShaderMaterial.new()
 	shader.shader_code = """
 shader_type canvas_texture;
 
@@ -89,13 +88,10 @@ void fragment() {
   gl_FragColor = base * vec4(1.0, 1.0, 1.0, alpha);
 }
 """
-	shader.set("parameters/uVignette/texture", null)
-	shader.set("parameters/uVignetteAmount/value", 1.0)
 	return shader
 
-
 func _get_albedo_shader_material() -> ShaderMaterial:
-	var shader := Shader.new()
+	var shader := ShaderMaterial.new()
 	shader.shader_code = """
 shader_type canvas_texture;
 
@@ -109,9 +105,8 @@ void fragment() {
 """
 	return shader
 
-
 func _get_parallax_shader_material() -> ShaderMaterial:
-	var shader := Shader.new()
+	var shader := ShaderMaterial.new()
 	shader.shader_code = """
 shader_type canvas_texture;
 
@@ -128,9 +123,8 @@ void fragment() {
 """
 	return shader
 
-
 func _get_grit_shader_material() -> ShaderMaterial:
-	var shader := Shader.new()
+	var shader := ShaderMaterial.new()
 	shader.shader_code = """
 shader_type canvas_texture;
 
@@ -143,9 +137,8 @@ void fragment() {
 """
 	return shader
 
-
 func _get_overlay_shader_material() -> ShaderMaterial:
-	var shader := Shader.new()
+	var shader := ShaderMaterial.new()
 	shader.shader_code = """
 shader_type canvas_texture;
 
@@ -161,9 +154,27 @@ void fragment() {
 """
 	return shader
 
+var albedo_mat: ShaderMaterial
+var parallax_mat: ShaderMaterial
+var grit_mat: ShaderMaterial
+var overlay_mat: ShaderMaterial
+var vignette_mat: ShaderMaterial
 
-func draw() -> void:
-	# Unified shader that mixes all layers
+func _ready() -> void:
+	# Pre-create shader materials
+	albedo_mat = _get_albedo_shader_material()
+	parallax_mat = _get_parallax_shader_material()
+	grit_mat = _get_grit_shader_material()
+	overlay_mat = _get_overlay_shader_material()
+	vignette_mat = _get_vignette_shader_material()
+
+var detail_chance := 0.3
+if biome == "Fungal Gardens": detail_chance = 0.5
+if biome == "Ruined City": detail_chance = 0.2
+if biome == "Void Shallows": detail_chance = 0.4
+
+func _draw() -> void:
+	# Base unified shader — no detail dots here; they're drawn by the detail shader.
 	var shader_mat := ShaderMaterial.new()
 	shader_mat.shader_code = """
 shader_type canvas_texture;
@@ -186,6 +197,15 @@ uniform float uOverlayAmount;
 uniform sampler2D uVignette;
 uniform float uVignetteAmount;
 
+vec2 uRiftPos;
+uniform vec4 uRiftColor;
+uniform float uRiftSize;
+
+vec2 uRuneCenter;
+uniform vec4 uRuneColor;
+uniform float uRuneDotSize;
+uniform float uRuneLineLen;
+
 void fragment() {
   vec3 albedo = texture(uAlbedo, uv).rgb;
   albedo = mix(albedo, vec3(0.0), 1.0 - uAlbedoAmount);
@@ -203,7 +223,32 @@ void fragment() {
   float alpha = smoothstep(0.0, 0.8, length(uv - vec2(0.5)));
   vignette = vignette * alpha;
 
-  gl_FragColor = vec4(albedo + parallax + noise + overlay + vignette, 1.0);
+  vec3 color = albedo + parallax + noise + overlay + vignette;
+
+  // Rift
+  if (uRiftPos.x >= 0.0 && uRiftPos.x <= 1.0 && uRiftPos.y >= 0.0 && uRiftPos.y <= 1.0) {
+    vec2 p = uv - uRiftPos;
+    float d = length(p) * uRiftSize;
+    if (d < 0.4) {
+      color = mix(color, uRiftColor.rgb, 0.15);
+    }
+  }
+
+  // Rune marker
+  if (uRuneCenter.x >= 0.0 && uRuneCenter.x <= 1.0 && uRuneCenter.y >= 0.0 && uRuneCenter.y <= 1.0) {
+    float dist = length(uv - uRuneCenter);
+    if (dist < uRuneDotSize) {
+      color += uRuneColor.rgb * 0.8;
+    }
+    vec2 dir = normalize(uv - uRuneCenter);
+    float line_len = clamp(uRuneLineLen - dist, 0.0, uRuneLineLen);
+    vec2 line_end = uRuneCenter + dir * line_len;
+    if (line_end.x >= 0.0 && line_end.x <= 1.0 && line_end.y >= 0.0 && line_end.y <= 1.0) {
+      color = mix(color, uRuneColor.rgb, 0.3);
+    }
+  }
+
+  gl_FragColor = vec4(color, 1.0);
 }
 """
 	shader_mat.set_shader_param("uAlbedo", albedo_mat)
@@ -219,50 +264,84 @@ void fragment() {
 	shader_mat.set_shader_param("uOverlayAmount", shader_params["overlay_amount"])
 	shader_mat.set_shader_param("uVignette", vignette_mat)
 	shader_mat.set_shader_param("uVignetteAmount", 1.0)
+	shader_mat.set_shader_param("uRiftPos", Vector2(0.0, 0.0))
+	shader_mat.set_shader_param("uRiftColor", Color(0.5, 0.4, 0.8, 0.15))
+	shader_mat.set_shader_param("uRiftSize", 2.0)
+	shader_mat.set_shader_param("uRuneCenter", Vector2(0.5, 0.35))
+	shader_mat.set_shader_param("uRuneColor", Color(0.9, 0.85, 0.7, 1.0))
+	shader_mat.set_shader_param("uRuneDotSize", 0.8)
+	shader_mat.set_shader_param("uRuneLineLen", 1.8)
 	shader_mat.render()
 
-	# Cross-hatch texture
-	if biome_palette.has("cross_hatch"):
-		var p := biome_palette["cross_hatch"]
-		var repeat := 3.0 / max(1.0, p.size())
-		var p2 := p * repeat
-		for y in range(4):
-			draw_line(Vector2(0, y * p2), Vector2(size.x, y * p2), p)
-		for x in range(4):
-			draw_line(Vector2(x * p2, 0), Vector2(x * p2, size.y), p)
+	# Detail-dots shader — only runs when we have a chance to draw dots.
+	if detail_chance > 0:
+		var detail_mat := ShaderMaterial.new()
+		detail_mat.shader_code = """
+shader_type canvas_texture;
 
-	# Detail dots (rocks, flora)
-	var detail_chance := 0.3
-	if biome == "Fungal Gardens": detail_chance = 0.5
-	if biome == "Ruined City": detail_chance = 0.2
-	if biome == "Void Shallows": detail_chance = 0.4
+uniform sampler2D uOverlay;
+uniform int uDetailChance;
 
-	for _ in range(20):
-		if randf() > detail_chance: continue
-		var pos := Vector2(randf() * size.x, randf() * size.y)
-		var dot_size := randf_range(0.5, 1.5)
-		var dot_color := biome_palette.get("detail", Color(0.1, 0.1, 0.1))
-		if biome == "Fungal Gardens": dot_color = Color(0.2, 0.3, 0.15)
-		if biome == "Ruined City": dot_color = Color(0.3, 0.25, 0.25)
-		if biome == "Void Shallows": dot_color = Color(0.15, 0.1, 0.25)
-		draw_circle(pos, dot_size, dot_color)
+void fragment() {
+  if (hash(uv.xy) % uDetailChance == 0) {
+    float dot_size = rand() * 1.5 + 0.5;
+    vec4 dot_color = texture(uOverlay, uv);
+    dot_color.rgb = mix(dot_color.rgb, vec3(0.1), rand());
+    gl_FragColor = dot_color;
+  } else {
+    gl_FragColor = vec4(0.0);
+  }
+}
+"""
+		detail_mat.set_shader_param("uOverlay", overlay_mat)
+		detail_mat.set_shader_param("uDetailChance", 20)
+		detail_mat.render()
 
-	# Rift visual
-	if has_rift:
-		var rift_color := Color(0.5, 0.4, 0.8, 0.15)
-		if rift_type == 1: rift_color = Color(0.8, 0.2, 0.8, 0.15)  # Void
-		if rift_type == 2: rift_color = Color(0.2, 0.8, 0.6, 0.15)  # Life
-		draw_polygon([
-			pos - Vector2(3, 3),
-			pos + Vector2(3, -3),
-			pos + Vector2(3, 3),
-			pos - Vector2(-3, -3)
-		], rift_color, 2.0, rift_color)
+	# Rocks shader — only when has_rocks is true.
+	if has_rocks:
+		var rocks_mat := ShaderMaterial.new()
+		rocks_mat.shader_code = """
+shader_type canvas_texture;
 
-	# Rune marker
-	if has_rune:
-		var rune_center := Vector2(size.x * 0.5, size.y * 0.35)
-		var rune_color := biome_palette.get("rune", Color(0.9, 0.85, 0.7))
-		draw_circle(rune_center, 0.8, rune_color)
-		draw_line(rune_center - Vector2(1.8, 0), rune_center + Vector2(1.8, 0), rune_color)
-		draw_line(rune_center - Vector2(0, 1.8), rune_center + Vector2(0, 1.8), rune_color)
+uniform sampler2D uOverlay;
+uniform int uDetailChance;
+
+void fragment() {
+  if (hash(uv.xy) % uDetailChance == 0) {
+    float dot_size = rand() * 0.8 + 0.2;
+    vec4 dot_color = texture(uOverlay, uv);
+    dot_color.rgb = mix(dot_color.rgb, vec3(0.12, 0.10, 0.08), rand());
+    gl_FragColor = dot_color;
+  } else {
+    gl_FragColor = vec4(0.0);
+  }
+}
+"""
+		rocks_mat.set_shader_param("uOverlay", overlay_mat)
+		rocks_mat.set_shader_param("uDetailChance", 20)
+		rocks_mat.render()
+
+	# Vegetation shader — only when has_vegetation is true.
+	if has_vegetation:
+		var vegetation_mat := ShaderMaterial.new()
+		vegetation_mat.shader_code = """
+shader_type canvas_texture;
+
+uniform sampler2D uOverlay;
+uniform int uDetailChance;
+
+void fragment() {
+  if (hash(uv.xy) % uDetailChance == 0) {
+    float dot_size = rand() * 1.2 + 0.2;
+    vec4 dot_color = texture(uOverlay, uv);
+    vec3 veg_base = vec3(0.15, 0.18, 0.08);
+    dot_color.rgb = mix(dot_color.rgb, veg_base, rand());
+    gl_FragColor = dot_color;
+  } else {
+    gl_FragColor = vec4(0.0);
+  }
+}
+"""
+		vegetation_mat.set_shader_param("uOverlay", overlay_mat)
+		vegetation_mat.set_shader_param("uDetailChance", 20)
+		vegetation_mat.render()

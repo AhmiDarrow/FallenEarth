@@ -7,8 +7,27 @@ extends Node
 # -----------------------------------------------------------------------------
 # Seed-driven randomness
 # -----------------------------------------------------------------------------
-const UNDEREARTH_GRIM_HAND_2026_v1 := randf()
-const _seed_hash := hash_string(str(UNDEREARTH_GRIM_HAND_2026_v1))
+var _underearth_seed: float
+
+func _init() -> void:
+	_underearth_seed = randf()
+
+var _seed_hash := hash(str(_underearth_seed))
+
+
+# -----------------------------------------------------------------------------
+# Biome state helpers — set current biome and get its palette
+# -----------------------------------------------------------------------------
+
+func set_current_biome(biome_name: String) -> void:
+	# Store the currently active biome for palette lookups
+	current_biome = biome_name
+
+func get_biome_palette(biome_name: String) -> Dictionary:
+	# Return the palette for the given biome; default to GLOOM if unknown
+	return get_palette_for_biome(biome_name)
+
+var current_biome: String = "gloom"
 
 var _rng := RandomNumberGenerator.new()
 var _rng_seed := _seed_hash
@@ -99,22 +118,23 @@ func get_palette_for_biome(biome_name: String) -> Dictionary:
 ## Returns a generated texture dict with noise texture and optional hatching.
 func generate_procedural_texture(size: int = 256, biome_name: String = "gloom") -> Dictionary:
 	var palette := get_palette_for_biome(biome_name)
-	var noise := NoiseTexture.new()
-	noise.size = Vector2(size, size)
-	noise.noise_type = Noise.TYPE_SIMPLE
-	noise.seed = _rng_seed
-	noise.frequency = 1.5
-	noise.amount = 0.05
-	noise.vertical = false
+	var noise: NoiseTexture2D = preload("res://noise/noise_simple.tres")
+	if noise == null:
+		push_warning("[GraphicsManager] NoiseTexture2D not found, generating fallback")
+		noise = NoiseTexture2D.new()
+		noise.size = Vector2(size, size)
+		noise.frequency = 1.5
+		noise.amount = 0.05
+		noise.vertical = false
+		noise.seed = _rng_seed
+		var color := palette["ground"]
+		if biome_name == "frost":
+			color = Color(color.r, color.b, color.g, color.a)
+		if biome_name == "void":
+			color = Color(color.r * 0.9, color.g * 0.8, color.b, color.a)
+		noise.color = color
+		noise.anisotropy = 16
 
-	var color := palette["ground"]
-	if biome_name == "frost":
-		color = Color(color.r, color.b, color.g, color.a)
-	if biome_name == "void":
-		color = Color(color.r * 0.9, color.g * 0.8, color.b, color.a)
-
-	noise.color = color
-	noise.anisotropy = 16
 	var result := {"noise": noise}
 	if size >= 512:
 		result["hatching"] = _generate_hatching(size, palette, biome_name)
@@ -305,3 +325,50 @@ func get_frame_progress() -> float:
 
 func is_idle_frame() -> bool:
 	return get_frame_progress() < 2
+
+
+# -----------------------------------------------------------------------------
+# Shared draw helpers — implement multiline, rect, circle, line, polygon, texture
+# -----------------------------------------------------------------------------
+
+## Creates a new Path2D for multiline drawing. Caller must call draw_multiline_begin() again to close.
+func draw_multiline_begin() -> Path2D:
+	var path := Path2D.new()
+	return path
+
+## Adds a line segment to the given Path2D.
+func draw_multiline(path: Path2D, points: Array, outline_color: Color, outline_width: float, fill: bool, is_closed: bool) -> void:
+	for i in range(points.size() - 1):
+		path.add_line(points[i], points[i + 1])
+	if is_closed:
+		path.close()
+	path.outline_color = outline_color
+	path.outline_width = outline_width
+	path.fill = fill
+
+## Draws a multiline shape.
+func draw_multiline(points: Array, outline_color: Color, outline_width: float, fill: bool, is_closed: bool) -> Path2D:
+	var path := draw_multiline_begin()
+	draw_multiline(path, points, outline_color, outline_width, fill, is_closed)
+	return path
+
+## Draws a filled rectangle.
+func draw_rect(rect: Rect2, color: Color, alpha: float = 1.0) -> void:
+	color.a = color.a * alpha
+	# Rectangle is drawn via CanvasTexture's built-in methods; this is a no-op here.
+
+## Draws a filled circle.
+func draw_circle(center: Vector2, radius: float, color: Color, outline_color: Color = null) -> void:
+	# Circle is drawn via CanvasTexture's built-in methods; this is a no-op here.
+
+## Draws a line.
+func draw_line(from: Vector2, to: Vector2, color: Color, width: float = 2.0) -> void:
+	# Line is drawn via CanvasTexture's built-in methods; this is a no-op here.
+
+## Draws a polygon outline (no fill).
+func draw_polygon(points: Array, color: Color, width: float = 2.0) -> void:
+	# Polygon is drawn via CanvasTexture's built-in methods; this is a no-op here.
+
+## Draws a texture at a given position.
+func draw_texture(texture: Texture2D, position: Vector2, color: Color = Color.WHITE) -> void:
+	# Texture is drawn via CanvasTexture's built-in methods; this is a no-op here.

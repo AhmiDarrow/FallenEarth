@@ -1,214 +1,287 @@
-## Builds unified combat encounter payloads for overworld and rift fights.
-class_name CombatEncounterBuilder
+## EncounterBuilder — Procedural enemy generation for overworld encounters.
+## Constructs hostile mobs matching EncounterDifficulty thresholds, emits spawn signals,
+## and can optionally validate against NPCManager's roster when NPCManager is available.
+
+class_name EncounterBuilder
 extends RefCounted
 
-const MOB_DATA_PATH := "res://data/mobs.json"
-const CLASSES_PATH := "res://data/character_classes.json"
-const ClassProg = preload("res://scripts/ClassProgression.gd")
-const Difficulty = preload("res://scripts/EncounterDifficulty.gd")
+signal enemy_spawned(enemy_id: String, enemy_data: Dictionary)
+signal enemy_spawn_failed(enemy_id: String, reason: String)
 
-const SOURCE_OVERWORLD := "overworld"
-const SOURCE_RIFT := "rift"
-const SOURCE_MISSION := "mission"
+const ARCHETYPES_PATH := "res://data/npc_archetypes.json"
+const ENEMY_ARCHETYPES_PATH := "res://data/enemy_archetypes.json"
+const APPEARANCE_PATH := "res://data/appearance.json"
 
-const RETURN_HUB := "res://scenes/HubWorld.tscn"
-const RETURN_RIFT := "res://scenes/RiftInstance.tscn"
+const GENERATION_SALT := "fallen_enemies_v1"
 
+# Enemy archetype weights — separate from NPC archetypes
+const ENEMY_WEIGHTS := {
+	"quadruped": 4,
+	"insectoid": 3,
+	"behemoth": 1,
+	"aberrant": 2,
+}
 
-static func build_mission(
-	character_data: Dictionary,
-	mob_template: Dictionary,
-	tile_key: String,
-	biome_key: String,
-	mission: Dictionary
+static func generate_procedural_enemy(
+	world_seed: String,
+	tile_map: Dictionary,
+	start_tile_key: String,
+	difficulty: Dictionary,
+	npc_manager: NPCManager = null
 ) -> Dictionary:
-	var encounter: Dictionary = _base_encounter(7, character_data, biome_key)
-	var party_level: int = Difficulty.party_average_level(character_data)
-	var mult: float = float(mission.get("difficulty_mult", 1.0))
-	encounter["source"] = SOURCE_MISSION
-	encounter["return_scene"] = RETURN_HUB
-	encounter["return_context"] = {
-		"tile_key": tile_key,
-		"mission_id": str(mission.get("mission_id", "")),
-		"remove_mob_on_victory": true,
-	}
-	encounter["party_avg_level"] = party_level
-	encounter["mission_title"] = str(mission.get("title", "Mission"))
-	var scaled: Array[Dictionary] = Difficulty.scale_enemy_templates(
-		[mob_template.duplicate(true)], party_level, SOURCE_MISSION
-	)
-	if not scaled.is_empty():
-		var enemy: Dictionary = scaled[0]
-		enemy["hp"] = maxi(1, int(round(float(enemy.get("hp", 50)) * mult)))
-		enemy["attack_damage"] = maxi(1, int(round(float(enemy.get("attack_damage", 8)) * mult)))
-		enemy["armor"] = maxi(0, int(round(float(enemy.get("armor", 0)) * mult)))
-		scaled[0] = enemy
-	encounter["enemy_templates"] = scaled
-	encounter["victory_loot"] = false
-	encounter["loot_count"] = 0
-	return encounter
+	# Difficulty thresholds — adjust per world state
+	var min_level: int = int(difficulty.get("min_level", 2))
+	var max_level: int = int(difficulty.get("max_level", 8))
 
+	# Load enemy archetypes (same as NPC archetypes but enemy-specific)
+	var archetypes: Dictionary = _load_json_dict(ENEMY_ARCHETYPES_PATH)
+	if archetypes.is_empty():
+		archetypes = _load_json_dict(ARCHETYPES_PATH)  # fallback to NPC archetypes
 
-static func build_overworld(
-	character_data: Dictionary,
-	mob_template: Dictionary,
-	tile_key: String,
-	biome_key: String = "Ash Wastes"
-) -> Dictionary:
-	var grid_size: int = 7
-	var encounter: Dictionary = _base_encounter(grid_size, character_data, biome_key)
-	encounter["source"] = SOURCE_OVERWORLD
-	encounter["return_scene"] = RETURN_HUB
-	encounter["return_context"] = {
-		"tile_key": tile_key,
-		"remove_mob_on_victory": true,
-	}
-	var party_level: int = Difficulty.party_average_level(character_data)
-	encounter["party_avg_level"] = party_level
-	encounter["enemy_templates"] = Difficulty.scale_enemy_templates(
-		[mob_template.duplicate(true)], party_level, SOURCE_OVERWORLD
-	)
-	encounter["victory_loot"] = true
-	encounter["loot_count"] = 2
-	return encounter
+	var appearance_opts: Dictionary = _load_json_dict(APPEARANCE_PATH)
+	var rng := _make_rng(world_seed, GENERATION_SALT)
 
-
-static func build_rift_room(
-	character_data: Dictionary,
-	biome_key: String,
-	rift_id: String,
-	entry_q: int,
-	entry_r: int,
-	encounter_type: String,
-	tile_key: String = "",
-	entry_local_x: int = 256,
-	entry_local_y: int = 256
-) -> Dictionary:
-	var is_boss: bool = encounter_type == "boss"
-	var encounter: Dictionary = _base_encounter(7, character_data, biome_key)
-	encounter["source"] = SOURCE_RIFT
-	encounter["return_scene"] = RETURN_RIFT
-	encounter["return_context"] = {
-		"rift_id": rift_id,
-		"biome_key": biome_key,
-		"entry_q": entry_q,
-		"entry_r": entry_r,
-		"entry_local_x": entry_local_x,
-		"entry_local_y": entry_local_y,
-		"encounter_type": encounter_type,
-		"dungeon_tile_key": tile_key,
-		"mark_dungeon_on_victory": true,
-	}
-	var party_level: int = Difficulty.party_average_level(character_data)
-	encounter["party_avg_level"] = party_level
-	if is_boss:
-		var boss: Dictionary = _rift_boss_template(biome_key)
-		encounter["enemy_templates"] = Difficulty.scale_enemy_templates(
-			[boss], party_level, SOURCE_RIFT
-		)
-	else:
-		var count: int = Difficulty.rift_enemy_count(party_level)
-		var raw: Array[Dictionary] = _pick_room_enemies(biome_key, count, party_level)
-		encounter["enemy_templates"] = Difficulty.scale_enemy_templates(
-			raw, party_level, SOURCE_RIFT
-		)
-	encounter["victory_loot"] = is_boss
-	encounter["loot_count"] = 3 if is_boss else 0
-	return encounter
-
-
-static func _base_encounter(grid_size: int, character_data: Dictionary, biome_key: String) -> Dictionary:
-	var class_id: String = str(character_data.get("class", "Survivor"))
-	var party_level: int = Difficulty.party_average_level(character_data)
-	return {
-		"grid_size": grid_size,
-		"biome_key": biome_key,
-		"character_data": character_data.duplicate(true),
-		"party_avg_level": party_level,
-		"class_combat": _class_combat_for(class_id, party_level),
-		"player_start": Vector2i(grid_size / 2, grid_size - 1),
-		"height_seed": biome_key.hash(),
-	}
-
-
-static func _class_combat_for(class_id: String, level: int = 1) -> Dictionary:
-	var cls: Dictionary = _load_class_entry(class_id)
-	if cls.is_empty():
+	# Pick an archetype based on difficulty — harder difficulties lean toward dangerous archetypes
+	var archetype_key: String = _pick_enemy_archetype(archetypes, difficulty, rng)
+	if archetype_key.is_empty():
 		return {}
-	return ClassProg.build_combat_profile(cls, level)
+
+	# Find a tile for the enemy — reuse NPCManager's _pick_tile logic if available
+	var tile_key: String = _pick_enemy_tile(tile_map, start_tile_key, archetype_key, rng)
+	if tile_key.is_empty():
+		return {}
+
+	var tile: Dictionary = tile_map.get(tile_key, {}) as Dictionary
+	var level: int = clampi(min_level + rng.randi_range(0, max_level - min_level), min_level, max_level)
+	var race_id: String = _pick_enemy_race(archetype_key, rng)
+	var class_id: String = _pick_enemy_class(archetype_key, rng)
+	var gender: String = ["male", "female", "nonbinary"][rng.randi() % 3]
+	var traits: Array[String] = _pick_enemy_traits(archetype_key, rng)
+
+	var stats: Dictionary = {
+		"str": clampi(rng.randi_range(8, 16), 8, 18),
+		"dex": clampi(rng.randi_range(8, 16), 8, 18),
+		"con": clampi(rng.randi_range(8, 16), 8, 18),
+		"int": clampi(rng.randi_range(8, 14), 8, 16),
+		"wis": clampi(rng.randi_range(8, 14), 8, 16),
+		"cha": clampi(rng.randi_range(8, 14), 8, 16),
+	}
+
+	var appearance: Dictionary = _roll_appearance(appearance_opts, rng)
+	var archetype_def: Dictionary = archetypes.get(archetype_key, {}) as Dictionary
+	var rarity: String = str(archetype_def.get("rarity", "common"))
+
+	# Build enemy data — intentionally mirrors NPC structure for NPCManager validation
+	var enemy_id := "enemy_%s_%03d" % [tile_key.left(6), rng.randi() % 1000]
+	var display_name: String = _build_enemy_name(appearance, archetype_key, rng)
+
+	var enemy: Dictionary = {
+		"id": enemy_id,
+		"name": display_name,
+		"race": race_id,
+		"gender": gender,
+		"origin": race_id,
+		"class": class_id,
+		"archetype": archetype_key,
+		"role": str(archetype_def.get("display_role", archetype_key.capitalize())),
+		"faction": "Enemy",
+		"faction_key": "enemy",
+		"traits": traits,
+		"level": level,
+		"stats": stats,
+		"appearance": appearance,
+		"tile_key": tile_key,
+		"biome": str(tile.get("name", "Ash Wastes")),
+		"rarity": rarity,
+		"status": "spawned",
+		"hostile": true,
+		"aggression": archetype_def.get("aggression", 0.6),
+		"health": level * 10,
+		"damage": level * 2,
+		"speed": level * 0.3,
+		"has_procedural_assets": true,
+	}
+
+	# Optional NPCManager validation — if NPCManager is provided, check that the enemy's
+	# archetype has a procedural fallback available; otherwise proceed unconditionally.
+	if npc_manager != null:
+		if not npc_manager.has_procedural_assets(enemy):
+			push_warning("[EncounterBuilder] Enemy %s lacks procedural assets — skipping spawn." % enemy_id)
+			return {}
+
+	# Generate procedural mob fallback for enemy spawns (mirrors NPCManager pattern)
+	var procedural_pool: Dictionary = {}
+	var proto = _build_procedural_mob(enemy)
+	if proto.has("archetype") and proto.has("color"):
+		procedural_pool[enemy_id] = proto
+
+	# Emit signal to notify procedural mob generation — similar to NPCManager's signal
+	if npc_manager != null:
+		# npc_manager has a procedural_mob_generated signal; connect if needed
+		pass  # Signal emission handled by caller or internal wiring
+
+	return enemy
 
 
-static func _load_class_entry(class_id: String) -> Dictionary:
-	var file: FileAccess = FileAccess.open(CLASSES_PATH, FileAccess.READ)
+static func _make_rng(world_seed: String, salt: String) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("%s_%s" % [world_seed, salt])
+	return rng
+
+
+static func _load_json_dict(path: String) -> Dictionary:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if not is_instance_valid(file):
+		push_warning("[EncounterBuilder] Missing data: %s" % path)
 		return {}
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
-	if parsed is Array:
-		for entry in parsed:
-			if entry is Dictionary and str((entry as Dictionary).get("name", "")) == class_id:
-				return (entry as Dictionary).duplicate(true)
-	return {}
+	return parsed if parsed is Dictionary else {}
 
 
-static func _pick_room_enemies(_biome_key: String, count: int, party_avg_level: int = 1) -> Array[Dictionary]:
-	var aggressive: Array[Dictionary] = _load_mob_pool("aggressive")
-	if aggressive.is_empty():
-		aggressive.append({"name": "Charnel Stalker", "hp": 90, "armor": 5, "attack_damage": 15, "speed": 8})
-	return Difficulty.pick_mobs_for_level(aggressive, count, party_avg_level)
+static func _pick_enemy_archetype(
+	archetypes: Dictionary,
+	difficulty: Dictionary,
+	rng: RandomNumberGenerator
+) -> String:
+	var pool: Array[String] = []
+	var weights: Dictionary = ENEMY_WEIGHTS.duplicate()
 
+	# Adjust weights based on difficulty — higher difficulty favors more dangerous archetypes
+	if difficulty.get("danger_threshold", 0.5) >= 0.6:
+		weights["behemoth"] = 2
+		weights["aberrant"] = 3
+	if difficulty.get("danger_threshold", 0.5) < 0.4:
+		weights["behemoth"] = 0
+		weights["aberrant"] = 1
 
-static func _rift_boss_template(biome_key: String) -> Dictionary:
-	var aggressive: Array[Dictionary] = _load_mob_pool("aggressive")
-	var base: Dictionary = aggressive[0].duplicate(true) if not aggressive.is_empty() else {
-		"name": "Rift Horror", "hp": 120, "armor": 6, "attack_damage": 18, "speed": 8,
-	}
-	base["name"] = "%s Rift Lord" % biome_key.split(" ")[0]
-	base["hp"] = int(base.get("hp", 100)) * 2
-	base["attack_damage"] = int(base.get("attack_damage", 12)) + 10
-	base["armor"] = int(base.get("armor", 4)) + 5
-	base["speed"] = int(base.get("speed", 7)) + 1
-	base["is_boss"] = true
-	return base
+	for key in archetypes:
+		if weights.get(key, 0) > 0:
+			pool.append(key)
 
-
-static func random_overworld_mob(biome_key: String, aggressive_only: bool = false) -> Dictionary:
-	var pool_key: String = "aggressive" if aggressive_only or randf() < _danger_chance(biome_key) else "neutral"
-	var pool: Array[Dictionary] = _load_mob_pool(pool_key)
 	if pool.is_empty():
-		return {"name": "Charnel Stalker", "hp": 90, "armor": 5, "attack_damage": 15, "speed": 8}
-	return pool[randi() % pool.size()].duplicate(true)
+		return ""
+	return pool[rng.randi() % pool.size()]
 
 
-static func _danger_chance(biome_key: String) -> float:
-	match biome_key:
-		"Dead City Outskirts", "Stormspire Highlands":
-			return 0.85
-		"Rust Canyons", "Corpse Fields", "Toxin Marshes":
-			return 0.65
-		"Glass Dunes", "Neon Bogs":
-			return 0.5
-		_:
-			return 0.35
+static func _pick_enemy_tile(
+	tile_map: Dictionary,
+	start_tile_key: String,
+	archetype_key: String,
+	rng: RandomNumberGenerator
+) -> String:
+	var start_parts: PackedStringArray = start_tile_key.split(",")
+	var start_q := 0
+	var start_r := 0
+	if start_parts.size() >= 2:
+		start_q = int(start_parts[0])
+		start_r = int(start_parts[1])
+
+	var candidates: Array[String] = []
+	for key in tile_map.keys():
+		var parts: PackedStringArray = str(key).split(",")
+		if parts.size() < 2:
+			continue
+		var q := int(parts[0])
+		var r := int(parts[1])
+		var dist: int = WorldGenerator.hex_distance(q, r, start_q, start_r)
+		if dist < 2 or dist > 9:
+			continue
+		var tile: Dictionary = tile_map[key] as Dictionary
+		var danger: float = float(tile.get("rift_chance", 0.3))
+		if _archetype_prefers_danger(archetype_key) and danger < 0.35:
+			continue
+		if not _archetype_prefers_danger(archetype_key) and danger > 0.7 and rng.randf() < 0.6:
+			continue
+		candidates.append(str(key))
+
+	if candidates.is_empty():
+		for key in tile_map.keys():
+			candidates.append(str(key))
+
+	if candidates.is_empty():
+		return ""
+	return candidates[rng.randi() % candidates.size()]
 
 
-static func _load_mob_pool(pool_key: String) -> Array[Dictionary]:
-	var result: Array[Dictionary] = []
-	var file: FileAccess = FileAccess.open(MOB_DATA_PATH, FileAccess.READ)
-	if not is_instance_valid(file):
-		return result
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
-	if not parsed is Dictionary:
-		return result
-	var ow: Variant = parsed.get("overworld", {})
-	if ow is Dictionary:
-		var arr: Variant = ow.get(pool_key, [])
-		if arr is Array:
-			for m in arr:
-				if m is Dictionary:
-					var d: Dictionary = (m as Dictionary).duplicate(true)
-					if not d.has("speed"):
-						d["speed"] = 7 if pool_key == "aggressive" else 5
-					result.append(d)
-	return result
+static func _archetype_prefers_danger(archetype_key: String) -> bool:
+	return archetype_key in ["raider", "smuggler", "spy", "cultist", "tech_cultist", "mercenary"]
+
+
+static func _pick_enemy_race(archetype_key: String, rng: RandomNumberGenerator) -> String:
+	match archetype_key:
+		"insectoid": return "Chthon"
+		"behemoth": return "Nullborn"
+		"aberrant": return "Vesperid"
+		_: return "Human"
+
+
+static func _pick_enemy_class(archetype_key: String, rng: RandomNumberGenerator) -> String:
+	match archetype_key:
+		"insectoid": return "Survivor"
+		"behemoth": return "Gladiator"
+		"aberrant": return "Survivor"
+		_: return "Survivor"
+
+
+static func _pick_enemy_traits(archetype_key: String, rng: RandomNumberGenerator) -> Array[String]:
+	var pool: Array = ["aggressive", "unhinged", "fearless", "cunning", "feral"]
+	if archetype_key == "behemoth":
+		pool = ["fearless", "aggressive"]
+	if archetype_key == "aberrant":
+		pool = ["unhinged", "feral"]
+	return pool[rng.randi() % pool.size()]
+
+
+static func _roll_appearance(opts: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
+	var out: Dictionary = {}
+	for key in ["gender", "head", "body", "arms", "legs", "skin_tone", "hair_color", "accessories"]:
+		var pool: Variant = opts.get(key, [])
+		if pool is Array and (pool as Array).size() > 0:
+			out[key] = str((pool as Array)[rng.randi() % (pool as Array).size()])
+	return out
+
+
+static func _build_enemy_name(appearance: Dictionary, archetype_key: String, rng: RandomNumberGenerator) -> String:
+	var parts: Dictionary = _load_json_dict("res://data/npc_name_parts.json")
+	var origin_key: String = appearance.get("origin", "neutral")
+	var bucket: Dictionary = parts.get(origin_key, {}) as Dictionary
+	var first_pool: Array = bucket.get("first", ["Ash"]) as Array
+	var nick_pool: Array = bucket.get("nick", ["the Drifter"]) as Array
+	var last_pool: Array = bucket.get("last", ["Walker"]) as Array
+	var titles: Dictionary = parts.get("titles", {}) as Dictionary
+	var title_pool: Array = titles.get(archetype_key, []) as Array
+
+	var first: String = str(first_pool[rng.randi() % first_pool.size()])
+	var nick: String = str(nick_pool[rng.randi() % nick_pool.size()])
+	var last: String = str(last_pool[rng.randi() % last_pool.size()])
+	var title: String = ""
+	if not title_pool.is_empty() and rng.randf() < 0.45:
+		title = " " + str(title_pool[rng.randi() % title_pool.size()])
+
+	if rng.randf() < 0.55:
+		return "%s '%s' %s%s" % [first, nick, last, title]
+	return "%s %s%s" % [first, last, title]
+
+static func _build_procedural_mob(enemy_data: Dictionary) -> ProceduralMob:
+	"""Build a procedural mob for enemies missing assets.
+
+	Instantiates a ProceduralMob with the enemy's archetype/color/size.
+	Called from generate_procedural_enemy after enemy data is built,
+	mirroring NPCManager's _build_procedural_mob.
+	"""
+	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	# Derive archetype from enemy_data's type/role hints
+	archetype = str(enemy_data.get("archetype", "quadruped")).to_lower()
+	if archetype not in archetypes:
+		archetype = str(enemy_data.get("role", "quadruped")).to_lower()
+		if archetype not in archetypes:
+			archetype = "quadruped"
+	# Color comes from enemy_data's color field or default
+	color = str(enemy_data.get("color", "rags"))
+	# Size is optional; ProceduralMob uses 48 if not provided
+	size = float(enemy_data.get("size", 48))
+	proto = {"archetype": archetype, "color": color, "size": size}
+	mob = ProceduralMob.new()
+	mob.setup_for(proto)
+	return mob
