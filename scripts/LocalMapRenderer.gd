@@ -81,17 +81,13 @@ func _load_chunk(cx: int, cy: int) -> void:
 			var local_key := LocalMapGen.local_key(x, y)
 			var tile: Dictionary = _map_data.get(local_key, {}) as Dictionary
 			var tile_key := "%d,%d" % [terrain, tile.get("terrain_type", 0)]
-			var tile_data: Dictionary = GameState.get_hex_state(x, y)
 			var pt: ProceduralTile = ProceduralTile.new()
 			pt.size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
-			pt.setup_for(tile_data)
-			# Wrap because ProceduralTile extends CanvasTexture (not Node). Store data on a Node2D child for now.
-			var procedural_tile := Node2D.new()
-			procedural_tile.name = "Tile_%s" % tile_key
-			procedural_tile.set_meta("procedural_tile", pt)
-			procedural_tile.set_meta("tile_data", tile_data)
-			chunk_root.add_child(procedural_tile)
-			cells[local_key] = procedural_tile
+			pt.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
+			pt.setup_for(tile)
+			pt.name = "Tile_%s" % tile_key
+			chunk_root.add_child(pt)
+			cells[local_key] = pt
 
 	_loaded_chunks[ck] = {"root": chunk_root, "cells": cells}
 
