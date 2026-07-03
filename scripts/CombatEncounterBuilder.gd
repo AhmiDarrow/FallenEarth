@@ -271,7 +271,7 @@ static func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
 	ProceduralMob to consume. Called from generate_procedural_enemy after enemy data
 	is built, mirroring NPCManager's _build_procedural_mob.
 	"""
-	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	var archetypes: Array = ["quadruped", "insectoid", "behemoth", "aberrant"]
 	# Derive archetype from enemy_data's type/role hints
 	var archetype: String = str(enemy_data.get("archetype", "quadruped")).to_lower()
 	if archetype not in archetypes:
@@ -281,6 +281,95 @@ static func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
 	# Color comes from enemy_data's color field or default
 	var color: String = str(enemy_data.get("color", "rags"))
 	# Size is optional; ProceduralMob uses 48 if not provided
-	var size: float = float(enemy_data.get("size", 48))
+	var size: Vector2 = Vector2(48, 48)
+	var s = enemy_data.get("size", 48)
+	if s is Vector2:
+		size = s
+	elif s is float or s is int:
+		size = Vector2(float(s), float(s))
 	var proto: Dictionary = {"archetype": archetype, "color": color, "size": size}
 	return proto
+
+
+# -------------------------------------------------------------------------
+# Missing static entry points referenced by MissionManager, HubWorld, RiftInstance, TacticalCombat, MissionGenerator.
+# These produce encounter payloads compatible with CombatManager / GameState / TacticalCombat.
+# -------------------------------------------------------------------------
+
+const SOURCE_OVERWORLD := "overworld"
+const SOURCE_RIFT := "rift"
+const SOURCE_MISSION := "mission"
+
+static func random_overworld_mob(biome: String = "Ash Wastes", prefer_hostile: bool = true) -> Dictionary:
+	# Use the existing generator for a procedural enemy/mob as "overworld mob"
+	var world_seed := "owm_" + str(Time.get_unix_time_from_system())
+	var dummy_tile_map := {
+		"0,0": {"name": biome, "rift_chance": 0.4}
+	}
+	var difficulty := {"min_level": 1, "max_level": 4, "danger_threshold": 0.5}
+	var enemy := generate_procedural_enemy(world_seed, dummy_tile_map, "0,0", difficulty)
+	if enemy.is_empty():
+		enemy = {
+			"id": "mob_fallback_" + str(randi() % 1000),
+			"name": "Wild " + (["Beast", "Scavenger", "Aberration"][randi() % 3]),
+			"archetype": "quadruped",
+			"level": 2,
+			"hostile": prefer_hostile,
+			"health": 18,
+			"damage": 3,
+			"speed": 0.4,
+			"has_procedural_assets": true,
+			"biome": biome
+		}
+	return enemy
+
+static func build_overworld(char_data: Dictionary, mob: Dictionary, tile_key: String, biome: String) -> Dictionary:
+	var enemies: Array = []
+	if not mob.is_empty():
+		enemies.append(mob)
+	return {
+		"character_data": char_data.duplicate(true) if char_data else {},
+		"enemy_templates": enemies,
+		"source": SOURCE_OVERWORLD,
+		"tile_key": tile_key,
+		"biome": biome,
+		"grid_size": 7,
+		"player_start": Vector2i(3, 5),
+		"height_seed": abs(tile_key.hash()),
+		"class_combat": {}
+	}
+
+static func build_mission(
+	character_data: Dictionary,
+	mob: Dictionary,
+	tile_key: String,
+	biome: String,
+	mission: Dictionary = {}
+) -> Dictionary:
+	var enc := build_overworld(character_data, mob, tile_key, biome)
+	enc["source"] = SOURCE_MISSION
+	enc["mission"] = mission.duplicate(true) if mission else {}
+	enc["return_context"] = {"mission_id": mission.get("id", "")}
+	return enc
+
+static func build_rift_room(
+	char_data: Dictionary,
+	biome: String,
+	rift_id: String,
+	q: int, r: int,
+	encounter_type: String,
+	tile_key: String,
+	lx: int = -1,
+	ly: int = -1
+) -> Dictionary:
+	var diff := {"min_level": 2, "max_level": 7, "danger_threshold": 0.85}
+	var tm := {}
+	tm[tile_key] = {"name": biome, "rift_chance": 0.95}
+	var enemy := generate_procedural_enemy("rift_" + rift_id, tm, tile_key, diff)
+	var enc := build_overworld(char_data, enemy if not enemy.is_empty() else {}, tile_key, biome)
+	enc["source"] = SOURCE_RIFT
+	enc["rift_id"] = rift_id
+	enc["encounter_type"] = encounter_type
+	enc["entry"] = {"q": q, "r": r, "local_x": lx, "local_y": ly}
+	enc["return_context"] = {"rift_id": rift_id, "encounter_type": encounter_type}
+	return enc

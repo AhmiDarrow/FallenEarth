@@ -2,7 +2,10 @@
 ## Called from WorldGenerator / LocalMapRenderer when generating terrain.
 ## Supports: base ground, rock, vegetation, rift cracks, biome tints/patterns.
 
-extends CanvasTexture
+class_name ProceduralTile
+extends Node2D
+
+const COLORS = preload("res://scripts/procedural/Palette.gd").COLORS
 
 # Tile metadata (data-driven)
 var biome: String = "Ash Wastes"
@@ -14,47 +17,20 @@ var rift_type: int = 0
 var has_rocks: bool = false
 var has_vegetation: bool = false
 var has_rune: bool = false
+var size: Vector2 = Vector2(64, 64)
+var _tex: PackedByteArray = PackedByteArray()
 
 # Shader uniforms
 var shader: ShaderMaterial = null
 
 func _init() -> void:
 	shader = ShaderMaterial.new()
-	shader.shader_code = """
-shader_type canvas_texture;
-
-uniform sampler2D uAlbedo;
-uniform sampler2D uParallax;
-uniform sampler2D uNoise;
-uniform sampler2D uOverlay;
-uniform vec4 uOverlayColor;
-uniform float uOverlayAmount;
-
-void fragment() {
-  vec3 albedo = texture(uAlbedo, uv).rgb;
-
-  vec3 parallax = texture(uParallax, uv).rgb;
-  parallax = mix(parallax, vec3(0.0), 0.55 * texture(uParallax, uv).a);
-
-  vec3 noise = texture(uNoise, uv).rgb * 0.4;
-
-  vec3 overlay = texture(uOverlay, uv).rgb;
-  overlay = mix(overlay, albedo, 0.6 * uOverlayAmount);
-
-  gl_FragColor = vec4(albedo + parallax + noise, 1.0);
-}
-"""
-	shader.set_shader_param("uAlbedo", shader)
-	shader.set_shader_param("uParallax", shader)
-	shader.set_shader_param("uNoise", shader)
-	shader.set_shader_param("uOverlay", shader)
-	shader.set_shader_param("uOverlayColor", Color(0.0))
-	shader.set_shader_param("uOverlayAmount", 0.0)
+	# Broken shader_code initialization removed (caused Invalid assignment of 'shader_code' on ShaderMaterial)
 
 func _draw() -> void:
 	# Base ground — color from biome + terrain
 	var bg_color = _get_biome_base_color()
-	draw_rect(Vector2(0, 0), size, bg_color)
+	draw_rect(Rect2(Vector2(0, 0), size), bg_color)
 
 	# Terrain overlays — rocks, vegetation, rift cracks
 	_draw_terrain_overlays()
@@ -80,10 +56,10 @@ func _generate_texture() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed
 
-	var size = size.x
+	var sz = int(size.x)
 	var data = PackedByteArray()
-	for y in range(size):
-		for x in range(size):
+	for y in range(sz):
+		for x in range(sz):
 			# Base noise + biome pattern
 			var n = rng.randf_range(-1.0, 1.0)
 			var p = _get_biome_pattern_value(x, y)
@@ -147,7 +123,7 @@ func _draw_terrain_overlays() -> void:
 		var ry = rng.randi_range(size.y * 0.1, size.y * 0.85)
 		var rw = rng.randi_range(4, 12)
 		var rh = rng.randi_range(4, 8)
-		draw_rect(Vector2(rx, ry), rw, rh, COLORS["stone"])
+		draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["stone"])
 
 	# Vegetation
 	if has_vegetation and rng.randf() < 0.5:
@@ -155,7 +131,7 @@ func _draw_terrain_overlays() -> void:
 		var vy = rng.randi_range(size.y * 0.05, size.y * 0.95)
 		var vw = rng.randi_range(4, 10)
 		var vh = rng.randi_range(4, 8)
-		draw_rect(Vector2(vx, vy), vw, vh, COLORS["leaf"])
+		draw_rect(Rect2(Vector2(vx, vy), Vector2(vw, vh)), COLORS["leaf"])
 
 	# Rift cracks
 	if has_rift and rng.randf() < 0.35:
@@ -163,7 +139,7 @@ func _draw_terrain_overlays() -> void:
 		var cy = rng.randi_range(size.y * 0.1, size.y * 0.8)
 		var cw = rng.randi_range(2, 6)
 		var ch = rng.randi_range(2, 8)
-		draw_rect(Vector2(cx, cy), cw, ch, COLORS["toxic"])
+		draw_rect(Rect2(Vector2(cx, cy), Vector2(cw, ch)), COLORS["toxic"])
 
 func _draw_biome_patterns() -> void:
 	# Biome-specific patterns — lines, dots, etc.
@@ -177,7 +153,7 @@ func _draw_biome_patterns() -> void:
 			var ry = rng.randi_range(size.y * 0.1, size.y * 0.9)
 			var rw = rng.randi_range(8, 14)
 			var rh = rng.randi_range(2, 4)
-			draw_rect(Vector2(rx, ry), rw, rh, COLORS["toxic"].lerp(COLORS["ground_ash"], 0.7))
+			draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["toxic"].lerp(COLORS["ground_ash"], 0.7))
 
 	elif biome == "Crystalline Peaks":
 		# Crystalline: geometric lines
@@ -186,7 +162,7 @@ func _draw_biome_patterns() -> void:
 			var ry = rng.randi_range(size.y * 0.1, size.y * 0.9)
 			var rw = rng.randi_range(12, 18)
 			var rh = rng.randi_range(2, 4)
-			draw_rect(Vector2(rx, ry), rw, rh, COLORS["stone"])
+			draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["stone"])
 
 	elif biome == "Ruined Sanctum":
 		# Ruined: rune fragments
@@ -195,7 +171,7 @@ func _draw_biome_patterns() -> void:
 			var ry = rng.randi_range(size.y * 0.05, size.y * 0.95)
 			var rw = rng.randi_range(8, 12)
 			var rh = rng.randi_range(6, 10)
-			draw_rect(Vector2(rx, ry), rw, rh, COLORS["rune"].lerp(COLORS["ground_ash"], 0.8))
+			draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["rune"].lerp(COLORS["ground_ash"], 0.8))
 
 func _draw_exploration_reveal() -> void:
 	# Fade in from edges
@@ -203,7 +179,7 @@ func _draw_exploration_reveal() -> void:
 	for y in range(size.y):
 		for x in range(size.x):
 			if x < margin or x >= size.x - margin or y < margin or y >= size.y - margin:
-				draw_rect(Vector2(x, y), 1, 1, COLORS["shadow"])
+				draw_rect(Rect2(Vector2(x, y), Vector2(1, 1)), COLORS["shadow"])
 
 func _draw_rift_cracks() -> void:
 	# Rift: pulsating toxic veins
@@ -216,15 +192,17 @@ func _draw_rift_cracks() -> void:
 		var ry = rng.randi_range(size.y * 0.1, size.y * 0.8)
 		var rw = rng.randi_range(6, 10)
 		var rh = rng.randi_range(3, 6)
-		draw_rect(Vector2(rx, ry), rw, rh, COLORS["toxic"])
+		draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["toxic"])
 
 func _draw_rune() -> void:
 	# Rune: glowing fragment
+	var rng := RandomNumberGenerator.new()
+	rng.seed = biome.hash() + terrain_type
 	var rx = rng.randi_range(size.x * 0.1, size.x * 0.8)
 	var ry = rng.randi_range(size.y * 0.1, size.y * 0.8)
 	var rw = rng.randi_range(8, 12)
 	var rh = rng.randi_range(6, 10)
-	draw_rect(Vector2(rx, ry), rw, rh, COLORS["rune"])
+	draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["rune"])
 
 # -------------------------------------------------------------------------
 # Data-driven setup (called before draw)

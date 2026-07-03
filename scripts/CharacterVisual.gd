@@ -4,7 +4,9 @@
 
 extends Node2D
 
-# GraphicsManager is autoload — call its helpers directly.
+const GraphicsManager = preload("res://scripts/GraphicsManager.gd")
+
+# GraphicsManager stub or autoload — call its helpers directly.
 var current_race: String = "Human"
 var current_gender: String = "male"
 var current_anim: String = "idle"
@@ -23,10 +25,11 @@ func _draw() -> void:
 
 	# 1. Base character (body + head)
 	#    GraphicsManager.draw_character_base(x, y, direction, palette)
-	var palette := GraphicsManager.get_palette_for_biome("gloom")
-	var x := get_local_transform().origin.x
-	var y := get_local_transform().origin.y
-	var direction := 0.0  # radians; will be updated by animation
+	var palette: Dictionary = GraphicsManager.get_palette_for_biome("gloom")
+	var pos: Vector2 = position  # local position in _draw
+	var x: float = pos.x
+	var y: float = pos.y
+	var direction: float = 0.0  # radians; will be updated by animation
 
 	GraphicsManager.draw_character_base(x, y, direction, palette)
 
@@ -34,13 +37,12 @@ func _draw() -> void:
 	GraphicsManager.draw_equipment_layer(x, y, palette)
 
 	# 3. Face details (eyes, mouth) — draw_circle + draw_multiline
-	var eye_pos := Vector2(x + 6, y - 38)
-	var eye_color := palette["player_eyes"]
-	draw_circle(eye_pos.x, eye_pos.y, 2.5, eye_color, palette["ink_outline"], 1.2)
+	var eye_pos: Vector2 = Vector2(x + 6, y - 38)
+	var eye_color: Color = palette.get("player_eyes", Color.WHITE)
+	draw_circle(eye_pos, 2.5, eye_color)
 
-	var mouth_color := palette["ink_faint"]
-	draw_multiline(
-		draw_multiline_begin(),
+	var mouth_color: Color = palette.get("ink_faint", Color(0.5,0.5,0.5))
+	GraphicsManager.draw_multiline_path(
 		[eye_pos.x, eye_pos.y - 6, eye_pos.x + 4, eye_pos.y - 4],
 		mouth_color,
 		2,
@@ -51,9 +53,9 @@ func _draw() -> void:
 	# 4. Direction animation — slight bob + rotate
 	#    Use GraphicsManager.advance_frame() to drive a seeded cycle.
 	GraphicsManager.advance_frame()
-	var frame_progress := GraphicsManager.get_frame_progress()
-	var bob := sin(frame_progress * 0.15) * 1.2
-	var swing := cos(frame_progress * 0.2) * 0.1
+	var frame_progress: float = GraphicsManager.get_frame_progress()
+	var bob: float = sin(frame_progress * 0.15) * 1.2
+	var swing: float = cos(frame_progress * 0.2) * 0.1
 
 	#    Apply bob to y, keep x stable.
 	#    (Direction is still 0 here; when facing left/right you'd set direction accordingly)

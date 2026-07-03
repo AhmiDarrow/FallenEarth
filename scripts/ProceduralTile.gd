@@ -1,14 +1,25 @@
 ## ProceduralTile — Procedurally drawn terrain tiles for overworld generation.
 ## Extends ProceduralRenderer. Supports tile types: grass, stone, water, sand, snow, dirt.
 ## Each type has distinct draw logic. Called from WorldGenerator when generating terrain.
+## NOTE: Legacy file. Active implementation is in scripts/procedural/ProceduralTile.gd
 
 extends ProceduralRenderer
+
+const COLOR_PALETTE := {
+	"grass": [Color(0.2, 0.6, 0.2), Color(0.25, 0.65, 0.25), Color(0.15, 0.55, 0.15), Color(0.3, 0.7, 0.3)],
+	"stone": [Color(0.5, 0.5, 0.5), Color(0.6, 0.6, 0.6), Color(0.4, 0.4, 0.4)],
+	"water": [Color(0.2, 0.4, 0.8), Color(0.25, 0.5, 0.9), Color(0.15, 0.35, 0.7)],
+	"sand": [Color(0.9, 0.85, 0.6), Color(0.95, 0.9, 0.7), Color(0.85, 0.8, 0.55)],
+	"dirt": [Color(0.55, 0.4, 0.25), Color(0.6, 0.45, 0.3), Color(0.5, 0.35, 0.2)],
+	"grass_decor": [Color(0.1, 0.5, 0.1), Color(0.15, 0.55, 0.15), Color(0.08, 0.45, 0.08), Color(0.2, 0.6, 0.2)],
+	"stone_decor": [Color(0.45, 0.45, 0.45), Color(0.55, 0.55, 0.55), Color(0.35, 0.35, 0.35)],
+}
 
 # Tile type enum
 enum TileType { GRASS, STONE, WATER, SAND, SNOW, DIRT }
 
 # Size (in world units, e.g., 64)
-var size: Vector2 = Vector2(64, 64)
+# var size: Vector2 = Vector2(64, 64)  # inherited from ProceduralRenderer, do not redeclare
 
 # Tile type
 var tile_type: TileType = TileType.GRASS
@@ -47,7 +58,7 @@ func _draw() -> void:
 			_draw_dirt()
 		_:
 			# Unknown: fallback to simple color
-			draw_rect(Vector2(0, 0), size, Color.WHITE)
+			draw_rect(Rect2(Vector2(0, 0), size), Color.WHITE)
 
 func _draw_grass() -> void:
 	if is_decorative_grass:
@@ -56,7 +67,7 @@ func _draw_grass() -> void:
 	else:
 		# Base grass — flat green with subtle variation
 		var base_green: Color = COLOR_PALETTE["grass"][color_variant % 4]
-		draw_rect(Vector2(0, 0), size, base_green)
+		draw_rect(Rect2(Vector2(0, 0), size), base_green)
 
 func _draw_stone() -> void:
 	if is_decorative_stone:
@@ -65,31 +76,31 @@ func _draw_stone() -> void:
 	else:
 		# Base stone — flat gray
 		var base_gray: Color = COLOR_PALETTE["stone"][color_variant % 3]
-		draw_rect(Vector2(0, 0), size, base_gray)
+		draw_rect(Rect2(Vector2(0, 0), size), base_gray)
 
 func _draw_water() -> void:
 	# Base water — flat blue with subtle variation
 	var base_blue: Color = COLOR_PALETTE["water"][color_variant % 3]
-	draw_rect(Vector2(0, 0), size, base_blue)
+	draw_rect(Rect2(Vector2(0, 0), size), base_blue)
 
 func _draw_sand() -> void:
 	# Base sand — flat beige
 	var base_beige: Color = COLOR_PALETTE["sand"][color_variant % 3]
-	draw_rect(Vector2(0, 0), size, base_beige)
+	draw_rect(Rect2(Vector2(0, 0), size), base_beige)
 
 func _draw_snow() -> void:
 	# Base snow — flat white
-	draw_rect(Vector2(0, 0), size, Color.WHITE)
+	draw_rect(Rect2(Vector2(0, 0), size), Color.WHITE)
 
 func _draw_dirt() -> void:
 	# Base dirt — flat brown
 	var base_brown: Color = COLOR_PALETTE["dirt"][color_variant % 3]
-	draw_rect(Vector2(0, 0), size, base_brown)
+	draw_rect(Rect2(Vector2(0, 0), size), base_brown)
 
 # Decorative variants — irregular shapes for grass/stone
 func _draw_decorative_grass() -> void:
 	# Irregular grass tuft
-	var blob = PackedVector2Array(
+	var blob = PackedVector2Array([
 		Vector2(0, 0),
 		Vector2(size.x * 0.4, 0),
 		Vector2(size.x * 0.45, size.y * 0.35),
@@ -101,13 +112,13 @@ func _draw_decorative_grass() -> void:
 		Vector2(size.x * 0.3, size.y * 0.1),
 		Vector2(size.x * 0.45, size.y * 0.12),
 		Vector2(size.x * 0.55, size.y * 0.18),
-	)
+	])
 	var color: Color = COLOR_PALETTE["grass_decor"][color_variant % 4]
-	draw_polygon(blob, color)
+	draw_colored_polygon(blob, color)
 
 func _draw_decorative_stone() -> void:
 	# Irregular stone
-	var blob = PackedVector2Array(
+	var blob = PackedVector2Array([
 		Vector2(0, 0),
 		Vector2(size.x * 0.45, 0),
 		Vector2(size.x * 0.55, size.y * 0.25),
@@ -118,9 +129,9 @@ func _draw_decorative_stone() -> void:
 		Vector2(size.x * 0.2, size.y * 0.15),
 		Vector2(size.x * 0.35, size.y * 0.1),
 		Vector2(size.x * 0.5, size.y * 0.12),
-	)
+	])
 	var color: Color = COLOR_PALETTE["stone_decor"][color_variant % 3]
-	draw_polygon(blob, color)
+	draw_colored_polygon(blob, color)
 
 # Helper to get base color palette entry
 func _get_base_color(palette_key: String, variant: int) -> Color:

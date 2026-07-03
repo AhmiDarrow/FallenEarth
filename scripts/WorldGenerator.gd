@@ -5,6 +5,8 @@
 class_name WorldGenerator
 extends Node
 
+const ProceduralTile = preload("res://scripts/procedural/ProceduralTile.gd")
+
 signal world_generated(seed_string: String)
 
 const VERSION := "0.2.0"

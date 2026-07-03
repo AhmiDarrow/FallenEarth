@@ -41,11 +41,11 @@ func _setup() -> void:
 
 func _draw() -> void:
 	# Base body: rags-colored rectangle (simplified humanoid silhouette)
-	draw_rect(Vector2(0, 0), size, COLORS["rags"])
+	draw_rect(Rect2(Vector2(0, 0), size), COLORS["rags"])
 
 	# Head: circle + facial features (gender/race driven)
 	var head_offset: Vector2 = Vector2(0, -size.y * 0.25)
-	draw_circle(size.x * 0.4, head_offset, COLORS["skin"])
+	draw_circle(Vector2(size.x * 0.4, head_offset.y), size.x * 0.3, COLORS["skin"])
 
 	# Draw gender-specific features
 	if not is_male:

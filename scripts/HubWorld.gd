@@ -654,17 +654,22 @@ func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
 	Returns a proto dict with archetype and color (and optional size) for
 	ProceduralMob to consume. Mirrors NPCManager's _build_procedural_mob.
 	"""
-	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	var archetypes: Array = ["quadruped", "insectoid", "behemoth", "aberrant"]
 	# Derive archetype from enemy_data's archetype/role hints
-	archetype = str(enemy_data.get("archetype", "quadruped")).to_lower()
+	var archetype: String = str(enemy_data.get("archetype", "quadruped")).to_lower()
 	if archetype not in archetypes:
 		archetype = str(enemy_data.get("role", "quadruped")).to_lower()
 		if archetype not in archetypes:
 			archetype = "quadruped"
 	# Color comes from enemy_data's color field or default
-	color = str(enemy_data.get("color", "rags"))
+	var color: String = str(enemy_data.get("color", "rags"))
 	# Size is optional; ProceduralMob uses 48 if not provided
-	size = float(enemy_data.get("size", 48))
+	var size: Vector2 = Vector2(48, 48)
+	var s = enemy_data.get("size", 48)
+	if s is Vector2:
+		size = s
+	elif s is float or s is int:
+		size = Vector2(float(s), float(s))
 	return {"archetype": archetype, "color": color, "size": size}
 
 

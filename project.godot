@@ -29,7 +29,6 @@ RiftRunner="*res://scripts/RiftRunner.gd"
 GraphicsManager="res://scripts/GraphicsManager.gd"
 NPCManager="*res://scripts/NPCManager.gd"
 MissionManager="*res://scripts/MissionManager.gd"
-CombatEncounterBuilder="*res://scripts/CombatEncounterBuilder.gd"
 
 [display]
 

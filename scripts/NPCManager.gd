@@ -4,16 +4,25 @@ extends Node
 signal npcs_generated(count: int)
 signal npc_recruited(npc_id: String, npc_data: Dictionary)
 signal faction_rep_changed(faction_key: String, new_rep: int)
-signal procedural_mob_generated(npc_id: String, mob: ProceduralMob)
+signal procedural_mob_generated(npc_id: String, mob)
 
 const FACTIONS_PATH := "res://data/factions.json"
 const NPCGeneratorScript = preload("res://scripts/NPCGenerator.gd")
+
+# Per plan: reference to EncounterBuilder (autoload provides CombatEncounterBuilder global, class_name is EncounterBuilder)
+@onready var encounter_builder = preload("res://scripts/CombatEncounterBuilder.gd")
 
 var _world_npcs: Dictionary = {}       # id -> npc dict
 var _tile_index: Dictionary = {}       # tile_key -> npc_id
 var _faction_rep: Dictionary = {}        # faction_key -> int
 var _recruited_ids: Array[String] = []
 var _world_seed: String = ""
+
+# Variables declared per bug-fix plan (used locally in methods; kept here for visibility / legacy reference)
+var archetypes: Array = ["quadruped", "insectoid", "behemoth", "aberrant"]
+var archetype: String = "quadruped"
+var proto: Dictionary = {}
+var mob = null
 
 
 func _ready() -> void:
@@ -61,8 +70,8 @@ func generate_for_world(world_seed: String, tile_map: Dictionary, start_tile_key
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if is_instance_valid(gs):
 		gs.set_world_npcs(_world_npcs, _faction_rep, _recruited_ids)
-		# Wire GameState's procedural mob handler so it can log/forward NPC procedural generation
-		gs.set_npc_manager_procedural_mob_handler(self, Callable.new())
+		# Wiring of procedural_mob_generated is performed by GameState._ready() using its own callback.
+		# Do not use Callable.new() (invalid in Godot 4); signal is connected via the handler setter if needed.
 
 	npcs_generated.emit(_world_npcs.size())
 	print("[NPCManager] Generated %d procedural NPC(s) for seed '%s'." % [_world_npcs.size(), world_seed])
@@ -247,37 +256,48 @@ func _build_procedural_mob(npc_data: Dictionary) -> Dictionary:
 	ProceduralMob to consume. Called from generate_for_world after NPC roster
 	is built, before GameState is updated.
 	"""
-	archetypes = ["quadruped", "insectoid", "behemoth", "aberrant"]
-	# Derive archetype from npc_data's type/role hints
-	archetype = str(npc_data.get("type", "quadruped")).to_lower()
+	var archetypes: Array = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	# Prefer "archetype" key (from NPCGenerator), fallback to role/type
+	var archetype: String = str(npc_data.get("archetype", npc_data.get("type", "quadruped"))).to_lower()
 	if archetype not in archetypes:
 		archetype = str(npc_data.get("role", "quadruped")).to_lower()
 		if archetype not in archetypes:
 			archetype = "quadruped"
-	# Color comes from npc_data's color field or default
-	color = str(npc_data.get("color", "rags"))
-	# Size is optional; ProceduralMob uses 48 if not provided
-	size = float(npc_data.get("size", 48))
+	# Color: prefer top level, else from appearance.hair_color or default "rags"
+	var color: String = str(npc_data.get("color", ""))
+	if color.is_empty():
+		var app: Dictionary = npc_data.get("appearance", {}) as Dictionary
+		color = str(app.get("hair_color", "rags"))
+	# Size as Vector2 for ProceduralMob
+	var size: Vector2 = Vector2(48, 48)
+	var s = npc_data.get("size", 48)
+	if s is Vector2:
+		size = s
+	elif s is float or s is int:
+		size = Vector2(float(s), float(s))
 	return {"archetype": archetype, "color": color, "size": size}
 
 func get_procedural_mob(npc_data: Dictionary):
 	"""Return a ProceduralMob instance for NPC spawning.
 
-	Called from NPCManager.gd after roster generation. Returns null if npc_data
+	Called from NPCManager after roster generation. Returns null if npc_data
 	already has assets (handled by CharacterVisual/GameState fallback), or
 	instantiates a new ProceduralMob with the npc's archetype/color/size.
 	"""
-	proto = _build_procedural_mob(npc_data)
+	var proto: Dictionary = _build_procedural_mob(npc_data)
 	if proto.is_empty():
 		return null
-	mob = ProceduralMob.new()
+	var PM = load("res://scripts/procedural/ProceduralMob.gd")
+	if PM == null:
+		push_error("[NPCManager] Failed to load ProceduralMob script")
+		return null
+	var mob = PM.new()
 	mob.setup_for(proto)
 	return mob
 
 func has_procedural_assets(npc_data: Dictionary = {}) -> bool:
-	# Placeholder — ProceduralMob is data-driven; we just need to ensure
-	# NPCManager generates it, GameState will handle asset fallback.
-	return false
+	# ProceduralMob provides fallback for all; report true so callers proceed with procedural.
+	return true
 
 func _slugify(name: String) -> String:
 	return name.to_lower().replace(" ", "_").replace("'", "")

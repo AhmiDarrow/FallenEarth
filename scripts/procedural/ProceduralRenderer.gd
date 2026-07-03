@@ -2,7 +2,10 @@
 ## Extend this for Characters, Mobs, Tiles, Equipment, UI elements.
 ## Autoload singleton pattern: instance in scene graph, call .draw() / .hide().
 
+class_name ProceduralRenderer
 extends Node2D
+
+const COLORS = preload("res://scripts/procedural/Palette.gd").COLORS
 
 # Metadata passed in by caller
 var entity_type: String = ""
@@ -34,10 +37,12 @@ func draw() -> void:
 	_draw()
 	_drawn = true
 
+@warning_ignore("native_method_override")
 func hide() -> void:
 	_visible = false
 	_drawn = false
 
+@warning_ignore("native_method_override")
 func show() -> void:
 	_visible = true
 	if _drawn:

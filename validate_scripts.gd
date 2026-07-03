@@ -44,6 +44,10 @@ func _initialize() -> void:
 		var scr: GDScript = load(path) as GDScript
 		if scr == null:
 			errors.append("SCRIPT FAIL: " + path)
+			# Attempt to get more error info if possible via try
+			var test = load(path)
+			if test == null:
+				push_error("Failed load for: " + path)
 	for path in SCENES:
 		if not ResourceLoader.exists(path):
 			errors.append("SCENE MISSING: " + path)
