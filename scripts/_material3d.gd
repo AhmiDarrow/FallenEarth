@@ -107,11 +107,9 @@ func _preload_materials():
 		var material = preload("res://data/materials/" + material_name + ".tres")
 		if material:
 			# Preload the material to avoid caching
-			var material2 = Material3D.new()
-			material2.resource_name = material.resource_name
-			material2._preload()
+			material._preload()
 			# Update global
-			Material3D.global_materials[material.resource_name] = material2
+			Material3D.global_materials[material.resource_name] = material
 
 # Pre-created global RIDs for faster drawing
 const rid_mesh_plane: RID = -1
