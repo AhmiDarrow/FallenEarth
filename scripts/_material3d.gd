@@ -108,5 +108,3 @@ func _preload_materials():
 			material._preload()
 			# Update global
 			Material3D.global_materials[material.resource_name] = material
-
-}
