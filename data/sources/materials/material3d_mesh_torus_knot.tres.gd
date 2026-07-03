@@ -1,9 +1,9 @@
-// material3d_mesh_torus.tres
+# material3d_mesh_torus_knot.tres
 
 @tool
 extends Material3D
 
-class_name material3d_mesh_torus
+class_name material3d_mesh_torus_knot
 
 func _init():
 	# Preload material to avoid caching
@@ -12,7 +12,7 @@ func _init():
 func _preload():
 	# Preload the material
 	var material3d = Material3D.new()
-	material3d.resource_name = "material3d_mesh_torus"
+	material3d.resource_name = "material3d_mesh_torus_knot"
 	material3d._preload()
 	return material3d
 }

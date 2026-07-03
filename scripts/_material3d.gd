@@ -1,5 +1,5 @@
-// _material3d.gd
-// Pre-compiled material3d resources for primitive meshes
+# _material3d.gd
+# Pre-compiled material3d resources for primitive meshes
 
 @tool
 extends Resource

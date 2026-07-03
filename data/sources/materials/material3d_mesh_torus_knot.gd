@@ -1,4 +1,4 @@
-// material3d_mesh_torus_knot.tres
+# material3d_mesh_torus_knot.tres
 
 @tool
 extends Material3D
