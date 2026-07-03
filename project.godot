@@ -14,7 +14,7 @@ config/name="Fallen Earth"
 config/version="0.2.0"
 run/main_scene="res://scenes/ui/Splash.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
-#Iconomittedfornow(nographicalassetsyet)#config/icon="res://icon.svg"
+config/icon="res://icon.svg"
 
 [autoload]
 
