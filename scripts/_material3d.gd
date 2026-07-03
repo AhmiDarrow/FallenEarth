@@ -83,12 +83,10 @@ func _compiled_rids(mesh: Mesh3D, material: Material3D):
 	mesh.material = material
 	material.mesh = mesh
 
-	# Store RID in resource
-	resource.data += "" + str(rid) + "\n"
-
 	# Store in global
-	Material3D.global_materials["_material3d_" + "_" + mesh.mesh_type] = material
-	Material3D.global_materials["_material3d_" + "_" + mesh.mesh_type]_rid = rid
+	var key = "_material3d_" + mesh.mesh_type
+	Material3D.global_materials[key] = material
+	Material3D.global_materials[key + "_rid"] = rid
 
 func _preload_materials():
 	# Preload material resources to avoid caching
@@ -111,13 +109,4 @@ func _preload_materials():
 			# Update global
 			Material3D.global_materials[material.resource_name] = material
 
-# Pre-created global RIDs for faster drawing
-const rid_mesh_plane: RID = -1
-const rid_mesh_cube: RID = -1
-const rid_mesh_sphere: RID = -1
-const rid_mesh_cylinder: RID = -1
-const rid_mesh_cone: RID = -1
-const rid_mesh_torus: RID = -1
-const rid_mesh_torus_knot: RID = -1
-const rid_mesh_capsule: RID = -1
 }
