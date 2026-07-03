@@ -21,6 +21,8 @@ signal class_xp_gained(amount: int, total_xp: int)
 
 @export var active_scene: String = ""
 @export var last_save_slot: int = 0
+# Procedural graphics fallback — enabled by default (no external assets required)
+var use_procedural_graphics: bool = true
 
 # Runtime-only tracking (not persisted directly — SaveManager handles persistence)
 var _character_data: Dictionary = {}

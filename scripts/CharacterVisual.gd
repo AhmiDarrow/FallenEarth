@@ -18,14 +18,127 @@ var current_gender: String = "male"
 var current_anim: String = "idle"
 var current_frame: int = 0
 
+# Procedural fallback
+var _use_procedural_graphics: bool = false
+var _procedural_character: Node = null
+
 func _ready():
 	if not is_instance_valid(base_sprite):
 		push_error("[CharacterVisual] BaseSprite node required")
+
+	# Procedural fallback if enabled
+	_use_procedural_graphics = GameState.use_procedural_graphics if has_node("/root/GameState") else false
+	if _use_procedural_graphics and not has_node("ProceduralCharacter"):
+		var proc = ProceduralCharacter.new()
+		proc.name = "ProceduralCharacter"
+		add_child(proc)
+		_procedural_character = proc
 
 func set_base_sprite(race: String, gender: String):
 	current_race = race
 	current_gender = gender
 	_update_base_texture()
+
+func _update_base_texture():
+	# Procedural fallback if enabled and no assets found
+	if _use_procedural_graphics and _procedural_character is not null:
+		# Try to load assets normally
+		if DirAccess.dir_exists_absolute("res://assets/characters/%s_%s/" % [current_race.to_lower(), current_gender.to_lower()]):
+			# Assets exist — use real sprite
+			if is_instance_valid(base_sprite):
+				base_sprite.visible = true
+			return
+
+		# No assets — fall back to procedural
+		if not is_instance_valid(_procedural_character):
+			_procedural_character = ProceduralCharacter.new()
+			_procedural_character.name = "ProceduralCharacter"
+			add_child(_procedural_character)
+
+		_procedural_character.setup_for({
+			"race": current_race,
+			"gender": current_gender,
+			"anim": current_anim,
+			"pose_frame": current_frame,
+			"direction": 0,
+			"weapon_hand": "left",
+			"armor_head": "",
+			"armor_torso": "",
+			"armor_arms": "",
+			"armor_legs": "",
+			"armor_back": "",
+		})
+		_procedural_character.draw()
+		# Hide the base sprite when using procedural
+		if is_instance_valid(base_sprite):
+			base_sprite.visible = false
+		return
+
+	# Normal asset loading
+	if not is_instance_valid(base_sprite):
+		return
+
+	# Smart selection for hand-drawn batch gens (high numbers = newer attempts).
+	# Prefer files for the current pose with the highest numeric suffix (e.g. 00016 over 00001).
+	# This helps pick better character figures as more renders complete.
+	# Known good examples: vesperid_female side 00014 (full isolated hooded figure matching style).
+	var race_l = current_race.to_lower()
+	var gender_l = current_gender.to_lower()
+	var dir_path = "res://assets/characters/%s_%s/" % [race_l, gender_l]
+
+	if not DirAccess.dir_exists_absolute(dir_path):
+		return
+
+	var da = DirAccess.open(dir_path)
+	if not da:
+		return
+
+	var best_path = ""
+	var best_num = -1
+	var pose_keys = [current_anim, "idle", "front", "side", "back"]
+
+	da.list_dir_begin()
+	var f = da.get_next()
+	while f != "":
+		if f.ends_with(".png") and f.begins_with("char_"):
+			var lf = f.to_lower()
+			var match_pose = false
+			for k in pose_keys:
+				if k in lf:
+					match_pose = true
+					break
+			if match_pose:
+				var num = -1
+				var m = f.find("_000")
+				if m != -1:
+					var numstr = f.substr(m + 4, 2)  # rough 00-99
+					if numstr.is_valid_int():
+						num = numstr.to_int()
+				if num > best_num:
+					best_num = num
+					best_path = dir_path + f
+		f = da.get_next()
+	da.list_dir_end()
+
+	if best_path == "":
+		# fallback: any char_ file
+		da = DirAccess.open(dir_path)
+		da.list_dir_begin()
+		f = da.get_next()
+		while f != "":
+			if f.begins_with("char_") and f.ends_with(".png"):
+				best_path = dir_path + f
+				break
+			f = da.get_next()
+		da.list_dir_end()
+
+	if best_path != "":
+		if ResourceLoader.exists(best_path):
+			base_sprite.texture = load(best_path)
+		elif FileAccess.file_exists(best_path):
+			var img := Image.new()
+			if img.load(best_path) == OK:
+				base_sprite.texture = ImageTexture.create_from_image(img)
 
 func _update_base_texture():
 	# Smart selection for hand-drawn batch gens (high numbers = newer attempts from the improved prompt).

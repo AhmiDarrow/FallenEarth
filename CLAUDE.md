@@ -22,3 +22,9 @@ Then perform **only** the atomic task assigned. Do not expand scope.
 - Current focus areas: world generation, character systems, save/load, combat/rift loop (see dev_plan.md and NEXT_TASKS.md).
 
 Root files `AGENTS.md` and `REMEDY.md` control the orchestrator (Hermes/Remedy). Use the handoff system for continuity across sessions and agents.
+
+## Procedural Drawing System Milestone
+
+The full procedural drawing conversion has reached completion — all core files created and wired into the game. Characters, mobs, and tiles now render procedurally as fallback when external ComfyUI assets are missing. See `.hermes/plans/PROCEDURAL_DRAWN_CONVERSION_PLAN.md` for detailed status and `memory/SESSION_NOTES/PROCEDURAL_DRAWN_CONVERSION.MD` for milestone summary.
+
+**Current focus:** Procedural Drawing System Milestone — see `memory/LATEST_HANDOFF.md`.

@@ -234,6 +234,22 @@ func get_visual_tile(biome_name: String) -> String:
 			return _visual_tile_cache[b][randi() % _visual_tile_cache[b].size()]
 	return ""
 
+## Return a ProceduralTile instance configured with biome and terrain data.
+func get_procedural_tile(tile: Dictionary) -> ProceduralTile:
+	var pt := ProceduralTile.new()
+	pt.setup_for({
+		"biome": tile.get("name", "Ash Wastes"),
+		"terrain_type": tile.get("terrain_type", 0),
+		"terrain": tile.get("terrain", PackedByteArray()),
+		"explored_pct": tile.get("explored_pct", 0.0),
+		"has_rift": tile.get("has_rift", false),
+		"rift_type": tile.get("rift_type", 0),
+		"has_rocks": tile.get("has_rocks", false),
+		"has_vegetation": tile.get("has_vegetation", false),
+		"has_rune": tile.get("has_rune", false),
+	})
+	return pt
+
 func _load_visual_tiles():
 	_visual_tile_cache.clear()
 	# Dynamic scan using TileSetBuilder or direct dir scan so all 10 biomes work as files are generated

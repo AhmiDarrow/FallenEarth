@@ -77,13 +77,27 @@ func _load_chunk(cx: int, cy: int) -> void:
 			var x := start_x + dx
 			var y := start_y + dy
 			var terrain: int = LocalMapGen.get_terrain(_map_data, x, y)
-			var rect := ColorRect.new()
-			rect.custom_minimum_size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
-			rect.size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
-			rect.color = LocalMapGen.terrain_color(terrain)
-			rect.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
-			chunk_root.add_child(rect)
-			cells[LocalMapGen.local_key(x, y)] = rect
+			var local_key := LocalMapGen.local_key(x, y)
+			var tile: Dictionary = _map_data.get(local_key, {}) as Dictionary
+			var tile_key := "%d,%d" % [terrain, tile.get("terrain_type", 0)]
+			var tile_data: Dictionary = GameState.get_hex_state(x, y)
+			var procedural_tile: ProceduralTile = ProceduralTile.new()
+			procedural_tile.name = "Tile_%s" % tile_key
+			procedural_tile.size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
+			procedural_tile.setup_for({
+				"biome": tile_data.get("biome", "Ash Wastes"),
+				"terrain_type": tile_data.get("terrain_type", terrain),
+				"terrain": tile_data.get("terrain", PackedByteArray()),
+				"explored_pct": tile_data.get("explored_pct", 0.0),
+				"has_rift": tile_data.get("has_rift", false),
+				"rift_type": tile_data.get("rift_type", 0),
+				"has_rocks": tile_data.get("has_rocks", false),
+				"has_vegetation": tile_data.get("has_vegetation", false),
+				"has_rune": tile_data.get("has_rune", false),
+			})
+			procedural_tile.draw()
+			chunk_root.add_child(procedural_tile)
+			cells[local_key] = procedural_tile
 
 	_loaded_chunks[ck] = {"root": chunk_root, "cells": cells}
 

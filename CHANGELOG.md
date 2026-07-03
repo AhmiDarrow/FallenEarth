@@ -10,6 +10,26 @@ See `docs/VERSION.md` for phase map and save-format reference.
 
 ## [Unreleased]
 
+### Added
+- **Procedural drawing system** — full code-drawn rendering for characters, mobs, and tiles, integrated as fallback into core project (no toggle needed):
+  - `scripts/procedural/Palette.gd` — core color constants autoload
+  - `scripts/procedural/ProceduralRenderer.gd` — base class for all procedurally drawn entities
+  - `scripts/procedural/ProceduralCharacter.gd` — full procedurally drawn humanoids (race/gender/anim/equipment)
+  - `scripts/procedural/ProceduralMob.gd` — creature archetypes (quadruped, insectoid, behemoth, aberrant)
+  - `scripts/procedural/ProceduralTile.gd` — ground tiles with biome patterns, rifts, rocks, vegetation
+  - `CharacterVisual.gd` — integrated procedural fallback when assets missing
+  - `GameState.gd` — added `use_procedural_graphics = true` flag (default enabled)
+  - `LocalMapRenderer.gd` — now uses `ProceduralTile` instances for all terrain
+  - `WorldGenerator.gd` — added `get_procedural_tile()` helper
+
+### Changed
+- **`PROCEDURAL_DRAWN_CONVERSION_PLAN.md`** — updated to reflect completed phases 0–2, integration into core project
+
+### Fixed
+- None yet
+
+## [0.2.2] - 2026-07-02
+
 ### Fixed
 - **Bug fix round (2026-07-02)** — seed system (`seed_system.py`, `_new_seed_system.py`, `data/seed_system.py`), save/load in `SaveManager.gd`, appearance system, biome rules, terrain generator.
 - Rift references renamed from `breach` → `rift` across docs, mission templates, and validation scripts.
