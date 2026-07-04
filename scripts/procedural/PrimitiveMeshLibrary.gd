@@ -26,7 +26,9 @@ static func body_capsule(height: float = 1.8, radius: float = 0.45) -> MeshInsta
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func body_box(size: Vector3 = Vector3(0.6, 1.8, 0.4)) -> MeshInstance3D:
 	var key := _cache_key("box", {"s": [size.x, size.y, size.z]})
@@ -36,7 +38,9 @@ static func body_box(size: Vector3 = Vector3(0.6, 1.8, 0.4)) -> MeshInstance3D:
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func body_sphere(radius: float = 0.35) -> MeshInstance3D:
 	var key := _cache_key("sphere", {"r": radius})
@@ -47,7 +51,9 @@ static func body_sphere(radius: float = 0.35) -> MeshInstance3D:
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func body_cylinder(height: float = 1.0, radius: float = 0.3) -> MeshInstance3D:
 	var key := _cache_key("cylinder", {"h": height, "r": radius})
@@ -59,7 +65,9 @@ static func body_cylinder(height: float = 1.0, radius: float = 0.3) -> MeshInsta
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func body_cone(height: float = 0.8, radius: float = 0.4) -> MeshInstance3D:
 	var key := _cache_key("cone", {"h": height, "r": radius})
@@ -71,7 +79,9 @@ static func body_cone(height: float = 0.8, radius: float = 0.4) -> MeshInstance3
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func body_torus(inner_radius: float = 0.2, outer_radius: float = 0.5) -> MeshInstance3D:
 	var key := _cache_key("torus", {"ir": inner_radius, "or": outer_radius})
@@ -82,7 +92,9 @@ static func body_torus(inner_radius: float = 0.2, outer_radius: float = 0.5) -> 
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func body_prism(size: Vector3 = Vector3(0.5, 0.8, 0.5)) -> MeshInstance3D:
 	var key := _cache_key("prism", {"s": [size.x, size.y, size.z]})
@@ -92,7 +104,9 @@ static func body_prism(size: Vector3 = Vector3(0.5, 0.8, 0.5)) -> MeshInstance3D
 		m.material = _default_material()
 		return m
 	)
-	return MeshInstance3D.new()
+	var mi := MeshInstance3D.new()
+	mi.mesh = mesh
+	return mi
 
 static func attachment_horn(length: float = 0.4, base_radius: float = 0.08) -> MeshInstance3D:
 	var mi := body_cone(length, base_radius)

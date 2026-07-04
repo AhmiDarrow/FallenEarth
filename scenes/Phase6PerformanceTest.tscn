@@ -1,0 +1,80 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/procedural/Entity3DViewport.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/Phase6PerformanceTest.gd" id="2"]
+
+[node name="Phase6PerformanceTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2")
+
+[node name="Entity3DLayer" type="Node" parent="."]
+script = ExtResource("1")
+viewport_width = 1280
+viewport_height = 720
+max_entities = 200
+render_distance = 30.0
+enable_lod = true
+enable_pooling = true
+enable_culling = true
+
+[node name="Entity3DDisplay" type="TextureRect" parent="Entity3DLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="UI" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="UI"]
+layout_mode = 2
+text = "Phase 6 - Performance & Optimization Test"
+
+[node name="Controls" type="HBoxContainer" parent="UI"]
+layout_mode = 2
+
+[node name="Spawn10Button" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Spawn 10"
+
+[node name="Spawn30Button" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Spawn 30"
+
+[node name="Spawn60Button" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Spawn 60"
+
+[node name="AutoSpawnButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Auto: OFF"
+
+[node name="ClearButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Clear"
+
+[node name="ZoomInButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Zoom In"
+
+[node name="ZoomOutButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Zoom Out"
+
+[node name="StatsLabel" type="RichTextLabel" parent="UI"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+bbcode_enabled = true
+text = "Phase 6 Performance Test"

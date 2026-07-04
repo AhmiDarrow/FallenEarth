@@ -7,5 +7,23 @@
     "VOID_BLOOM_013"
   ],
   "default_player_seed": "workcamp_escape_01",
-  "notes": "Grim cyber-organic aesthetic seed from lore. Used for consistent procedural generation across biomes, rifts, and visuals."
+  "entity_visual_salt": 0x45D9F3B,
+  "lod_config": {
+    "default_distances": [8.0, 16.0, 24.0],
+    "entity_type_overrides": {
+      "rift": [10.0, 20.0, 30.0],
+      "item": [6.0, 12.0, 18.0],
+      "prop": [10.0, 18.0, 28.0],
+      "beast_behemoth": [10.0, 18.0, 28.0]
+    }
+  },
+  "pool_config": {
+    "max_pool_size": 100,
+    "prewarm_count": 10
+  },
+  "culling_config": {
+    "default_render_distance": 30.0,
+    "check_interval": 0.25
+  },
+  "notes": "Grim cyber-organic aesthetic seed from lore. Used for consistent procedural generation across biomes, rifts, and visuals. Phase 6: Added LOD, pooling, and culling configuration."
 }

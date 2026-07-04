@@ -2,10 +2,12 @@
 ## Attach to any Control/Node2D that needs a 3D->2D hybrid view.
 ## Creates and manages a SubViewport with orthographic Camera3D, transparent
 ## background, lighting, and provides the ViewportTexture for use in Sprite2D/TextureRect.
+## Phase 6: Added LOD management, entity pooling, culling, render distance, and perf stats.
 class_name Entity3DViewport
 extends Node
 
 signal entity_selected(entity_node: Node3D)
+signal entity_count_changed(count: int)
 
 @export var viewport_width: int = 1280
 @export var viewport_height: int = 720
@@ -16,6 +18,11 @@ signal entity_selected(entity_node: Node3D)
 @export var enable_ambient_light: bool = true
 @export var enable_y_sort: bool = true
 @export var y_sort_pixels_per_unit: float = 100.0
+@export var max_entities: int = 200
+@export var render_distance: float = 30.0
+@export var enable_lod: bool = true
+@export var enable_pooling: bool = true
+@export var enable_culling: bool = true
 
 var sub_viewport: SubViewport
 var camera: Camera3D
@@ -25,12 +32,21 @@ var directional_light: DirectionalLight3D
 var viewport_texture: ViewportTexture
 var display_sprite: Sprite2D
 var display_texture_rect: TextureRect
+var lod_manager: EntityLODManager
+var entity_pool: EntityPool
 
 var _point_lights: Dictionary = {}
+var _entity_metadata: Dictionary = {}
+var _fps_history: Array[float] = []
+var _frame_count: int = 0
+var _fps_update_timer: float = 0.0
+var _current_fps: float = 0.0
 
 func _ready() -> void:
 	_setup_viewport()
 	_wire_display()
+	_setup_lod_manager()
+	_setup_entity_pool()
 	get_tree().root.size_changed.connect(_on_window_resized)
 
 func _on_window_resized() -> void:
@@ -39,9 +55,22 @@ func _on_window_resized() -> void:
 	var size := get_tree().root.size
 	resize(size.x, size.y)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_frame_count += 1
+	_fps_update_timer += delta
+	if _fps_update_timer >= 1.0:
+		_current_fps = float(_frame_count) / _fps_update_timer
+		_fps_history.append(_current_fps)
+		if _fps_history.size() > 60:
+			_fps_history.pop_front()
+		_frame_count = 0
+		_fps_update_timer = 0.0
+
 	if enable_y_sort:
 		_sort_by_depth()
+
+	if enable_culling:
+		_cull_distant_entities()
 
 func _setup_viewport() -> void:
 	sub_viewport = SubViewport.new()
@@ -195,3 +224,107 @@ func create_display_texture_rect() -> TextureRect:
 	tr.stretch_mode = TextureRect.STRETCH_SCALE
 	display_texture_rect = tr
 	return tr
+
+func _setup_lod_manager() -> void:
+	if not enable_lod:
+		return
+	lod_manager = EntityLODManager.new()
+	lod_manager.name = "EntityLODManager"
+	lod_manager.setup(self)
+	add_child(lod_manager)
+
+func _setup_entity_pool() -> void:
+	if not enable_pooling:
+		return
+	entity_pool = EntityPool.new()
+	entity_pool.name = "EntityPool"
+	add_child(entity_pool)
+
+func add_entity_with_LOD(entity: Node3D, entity_id: String = "") -> void:
+	if entity_root.get_child_count() >= max_entities:
+		return
+	if entity_id.is_empty():
+		entity_id = entity.name
+	entity_root.add_child(entity)
+	var animator: EntityAnimator = null
+	for child in entity.get_children():
+		if child is EntityAnimator:
+			animator = child as EntityAnimator
+			break
+	if lod_manager:
+		lod_manager.register_entity(entity_id, entity, animator)
+	_entity_metadata[entity_id] = {"root": entity, "animator": animator}
+	entity_count_changed.emit(entity_root.get_child_count())
+
+func remove_entity_with_LOD(entity_id: String) -> void:
+	if lod_manager:
+		lod_manager.unregister_entity(entity_id)
+	if _entity_metadata.has(entity_id):
+		var data: Dictionary = _entity_metadata[entity_id]
+		if is_instance_valid(data["root"]):
+			data["root"].queue_free()
+		_entity_metadata.erase(entity_id)
+	_entity_metadata.erase(entity_id)
+	entity_count_changed.emit(entity_root.get_child_count())
+
+func acquire_from_pool(entity_type: String = "generic", visual_data: Dictionary = {}) -> Node3D:
+	if not entity_pool:
+		return null
+	return entity_pool.acquire(entity_type, visual_data)
+
+func release_to_pool(entity: Node3D) -> void:
+	if entity_pool:
+		entity_pool.release(entity)
+
+func _cull_distant_entities() -> void:
+	if not camera:
+		return
+	var cam_pos := camera.global_position
+	for child in entity_root.get_children():
+		if child is Node3D:
+			var dist: float = cam_pos.distance_to(child.global_position)
+			child.visible = dist <= render_distance
+
+func get_fps() -> float:
+	return _current_fps
+
+func get_avg_fps() -> float:
+	if _fps_history.is_empty():
+		return 0.0
+	var total := 0.0
+	for fps in _fps_history:
+		total += fps
+	return total / float(_fps_history.size())
+
+func get_entity_stats() -> Dictionary:
+	var stats := {
+		"total": entity_root.get_child_count(),
+		"max": max_entities,
+		"pool_active": entity_pool.get_active_count() if entity_pool else 0,
+		"pool_reserve": entity_pool.get_pool_count() if entity_pool else 0,
+	}
+	if lod_manager:
+		stats["lod_full"] = 0
+		stats["lod_simplified"] = 0
+		stats["lod_culled"] = 0
+		for entity_id in lod_manager._entities:
+			var lod: int = lod_manager._entities[entity_id]["lod"]
+			match lod:
+				EntityLODManager.LOD.FULL: stats["lod_full"] += 1
+				EntityLODManager.LOD.SIMPLIFIED: stats["lod_simplified"] += 1
+				EntityLODManager.LOD.CULLED: stats["lod_culled"] += 1
+	return stats
+
+func set_render_distance(dist: float) -> void:
+	render_distance = dist
+
+func set_max_entities(max_val: int) -> void:
+	max_entities = max_val
+
+func set_lod_enabled(enabled_val: bool) -> void:
+	enable_lod = enabled_val
+	if lod_manager:
+		lod_manager.enabled = enabled_val
+
+func set_culling_enabled(enabled_val: bool) -> void:
+	enable_culling = enabled_val
