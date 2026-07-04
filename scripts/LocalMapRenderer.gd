@@ -71,7 +71,7 @@ func _load_chunk(cx: int, cy: int) -> void:
 	add_child(chunk_root)
 
 	var biome_name: String = str(_map_data.get("biome", "Ash Wastes"))
-	var btm: BiomeTilesetManager = get_node_or_null("/root/BiomeTilesetManager") as BiomeTilesetManager
+	var btm: BiomeTilesetManager = get_node_or_null("/root/BiomeTilesets") as BiomeTilesetManager
 	var has_ts: bool = is_instance_valid(btm) and btm.has_tileset(biome_name)
 
 	var cells: Dictionary = {}
