@@ -24,6 +24,7 @@ var _world_size: int = 12
 var _updating_size: bool = false
 var _cursor_q: int = 0
 var _cursor_r: int = 0
+var _preview_focused: bool = false
 
 const DEFAULT_SEED := "UNDEREARTH_001"
 const SIZE_RADII := {"small": 6, "medium": 12, "large": 18}
@@ -115,6 +116,7 @@ func _on_generate_pressed() -> void:
 			_cursor_r = int(parts[1])
 		select_hex(start_tile_key)
 		_update_cursor_highlight()
+		_preview_focused = true
 
 	continue_btn.disabled = false
 	print("[WorldGeneration] Hex sphere generated with seed: ", chosen_seed)
@@ -184,10 +186,11 @@ func _render_hex_preview() -> void:
 	print("[WorldGeneration] Rendered %d hexes (radius=%d, size=%.1f)" % [generated_world.size(), _world_size, hex_size])
 
 
-func _unhandled_input(event: InputEvent) -> void:
+func _input(event: InputEvent) -> void:
 	if generated_world.is_empty():
 		return
 
+	# Mouse click: hit-test hexes in the preview panel
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var click_pos: Vector2 = hex_grid.get_local_mouse_position()
 		for key in _hex_nodes:
@@ -198,10 +201,17 @@ func _unhandled_input(event: InputEvent) -> void:
 				_cursor_r = poly.get_meta("r", 0)
 				select_hex(key)
 				_update_cursor_highlight()
+				_preview_focused = true
 				get_viewport().gui_release_focus()
 				return
 
+	# Click anywhere else loses preview focus
+	_preview_focused = false
+
+	# Keyboard navigation: only when no text field has focus
 	if event is InputEventKey and event.pressed and not event.echo:
+		if not _preview_focused:
+			return
 		var dir: Vector2i
 		match event.keycode:
 			KEY_W, KEY_UP:
@@ -214,7 +224,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				dir = Vector2i(1, 0)
 			KEY_ENTER, KEY_SPACE:
 				_maybe_select_cursor()
-				return
+				get_viewport().gui_release_focus()
 			_:
 				return
 		_try_move_cursor(dir.x, dir.y)
