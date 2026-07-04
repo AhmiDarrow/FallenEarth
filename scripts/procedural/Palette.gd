@@ -20,6 +20,13 @@ const COLORS = {
 	"leaf": Color("#4A7A4A"),
 	"cloud": Color("#EEEEEE"),
 	"rune": Color("#B855FF"),
+	"sand": Color("#C4A86A"),
+	"bone": Color("#D4C5A9"),
+	"storm": Color("#4A5A7A"),
+	"marsh": Color("#3B5E3B"),
+	"city_ash": Color("#3A3040"),
+	"iron": Color("#5A4A3A"),
+	"neon": Color("#00D4AA"),
 }
 
 func get_color(key: String) -> Color:
