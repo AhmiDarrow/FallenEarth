@@ -226,12 +226,15 @@ static func _pick_enemy_class(archetype_key: String, rng: RandomNumberGenerator)
 
 
 static func _pick_enemy_traits(archetype_key: String, rng: RandomNumberGenerator) -> Array[String]:
-	var pool: Array = ["aggressive", "unhinged", "fearless", "cunning", "feral"]
-	if archetype_key == "behemoth":
-		pool = ["fearless", "aggressive"]
-	if archetype_key == "aberrant":
-		pool = ["unhinged", "feral"]
-	return pool[rng.randi() % pool.size()]
+	var pool: PackedStringArray
+	match archetype_key:
+		"behemoth":
+			pool = PackedStringArray(["fearless", "aggressive"])
+		"aberrant":
+			pool = PackedStringArray(["unhinged", "feral"])
+		_:
+			pool = PackedStringArray(["aggressive", "unhinged", "fearless", "cunning", "feral"])
+	return PackedStringArray([pool[rng.randi() % pool.size()]])
 
 
 static func _roll_appearance(opts: Dictionary, rng: RandomNumberGenerator) -> Dictionary:
