@@ -69,12 +69,15 @@
 
 ---
 
-## Asset work (parallel agent — not coding queue)
+## Asset work (PixelLab API — in progress)
 
-- Hand-drawn tilesets per biome (ComfyUI)
-- Character sprites (24 race×gender combos)
-- UI panels/icons
+- [x] Human male base sprite (128px) + 8 rotations + 32 walk frames → `assets/characters/`
+- [ ] Remaining 23 race×gender combos (same pipeline)
+- [ ] Mob sprites (10 types)
+- [ ] Idle animation frames (8 dirs × 4 frames per character)
+- [ ] Attack animation frames
 - Integration point: `LocalMapRenderer` overlay + `CharacterVisual`
+- **API key & pipeline documented in `memory/PROJECT_MEMORY.md`**
 
 ---
 
