@@ -25,6 +25,7 @@ var _updating_size: bool = false
 var _cursor_q: int = 0
 var _cursor_r: int = 0
 var _preview_focused: bool = false
+var _selected_glow: Polygon2D = null
 
 const DEFAULT_SEED := "UNDEREARTH_001"
 const SIZE_RADII := {"small": 6, "medium": 12, "large": 18}
@@ -129,6 +130,7 @@ func _render_hex_preview() -> void:
 			continue
 		c.queue_free()
 	_hex_nodes.clear()
+	_selected_glow = null
 
 	if generated_world.is_empty():
 		return
@@ -295,10 +297,10 @@ func select_hex(key: String) -> void:
 func _draw_selection_glow(poly: Polygon2D) -> void:
 	if not is_instance_valid(poly):
 		return
-	# Remove old glow
-	for c in hex_grid.get_children():
-		if c is Polygon2D and c.name == "SelectionGlow":
-			c.queue_free()
+	# Remove old glow immediately
+	if is_instance_valid(_selected_glow):
+		_selected_glow.queue_free()
+		_selected_glow = null
 
 	var glow := Polygon2D.new()
 	glow.name = "SelectionGlow"
@@ -308,6 +310,7 @@ func _draw_selection_glow(poly: Polygon2D) -> void:
 	glow.scale = Vector2(1.12, 1.12)
 	hex_grid.add_child(glow)
 	hex_grid.move_child(glow, hex_grid.get_child_count() - 2)
+	_selected_glow = glow
 
 
 func _on_continue_pressed() -> void:
