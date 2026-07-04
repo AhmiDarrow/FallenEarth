@@ -181,6 +181,7 @@ func _setup_map_renderer() -> void:
 		_marker_layer.queue_free()
 	_marker_layer = Node2D.new()
 	_marker_layer.name = "MarkerLayer"
+	_marker_layer.z_index = 50
 	world_grid.add_child(_marker_layer)
 
 
@@ -298,26 +299,28 @@ func _reset_to_idle(dir_idx: int) -> void:
 
 
 func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 24) -> void:
-	var size := Vector2(14, 14)
+	var sz := Vector2(14, 14)
 	match kind:
 		"player":
-			size = Vector2(20, 20)
+			sz = Vector2(20, 20)
 		"mob":
-			size = Vector2(12, 12)
+			sz = Vector2(18, 18)
 		"npc":
-			size = Vector2(16, 16)
+			sz = Vector2(16, 16)
 		"rift":
-			size = Vector2(10, 10)
+			sz = Vector2(14, 14)
 
-	var tex := _make_circle_texture(color, size)
+	var tex := _make_circle_texture(color, sz)
 	var spr := Sprite2D.new()
 	spr.texture = tex
 	spr.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+	spr.z_index = 100
 
 	if kind == "player":
 		var glow := Sprite2D.new()
-		glow.texture = _make_circle_texture(Color(color.r, color.g, color.b, 0.3), size * 1.6)
+		glow.texture = _make_circle_texture(Color(color.r, color.g, color.b, 0.3), sz * 1.6)
 		glow.position = spr.position
+		glow.z_index = 99
 		if is_instance_valid(_marker_layer):
 			_marker_layer.add_child(glow)
 
