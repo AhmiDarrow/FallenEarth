@@ -1,6 +1,7 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3 uid="uid://b8rtx3u4vv1yk"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_mfk0p"]
+[ext_resource type="Texture2D" uid="uid://bv6wiephmt4nj" path="res://scenes/ui/image2.jpg" id="2_uosv7"]
 
 [sub_resource type="StyleBoxFlat" id="button_normal"]
 bg_color = Color(0.2, 0.15, 0.3, 1)
@@ -11,10 +12,11 @@ border_width_bottom = 2
 border_color = Color(0.6, 0.5, 0.8, 1)
 corner_radius_top_left = 4
 corner_radius_top_right = 4
-corner_radius_bottom_left = 4
 corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
 
 [node name="MainMenu" type="Control"]
+layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -23,64 +25,65 @@ grow_vertical = 2
 script = ExtResource("1_mfk0p")
 
 [node name="Background" type="ColorRect" parent="."]
-anchors_preset = 15
+layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.04, 0.02, 0.06, 1)
 
+[node name="Image2" type="Sprite2D" parent="."]
+position = Vector2(640, 358)
+scale = Vector2(1.09589, 1)
+texture = ExtResource("2_uosv7")
+
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-anchors_preset = 0
+layout_mode = 1
+anchors_preset = -1
 anchor_left = 0.3
 anchor_top = 0.2
 anchor_right = 0.7
 anchor_bottom = 0.8
-offset_left = 0.0
-offset_top = 0.0
-offset_right = 0.0
-offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
-layout_mode = 1
-theme_override_constants/separation = 12
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_constants/separation = 12
 
 [node name="TitleLabel" type="RichTextLabel" parent="VBoxContainer"]
 custom_minimum_size = Vector2(320, 64)
-horizontal_alignment = 1
-autowrap_mode = 4
+layout_mode = 2
 size_flags_horizontal = 4
 bbcode_enabled = true
 text = "[center][b]FALLEN EARTH[/b][/center]"
+autowrap_mode = 4
 
 [node name="NewGameButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(300, 50)
-theme_override_font_sizes/normal_font_size = 20
-theme_override_styles/normal = SubResource("button_normal")
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+layout_mode = 2
 size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("button_normal")
 text = "▶ New Game"
 
 [node name="LoadGameButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(300, 50)
-theme_override_font_sizes/normal_font_size = 20
-theme_override_styles/normal = SubResource("button_normal")
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+layout_mode = 2
 size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("button_normal")
 text = "📂 Load Game"
 
 [node name="OptionsButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(300, 50)
-theme_override_font_sizes/normal_font_size = 20
-theme_override_styles/normal = SubResource("button_normal")
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+layout_mode = 2
 size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("button_normal")
 text = "⚙ Options"
 
 [node name="ExitButton" type="Button" parent="VBoxContainer"]
 custom_minimum_size = Vector2(300, 50)
-theme_override_font_sizes/normal_font_size = 20
-theme_override_styles/normal = SubResource("button_normal")
-theme_override_colors/font_color = Color(1, 1, 1, 1)
+layout_mode = 2
 size_flags_horizontal = 4
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_styles/normal = SubResource("button_normal")
 text = "🚪 Exit"
