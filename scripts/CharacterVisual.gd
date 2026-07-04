@@ -164,14 +164,14 @@ func _draw() -> void:
 
 	if _frame_textures.has(key):
 		var atlas = _frame_textures[key]
-		# Center the sprite
-		var offset: Vector2 = Vector2(-FRAME_WIDTH * 0.5, -FRAME_HEIGHT * 0.5)
+		# Center the sprite — offset based on actual texture size
+		var tex_w: float = float(FRAME_WIDTH)
+		var tex_h: float = float(FRAME_HEIGHT)
 		if atlas is Texture2D:
-			draw_texture(atlas, offset)
-		elif atlas is AtlasTexture:
-			draw_texture(atlas, offset)
-		else:
-			draw_texture(atlas, offset)
+			tex_w = float(atlas.get_width())
+			tex_h = float(atlas.get_height())
+		var offset: Vector2 = Vector2(-tex_w * 0.5, -tex_h * 0.5)
+		draw_texture(atlas, offset)
 	else:
 		# Fallback: draw a colored rectangle with race label
 		var color: Color = _race_color()
