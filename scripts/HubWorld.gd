@@ -256,18 +256,18 @@ func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cel
 
 
 func _make_circle_texture(color: Color, size: Vector2) -> Texture2D:
-	var radius := min(size.x, size.y) * 0.5
+	var radius: float = min(size.x, size.y) * 0.5
 	var diameter := int(radius * 2.0)
 	var img := Image.create(diameter, diameter, false, Image.FORMAT_RGBA8)
 	var center := Vector2(radius, radius)
-	var r2 := radius * radius
+	var r2: float = radius * radius
 	for py in diameter:
 		for px in diameter:
 			var dx := float(px) + 0.5 - center.x
 			var dy := float(py) + 0.5 - center.y
 			var dist2 := dx * dx + dy * dy
 			if dist2 <= r2:
-				var t := 1.0 - sqrt(dist2) / radius
+				var t: float = 1.0 - sqrt(dist2) / radius
 				var c := color.lerp(Color(color.r, color.g, color.b, 1.0), t * 0.4)
 				img.set_pixel(px, py, c)
 			else:
