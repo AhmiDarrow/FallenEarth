@@ -14,6 +14,18 @@ corner_radius_top_right = 4
 corner_radius_bottom_left = 4
 corner_radius_bottom_right = 4
 
+[sub_resource type="StyleBoxFlat" id="info_panel"]
+bg_color = Color(0.08, 0.06, 0.12, 1)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.3, 0.25, 0.4, 1)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_left = 4
+corner_radius_bottom_right = 4
+
 [node name="WorldGeneration" type="Control"]
 anchors_preset = 15
 anchor_right = 1.0
@@ -28,79 +40,144 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 color = Color(0.04, 0.02, 0.06, 1)
 
-[node name="MainVBox" type="VBoxContainer" parent="."]
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -200.0
-offset_right = 300.0
-offset_bottom = 200.0
+[node name="VBox" type="VBoxContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 16
+offset_left = 12
+offset_top = 8
+offset_right = -12
+offset_bottom = -8
+theme_override_constants/separation = 8
 
-[node name="TitleLabel" type="RichTextLabel" parent="MainVBox"]
-custom_minimum_size = Vector2(0, 60)
-bbcode_enabled = true
-text = "[center][b]WORLD GENERATION[/b][/center]"
-horizontal_alignment = 1
-
-[node name="Instructions" type="RichTextLabel" parent="MainVBox"]
-bbcode_enabled = true
-text = "[center]Choose a seed to generate the hexagonal sphere world (RimWorld inspired: biomes from lat/temp/elev/rain).
-Then select your starting grid/tile like choosing a colony site.
-World gen first, then character creation, then overworld at chosen hex.[/center]"
-horizontal_alignment = 1
-autowrap_mode = 3
-
-[node name="SeedHBox" type="HBoxContainer" parent="MainVBox"]
-theme_override_constants/separation = 12
+[node name="TopBar" type="HBoxContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 50)
 alignment = 1
+theme_override_constants/separation = 24
 
-[node name="SeedLabel" type="Label" parent="MainVBox/SeedHBox"]
+[node name="TitleLabel" type="RichTextLabel" parent="VBox/TopBar"]
+bbcode_enabled = true
+text = "[b]WORLD GENERATION[/b]"
+vertical_alignment = 1
+
+[node name="SeedHBox" type="HBoxContainer" parent="VBox/TopBar"]
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="SeedLabel" type="Label" parent="VBox/TopBar/SeedHBox"]
 text = "Seed:"
+vertical_alignment = 1
 
-[node name="SeedEdit" type="LineEdit" parent="MainVBox/SeedHBox"]
-custom_minimum_size = Vector2(300, 0)
+[node name="SeedEdit" type="LineEdit" parent="VBox/TopBar/SeedHBox"]
+custom_minimum_size = Vector2(260, 0)
 size_flags_horizontal = 3
 text = "UNDEREARTH_001"
 placeholder_text = "Enter world seed"
 
-[node name="RandomButton" type="Button" parent="MainVBox/SeedHBox"]
-custom_minimum_size = Vector2(100, 40)
+[node name="RandomButton" type="Button" parent="VBox/TopBar/SeedHBox"]
+custom_minimum_size = Vector2(80, 36)
 theme_override_styles/normal = SubResource("button_normal")
 text = "Random"
 
-[node name="ButtonsHBox" type="HBoxContainer" parent="MainVBox"]
-theme_override_constants/separation = 20
-alignment = 1
+[node name="SizeHBox" type="HBoxContainer" parent="VBox/TopBar"]
+theme_override_constants/separation = 6
+alignment = 2
 
-[node name="GenerateButton" type="Button" parent="MainVBox/ButtonsHBox"]
-custom_minimum_size = Vector2(180, 50)
+[node name="SizeLabel" type="Label" parent="VBox/TopBar/SizeHBox"]
+text = "Size:"
+vertical_alignment = 1
+
+[node name="SmallBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
+custom_minimum_size = Vector2(70, 36)
+theme_override_styles/normal = SubResource("button_normal")
+text = "Small"
+toggle_mode = true
+
+[node name="MediumBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
+custom_minimum_size = Vector2(70, 36)
+theme_override_styles/normal = SubResource("button_normal")
+text = "Medium"
+toggle_mode = true
+button_pressed = true
+
+[node name="LargeBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
+custom_minimum_size = Vector2(70, 36)
+theme_override_styles/normal = SubResource("button_normal")
+text = "Large"
+toggle_mode = true
+
+[node name="GenerateBtn" type="Button" parent="VBox/TopBar"]
+custom_minimum_size = Vector2(140, 40)
 theme_override_styles/normal = SubResource("button_normal")
 text = "Generate World"
 
-[node name="ContinueButton" type="Button" parent="MainVBox/ButtonsHBox"]
-custom_minimum_size = Vector2(180, 50)
-theme_override_styles/normal = SubResource("button_normal")
-text = "Continue to Character"
+[node name="ContentHBox" type="HBoxContainer" parent="VBox"]
+size_flags_vertical = 3
+theme_override_constants/separation = 12
 
-[node name="StatusLabel" type="RichTextLabel" parent="MainVBox"]
-custom_minimum_size = Vector2(0, 80)
+[node name="PreviewPanel" type="Panel" parent="VBox/ContentHBox"]
+custom_minimum_size = Vector2(400, 0)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("info_panel")
+
+[node name="Margin" type="MarginContainer" parent="VBox/ContentHBox/PreviewPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 4
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 4
+theme_override_constants/margin_bottom = 4
+
+[node name="HexGrid" type="Node2D" parent="VBox/ContentHBox/PreviewPanel/Margin"]
+clip_contents = true
+
+[node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/PreviewPanel/Margin/HexGrid"]
+enabled = false
+
+[node name="SideVBox" type="VBoxContainer" parent="VBox/ContentHBox"]
+size_flags_horizontal = 1
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="WorldInfoPanel" type="Panel" parent="VBox/ContentHBox/SideVBox"]
+custom_minimum_size = Vector2(0, 140)
+size_flags_horizontal = 3
+theme_override_styles/panel = SubResource("info_panel")
+
+[node name="WorldInfoLabel" type="RichTextLabel" parent="VBox/ContentHBox/SideVBox/WorldInfoPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 bbcode_enabled = true
-text = "[i]Ready to generate...[/i]"
-horizontal_alignment = 1
+text = "[i]World info will appear here after generation.[/i]"
 autowrap_mode = 3
 
-[node name="CandidatesLabel" type="RichTextLabel" parent="MainVBox"]
-custom_minimum_size = Vector2(0, 30)
-bbcode_enabled = true
-text = "[center][b]Choose Starting Grid (RimWorld-style):[/b][/center]"
-visible = false
+[node name="SelectedInfoPanel" type="Panel" parent="VBox/ContentHBox/SideVBox"]
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("info_panel")
 
-[node name="CandidatesContainer" type="VBoxContainer" parent="MainVBox"]
-visible = false
-theme_override_constants/separation = 8
+[node name="SelectedInfoLabel" type="RichTextLabel" parent="VBox/ContentHBox/SideVBox/SelectedInfoPanel"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+bbcode_enabled = true
+text = "[i]Click a hex to see tile info.[/i]"
+autowrap_mode = 3
+
+[node name="ContinueBtn" type="Button" parent="VBox/ContentHBox/SideVBox"]
+custom_minimum_size = Vector2(0, 48)
+size_flags_horizontal = 3
+theme_override_styles/normal = SubResource("button_normal")
+text = "Continue to Character"
+disabled = true

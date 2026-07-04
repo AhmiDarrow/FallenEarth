@@ -1,88 +1,239 @@
-## WorldGeneration — Simple screen for choosing seed and generating the overworld before character creation.
+## WorldGeneration — Visual hex-sphere preview with click-to-select starting tile.
 extends Control
 
-@onready var seed_edit: LineEdit = $MainVBox/SeedHBox/SeedEdit
-@onready var generate_btn: Button = $MainVBox/ButtonsHBox/GenerateButton
-@onready var continue_btn: Button = $MainVBox/ButtonsHBox/ContinueButton
-@onready var status_label: RichTextLabel = $MainVBox/StatusLabel
-@onready var candidates_container: VBoxContainer = $MainVBox/CandidatesContainer  # Assume added in scene or create dynamically
+@onready var seed_edit: LineEdit = $VBox/TopBar/SeedHBox/SeedEdit
+@onready var random_btn: Button = $VBox/TopBar/SeedHBox/RandomButton
+@onready var small_btn: Button = $VBox/TopBar/SizeHBox/SmallBtn
+@onready var medium_btn: Button = $VBox/TopBar/SizeHBox/MediumBtn
+@onready var large_btn: Button = $VBox/TopBar/SizeHBox/LargeBtn
+@onready var generate_btn: Button = $VBox/TopBar/GenerateBtn
+@onready var continue_btn: Button = $VBox/ContentHBox/SideVBox/ContinueBtn
+@onready var hex_grid: Node2D = $VBox/ContentHBox/PreviewPanel/Margin/HexGrid
+@onready var preview_panel: Panel = $VBox/ContentHBox/PreviewPanel
+@onready var world_info_label: RichTextLabel = $VBox/ContentHBox/SideVBox/WorldInfoPanel/WorldInfoLabel
+@onready var selected_info_label: RichTextLabel = $VBox/ContentHBox/SideVBox/SelectedInfoPanel/SelectedInfoLabel
 
 var world_generator: WorldGenerator = null
 var generated_seed: String = ""
 var generated_world: Dictionary = {}
 var start_tile_key: String = ""
 var start_tile_info: Dictionary = {}
-var _candidate_buttons: Array = []
+var _hex_nodes: Dictionary = {}  # "q,r" -> Polygon2D
+var _selected_key: String = ""
+var _world_size: int = 12
+var _updating_size: bool = false
 
 const DEFAULT_SEED := "UNDEREARTH_001"
+const SIZE_RADII := {"small": 6, "medium": 12, "large": 18}
+
+const BIOME_COLORS := {
+	"Ash Wastes": Color(0.75, 0.65, 0.5),
+	"Rust Canyons": Color(0.85, 0.45, 0.35),
+	"Neon Bogs": Color(0.4, 0.85, 0.55),
+	"Scorched Plains": Color(0.9, 0.6, 0.3),
+	"Ironwood Thicket": Color(0.35, 0.6, 0.35),
+	"Glass Dunes": Color(0.7, 0.8, 0.95),
+	"Corpse Fields": Color(0.55, 0.45, 0.5),
+	"Stormspire Highlands": Color(0.5, 0.55, 0.75),
+	"Toxin Marshes": Color(0.45, 0.7, 0.4),
+	"Dead City Outskirts": Color(0.5, 0.5, 0.55),
+}
+
 
 func _ready() -> void:
+	random_btn.pressed.connect(_on_random_seed_pressed)
 	generate_btn.pressed.connect(_on_generate_pressed)
 	continue_btn.pressed.connect(_on_continue_pressed)
-	
-	# Optional: random button
-	if has_node("MainVBox/SeedHBox/RandomButton"):
-		$MainVBox/SeedHBox/RandomButton.pressed.connect(_on_random_seed_pressed)
-	
+
+	small_btn.toggled.connect(_on_size_toggled.bind("small"))
+	medium_btn.toggled.connect(_on_size_toggled.bind("medium"))
+	large_btn.toggled.connect(_on_size_toggled.bind("large"))
+
 	seed_edit.text = DEFAULT_SEED
 	continue_btn.disabled = true
-	status_label.text = "[i]Enter a seed and generate the hexagonal sphere world (RimWorld-inspired). Then choose starting grid.[/i]"
-	
-	# Ensure candidates container
-	if not has_node("MainVBox/CandidatesContainer"):
-		var cont := VBoxContainer.new()
-		cont.name = "CandidatesContainer"
-		$MainVBox.add_child(cont)
-		candidates_container = cont
-		candidates_container.visible = false
-	
-	# Auto-load the generator
-	world_generator = load("res://scripts/WorldGenerator.gd").new()
-	if world_generator == null or not world_generator.initialize():
-		status_label.text = "[color=red]Failed to load biome data! Check data/biomes.json[/color]"
+	_update_world_info_label()
+	_update_selected_info_label()
+
+	world_generator = WorldGenerator.new()
+	add_child(world_generator)
+	if not world_generator.initialize():
+		world_info_label.text = "[color=red]Failed to load biome data![/color]"
 		generate_btn.disabled = true
+
 
 func _on_random_seed_pressed() -> void:
 	seed_edit.text = "SEED_" + str(randi() % 100000)
 
+
+func _on_size_toggled(pressed: bool, size_name: String) -> void:
+	if not pressed or _updating_size:
+		return
+	_updating_size = true
+	_world_size = SIZE_RADII[size_name]
+	small_btn.button_pressed = (size_name == "small")
+	medium_btn.button_pressed = (size_name == "medium")
+	large_btn.button_pressed = (size_name == "large")
+	_updating_size = false
+
+
 func _on_generate_pressed() -> void:
-	var chosen_seed = seed_edit.text.strip_edges()
+	var chosen_seed: String = seed_edit.text.strip_edges()
 	if chosen_seed.is_empty():
 		chosen_seed = DEFAULT_SEED
 		seed_edit.text = chosen_seed
-	
-	status_label.text = "[i]Generating hexagonal sphere world for seed: " + chosen_seed + "...[/i]"
-	
-	if world_generator == null or not world_generator.initialize():
-		status_label.text = "[color=red]World generator not ready. Check biomes.json.[/color]"
+
+	world_info_label.text = "[i]Generating hexagonal sphere world for seed: " + chosen_seed + "...[/i]"
+
+	if not world_generator.initialize():
+		world_info_label.text = "[color=red]World generator not ready. Check biomes.json.[/color]"
 		return
-	
-	generated_world = world_generator.generate(chosen_seed)
+
+	generated_world = world_generator.generate(chosen_seed, 1.0, _world_size)
 	generated_seed = chosen_seed
-	
-	var cands = world_generator.get_starting_candidates(3)
-	var info_str = ""
+
+	# Auto-pick best start candidate
+	var cands = world_generator.get_starting_candidates(5)
 	if cands.size() > 0:
 		start_tile_key = cands[0]["key"]
 		start_tile_info = cands[0]["tile"]
-		info_str = "\nDefault start: " + start_tile_info.get("name", "Unknown") + " (q,r: " + start_tile_key + ")"
-	
-	status_label.text = "[color=green]Hex sphere generated![/color]\n" + \
-		"Seed: " + chosen_seed + "\n" + \
-		"Tiles: " + str(generated_world.size()) + info_str + \
-		"\nSelect a starting grid below (RimWorld-style site selection):"
-	
-	_show_start_candidates(cands)
-	
+
+	_render_hex_preview()
+	_update_world_info_label()
+
+	if start_tile_key != "":
+		select_hex(start_tile_key)
+
 	continue_btn.disabled = false
 	print("[WorldGeneration] Hex sphere generated with seed: ", chosen_seed)
 
-func _on_continue_pressed() -> void:
+
+func _render_hex_preview() -> void:
+	# Clear old hexes
+	for c in hex_grid.get_children():
+		if c is Camera2D:
+			continue
+		c.queue_free()
+	_hex_nodes.clear()
+
 	if generated_world.is_empty():
-		push_warning("Generate the world first!")
 		return
-	
-	# Store in GameState: world + start tile (RimWorld style player choice)
+
+	# Determine hex render size based on world radius so sphere fits in preview
+	var hex_size: float = 168.0 / max(1, _world_size)
+	var shape: PackedVector2Array = WorldGenerator.hex_shape(hex_size)
+
+	# Compute bounding box to center the grid
+	var min_pos := Vector2(INF, INF)
+	var max_pos := Vector2(-INF, -INF)
+	var hex_centers: Dictionary = {}  # key -> Vector2
+
+	for key in generated_world.keys():
+		var parts: PackedStringArray = key.split(",")
+		if parts.size() < 2:
+			continue
+		var q := int(parts[0])
+		var r := int(parts[1])
+		var pos := WorldGenerator.axial_to_pixel(q, r, hex_size)
+		hex_centers[key] = pos
+		min_pos.x = minf(min_pos.x, pos.x)
+		min_pos.y = minf(min_pos.y, pos.y)
+		max_pos.x = maxf(max_pos.x, pos.x)
+		max_pos.y = maxf(max_pos.y, pos.y)
+
+	var center_offset := (min_pos + max_pos) * 0.5
+
+	# Render each hex
+	for key in generated_world.keys():
+		var tile: Dictionary = generated_world[key]
+		var pos: Vector2 = hex_centers[key]
+
+		var poly := Polygon2D.new()
+		poly.polygon = shape
+		poly.position = pos - center_offset  # center the grid
+		poly.color = _biome_color(str(tile.get("name", "")))
+
+		if tile.get("is_start_candidate", false):
+			poly.modulate = Color(1, 1, 1, 1)
+		else:
+			poly.modulate = Color(0.85, 0.85, 0.85, 0.85)
+
+		poly.set_meta("q", tile.get("q", 0))
+		poly.set_meta("r", tile.get("r", 0))
+		poly.set_meta("key", key)
+		hex_grid.add_child(poly)
+		_hex_nodes[key] = poly
+
+	print("[WorldGeneration] Rendered %d hexes (radius=%d, size=%.1f)" % [generated_world.size(), _world_size, hex_size])
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if generated_world.is_empty():
+		return
+	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
+		return
+
+	var click_pos: Vector2 = hex_grid.get_local_mouse_position()
+	# Hit-test against each hex polygon
+	for key in _hex_nodes:
+		var poly: Polygon2D = _hex_nodes[key]
+		var rel := click_pos - poly.position
+		if Geometry2D.is_point_in_polygon(rel, poly.polygon):
+			select_hex(key)
+			return
+
+
+func select_hex(key: String) -> void:
+	_selected_key = key
+	start_tile_key = key
+	start_tile_info = generated_world.get(key, {})
+
+	# Highlight selected hex
+	for k in _hex_nodes:
+		var poly: Polygon2D = _hex_nodes[k]
+		if k == key:
+			poly.color = Color(1.0, 0.85, 0.4)
+			poly.modulate = Color(1, 1, 1, 1)
+		else:
+			var tile: Dictionary = generated_world.get(k, {})
+			poly.color = _biome_color(str(tile.get("name", "")))
+			if tile.get("is_start_candidate", false):
+				poly.modulate = Color(1, 1, 1, 1)
+			else:
+				poly.modulate = Color(0.85, 0.85, 0.85, 0.85)
+
+	# Move selected to top
+	if _hex_nodes.has(key):
+		hex_grid.move_child(_hex_nodes[key], hex_grid.get_child_count() - 1)
+
+	# Draw golden glow ring around selected
+	_draw_selection_glow(_hex_nodes.get(key))
+
+	_update_selected_info_label()
+	print("[WorldGeneration] Selected hex: %s" % key)
+
+
+func _draw_selection_glow(poly: Polygon2D) -> void:
+	if not is_instance_valid(poly):
+		return
+	# Remove old glow
+	for c in hex_grid.get_children():
+		if c is Polygon2D and c.name == "SelectionGlow":
+			c.queue_free()
+
+	var glow := Polygon2D.new()
+	glow.name = "SelectionGlow"
+	glow.polygon = poly.polygon
+	glow.position = poly.position
+	glow.color = Color(1.0, 0.85, 0.4, 0.5)
+	glow.scale = Vector2(1.12, 1.12)
+	hex_grid.add_child(glow)
+	hex_grid.move_child(glow, hex_grid.get_child_count() - 2)
+
+
+func _on_continue_pressed() -> void:
+	if generated_world.is_empty() or start_tile_key.is_empty():
+		return
+
 	var gs := get_node_or_null("/root/GameState")
 	if is_instance_valid(gs) and gs.has_method("set_world_data"):
 		gs.call("set_world_data", generated_seed, generated_world)
@@ -93,50 +244,70 @@ func _on_continue_pressed() -> void:
 	if is_instance_valid(nm) and nm.has_method("generate_for_world"):
 		var roster: Variant = nm.call("generate_for_world", generated_seed, generated_world, start_tile_key)
 		var npc_count: int = roster.size() if roster is Dictionary else 0
-		print("[WorldGeneration] Procedural NPC roster: %d unique recruits for this seed." % npc_count)
-	
-	print("[WorldGeneration] World hex sphere ready. Start tile: ", start_tile_key, ". Proceeding to character selection.")
-	
+		print("[WorldGeneration] Procedural NPC roster: %d unique recruits." % npc_count)
+
+	print("[WorldGeneration] World ready. Start tile: ", start_tile_key)
 	var gm := get_node_or_null("/root/GameManager")
 	if is_instance_valid(gm) and gm.has_method("go_to_character_select"):
 		gm.call_deferred("go_to_character_select")
-	else:
-		push_error("GameManager not found")
 
-func _show_start_candidates(cands: Array) -> void:
-	# Clear previous
-	for btn in _candidate_buttons:
-		if is_instance_valid(btn): btn.queue_free()
-	_candidate_buttons.clear()
-	
-	if not has_node("MainVBox/CandidatesContainer"):
-		var cont = VBoxContainer.new()
-		cont.name = "CandidatesContainer"
-		$MainVBox.add_child(cont)
-		candidates_container = cont
-	
-	candidates_container.visible = true
-	if has_node("MainVBox/CandidatesLabel"):
-		get_node("MainVBox/CandidatesLabel").visible = true
-	
-	for cand in cands:
-		var tile = cand["tile"]
-		var key = cand["key"]
-		var btn := Button.new()
-		var biome = tile.get("name", "Unknown")
-		var desc = "Temp:%.1f Rain:%.1f Elev:%.1f Rift:%.1f" % [
-			tile.get("temperature", 0), tile.get("rainfall", 0), tile.get("elevation", 0), tile.get("rift_chance", 0)
-		]
-		btn.text = "%s (%s) - %s" % [biome, key, desc]
-		btn.pressed.connect(_on_start_tile_selected.bind(key, tile))
-		candidates_container.add_child(btn)
-		_candidate_buttons.append(btn)
 
-func _on_start_tile_selected(key: String, tile: Dictionary) -> void:
-	start_tile_key = key
-	start_tile_info = tile
-	status_label.text += "\n\nSelected start: %s at %s" % [tile.get("name", "?"), key]
-	for btn in _candidate_buttons:
-		if is_instance_valid(btn):
-			btn.modulate = Color(1,1,1) if btn.text.find(key) == -1 else Color(1,1,0.5)
-	print("[WorldGeneration] Player chose starting grid: ", key)
+func _update_world_info_label() -> void:
+	if generated_world.is_empty():
+		world_info_label.text = "[i]Enter a seed and generate the world. Then click a hex to select your starting location.[/i]"
+		return
+
+	var size_name := "Medium"
+	if _world_size == 6: size_name = "Small"
+	elif _world_size == 18: size_name = "Large"
+
+	# Biome distribution
+	var biome_counts: Dictionary = {}
+	for key in generated_world:
+		var b: String = str(generated_world[key].get("name", "?"))
+		biome_counts[b] = biome_counts.get(b, 0) + 1
+
+	var biome_lines: PackedStringArray = []
+	for b in biome_counts:
+		biome_lines.append("%s: %d" % [b, biome_counts[b]])
+
+	world_info_label.text = (
+		"[b]WORLD INFO[/b]\n" +
+		"Seed: %s | %s (r=%d)\n" % [generated_seed, size_name, _world_size] +
+		"Tiles: %d | Biomes: %d\n" % [generated_world.size(), biome_counts.size()] +
+		"%s" % ", ".join(biome_lines)
+	)
+
+
+func _update_selected_info_label() -> void:
+	if _selected_key.is_empty() or start_tile_info.is_empty():
+		selected_info_label.text = "[i]Click a hex to see tile info.[/i]"
+		return
+
+	var t: Dictionary = start_tile_info
+	var biome: String = str(t.get("name", "?"))
+	var temp: float = float(t.get("temperature", 0)) * 100.0
+	var rain: float = float(t.get("rainfall", 0)) * 100.0
+	var elev: float = float(t.get("elevation", 0))
+	var rift: float = float(t.get("rift_chance", 0)) * 100.0
+	var danger: String = str(t.get("danger_level", "unknown"))
+	var features: Array = t.get("features", [])
+	var risks: Array = t.get("survival_risks", [])
+
+	var lines: PackedStringArray = [
+		"[b]SELECTED HEX[/b]",
+		"[color=#c8e6c9]%s[/color] (%s)" % [biome, _selected_key],
+		"Temp: %.0f%% | Rain: %.0f%%" % [temp, rain],
+		"Elev: %.2f | Rift: %.0f%%" % [elev, rift],
+		"Danger: %s" % danger.capitalize(),
+	]
+	if features.size() > 0:
+		lines.append("Features: %s" % ", ".join(features))
+	if risks.size() > 0:
+		lines.append("[color=#ffab91]Risks: %s[/color]" % ", ".join(risks))
+
+	selected_info_label.text = "\n".join(lines)
+
+
+static func _biome_color(biome: String) -> Color:
+	return BIOME_COLORS.get(biome, Color(0.35, 0.35, 0.4))
