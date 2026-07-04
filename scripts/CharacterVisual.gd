@@ -65,17 +65,31 @@ func set_base_sprite(race: String, gender: String) -> void:
 	_sprite_sheet = null
 
 	# Try to load sprite sheet
-	var path: String = "res://assets/characters/%s_%s/%s_%s_spritesheet.png" % [
+	var sheet_path: String = "res://assets/characters/%s_%s/%s_%s_spritesheet.png" % [
 		current_race, current_gender, current_race, current_gender
 	]
-	if ResourceLoader.exists(path):
-		_sprite_sheet = load(path) as Texture2D
+	if ResourceLoader.exists(sheet_path):
+		_sprite_sheet = load(sheet_path) as Texture2D
 		_build_frame_atlases()
 		_use_procedural_graphics = false
-		print("[CharacterVisual] Loaded sprite sheet: ", path)
+		print("[CharacterVisual] Loaded sprite sheet: ", sheet_path)
 	else:
-		print("[CharacterVisual] Sprite sheet not found: ", path, " — using procedural fallback")
-		_use_procedural_graphics = true
+		# Fallback: try a single base sprite image
+		var base_path: String = "res://assets/characters/%s_%s/%s_%s_base.png" % [
+			current_race, current_gender, current_race, current_gender
+		]
+		if ResourceLoader.exists(base_path):
+			var base_img: Texture2D = load(base_path) as Texture2D
+			if base_img != null:
+				_build_single_frame_atlases(base_img)
+				_use_procedural_graphics = false
+				print("[CharacterVisual] Loaded base sprite: ", base_path)
+			else:
+				print("[CharacterVisual] Base sprite failed to load: ", base_path, " — using procedural fallback")
+				_use_procedural_graphics = true
+		else:
+			print("[CharacterVisual] No sprites found at: ", sheet_path, " or ", base_path, " — using procedural fallback")
+			_use_procedural_graphics = true
 
 	queue_redraw()
 
@@ -99,8 +113,6 @@ func _build_frame_atlases() -> void:
 		for dir_idx in range(DIR_LABELS.size()):
 			var dir_label: String = DIR_LABELS[dir_idx]
 			for frame in range(FRAMES_PER_ANIM):
-				# Calculate pixel position in sheet
-				# Each direction has 4 frames, so column offset = dir_idx * 4 + frame
 				var col: int = dir_idx * FRAMES_PER_ANIM + frame
 				var row: int = anim_idx
 
@@ -115,6 +127,15 @@ func _build_frame_atlases() -> void:
 
 				var key: String = "%s_%s_%d" % [anim_name, dir_label, frame]
 				_frame_textures[key] = atlas
+
+
+func _build_single_frame_atlases(tex: Texture2D) -> void:
+	# Single base image: use it for all frames (static sprite)
+	for anim_name in ANIMATIONS:
+		for dir_label in DIR_LABELS:
+			for frame in range(FRAMES_PER_ANIM):
+				var key: String = "%s_%s_%d" % [anim_name, dir_label, frame]
+				_frame_textures[key] = tex
 
 
 # -----------------------------------------------------------------------------
@@ -133,7 +154,7 @@ func play_animation(anim_name: String, direction: int = 0, frame: int = 0) -> vo
 # Draw loop — sprite-based or procedural fallback
 # -----------------------------------------------------------------------------
 func _draw() -> void:
-	if _use_procedural_graphics or _sprite_sheet == null:
+	if _use_procedural_graphics:
 		_draw_procedural()
 		return
 
@@ -142,10 +163,15 @@ func _draw() -> void:
 	var key: String = "%s_%s_%d" % [current_anim, dir_label, current_frame]
 
 	if _frame_textures.has(key):
-		var atlas: AtlasTexture = _frame_textures[key]
+		var atlas = _frame_textures[key]
 		# Center the sprite
 		var offset: Vector2 = Vector2(-FRAME_WIDTH * 0.5, -FRAME_HEIGHT * 0.5)
-		draw_texture(atlas, offset)
+		if atlas is Texture2D:
+			draw_texture(atlas, offset)
+		elif atlas is AtlasTexture:
+			draw_texture(atlas, offset)
+		else:
+			draw_texture(atlas, offset)
 	else:
 		# Fallback: draw a colored rectangle with race label
 		var color: Color = _race_color()
