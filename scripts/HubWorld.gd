@@ -117,6 +117,7 @@ func _ready() -> void:
 	_spawn_initial_rift_if_needed()
 	_ensure_world_npcs()
 	_seed_local_mobs()
+	_build_local_view()
 	_save_to_autoslot_if_can()
 
 
@@ -658,6 +659,10 @@ func _seed_local_mobs() -> void:
 	if not is_instance_valid(gs):
 		return
 
+	if _tile_map.is_empty():
+		push_warning("[HubWorld] _tile_map is empty — cannot seed mobs.")
+		return
+
 	var rng := RandomNumberGenerator.new()
 	rng.seed = LocalMapGen.hash_seed(LocalMapGen.make_local_seed(
 		str(gs.get_world_data().get("seed", "mobs")), _player_q, _player_r
@@ -666,6 +671,7 @@ func _seed_local_mobs() -> void:
 	var biome: String = str(tile.get("name", "Ash Wastes"))
 	var danger: float = float(tile.get("rift_chance", 0.25))
 	var count := rng.randi_range(2, 5 + int(danger * 4))
+	var seeded := 0
 
 	for i in count:
 		var lx := rng.randi_range(20, LocalMapGen.MAP_SIZE - 20)
@@ -695,8 +701,9 @@ func _seed_local_mobs() -> void:
 				_npc_manager.call("procedural_mob_generated", str(enemy.get("id", "")), proto)
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
+		seeded += 1
 
-	print("[HubWorld] Local mobs seeded for region (%d,%d)" % [_player_q, _player_r])
+	print("[HubWorld] Local mobs seeded for region (%d,%d): %d mobs placed (attempted %d)" % [_player_q, _player_r, seeded, count])
 
 func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
 	"""Build a procedural mob data dictionary for enemies missing assets.
