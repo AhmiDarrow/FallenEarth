@@ -109,8 +109,6 @@ func _ready() -> void:
 
 	_setup_map_renderer()
 	if is_instance_valid(_map_renderer):
-		var terrain_bytes: PackedByteArray = _local_map.get("terrain", PackedByteArray())
-		print("[HubWorld] _local_map terrain bytes: %d, map size: %d" % [terrain_bytes.size(), _local_map.get("size", 0)])
 		_map_renderer.configure(_local_map)
 	_setup_player_visual()
 	_game_time = Time.get_ticks_msec() / 1000.0
@@ -235,9 +233,6 @@ func _refresh_markers() -> void:
 	if not is_instance_valid(gs):
 		return
 
-	var total_mobs: Dictionary = gs.get_overworld_mobs()
-	print("[HubWorld] _refresh_markers: %d total overworld mobs in GameState" % total_mobs.size())
-
 	if is_instance_valid(_mission_manager) and _mission_manager.has_method("get_mission_at_tile"):
 		var active_mission: Dictionary = _mission_manager.call("get_mission_at_tile", _player_q, _player_r) as Dictionary
 		if not active_mission.is_empty():
@@ -262,8 +257,6 @@ func _refresh_markers() -> void:
 		var my := int(local_parts[1])
 		_add_marker(mx, my, Color(0.95, 0.35, 0.35), "✕", "mob", cell_size)
 		mob_count += 1
-	if mob_count > 0:
-		print("[HubWorld] Rendered %d mob markers for region (%d,%d)" % [mob_count, _player_q, _player_r])
 
 	if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
 		for rift in _rift_runner.get_rifts_in_hex(_player_q, _player_r, _game_time):
@@ -760,13 +753,10 @@ func _seed_local_mobs() -> void:
 			"%d,%d" % [_player_q, _player_r], difficulty, "upworld", biome
 		)
 		if enemy.is_empty():
-			push_warning("[HubWorld] generate_procedural_enemy returned empty for attempt %d" % i)
 			continue
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
 		seeded += 1
-
-	print("[HubWorld] Local mobs seeded for region (%d,%d): %d mobs placed (attempted %d)" % [_player_q, _player_r, seeded, count])
 
 
 func _start_local_combat(lx: int, ly: int, mob: Dictionary, mission: Dictionary = {}) -> void:

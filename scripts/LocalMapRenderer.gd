@@ -17,18 +17,6 @@ var _player_cell := Vector2i.ZERO
 
 func configure(map_data: Dictionary) -> void:
 	_map_data = map_data.duplicate(true)
-	var terrain: PackedByteArray = _map_data.get("terrain", PackedByteArray())
-	var map_size: int = _map_data.get("size", 0)
-	print("[LocalMapRenderer] configure: map_size=%d, terrain.size=%d, has_terrain=%s" % [map_size, terrain.size(), not terrain.is_empty()])
-	if not terrain.is_empty():
-		var blocked := 0
-		var ground := 0
-		for i in mini(terrain.size(), 1000):
-			if terrain[i] == 3:
-				blocked += 1
-			elif terrain[i] == 0:
-				ground += 1
-		print("[LocalMapRenderer] First 1000 tiles: ground=%d blocked=%d" % [ground, blocked])
 	_clear_all_chunks()
 
 
@@ -85,21 +73,15 @@ func _load_chunk(cx: int, cy: int) -> void:
 	var biome_name: String = str(_map_data.get("biome", "Ash Wastes"))
 	var btm: BiomeTilesetManager = get_node_or_null("/root/BiomeTilesets") as BiomeTilesetManager
 	var has_ts: bool = is_instance_valid(btm) and btm.has_tileset(biome_name)
-	if has_ts:
-		print("[LocalMapRenderer] Using Pixellab tileset for: %s" % biome_name)
-	else:
-		print("[LocalMapRenderer] No tileset for %s, using procedural tiles." % biome_name)
 
 	var cells: Dictionary = {}
 	var start_x := cx * CHUNK_CELLS
 	var start_y := cy * CHUNK_CELLS
-	var terrain_counts := {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
 	for dy in CHUNK_CELLS:
 		for dx in CHUNK_CELLS:
 			var x := start_x + dx
 			var y := start_y + dy
 			var terrain: int = LocalMapGen.get_terrain(_map_data, x, y)
-			terrain_counts[terrain] = terrain_counts.get(terrain, 0) + 1
 			var local_key := LocalMapGen.local_key(x, y)
 
 			# Build tile data with correct biome + terrain type
@@ -133,10 +115,6 @@ func _load_chunk(cx: int, cy: int) -> void:
 			cells[local_key] = pt
 
 	_loaded_chunks[ck] = {"root": chunk_root, "cells": cells}
-	print("[LocalMapRenderer] Chunk (%d,%d) terrain: ground=%d debris=%d veg=%d blocked=%d rift=%d" % [
-		cx, cy, terrain_counts.get(0, 0), terrain_counts.get(1, 0),
-		terrain_counts.get(2, 0), terrain_counts.get(3, 0), terrain_counts.get(4, 0)
-	])
 
 
 func _compute_wang_id(x: int, y: int, terrain: int) -> int:

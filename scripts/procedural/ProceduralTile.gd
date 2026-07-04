@@ -119,18 +119,19 @@ func _get_biome_base_color() -> Color:
 
 
 func _get_terrain_color() -> Color:
-	var base: Color = _get_biome_base_color()
 	match terrain_type:
-		LocalMapGen.TERRAIN_BLOCKED:
-			return Color(0.12, 0.11, 0.14)
-		LocalMapGen.TERRAIN_DEBRIS:
-			return Color(0.45, 0.35, 0.28)
-		LocalMapGen.TERRAIN_VEGETATION:
-			return Color(0.22, 0.52, 0.25)
-		LocalMapGen.TERRAIN_RIFT_SCAR:
-			return Color(0.58, 0.22, 0.72)
+		0:  # GROUND
+			return Color(0.38, 0.34, 0.30)
+		1:  # DEBRIS
+			return Color(0.52, 0.38, 0.28)
+		2:  # VEGETATION
+			return Color(0.20, 0.55, 0.22)
+		3:  # BLOCKED
+			return Color(0.10, 0.09, 0.12)
+		4:  # RIFT_SCAR
+			return Color(0.62, 0.20, 0.78)
 		_:
-			return base
+			return Color(0.38, 0.34, 0.30)
 
 func _get_biome_pattern_value(x: int, y: int) -> float:
 	# Procedural pattern based on biome
@@ -305,8 +306,6 @@ func _draw_rune() -> void:
 func setup_for(data: Dictionary) -> void:
 	biome = str(data.get("biome", "Ash Wastes"))
 	terrain_type = int(data.get("terrain_type", 0))
-	if terrain_type != 0:
-		print("[ProceduralTile] terrain_type=%d biome=%s" % [terrain_type, biome])
 	terrain = data.get("terrain", PackedByteArray())
 	explored_pct = float(data.get("explored_pct", 0.0))
 	has_rift = bool(data.get("has_rift", false))
