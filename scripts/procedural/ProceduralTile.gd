@@ -47,34 +47,38 @@ func _draw() -> void:
 		_draw_rune()
 
 func _generate_texture() -> void:
-	# Generate a simple procedural texture pattern for the biome
-	var seed: int = abs(biome.hash())
+	var biome_seed: int = abs(biome.hash())
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	rng.seed = biome_seed
 
-	var sz = int(size.x)
-	var data = PackedByteArray()
-	for y in range(sz):
-		for x in range(sz):
-			# Base noise + biome pattern
-			var n = rng.randf_range(-1.0, 1.0)
-			var p = _get_biome_pattern_value(x, y)
-			var v = clampf(n + p * 0.5, -1.0, 1.0)
+	var sz: int = int(size.x)
+	var data := PackedByteArray()
+	data.resize(sz * sz)
+	var i: int = 0
+	for y in sz:
+		for x in sz:
+			var n: float = rng.randf_range(-1.0, 1.0)
+			var p: float = _get_biome_pattern_value(x, y)
+			var v: float = clampf(n + p * 0.5, -1.0, 1.0)
 
+			var val: int
 			if v < -0.6:
-				data.append_byte(50)
+				val = 50
 			elif v < -0.4:
-				data.append_byte(100)
+				val = 100
 			elif v < -0.2:
-				data.append_byte(150)
+				val = 150
 			elif v <  0.2:
-				data.append_byte(200)
+				val = 200
 			elif v <  0.4:
-				data.append_byte(250)
+				val = 250
 			elif v <  0.6:
-				data.append_byte(255)
+				val = 255
 			else:
-				data.append_byte(150)
+				val = 150
+
+			data[i] = val
+			i += 1
 
 	_tex = data
 
