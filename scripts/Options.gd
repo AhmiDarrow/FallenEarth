@@ -67,5 +67,8 @@ func _on_apply() -> void:
 	DisplayManager._save_settings()
 
 func _on_back() -> void:
-	# Return to main menu
-	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if is_instance_valid(gs) and not gs.get_character_data().is_empty():
+		get_tree().change_scene_to_file("res://scenes/HubWorld.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
