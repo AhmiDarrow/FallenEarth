@@ -38,6 +38,7 @@ var _save_btn: Button = null
 var _mission_info_label: RichTextLabel = null
 var _npc_manager: Node = null
 var _mission_manager: Node = null
+var _pause_menu: PauseMenu = null
 
 
 func _ready() -> void:
@@ -129,6 +130,11 @@ func _process(delta: float) -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
+		return
+	if event.keycode == KEY_ESCAPE:
+		_toggle_pause_menu()
+		return
+	if get_tree().paused:
 		return
 	var dir := Vector2i.ZERO
 	match event.keycode:
@@ -815,3 +821,16 @@ func _on_save_pressed() -> void:
 	if _save_btn:
 		_save_btn.text = "SAVE"
 		_save_btn.disabled = false
+
+
+func _toggle_pause_menu() -> void:
+	if is_instance_valid(_pause_menu) and _pause_menu.visible:
+		_pause_menu.close()
+		return
+	if not is_instance_valid(_pause_menu):
+		var scene: PackedScene = load("res://scenes/ui/PauseMenu.tscn") as PackedScene
+		if is_instance_valid(scene):
+			_pause_menu = scene.instantiate() as PauseMenu
+			add_child(_pause_menu)
+	if is_instance_valid(_pause_menu):
+		_pause_menu.open()

@@ -19,6 +19,7 @@ var _runner: Node = null
 var _grid_cells: Array[Button] = []
 var _dungeon_w: int = 15
 var _dungeon_h: int = 11
+var _pause_menu: PauseMenu = null
 
 @onready var status_label: RichTextLabel = $MainVBox/StatusLabel as RichTextLabel
 @onready var grid_container: GridContainer = $MainVBox/GridPanel/GridContainer as GridContainer
@@ -122,9 +123,14 @@ func _setup_grid() -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _rift_cleared:
-		return
 	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if event.keycode == KEY_ESCAPE:
+		_toggle_pause_menu()
+		return
+	if get_tree().paused:
+		return
+	if _rift_cleared:
 		return
 	var dx: int = 0
 	var dy: int = 0
@@ -301,3 +307,16 @@ func _on_back_pressed() -> void:
 		gm.go_to_hub(gs.get_character_data() if is_instance_valid(gs) else {})
 	else:
 		get_tree().change_scene_to_file("res://scenes/HubWorld.tscn")
+
+
+func _toggle_pause_menu() -> void:
+	if is_instance_valid(_pause_menu) and _pause_menu.visible:
+		_pause_menu.close()
+		return
+	if not is_instance_valid(_pause_menu):
+		var scene: PackedScene = load("res://scenes/ui/PauseMenu.tscn") as PackedScene
+		if is_instance_valid(scene):
+			_pause_menu = scene.instantiate() as PauseMenu
+			add_child(_pause_menu)
+	if is_instance_valid(_pause_menu):
+		_pause_menu.open()
