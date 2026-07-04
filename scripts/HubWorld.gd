@@ -128,11 +128,14 @@ func _process(delta: float) -> void:
 		_tick_missions()
 
 
+func _input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_toggle_pause_menu()
+		get_viewport().set_input_as_handled()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
-		return
-	if event.keycode == KEY_ESCAPE:
-		_toggle_pause_menu()
 		return
 	if get_tree().paused:
 		return
