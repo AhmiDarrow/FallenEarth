@@ -227,15 +227,52 @@ func _refresh_markers() -> void:
 
 
 func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 24) -> void:
-	var lbl := Label.new()
-	lbl.text = symbol
-	lbl.add_theme_color_override("font_color", color)
-	lbl.add_theme_font_size_override("font_size", 14)
-	lbl.position = Vector2(x * cell_size + 4, y * cell_size + 2)
-	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var size := Vector2(14, 14)
+	match kind:
+		"player":
+			size = Vector2(20, 20)
+		"mob":
+			size = Vector2(12, 12)
+		"npc":
+			size = Vector2(16, 16)
+		"rift":
+			size = Vector2(10, 10)
+
+	var tex := _make_circle_texture(color, size)
+	var spr := Sprite2D.new()
+	spr.texture = tex
+	spr.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+
+	if kind == "player":
+		var glow := Sprite2D.new()
+		glow.texture = _make_circle_texture(Color(color.r, color.g, color.b, 0.3), size * 1.6)
+		glow.position = spr.position
+		if is_instance_valid(_marker_layer):
+			_marker_layer.add_child(glow)
+
 	if is_instance_valid(_marker_layer):
-		_marker_layer.add_child(lbl)
-	_marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = lbl
+		_marker_layer.add_child(spr)
+	_marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = spr
+
+
+func _make_circle_texture(color: Color, size: Vector2) -> Texture2D:
+	var radius := min(size.x, size.y) * 0.5
+	var diameter := int(radius * 2.0)
+	var img := Image.create(diameter, diameter, false, Image.FORMAT_RGBA8)
+	var center := Vector2(radius, radius)
+	var r2 := radius * radius
+	for py in diameter:
+		for px in diameter:
+			var dx := float(px) + 0.5 - center.x
+			var dy := float(py) + 0.5 - center.y
+			var dist2 := dx * dx + dy * dy
+			if dist2 <= r2:
+				var t := 1.0 - sqrt(dist2) / radius
+				var c := color.lerp(Color(color.r, color.g, color.b, 1.0), t * 0.4)
+				img.set_pixel(px, py, c)
+			else:
+				img.set_pixel(px, py, Color(0, 0, 0, 0))
+	return ImageTexture.create_from_image(img)
 
 
 func _update_camera() -> void:

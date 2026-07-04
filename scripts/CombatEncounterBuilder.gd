@@ -33,10 +33,11 @@ static func generate_procedural_enemy(
 	var min_level: int = int(difficulty.get("min_level", 2))
 	var max_level: int = int(difficulty.get("max_level", 8))
 
-	# Load enemy archetypes (same as NPC archetypes but enemy-specific)
-	var archetypes: Dictionary = _load_json_dict(ENEMY_ARCHETYPES_PATH)
+	# Load enemy archetypes — file wraps them under an "archetypes" key
+	var archetypes_root: Dictionary = _load_json_dict(ENEMY_ARCHETYPES_PATH)
+	var archetypes: Dictionary = archetypes_root.get("archetypes", archetypes_root)
 	if archetypes.is_empty():
-		archetypes = _load_json_dict(ARCHETYPES_PATH)  # fallback to NPC archetypes
+		archetypes = _load_json_dict(ARCHETYPES_PATH).get("archetypes", {})
 
 	var appearance_opts: Dictionary = _load_json_dict(APPEARANCE_PATH)
 	var rng := _make_rng(world_seed, GENERATION_SALT)
