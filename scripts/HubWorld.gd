@@ -232,25 +232,6 @@ func _refresh_markers() -> void:
 	if not is_instance_valid(gs):
 		return
 
-
-func _dir_from_dx_dy(dx: int, dy: int) -> int:
-	# S=0, SE=1, E=2, NE=3, N=4, NW=5, W=6, SW=7
-	if dx == 0 and dy > 0: return 0   # S
-	if dx > 0 and dy > 0: return 1    # SE
-	if dx > 0 and dy == 0: return 2   # E
-	if dx > 0 and dy < 0: return 3    # NE
-	if dx == 0 and dy < 0: return 4   # N
-	if dx < 0 and dy < 0: return 5    # NW
-	if dx < 0 and dy == 0: return 6   # W
-	if dx < 0 and dy > 0: return 7    # SW
-	return 0
-
-
-func _reset_to_idle(dir_idx: int) -> void:
-	await get_tree().create_timer(0.25).timeout
-	if is_instance_valid(_player_visual):
-		_player_visual.call("play_animation", "idle", dir_idx)
-
 	if is_instance_valid(_mission_manager) and _mission_manager.has_method("get_mission_at_tile"):
 		var active_mission: Dictionary = _mission_manager.call("get_mission_at_tile", _player_q, _player_r) as Dictionary
 		if not active_mission.is_empty():
@@ -287,6 +268,25 @@ func _reset_to_idle(dir_idx: int) -> void:
 	if not npc.is_empty():
 		var npos := _npc_local_position(npc)
 		_add_marker(npos.x, npos.y, Color(1.0, 0.85, 0.4), "★", "npc", cell_size)
+
+
+func _dir_from_dx_dy(dx: int, dy: int) -> int:
+	# S=0, SE=1, E=2, NE=3, N=4, NW=5, W=6, SW=7
+	if dx == 0 and dy > 0: return 0   # S
+	if dx > 0 and dy > 0: return 1    # SE
+	if dx > 0 and dy == 0: return 2   # E
+	if dx > 0 and dy < 0: return 3    # NE
+	if dx == 0 and dy < 0: return 4   # N
+	if dx < 0 and dy < 0: return 5    # NW
+	if dx < 0 and dy == 0: return 6   # W
+	if dx < 0 and dy > 0: return 7    # SW
+	return 0
+
+
+func _reset_to_idle(dir_idx: int) -> void:
+	await get_tree().create_timer(0.25).timeout
+	if is_instance_valid(_player_visual):
+		_player_visual.call("play_animation", "idle", dir_idx)
 
 
 func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 24) -> void:
