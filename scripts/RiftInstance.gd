@@ -325,6 +325,10 @@ func _toggle_pause_menu() -> void:
 		var scene: PackedScene = load("res://scenes/ui/PauseMenu.tscn") as PackedScene
 		if is_instance_valid(scene):
 			_pause_menu = scene.instantiate() as PauseMenu
-			add_child(_pause_menu)
+			var layer := CanvasLayer.new()
+			layer.name = "PauseMenuLayer"
+			layer.layer = 100
+			add_child(layer)
+			layer.add_child(_pause_menu)
 	if is_instance_valid(_pause_menu):
 		_pause_menu.open()

@@ -831,17 +831,16 @@ func _on_save_pressed() -> void:
 
 func _toggle_pause_menu() -> void:
 	if is_instance_valid(_pause_menu) and _pause_menu.visible:
-		print("[HubWorld] Closing pause menu")
 		_pause_menu.close()
 		return
 	if not is_instance_valid(_pause_menu):
 		var scene: PackedScene = load("res://scenes/ui/PauseMenu.tscn") as PackedScene
 		if is_instance_valid(scene):
 			_pause_menu = scene.instantiate() as PauseMenu
-			add_child(_pause_menu)
-			print("[HubWorld] Pause menu instantiated")
-		else:
-			print("[HubWorld] ERROR: Could not load PauseMenu.tscn")
+			var layer := CanvasLayer.new()
+			layer.name = "PauseMenuLayer"
+			layer.layer = 100
+			add_child(layer)
+			layer.add_child(_pause_menu)
 	if is_instance_valid(_pause_menu):
-		print("[HubWorld] Opening pause menu")
 		_pause_menu.open()
