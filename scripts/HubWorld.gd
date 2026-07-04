@@ -104,6 +104,8 @@ func _ready() -> void:
 			_append_start_info(start)
 
 	_setup_map_renderer()
+	if is_instance_valid(_map_renderer):
+		_map_renderer.configure(_local_map)
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_build_local_view()
 	_update_tile_info()
@@ -168,7 +170,6 @@ func _setup_map_renderer() -> void:
 
 func _build_local_view() -> void:
 	if is_instance_valid(_map_renderer):
-		_map_renderer.configure(_local_map)
 		_map_renderer.set_player_cell(_local_x, _local_y)
 	_refresh_markers()
 	_update_camera()
