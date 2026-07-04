@@ -1,4 +1,0 @@
-# Updated note for character generation
-# Use HANDDRAWN_CHARACTERS_RACE_GENDER_ONLY.txt instead for base sprites (race + gender only)
-# Equipment will be layered separately using assets/equipment/ slots.
-# Class no longer affects base sprite visuals.
