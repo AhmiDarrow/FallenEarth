@@ -131,11 +131,10 @@ func _enumerate_monitors() -> void:
 	_available_monitors.clear()
 	var screen_count := DisplayServer.get_screen_count()
 	for i in range(screen_count):
-		var monitor_name: String = DisplayServer.screen_get_name(i)
 		var screen_size: Vector2i = DisplayServer.screen_get_size(i)
 		_available_monitors.append({
 			"index": i,
-			"name": monitor_name,
+			"name": "Monitor " + str(i),
 			"size": screen_size
 		})
 	print("[DisplayManager] Enumerated %d monitors" % screen_count)
