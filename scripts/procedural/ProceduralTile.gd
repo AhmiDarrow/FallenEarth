@@ -6,6 +6,7 @@ class_name ProceduralTile
 extends Node2D
 
 const COLORS = preload("res://scripts/procedural/Palette.gd").COLORS
+const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 
 # Tile metadata (data-driven)
 var biome: String = "Ash Wastes"
@@ -28,12 +29,11 @@ func _init() -> void:
 	# Broken shader_code initialization removed (caused Invalid assignment of 'shader_code' on ShaderMaterial)
 
 func _draw() -> void:
-	var bg_color = _get_biome_base_color()
+	var bg_color = _get_terrain_color()
 	draw_rect(Rect2(Vector2(0, 0), size), bg_color)
 
 	_draw_noise(bg_color)
-
-	_draw_terrain_overlays()
+	_draw_terrain_features()
 	_draw_decorations()
 	_draw_biome_patterns()
 
@@ -117,6 +117,21 @@ func _get_biome_base_color() -> Color:
 		_:
 			return COLORS["ground_ash"]
 
+
+func _get_terrain_color() -> Color:
+	var base: Color = _get_biome_base_color()
+	match terrain_type:
+		LocalMapGen.TERRAIN_BLOCKED:
+			return base.darkened(0.4).lerp(COLORS["shadow"], 0.5)
+		LocalMapGen.TERRAIN_DEBRIS:
+			return base.lerp(COLORS["stone"], 0.3)
+		LocalMapGen.TERRAIN_VEGETATION:
+			return base.lerp(COLORS["leaf"], 0.35)
+		LocalMapGen.TERRAIN_RIFT_SCAR:
+			return base.lerp(COLORS["rune"], 0.25)
+		_:
+			return base
+
 func _get_biome_pattern_value(x: int, y: int) -> float:
 	# Procedural pattern based on biome
 	var rng := RandomNumberGenerator.new()
@@ -173,34 +188,63 @@ func _draw_decorations() -> void:
 				var w := rng.randf_range(1.0, 3.0)
 				draw_rect(Rect2(Vector2(rx, ry), Vector2(w, w)), COLORS["shadow"].lerp(COLORS["ground_ash"], 0.3))
 
-func _draw_terrain_overlays() -> void:
-	# Draw rocks, vegetation, rift cracks
+func _draw_terrain_features() -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = biome.hash() + terrain_type
+	rng.seed = biome.hash() + terrain_type + int(size.x * 7.0)
+	var base_color := _get_terrain_color()
 
-	# Rocks
-	if has_rocks and rng.randf() < 0.4:
-		var rx = rng.randi_range(size.x * 0.1, size.x * 0.85)
-		var ry = rng.randi_range(size.y * 0.1, size.y * 0.85)
-		var rw = rng.randi_range(4, 12)
-		var rh = rng.randi_range(4, 8)
-		draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["stone"])
+	match terrain_type:
+		LocalMapGen.TERRAIN_BLOCKED:
+			# Dense rock/wall — draw large blocking shapes
+			var count := rng.randi_range(2, 5)
+			for i in range(count):
+				var rx := rng.randf_range(0.0, size.x * 0.8)
+				var ry := rng.randf_range(0.0, size.y * 0.8)
+				var rw := rng.randf_range(8.0, size.x * 0.6)
+				var rh := rng.randf_range(8.0, size.y * 0.6)
+				draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["shadow"].lerp(COLORS["stone"], 0.3))
+			# Cross-hatch pattern for impassable
+			for i in range(4):
+				var lx := rng.randf_range(2.0, size.x - 2.0)
+				draw_line(Vector2(lx, 0), Vector2(lx, size.y), COLORS["shadow"].lerp(COLORS["stone"], 0.2), 1.0)
 
-	# Vegetation
-	if has_vegetation and rng.randf() < 0.5:
-		var vx = rng.randi_range(size.x * 0.05, size.x * 0.95)
-		var vy = rng.randi_range(size.y * 0.05, size.y * 0.95)
-		var vw = rng.randi_range(4, 10)
-		var vh = rng.randi_range(4, 8)
-		draw_rect(Rect2(Vector2(vx, vy), Vector2(vw, vh)), COLORS["leaf"])
+		LocalMapGen.TERRAIN_DEBRIS:
+			# Scattered rubble
+			var count := rng.randi_range(3, 7)
+			for i in range(count):
+				var rx := rng.randf_range(2.0, size.x - 4.0)
+				var ry := rng.randf_range(2.0, size.y - 4.0)
+				var rw := rng.randf_range(2.0, 5.0)
+				var rh := rng.randf_range(2.0, 4.0)
+				draw_rect(Rect2(Vector2(rx, ry), Vector2(rw, rh)), COLORS["stone"].lerp(base_color, 0.4))
 
-	# Rift cracks
-	if has_rift and rng.randf() < 0.35:
-		var cx = rng.randi_range(size.x * 0.1, size.x * 0.8)
-		var cy = rng.randi_range(size.y * 0.1, size.y * 0.8)
-		var cw = rng.randi_range(2, 6)
-		var ch = rng.randi_range(2, 8)
-		draw_rect(Rect2(Vector2(cx, cy), Vector2(cw, ch)), COLORS["toxic"])
+		LocalMapGen.TERRAIN_VEGETATION:
+			# Green clumps / foliage
+			var count := rng.randi_range(2, 6)
+			for i in range(count):
+				var vx := rng.randf_range(3.0, size.x - 5.0)
+				var vy := rng.randf_range(3.0, size.y - 5.0)
+				var vr := rng.randf_range(3.0, 6.0)
+				draw_circle(Vector2(vx, vy), vr, COLORS["leaf"].lerp(base_color, 0.3))
+			# Small stem lines
+			for i in range(2):
+				var sx := rng.randf_range(4.0, size.x - 4.0)
+				var sy := rng.randf_range(4.0, size.y - 4.0)
+				draw_line(Vector2(sx, sy), Vector2(sx, sy - 4.0), COLORS["leaf"].darkened(0.2), 1.0)
+
+		LocalMapGen.TERRAIN_RIFT_SCAR:
+			# Purple/violet cracks
+			var count := rng.randi_range(2, 4)
+			for i in range(count):
+				var cx := rng.randf_range(size.x * 0.1, size.x * 0.8)
+				var cy := rng.randf_range(size.y * 0.1, size.y * 0.8)
+				var cw := rng.randf_range(4.0, 10.0)
+				var ch := rng.randf_range(2.0, 6.0)
+				draw_rect(Rect2(Vector2(cx, cy), Vector2(cw, ch)), COLORS["rune"].lerp(COLORS["toxic"], 0.3))
+
+		_:
+			# Ground — no extra features
+			pass
 
 func _draw_biome_patterns() -> void:
 	# Biome-specific patterns — lines, dots, etc.

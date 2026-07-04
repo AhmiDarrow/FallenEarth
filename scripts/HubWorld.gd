@@ -232,6 +232,9 @@ func _refresh_markers() -> void:
 	if not is_instance_valid(gs):
 		return
 
+	var total_mobs: Dictionary = gs.get_overworld_mobs()
+	print("[HubWorld] _refresh_markers: %d total overworld mobs in GameState" % total_mobs.size())
+
 	if is_instance_valid(_mission_manager) and _mission_manager.has_method("get_mission_at_tile"):
 		var active_mission: Dictionary = _mission_manager.call("get_mission_at_tile", _player_q, _player_r) as Dictionary
 		if not active_mission.is_empty():
@@ -241,7 +244,9 @@ func _refresh_markers() -> void:
 			if mx >= 0 and my >= 0:
 				_add_marker(mx, my, Color(0.5, 0.85, 0.95), "!", "mission", cell_size)
 
-	for mob_key in gs.get_overworld_mobs():
+	var all_mobs: Dictionary = gs.get_overworld_mobs()
+	var mob_count := 0
+	for mob_key in all_mobs:
 		if not str(mob_key).begins_with("%d,%d|" % [_player_q, _player_r]):
 			continue
 		var parts: PackedStringArray = str(mob_key).split("|")
@@ -253,6 +258,9 @@ func _refresh_markers() -> void:
 		var mx := int(local_parts[0])
 		var my := int(local_parts[1])
 		_add_marker(mx, my, Color(0.95, 0.35, 0.35), "✕", "mob", cell_size)
+		mob_count += 1
+	if mob_count > 0:
+		print("[HubWorld] Rendered %d mob markers for region (%d,%d)" % [mob_count, _player_q, _player_r])
 
 	if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
 		for rift in _rift_runner.get_rifts_in_hex(_player_q, _player_r, _game_time):
@@ -747,6 +755,7 @@ func _seed_local_mobs() -> void:
 			"%d,%d" % [_player_q, _player_r], difficulty, "upworld", biome
 		)
 		if enemy.is_empty():
+			push_warning("[HubWorld] generate_procedural_enemy returned empty for attempt %d" % i)
 			continue
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
