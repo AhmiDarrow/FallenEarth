@@ -100,3 +100,23 @@ static func material_from_visual_data(visual: Dictionary) -> Material:
 
 static func clear_cache() -> void:
 	_material_cache.clear()
+
+static func create_portal_material(base_color: Color, distortion_speed: float = 1.0) -> ShaderMaterial:
+	var key := "portal_%s_%.1f" % [base_color.to_html(), distortion_speed]
+	if _material_cache.has(key):
+		return _material_cache[key]
+
+	var shader := preload("res://assets/shaders/portal_distortion.gdshader") as Shader
+	if not shader:
+		return create_glow_material(base_color, 2.0) as ShaderMaterial
+
+	var mat := ShaderMaterial.new()
+	mat.shader = shader
+	mat.set_shader_parameter("base_color", base_color)
+	mat.set_shader_parameter("distortion_speed", distortion_speed)
+	mat.set_shader_parameter("time", 0.0)
+	_material_cache[key] = mat
+	return mat
+
+static func create_interaction_highlight(color: Color = Color(0.4, 0.8, 1.0)) -> Material:
+	return create_outline_material(color, color.lightened(0.3))

@@ -224,6 +224,154 @@ static func compose_item_orb(radius: float = 0.2) -> Node3D:
 
 	return root
 
+static func compose_item_weapon(length: float = 0.6, width: float = 0.06) -> Node3D:
+	var root := Node3D.new()
+	root.name = "ItemWeapon"
+
+	var blade := body_box(Vector3(width, length, width * 0.5))
+	blade.name = "Blade"
+	blade.position.y = length * 0.5
+	root.add_child(blade)
+
+	var grip := body_cylinder(width * 2.5, width * 1.5)
+	grip.name = "Grip"
+	root.add_child(grip)
+
+	var guard := body_box(Vector3(width * 4.0, width * 0.5, width * 2.0))
+	guard.name = "Guard"
+	guard.position.y = length * 0.02
+	root.add_child(guard)
+
+	return root
+
+static func compose_item_armor(radius: float = 0.25) -> Node3D:
+	var root := Node3D.new()
+	root.name = "ItemArmor"
+
+	var plate := body_box(Vector3(radius * 2.0, radius * 2.5, radius * 0.3))
+	plate.name = "Plate"
+	root.add_child(plate)
+
+	var shoulder_l := body_sphere(radius * 0.4)
+	shoulder_l.name = "ShoulderL"
+	shoulder_l.position = Vector3(-radius * 1.2, radius * 0.8, 0.0)
+	root.add_child(shoulder_l)
+
+	var shoulder_r := body_sphere(radius * 0.4)
+	shoulder_r.name = "ShoulderR"
+	shoulder_r.position = Vector3(radius * 1.2, radius * 0.8, 0.0)
+	root.add_child(shoulder_r)
+
+	return root
+
+static func compose_item_consumable(radius: float = 0.12) -> Node3D:
+	var root := Node3D.new()
+	root.name = "ItemConsumable"
+
+	var bottle := body_cylinder(radius * 2.5, radius)
+	bottle.name = "Bottle"
+	root.add_child(bottle)
+
+	var cap := body_cone(radius * 0.8, radius * 1.2)
+	cap.name = "Cap"
+	cap.position.y = radius * 1.8
+	root.add_child(cap)
+
+	return root
+
+static func compose_door(width: float = 1.2, height: float = 2.4, depth: float = 0.15) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Door"
+
+	var frame := body_box(Vector3(width + 0.2, height + 0.1, depth * 2.0))
+	frame.name = "Frame"
+	frame.position.y = height * 0.5
+	root.add_child(frame)
+
+	var panel := body_box(Vector3(width, height, depth))
+	panel.name = "DoorPanel"
+	panel.position = Vector3(0.0, height * 0.5, depth)
+	root.add_child(panel)
+
+	var handle := body_sphere(0.06)
+	handle.name = "Handle"
+	handle.position = Vector3(width * 0.35, height * 0.45, depth * 1.5)
+	root.add_child(handle)
+
+	return root
+
+static func compose_container(width: float = 0.8, height: float = 0.6, depth: float = 0.6) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Container"
+
+	var body := body_box(Vector3(width, height, depth))
+	body.name = "ContainerBody"
+	body.position.y = height * 0.5
+	root.add_child(body)
+
+	var lid := body_box(Vector3(width + 0.04, 0.08, depth + 0.04))
+	lid.name = "ContainerLid"
+	lid.position = Vector3(0.0, height + 0.04, 0.0)
+	root.add_child(lid)
+
+	var clasp := body_box(Vector3(0.08, 0.06, 0.04))
+	clasp.name = "Clasp"
+	clasp.position = Vector3(0.0, height * 0.7, depth * 0.5 + 0.02)
+	root.add_child(clasp)
+
+	return root
+
+static func compose_vehicle(length: float = 2.0, width: float = 1.0, height: float = 0.8) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Vehicle"
+
+	var chassis := body_box(Vector3(width, height * 0.4, length))
+	chassis.name = "Chassis"
+	chassis.position.y = height * 0.3
+	root.add_child(chassis)
+
+	var cabin := body_box(Vector3(width * 0.85, height * 0.5, length * 0.45))
+	cabin.name = "Cabin"
+	cabin.position = Vector3(0.0, height * 0.65, -length * 0.1)
+	root.add_child(cabin)
+
+	for i in 4:
+		var wheel := body_cylinder(0.12, 0.18)
+		wheel.name = "Wheel%d" % i
+		wheel.rotation.x = deg_to_rad(90.0)
+		var side := -1.0 if i % 2 == 0 else 1.0
+		var fore_aft := -1.0 if i < 2 else 1.0
+		wheel.position = Vector3(side * width * 0.55, 0.0, fore_aft * length * 0.3)
+		root.add_child(wheel)
+
+	return root
+
+static func compose_structure(width: float = 1.5, height: float = 2.0, depth: float = 1.5) -> Node3D:
+	var root := Node3D.new()
+	root.name = "Structure"
+
+	var base := body_box(Vector3(width, 0.2, depth))
+	base.name = "Base"
+	base.position.y = 0.1
+	root.add_child(base)
+
+	var pillar_l := body_cylinder(height, 0.15)
+	pillar_l.name = "PillarL"
+	pillar_l.position = Vector3(-width * 0.4, height * 0.5 + 0.2, -depth * 0.4)
+	root.add_child(pillar_l)
+
+	var pillar_r := body_cylinder(height, 0.15)
+	pillar_r.name = "PillarR"
+	pillar_r.position = Vector3(width * 0.4, height * 0.5 + 0.2, -depth * 0.4)
+	root.add_child(pillar_r)
+
+	var roof := body_box(Vector3(width * 1.1, 0.12, depth * 1.1))
+	roof.name = "Roof"
+	roof.position.y = height + 0.26
+	root.add_child(roof)
+
+	return root
+
 static func _default_material() -> Material:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = Color.WHITE

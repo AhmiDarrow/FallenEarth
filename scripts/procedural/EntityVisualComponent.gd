@@ -82,23 +82,58 @@ func update_equipment(equip_data: Dictionary) -> void:
 	if not entity_root:
 		return
 	for slot in equip_data:
-		var att: Node3D = ProceduralEntityGenerator._create_attachment(
-			str(equip_data[slot]),
-			RandomNumberGenerator.new()
-		)
+		var item_data: Variant = equip_data[slot]
+		var att: Node3D = null
+		var item_dict: Dictionary = {}
+
+		if item_data is Dictionary:
+			item_dict = item_data
+			att = ProceduralEntityGenerator.create_visual(item_dict)
+		elif item_data is String:
+			att = ProceduralEntityGenerator._create_attachment(
+				item_data,
+				RandomNumberGenerator.new()
+			)
+
 		if att:
 			att.name = "Equip_%s" % slot
 			var existing := entity_root.get_node_or_null("Equip_%s" % slot)
 			if existing:
 				existing.queue_free()
+
+			var hand_pos := Vector3(0.45, 0.2, 0.0)
+			var head_pos := Vector3(0.0, 0.8, 0.0)
+			var torso_pos := Vector3(0.0, 0.1, 0.0)
+			var back_pos := Vector3(0.0, 0.3, -0.3)
+
 			match slot:
+				"hand", "main_hand":
+					att.position = hand_pos
+					att.scale = Vector3(0.5, 0.5, 0.5)
+				"off_hand":
+					att.position = Vector3(-0.45, 0.2, 0.0)
+					att.scale = Vector3(0.4, 0.4, 0.4)
 				"head":
-					att.position.y = 0.6
+					att.position = head_pos
+					att.scale = Vector3(0.6, 0.6, 0.6)
 				"torso":
-					att.position.y = 0.1
-				"hand":
-					att.position = Vector3(0.3, 0.2, 0.0)
+					att.position = torso_pos
+					att.scale = Vector3(0.8, 0.8, 0.8)
+				"back":
+					att.position = back_pos
+					att.scale = Vector3(0.6, 0.6, 0.6)
+				_:
+					att.position = hand_pos
+					att.scale = Vector3(0.5, 0.5, 0.5)
+
 			entity_root.add_child(att)
+
+func unequip_slot(slot: String) -> void:
+	if not entity_root:
+		return
+	var existing := entity_root.get_node_or_null("Equip_%s" % slot)
+	if existing:
+		existing.queue_free()
 
 func set_glow(color: Color, energy: float = 1.5, radius: float = 3.0) -> void:
 	glow_color = color

@@ -1,0 +1,61 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/procedural/Entity3DViewport.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/Phase5ItemsPropsTest.gd" id="2"]
+
+[node name="Phase5ItemsPropsTest" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("2")
+
+[node name="Entity3DLayer" type="Node" parent="."]
+script = ExtResource("1")
+
+[node name="Entity3DDisplay" type="TextureRect" parent="Entity3DLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="UI" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Title" type="Label" parent="UI"]
+layout_mode = 2
+text = "Phase 5 - Items, Props & Special Cases"
+
+[node name="Controls" type="HBoxContainer" parent="UI"]
+layout_mode = 2
+
+[node name="PrevButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "< Prev"
+
+[node name="NextButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Next >"
+
+[node name="SpawnAllButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Spawn All"
+
+[node name="ClearButton" type="Button" parent="UI/Controls"]
+layout_mode = 2
+text = "Clear"
+
+[node name="InfoLabel" type="RichTextLabel" parent="UI"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+bbcode_enabled = true
+text = "Phase 5 - Items, Props & Special Cases"

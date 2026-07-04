@@ -74,6 +74,8 @@ static func create_visual(data: Dictionary) -> Node3D:
 			root = _build_rift(data, rng)
 		"item":
 			root = _build_item(data, rng)
+		"prop":
+			root = _build_prop(data, rng)
 		_:
 			root = _build_humanoid(data, rng)
 
@@ -156,8 +158,8 @@ static func _build_rift(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 	root.name = data.get("entity_id", "Rift")
 
 	var rift_color: Color = _rift_type_color(data.get("rift_type", 0))
-	var glow_mat := MaterialLibrary.create_glow_material(rift_color, 1.5)
-	_apply_material_to_children(root, glow_mat)
+	var portal_mat := MaterialLibrary.create_portal_material(rift_color, 1.2)
+	_apply_material_to_children(root, portal_mat)
 
 	var ring_mat := MaterialLibrary.create_glow_material(
 		rift_color.lightened(0.3), 0.8)
@@ -174,21 +176,100 @@ static func _build_rift(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 
 static func _build_item(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 	var vis: Dictionary = data.get("visual", {})
-	var radius: float = vis.get("radius", 0.2)
-	var root := PrimitiveMeshLibrary.compose_item_orb(radius)
+	var item_style: String = vis.get("style", "orb")
+	var root: Node3D
+
+	match item_style:
+		"weapon":
+			var length: float = vis.get("length", 0.6)
+			var width: float = vis.get("width", 0.06)
+			root = PrimitiveMeshLibrary.compose_item_weapon(length, width)
+			var color_arr: Array = vis.get("color", [0.6, 0.6, 0.65])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.2))
+		"armor":
+			var radius: float = vis.get("radius", 0.25)
+			root = PrimitiveMeshLibrary.compose_item_armor(radius)
+			var color_arr: Array = vis.get("color", [0.5, 0.5, 0.55])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.3))
+		"consumable":
+			var radius: float = vis.get("radius", 0.12)
+			root = PrimitiveMeshLibrary.compose_item_consumable(radius)
+			var color_arr: Array = vis.get("color", [0.3, 0.7, 0.4])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_glow_material(color, 0.8))
+		_:
+			var radius: float = vis.get("radius", 0.2)
+			root = PrimitiveMeshLibrary.compose_item_orb(radius)
+			var color_arr: Array = vis.get("color", [0.4, 0.7, 1.0])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			var mat := MaterialLibrary.create_glow_material(color, 0.6)
+			_apply_material_to_children(root, mat)
+			var orb := root.get_node_or_null("Orb")
+			if orb:
+				orb.set_surface_override_material(0,
+					MaterialLibrary.create_glow_material(color.lightened(0.3), 1.0))
+
 	root.name = data.get("entity_id", "Item")
-
-	var color_arr: Array = vis.get("color", [0.4, 0.7, 1.0])
-	var color := Color(color_arr[0], color_arr[1], color_arr[2])
-	var mat := MaterialLibrary.create_glow_material(color, 0.6)
-	_apply_material_to_children(root, mat)
-
-	var orb := root.get_node_or_null("Orb")
-	if orb:
-		orb.set_surface_override_material(0,
-			MaterialLibrary.create_glow_material(color.lightened(0.3), 1.0))
-
 	return root
+
+static func _build_prop(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
+	var vis: Dictionary = data.get("visual", {})
+	var prop_type: String = vis.get("prop_type", "structure")
+	var root: Node3D
+
+	match prop_type:
+		"door":
+			var width: float = vis.get("width", 1.2)
+			var height: float = vis.get("height", 2.4)
+			root = PrimitiveMeshLibrary.compose_door(width, height)
+			var color_arr: Array = vis.get("color", [0.4, 0.3, 0.25])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_organic_material(color, 0.9))
+			var highlight := _create_interaction_highlight(Vector3(width * 0.6, height * 0.5, 0.3))
+			highlight.position = Vector3(0.0, height * 0.5, 0.2)
+			root.add_child(highlight)
+		"container":
+			var width: float = vis.get("width", 0.8)
+			var height: float = vis.get("height", 0.6)
+			var depth: float = vis.get("depth", 0.6)
+			root = PrimitiveMeshLibrary.compose_container(width, height, depth)
+			var color_arr: Array = vis.get("color", [0.45, 0.35, 0.3])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.5))
+			var highlight := _create_interaction_highlight(Vector3(width * 0.5, height * 0.5, depth * 0.5))
+			highlight.position = Vector3(0.0, height * 0.5, 0.0)
+			root.add_child(highlight)
+		"vehicle":
+			var length: float = vis.get("length", 2.0)
+			var width: float = vis.get("width", 1.0)
+			var height: float = vis.get("height", 0.8)
+			root = PrimitiveMeshLibrary.compose_vehicle(length, width, height)
+			var color_arr: Array = vis.get("color", [0.4, 0.4, 0.45])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.4))
+		_:
+			var width: float = vis.get("width", 1.5)
+			var height: float = vis.get("height", 2.0)
+			var depth: float = vis.get("depth", 1.5)
+			root = PrimitiveMeshLibrary.compose_structure(width, height, depth)
+			var color_arr: Array = vis.get("color", [0.5, 0.45, 0.4])
+			var color := Color(color_arr[0], color_arr[1], color_arr[2])
+			_apply_material_to_children(root, MaterialLibrary.create_organic_material(color, 0.85))
+
+	root.name = data.get("entity_id", "Prop")
+	return root
+
+static func _create_interaction_highlight(extents: Vector3) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	mi.name = "Highlight"
+	var box := BoxMesh.new()
+	box.size = extents
+	mi.mesh = box
+	var mat := MaterialLibrary.create_outline_material(Color(0.4, 0.8, 1.0))
+	mi.set_surface_override_material(0, mat)
+	return mi
 
 static func _apply_variations(root: Node3D, rng: RandomNumberGenerator, scale_range: Array) -> void:
 	var scale_min: float = scale_range[0] if scale_range.size() > 0 else 0.9

@@ -12,6 +12,7 @@ signal state_changed(new_state: State)
 @export var current_state: State = State.IDLE
 @export var anim_speed: float = 1.0
 @export var entity_type: String = "humanoid"
+@export var prop_subtype: String = ""
 
 var _time: float = 0.0
 var _combat_timer: float = 0.0
@@ -29,6 +30,11 @@ var _core_ref: Node3D
 var _tendrils: Array[Node3D] = []
 var _energy_particles: Array[MeshInstance3D] = []
 var _energy_chains: Array[Node3D] = []
+var _orb_ref: Node3D
+var _base_ring_ref: Node3D
+var _door_panel_ref: Node3D
+var _container_lid_ref: Node3D
+var _highlight_ref: Node3D
 
 var _initial_arm_l: Transform3D
 var _initial_arm_r: Transform3D
@@ -39,6 +45,10 @@ var _initial_head: Transform3D
 var _initial_body: Transform3D
 var _initial_entity: Transform3D
 var _initial_core: Transform3D
+var _initial_orb: Transform3D
+var _initial_base_ring: Transform3D
+var _initial_door_panel: Transform3D
+var _initial_container_lid: Transform3D
 
 func _ready() -> void:
 	_resolve_references()
@@ -80,6 +90,11 @@ func _resolve_references() -> void:
 	_body_ref = parent.get_node_or_null("Body")
 	_ring_ref = parent.get_node_or_null("Ring")
 	_core_ref = parent.get_node_or_null("Core")
+	_orb_ref = parent.get_node_or_null("Orb")
+	_base_ring_ref = parent.get_node_or_null("BaseRing")
+	_door_panel_ref = parent.get_node_or_null("DoorPanel")
+	_container_lid_ref = parent.get_node_or_null("ContainerLid")
+	_highlight_ref = parent.get_node_or_null("Highlight")
 	for child in parent.get_children():
 		if child.name.begins_with("Tendril"):
 			_tendrils.append(child)
@@ -95,6 +110,10 @@ func _store_initial_transforms() -> void:
 	var p := get_parent()
 	if p: _initial_entity = p.transform
 	if _core_ref: _initial_core = _core_ref.transform
+	if _orb_ref: _initial_orb = _orb_ref.transform
+	if _base_ring_ref: _initial_base_ring = _base_ring_ref.transform
+	if _door_panel_ref: _initial_door_panel = _door_panel_ref.transform
+	if _container_lid_ref: _initial_container_lid = _container_lid_ref.transform
 
 func _setup_energy_particles() -> void:
 	for i in range(5):
@@ -162,6 +181,13 @@ func _setup_energy_chains() -> void:
 
 func _process(delta: float) -> void:
 	_time += delta * anim_speed
+	match entity_type:
+		"item":
+			_process_item(delta)
+			return
+		"prop":
+			_process_prop(delta)
+			return
 	match current_state:
 		State.IDLE:
 			_process_idle(delta)
@@ -314,3 +340,82 @@ func set_entity_type(new_type: String) -> void:
 
 func get_entity_type() -> String:
 	return entity_type
+
+func _process_item(_delta: float) -> void:
+	var t := _time
+	var float_bob := sin(t * 1.5) * 0.08
+	var slow_rot := t * 0.5
+
+	var p := get_parent()
+	if p:
+		p.position.y = float_bob
+
+	if _orb_ref:
+		_orb_ref.transform = _initial_orb
+		var pulse := 1.0 + sin(t * 2.0) * 0.05
+		_orb_ref.scale = Vector3(pulse, pulse, pulse)
+
+	if _base_ring_ref:
+		_base_ring_ref.transform = _initial_base_ring
+		_base_ring_ref.rotation.y = slow_rot
+
+	for child in get_parent().get_children() if get_parent() else []:
+		if child is MeshInstance3D and child != _orb_ref and child != _base_ring_ref:
+			child.rotation.y = slow_rot * 0.3
+
+func _process_prop(_delta: float) -> void:
+	var t := _time
+	match prop_subtype:
+		"door":
+			_animate_door(t)
+		"container":
+			_animate_container(t)
+		"vehicle":
+			_animate_vehicle(t)
+		"structure":
+			_animate_structure(t)
+		_:
+			_animate_prop_idle(t)
+
+func _animate_door(t: float) -> void:
+	if not _door_panel_ref:
+		return
+	_door_panel_ref.transform = _initial_door_panel
+	var glow_pulse := 0.5 + sin(t * 1.2) * 0.3
+	if _highlight_ref and _highlight_ref is MeshInstance3D:
+		var mat := _highlight_ref.get_surface_override_material(0)
+		if mat is StandardMaterial3D:
+			mat.emission_energy_multiplier = glow_pulse * 2.0
+
+func _animate_container(t: float) -> void:
+	if _container_lid_ref:
+		_container_lid_ref.transform = _initial_container_lid
+		var wobble := sin(t * 0.8) * 0.02
+		_container_lid_ref.rotation.x = wobble
+	if _highlight_ref and _highlight_ref is MeshInstance3D:
+		var mat := _highlight_ref.get_surface_override_material(0)
+		if mat is StandardMaterial3D:
+			var pulse := 0.6 + sin(t * 1.5) * 0.4
+			mat.emission_energy_multiplier = pulse * 2.0
+
+func _animate_vehicle(t: float) -> void:
+	var bob := sin(t * 1.0) * 0.015
+	var p := get_parent()
+	if p:
+		p.position.y = bob
+	for child in p.get_children() if p else []:
+		if child.name.begins_with("Wheel"):
+			child.rotation.x = t * 2.0
+
+func _animate_structure(t: float) -> void:
+	if _highlight_ref and _highlight_ref is MeshInstance3D:
+		var mat := _highlight_ref.get_surface_override_material(0)
+		if mat is StandardMaterial3D:
+			var pulse := 0.4 + sin(t * 0.8) * 0.3
+			mat.emission_energy_multiplier = pulse * 1.5
+
+func _animate_prop_idle(t: float) -> void:
+	var sway := sin(t * 0.5) * 0.01
+	var p := get_parent()
+	if p:
+		p.rotation.y = sway
