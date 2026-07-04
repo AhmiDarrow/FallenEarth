@@ -1,0 +1,768 @@
+{
+  "_doc": "Mob sprite definitions — one per mob. ProceduralMob pulls archetype + draw_params, applies colorshift from color_range. EncounterBuilder filters by spawn_context.",
+
+  "sprites": {
+
+    "ashveil_grazer": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "rounded",
+        "body_ratio": 0.4,
+        "head_size": 0.12,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 1,
+        "eye_size": 0.08,
+        "hump": true,
+        "tail": false
+      },
+      "color_range": {
+        "base": "sand",
+        "hue_shift": 0.05,
+        "sat_shift": 0.1,
+        "var_shift": 0.15
+      },
+      "size_range": [0.85, 1.15],
+      "notes": "Slow fungal herd beast. Earthy tones, hunched back."
+    },
+
+    "lumen_drifter": {
+      "archetype": "floater",
+      "spawn_context": "both",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "jellyfish",
+        "body_ratio": 0.35,
+        "head_size": 0.0,
+        "leg_count": 0,
+        "tentacle_count": 5,
+        "tentacle_length": 0.3,
+        "eye_count": 0,
+        "glow_intensity": 0.6,
+        "pulse": true
+      },
+      "color_range": {
+        "base": "neon",
+        "hue_shift": 0.08,
+        "sat_shift": 0.15,
+        "var_shift": 0.2
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Bioluminescent floating jelly. Glows softly, tentacles trail."
+    },
+
+    "rustcarapace_scuttler": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "crab",
+        "body_ratio": 0.45,
+        "head_size": 0.1,
+        "leg_count": 6,
+        "leg_style": "jointed",
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "claws": true,
+        "shell_segments": 3,
+        "shell_color_shift": 0.1
+      },
+      "color_range": {
+        "base": "iron",
+        "hue_shift": 0.03,
+        "sat_shift": 0.05,
+        "var_shift": 0.1
+      },
+      "size_range": [0.8, 1.1],
+      "notes": "Armored scrap cleaner. Rust-colored shell, skittering legs."
+    },
+
+    "silkroot_tapper": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "stationary",
+        "body_ratio": 0.3,
+        "head_size": 0.08,
+        "leg_count": 0,
+        "root_count": 6,
+        "root_length": 0.25,
+        "eye_count": 1,
+        "eye_size": 0.05,
+        "vine_tendrils": true,
+        "spore_particles": false
+      },
+      "color_range": {
+        "base": "marsh",
+        "hue_shift": 0.06,
+        "sat_shift": 0.1,
+        "var_shift": 0.12
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Rooted resin producer. Planted in place, silk roots spread out."
+    },
+
+    "echo_chorister": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "rounded",
+        "body_ratio": 0.38,
+        "head_size": 0.14,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.07,
+        "crest": true,
+        "crest_height": 0.12,
+        "tail": true,
+        "tail_style": "fan"
+      },
+      "color_range": {
+        "base": "storm",
+        "hue_shift": 0.07,
+        "sat_shift": 0.12,
+        "var_shift": 0.1
+      },
+      "size_range": [0.8, 1.1],
+      "notes": "Singing burrow colony. Head crest, fan tail."
+    },
+
+    "charnel_stalker": {
+      "archetype": "quadruped",
+      "spawn_context": "both",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "lean",
+        "body_ratio": 0.42,
+        "head_size": 0.13,
+        "leg_count": 4,
+        "leg_style": "muscular",
+        "eye_count": 2,
+        "eye_size": 0.09,
+        "tendrils": 3,
+        "tendril_length": 0.2,
+        "tail": true,
+        "tail_style": "barbed",
+        "spine_ridge": true
+      },
+      "color_range": {
+        "base": "blood",
+        "hue_shift": 0.04,
+        "sat_shift": 0.08,
+        "var_shift": 0.12
+      },
+      "size_range": [0.9, 1.2],
+      "notes": "Pack-hunting predator with tendrils. Lean, muscular, barbed tail."
+    },
+
+    "voidspine_leech": {
+      "archetype": "floater",
+      "spawn_context": "rift",
+      "rift_type": "void",
+      "draw_params": {
+        "body_shape": "leech",
+        "body_ratio": 0.5,
+        "head_size": 0.0,
+        "leg_count": 0,
+        "spine_count": 8,
+        "spine_length": 0.15,
+        "sucker": true,
+        "sucker_size": 0.12,
+        "eye_count": 0,
+        "glow_intensity": 0.4,
+        "trail_effect": true
+      },
+      "color_range": {
+        "base": "rune",
+        "hue_shift": 0.06,
+        "sat_shift": 0.2,
+        "var_shift": 0.15
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Parasitic energy drainer. Void-purple, spined body, sucker mouth."
+    },
+
+    "mycelial_behemoth": {
+      "archetype": "behemoth",
+      "spawn_context": "both",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "bulky",
+        "body_ratio": 0.55,
+        "head_size": 0.15,
+        "leg_count": 4,
+        "leg_style": "thick",
+        "eye_count": 1,
+        "eye_size": 0.14,
+        "mushroom_caps": 4,
+        "cap_size": 0.1,
+        "spore_cloud": true,
+        "spore_radius": 0.3,
+        "bark_texture": true
+      },
+      "color_range": {
+        "base": "leaf",
+        "hue_shift": 0.05,
+        "sat_shift": 0.1,
+        "var_shift": 0.15
+      },
+      "size_range": [1.0, 1.5],
+      "notes": "Massive spore-hurling hulk. Mushroom caps on back, bark skin."
+    },
+
+    "glimmer_swarm": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "beetle",
+        "body_ratio": 0.2,
+        "head_size": 0.06,
+        "leg_count": 6,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.04,
+        "wing_count": 2,
+        "wing_transparency": 0.5,
+        "swarm_count_min": 3,
+        "swarm_count_max": 8,
+        "swarm_spacing": 0.3,
+        "mandibles": true
+      },
+      "color_range": {
+        "base": "toxic",
+        "hue_shift": 0.1,
+        "sat_shift": 0.2,
+        "var_shift": 0.2
+      },
+      "size_range": [0.5, 0.8],
+      "notes": "Coordinated acidic insects. Small individually, swarms. Iridescent."
+    },
+
+    "ferroclaw_reaver": {
+      "archetype": "mechanical",
+      "spawn_context": "rift",
+      "rift_type": "energy",
+      "draw_params": {
+        "body_shape": "mechanical",
+        "body_ratio": 0.45,
+        "head_size": 0.12,
+        "leg_count": 4,
+        "leg_style": "hydraulic",
+        "eye_count": 2,
+        "eye_size": 0.08,
+        "claw_count": 2,
+        "claw_size": 0.18,
+        "drill_arm": true,
+        "magnetic_field": true,
+        "field_radius": 0.25,
+        "sparks": true
+      },
+      "color_range": {
+        "base": "metal",
+        "hue_shift": 0.02,
+        "sat_shift": 0.05,
+        "var_shift": 0.1
+      },
+      "size_range": [0.9, 1.2],
+      "notes": "Ferro-organic horror. Metal claws, drill arm, magnetic field effect."
+    },
+
+    "void_stalker": {
+      "archetype": "quadruped",
+      "spawn_context": "rift",
+      "rift_type": "void",
+      "draw_params": {
+        "body_shape": "spectral",
+        "body_ratio": 0.4,
+        "head_size": 0.14,
+        "leg_count": 4,
+        "leg_style": "ethereal",
+        "eye_count": 2,
+        "eye_size": 0.1,
+        "ethereal_glow": true,
+        "shadow_trail": true,
+        "antlers": true,
+        "antler_branches": 3,
+        "phasing": true
+      },
+      "color_range": {
+        "base": "shadow",
+        "hue_shift": 0.05,
+        "sat_shift": 0.15,
+        "var_shift": 0.2
+      },
+      "size_range": [0.9, 1.3],
+      "notes": "Fast void hunter. Spectral body, antlers, phases in/out."
+    },
+
+    "abyssal_weaver": {
+      "archetype": "insectoid",
+      "spawn_context": "rift",
+      "rift_type": "void",
+      "draw_params": {
+        "body_shape": "spider",
+        "body_ratio": 0.35,
+        "head_size": 0.1,
+        "leg_count": 8,
+        "leg_style": "long_thin",
+        "eye_count": 6,
+        "eye_size": 0.04,
+        "web_lines": true,
+        "web_radius": 0.4,
+        "spinnerets": true,
+        "fangs": true
+      },
+      "color_range": {
+        "base": "shadow",
+        "hue_shift": 0.04,
+        "sat_shift": 0.1,
+        "var_shift": 0.15
+      },
+      "size_range": [0.8, 1.1],
+      "notes": "Void web-spider. 8 long legs, 6 eyes, web patterns."
+    },
+
+    "lifecycle_horror": {
+      "archetype": "behemoth",
+      "spawn_context": "rift",
+      "rift_type": "life",
+      "draw_params": {
+        "body_shape": "amorphous",
+        "body_ratio": 0.6,
+        "head_size": 0.0,
+        "leg_count": 0,
+        "pseudo_limbs": 4,
+        "eye_count": 3,
+        "eye_size": 0.08,
+        "regeneration_glow": true,
+        "growth_tendrils": 6,
+        "tendril_length": 0.3,
+        "splitting": true
+      },
+      "color_range": {
+        "base": "toxic",
+        "hue_shift": 0.08,
+        "sat_shift": 0.2,
+        "var_shift": 0.15
+      },
+      "size_range": [1.0, 1.4],
+      "notes": "Regenerating life-form. Amorphous, growth tendrils, splits when damaged."
+    },
+
+    "spore_phantom": {
+      "archetype": "floater",
+      "spawn_context": "rift",
+      "rift_type": "life",
+      "draw_params": {
+        "body_shape": "cloud",
+        "body_ratio": 0.4,
+        "head_size": 0.0,
+        "leg_count": 0,
+        "spore_count": 12,
+        "spore_size": 0.04,
+        "spore_orbit": true,
+        "eye_count": 1,
+        "eye_size": 0.1,
+        "cloud_body": true,
+        "dissolve_edge": true
+      },
+      "color_range": {
+        "base": "leaf",
+        "hue_shift": 0.1,
+        "sat_shift": 0.25,
+        "var_shift": 0.2
+      },
+      "size_range": [0.8, 1.2],
+      "notes": "Life-rift spore cloud. Floating cloud body, orbiting spores, single eye."
+    },
+
+    "arc_dynamo": {
+      "archetype": "mechanical",
+      "spawn_context": "rift",
+      "rift_type": "energy",
+      "draw_params": {
+        "body_shape": "orbital",
+        "body_ratio": 0.35,
+        "head_size": 0.0,
+        "leg_count": 0,
+        "ring_count": 2,
+        "ring_radius": 0.3,
+        "ring_tilt": 20,
+        "core_glow": true,
+        "core_size": 0.15,
+        "arc_count": 6,
+        "arc_length": 0.2,
+        "energy_trail": true
+      },
+      "color_range": {
+        "base": "mana",
+        "hue_shift": 0.05,
+        "sat_shift": 0.15,
+        "var_shift": 0.2
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Energy-rift orb with orbiting rings. Arcs of lightning between rings."
+    },
+
+    "storm_herald": {
+      "archetype": "behemoth",
+      "spawn_context": "rift",
+      "rift_type": "energy",
+      "draw_params": {
+        "body_shape": "quadruped_heavy",
+        "body_ratio": 0.55,
+        "head_size": 0.16,
+        "leg_count": 4,
+        "leg_style": "thick",
+        "eye_count": 1,
+        "eye_size": 0.12,
+        "lightning_aura": true,
+        "aura_radius": 0.35,
+        "horn_count": 2,
+        "horn_size": 0.15,
+        "storm_cloud": true,
+        "cloud_radius": 0.4
+      },
+      "color_range": {
+        "base": "storm",
+        "hue_shift": 0.06,
+        "sat_shift": 0.15,
+        "var_shift": 0.18
+      },
+      "size_range": [1.1, 1.5],
+      "notes": "Energy rift boss. Massive quadruped, horns, lightning aura, storm cloud."
+    },
+
+    "null_shade": {
+      "archetype": "aberrant",
+      "spawn_context": "rift",
+      "rift_type": "void",
+      "draw_params": {
+        "body_shape": "wraith",
+        "body_ratio": 0.45,
+        "head_size": 0.12,
+        "leg_count": 0,
+        "float": true,
+        "eye_count": 2,
+        "eye_size": 0.1,
+        "void_aura": true,
+        "aura_radius": 0.3,
+        "cloak_trail": true,
+        "claw_hands": true,
+        "stealth_shimmer": true
+      },
+      "color_range": {
+        "base": "city_ash",
+        "hue_shift": 0.03,
+        "sat_shift": 0.05,
+        "var_shift": 0.2
+      },
+      "size_range": [0.85, 1.2],
+      "notes": "Stealth void wraith. Cloaked form, clawed hands, shimmers when moving."
+    },
+
+    "rift_maw": {
+      "archetype": "behemoth",
+      "spawn_context": "rift",
+      "rift_type": "energy",
+      "draw_params": {
+        "body_shape": "gatekeeper",
+        "body_ratio": 0.6,
+        "head_size": 0.2,
+        "leg_count": 0,
+        "mouth_size": 0.25,
+        "mouth_teeth": 12,
+        "eye_count": 4,
+        "eye_size": 0.06,
+        "eye_arrangement": "diamond",
+        "portal_body": true,
+        "energy_tentacles": 6,
+        "tentacle_length": 0.35,
+        "rift_waves": true
+      },
+      "color_range": {
+        "base": "rune",
+        "hue_shift": 0.08,
+        "sat_shift": 0.2,
+        "var_shift": 0.15
+      },
+      "size_range": [1.2, 1.6],
+      "notes": "Rift core guardian boss. Massive mouth, 4 eyes, energy tentacles."
+    },
+
+    "dust_devil": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "moth",
+        "body_ratio": 0.22,
+        "head_size": 0.06,
+        "leg_count": 6,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.05,
+        "wing_count": 2,
+        "wing_span": 0.4,
+        "wing_pattern": "dust",
+        "swarm_count_min": 4,
+        "swarm_count_max": 10,
+        "swarm_spacing": 0.25,
+        "proboscis": true
+      },
+      "color_range": {
+        "base": "sand",
+        "hue_shift": 0.08,
+        "sat_shift": 0.1,
+        "var_shift": 0.15
+      },
+      "size_range": [0.5, 0.75],
+      "notes": "Dust-colored moth swarm. Winged, proboscis, swarms in arid biomes."
+    },
+
+    "blight_toad": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "toad",
+        "body_ratio": 0.4,
+        "head_size": 0.16,
+        "leg_count": 4,
+        "leg_style": "short_thick",
+        "eye_count": 2,
+        "eye_size": 0.1,
+        "eye_bulge": true,
+        "throat_sac": true,
+        "sac_size": 0.12,
+        "warts": true,
+        "wart_count": 5,
+        "tongue_attack": true
+      },
+      "color_range": {
+        "base": "marsh",
+        "hue_shift": 0.06,
+        "sat_shift": 0.15,
+        "var_shift": 0.12
+      },
+      "size_range": [0.75, 1.05],
+      "notes": "Bloated toxic toad. Bulging eyes, throat sac, warty skin."
+    },
+
+    "iron_buck": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "stag",
+        "body_ratio": 0.42,
+        "head_size": 0.12,
+        "leg_count": 4,
+        "leg_style": "slender",
+        "eye_count": 2,
+        "eye_size": 0.07,
+        "antlers": true,
+        "antler_branches": 4,
+        "metallic_sheen": true,
+        "mane": true,
+        "mane_length": 0.1
+      },
+      "color_range": {
+        "base": "iron",
+        "hue_shift": 0.03,
+        "sat_shift": 0.08,
+        "var_shift": 0.1
+      },
+      "size_range": [0.9, 1.2],
+      "notes": "Metallic forest stag. Iron-barked antlers, metallic coat sheen."
+    },
+
+    "glass_serpent": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "serpent",
+        "body_ratio": 0.6,
+        "head_size": 0.1,
+        "leg_count": 0,
+        "body_segments": 8,
+        "segment_size": 0.08,
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "fangs": true,
+        "crystal_scales": true,
+        "scale_refraction": true,
+        "rattle_tail": true
+      },
+      "color_range": {
+        "base": "cloud",
+        "hue_shift": 0.12,
+        "sat_shift": 0.05,
+        "var_shift": 0.2
+      },
+      "size_range": [0.8, 1.15],
+      "notes": "Crystalline desert serpent. Glass-like scales, segmented body, rattle tail."
+    },
+
+    "bone_crawler": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "centipede",
+        "body_ratio": 0.5,
+        "head_size": 0.08,
+        "leg_count": 12,
+        "leg_style": "short_thin",
+        "body_segments": 10,
+        "segment_detail": "bone",
+        "eye_count": 2,
+        "eye_size": 0.04,
+        "pincers": true,
+        "bone_armor": true,
+        "detritus_trail": true
+      },
+      "color_range": {
+        "base": "bone",
+        "hue_shift": 0.04,
+        "sat_shift": 0.05,
+        "var_shift": 0.1
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Carrion centipede. Bone-armored segments, many legs, pincers."
+    },
+
+    "storm_raptor": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "raptor",
+        "body_ratio": 0.38,
+        "head_size": 0.14,
+        "leg_count": 2,
+        "leg_style": "taloned",
+        "eye_count": 2,
+        "eye_size": 0.09,
+        "wing_count": 2,
+        "wing_span": 0.5,
+        "wing_style": "feathered",
+        "crest": true,
+        "crest_height": 0.1,
+        "beak": true,
+        "tail_feathers": true
+      },
+      "color_range": {
+        "base": "storm",
+        "hue_shift": 0.07,
+        "sat_shift": 0.12,
+        "var_shift": 0.15
+      },
+      "size_range": [0.85, 1.15],
+      "notes": "Lightning-fast highland raptor. Feathered wings, talons, beak."
+    },
+
+    "ash_crawler": {
+      "archetype": "insectoid",
+      "spawn_context": "both",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "beetle_heavy",
+        "body_ratio": 0.4,
+        "head_size": 0.08,
+        "leg_count": 6,
+        "leg_style": "thick",
+        "eye_count": 2,
+        "eye_size": 0.05,
+        "mandibles": true,
+        "mandible_size": 0.12,
+        "shell_ridged": true,
+        "dust_trail": true,
+        "ash_coat": true
+      },
+      "color_range": {
+        "base": "ground_ash",
+        "hue_shift": 0.04,
+        "sat_shift": 0.08,
+        "var_shift": 0.12
+      },
+      "size_range": [0.8, 1.1],
+      "notes": "Common wasteland beetle. Ash-colored, heavy shell, mandibles."
+    },
+
+    "rift_elk": {
+      "archetype": "quadruped",
+      "spawn_context": "both",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "elk",
+        "body_ratio": 0.45,
+        "head_size": 0.13,
+        "leg_count": 4,
+        "leg_style": "long_slender",
+        "eye_count": 2,
+        "eye_size": 0.08,
+        "antlers": true,
+        "antler_branches": 6,
+        "antler_glow_rift": true,
+        "mane": true,
+        "mane_length": 0.12,
+        "tail": true,
+        "tail_style": "short"
+      },
+      "color_range": {
+        "base": "bone",
+        "hue_shift": 0.06,
+        "sat_shift": 0.1,
+        "var_shift": 0.15
+      },
+      "size_range": [0.95, 1.3],
+      "notes": "Large neutral elk. Glowing antlers in rifts, calm upworld."
+    },
+
+    "fungal_hurler": {
+      "archetype": "behemoth",
+      "spawn_context": "both",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "hulking",
+        "body_ratio": 0.5,
+        "head_size": 0.12,
+        "leg_count": 2,
+        "leg_style": "thick_stubby",
+        "arm_count": 2,
+        "arm_style": "long_reaching",
+        "eye_count": 2,
+        "eye_size": 0.07,
+        "mushroom_cap": true,
+        "cap_diameter": 0.2,
+        "spore_launcher": true,
+        "bark_skin": true,
+        "rift_variant_scale": 1.3
+      },
+      "color_range": {
+        "base": "leaf",
+        "hue_shift": 0.08,
+        "sat_shift": 0.15,
+        "var_shift": 0.18
+      },
+      "size_range": [0.9, 1.4],
+      "notes": "Spore-throwing brute. 2 legs, long arms, mushroom cap on back."
+    }
+  },
+
+  "colorshift_presets": {
+    "rift_void_tint": {"hue_shift": 0.15, "sat_shift": 0.2, "var_shift": -0.1, "notes": "Applied to rift mobs entering void rooms"},
+    "rift_life_tint": {"hue_shift": -0.1, "sat_shift": 0.25, "var_shift": 0.1, "notes": "Applied to rift mobs entering life rooms"},
+    "rift_energy_tint": {"hue_shift": 0.05, "sat_shift": 0.15, "var_shift": 0.15, "notes": "Applied to rift mobs entering energy rooms"},
+    "overworld_boss": {"hue_shift": 0.0, "sat_shift": 0.3, "var_shift": 0.2, "notes": "Applied to boss variants on overworld"},
+    "nightmare": {"hue_shift": 0.0, "sat_shift": -0.1, "var_shift": -0.2, "notes": "Applied to nightmare-tier enemies, desaturated and dark"}
+  }
+}

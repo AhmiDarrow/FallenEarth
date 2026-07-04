@@ -195,6 +195,21 @@
     "spore_hulk": "beast_behemoth",
     "coordinated_insects": "beast_insectoid",
     "magnetic_horror": "mechanical_default",
-    "energy_drainer": "beast_floater"
+    "energy_drainer": "beast_floater",
+    "amphibian": "beast_quadruped",
+    "swarm_insect": "beast_insectoid",
+    "scavenger_beetle": "beast_insectoid",
+    "crystal_reptile": "beast_insectoid",
+    "carrion_centipede": "beast_insectoid",
+    "flying_beast": "beast_quadruped",
+    "spore_thrower": "beast_behemoth",
+    "rift_predator": "rift_void",
+    "rift_spider": "rift_void",
+    "rift_wraith": "rift_void",
+    "rift_aberration": "rift_life",
+    "rift_spore": "rift_life",
+    "rift_machine": "rift_energy",
+    "rift_storm": "rift_energy",
+    "rift_gatekeeper": "rift_energy"
   }
 }

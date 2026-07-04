@@ -9,10 +9,13 @@ signal mob_defeated(mob_id: String)
 
 
 const MOB_DATA_PATH := "res://data/mobs.json"
+const SPRITE_DATA_PATH := "res://data/mob_sprites.json"
 
 var overworld_cache: Dictionary = {"neutral": [], "aggressive": []}
+var rift_only_cache: Array[Dictionary] = []
 var underearth_defs: Array[Dictionary] = []
 var tameable_fruits: Array[Dictionary] = []
+var sprite_cache: Dictionary = {}
 
 # Runtime state tracking (not from JSON, populated at runtime)
 var _spawned_mobs: Array[Dictionary] = []
@@ -50,6 +53,12 @@ func _load_mob_data(path: String = "") -> bool:
 			overworld_cache["neutral"] = (ow.get("neutral", []) if ow.get("neutral") is Array else []) as Array
 			overworld_cache["aggressive"] = (ow.get("aggressive", []) if ow.get("aggressive") is Array else []) as Array
 	
+	# Parse rift-only mobs
+	if result.has("rift_only"):
+		var rift_var: Variant = result["rift_only"]
+		if rift_var is Array:
+			rift_only_cache = rift_var as Array[Dictionary]
+	
 	# Parse underearth parts (raw template list)
 	if result.has("underearth_parts"):
 		var parts: Variant = result["underearth_parts"]
@@ -66,15 +75,34 @@ func _load_mob_data(path: String = "") -> bool:
 		var fruits: Variant = result["tameable_fruits"]
 		tameable_fruits = (fruits if fruits is Array else []) as Array[Dictionary]
 	
-	print("[MobManager] Loaded %d overworld mob types, %d underearth templates, %d tameable fruits." % [
+	# Load sprite definitions
+	_load_sprites()
+	
+	var total_mobs: int = overworld_cache["neutral"].size() + overworld_cache["aggressive"].size() + rift_only_cache.size()
+	print("[MobManager] Loaded %d mob types (%d upworld, %d rift-only), %d underearth templates, %d tameable fruits, %d sprites." % [
+		total_mobs,
 		overworld_cache["neutral"].size() + overworld_cache["aggressive"].size(),
+		rift_only_cache.size(),
 		underearth_defs.size(),
-		tameable_fruits.size()
+		tameable_fruits.size(),
+		sprite_cache.size()
 	])
 	return true
 
 
-## Return all available mob types (neutral + aggressive) from cached data
+func _load_sprites() -> void:
+	var file := FileAccess.open(SPRITE_DATA_PATH, FileAccess.READ)
+	if not is_instance_valid(file):
+		push_warning("[MobManager] Could not open %s — sprites unavailable." % SPRITE_DATA_PATH)
+		return
+	var text := file.get_as_text()
+	file.close()
+	var result: Variant = JSON.parse_string(text)
+	if result is Dictionary:
+		sprite_cache = (result.get("sprites", {}) if result.get("sprites") is Dictionary else {}) as Dictionary
+
+
+## Return all available mob types (neutral + aggressive + rift_only) from cached data
 func get_all_mobs() -> Array[Dictionary]:
 	var all_mobs: Array[Dictionary] = []
 	for mobility in ["neutral", "aggressive"]:
@@ -82,7 +110,30 @@ func get_all_mobs() -> Array[Dictionary]:
 			for m in overworld_cache[mobility]:
 				if m is Dictionary:
 					all_mobs.append(m.duplicate(true))
+	for m in rift_only_cache:
+		if m is Dictionary:
+			all_mobs.append(m.duplicate(true))
 	return all_mobs
+
+
+## Return mobs filtered by spawn_context ("upworld", "rift", or "both")
+func get_mobs_by_context(context: String) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for mobility in ["neutral", "aggressive"]:
+		if overworld_cache.has(mobility):
+			for m in overworld_cache[mobility]:
+				if m is Dictionary and m.get("spawn_context", "upworld") == context:
+					result.append(m.duplicate(true))
+	if context == "rift":
+		for m in rift_only_cache:
+			if m is Dictionary:
+				result.append(m.duplicate(true))
+	return result
+
+
+## Get a sprite definition by ID
+func get_sprite(sprite_id: String) -> Dictionary:
+	return sprite_cache.get(sprite_id, {})
 
 
 ## Spawn a mob instance from template (adds randomization to stats)
@@ -94,12 +145,19 @@ func spawn_mob(template: Dictionary) -> Dictionary:
 		"hp": clampi(template.get("hp", 50) + randi_range(-5, 5), 1, 9999),
 		"armor": maxi(template.get("armor", 0) + randi_range(0, 2), 0),
 		"threat_range": template.get("threat_range", 5),
+		"spawn_context": template.get("spawn_context", "upworld"),
+		"sprite_id": template.get("sprite_id", template.get("type", "")),
 	}
 	
 	# Carry over any extra properties from the template (attack_damage, etc.)
-	for key in ["attack_damage", "drain_rate", "swarm_count_min", "swarm_count_max", "drop_item"]:
+	for key in ["attack_damage", "drain_rate", "swarm_count_min", "swarm_count_max", "drop_item", "rift_type", "is_boss", "preferred_biomes"]:
 		if template.has(key):
 			mob[key] = template[key]
+	
+	# Attach sprite data if available
+	var sid: String = str(mob.get("sprite_id", ""))
+	if not sid.is_empty() and sprite_cache.has(sid):
+		mob["sprite_data"] = sprite_cache[sid].duplicate(true)
 	
 	_spawned_mobs.append(mob)
 	mob_spawned.emit(mob)

@@ -11,6 +11,8 @@ signal enemy_spawn_failed(enemy_id: String, reason: String)
 const ARCHETYPES_PATH := "res://data/npc_archetypes.json"
 const ENEMY_ARCHETYPES_PATH := "res://data/enemy_archetypes.json"
 const APPEARANCE_PATH := "res://data/appearance.json"
+const MOBS_PATH := "res://data/mobs.json"
+const SPRITE_DATA_PATH := "res://data/mob_sprites.json"
 
 const GENERATION_SALT := "fallen_enemies_v1"
 
@@ -20,14 +22,23 @@ const ENEMY_WEIGHTS := {
 	"insectoid": 3,
 	"behemoth": 1,
 	"aberrant": 2,
+	"floater": 2,
+	"mechanical": 1,
 }
+
+# Mob sprite cache
+static var _sprite_cache: Dictionary = {}
+static var _sprite_cache_loaded: bool = false
+static var _mob_cache: Dictionary = {}
 
 static func generate_procedural_enemy(
 	world_seed: String,
 	tile_map: Dictionary,
 	start_tile_key: String,
 	difficulty: Dictionary,
-	npc_manager: NPCManager = null
+	npc_manager: NPCManager = null,
+	spawn_context: String = "upworld",
+	biome: String = ""
 ) -> Dictionary:
 	# Difficulty thresholds — adjust per world state
 	var min_level: int = int(difficulty.get("min_level", 2))
@@ -42,8 +53,20 @@ static func generate_procedural_enemy(
 	var appearance_opts: Dictionary = _load_json_dict(APPEARANCE_PATH)
 	var rng := _make_rng(world_seed, GENERATION_SALT)
 
-	# Pick an archetype based on difficulty — harder difficulties lean toward dangerous archetypes
-	var archetype_key: String = _pick_enemy_archetype(archetypes, difficulty, rng)
+	# Try to pick a named mob from mobs.json filtered by spawn_context and biome
+	var mob_pool: Array[Dictionary] = _get_mob_pool(spawn_context, biome)
+	var chosen_mob: Dictionary = {}
+	if not mob_pool.is_empty():
+		chosen_mob = mob_pool[rng.randi() % mob_pool.size()]
+
+	# Pick an archetype — prefer mob's archetype if we found a named mob
+	var archetype_key: String = ""
+	if chosen_mob.has("archetype"):
+		archetype_key = str(chosen_mob["archetype"])
+	elif chosen_mob.has("visual_preset"):
+		archetype_key = _preset_to_archetype(str(chosen_mob["visual_preset"]))
+	if archetype_key.is_empty():
+		archetype_key = _pick_enemy_archetype(archetypes, difficulty, rng)
 	if archetype_key.is_empty():
 		return {}
 
@@ -76,6 +99,10 @@ static func generate_procedural_enemy(
 	var enemy_id := "enemy_%s_%03d" % [tile_key.left(6), rng.randi() % 1000]
 	var display_name: String = _build_enemy_name(appearance, archetype_key, rng)
 
+	# Use chosen mob's name if available
+	if chosen_mob.has("name"):
+		display_name = str(chosen_mob["name"])
+
 	var enemy: Dictionary = {
 		"id": enemy_id,
 		"name": display_name,
@@ -92,7 +119,7 @@ static func generate_procedural_enemy(
 		"stats": stats,
 		"appearance": appearance,
 		"tile_key": tile_key,
-		"biome": str(tile.get("name", "Ash Wastes")),
+		"biome": str(tile.get("name", biome if not biome.is_empty() else "Ash Wastes")),
 		"rarity": rarity,
 		"status": "spawned",
 		"hostile": true,
@@ -101,7 +128,43 @@ static func generate_procedural_enemy(
 		"damage": level * 2,
 		"speed": level * 0.3,
 		"has_procedural_assets": true,
+		"spawn_context": spawn_context,
 	}
+
+	# Carry over mob-specific stats if chosen from named pool
+	if chosen_mob.has("hp"):
+		enemy["health"] = chosen_mob["hp"]
+		enemy["base_hp"] = chosen_mob["hp"]
+	if chosen_mob.has("attack_damage"):
+		enemy["damage"] = chosen_mob["attack_damage"]
+	if chosen_mob.has("armor"):
+		enemy["armor"] = chosen_mob["armor"]
+	if chosen_mob.has("drain_rate"):
+		enemy["drain_rate"] = chosen_mob["drain_rate"]
+	if chosen_mob.has("swarm_count_min"):
+		enemy["swarm_count_min"] = chosen_mob["swarm_count_min"]
+		enemy["swarm_count_max"] = chosen_mob.get("swarm_count_max", 3)
+	if chosen_mob.has("is_boss"):
+		enemy["is_boss"] = chosen_mob["is_boss"]
+	if chosen_mob.has("rift_type"):
+		enemy["rift_type"] = chosen_mob["rift_type"]
+
+	# Assign sprite_id from mob data or derive from archetype
+	if chosen_mob.has("sprite_id"):
+		enemy["sprite_id"] = chosen_mob["sprite_id"]
+	else:
+		enemy["sprite_id"] = archetype_key
+
+	# Apply colorshift from sprite definition if available
+	var sprite_data: Dictionary = _get_sprite(enemy.get("sprite_id", ""))
+	if not sprite_data.is_empty():
+		var color_range: Dictionary = sprite_data.get("color_range", {})
+		if not color_range.is_empty():
+			enemy["color_range"] = color_range
+		# Apply rift tint if in a rift
+		if spawn_context == "rift" and sprite_data.has("rift_type"):
+			var rift_tint: String = "rift_%s_tint" % str(sprite_data["rift_type"])
+			enemy["colorshift_preset"] = rift_tint
 
 	# Optional NPCManager validation — if NPCManager is provided, check that the enemy's
 	# archetype has a procedural fallback available; otherwise proceed unconditionally.
@@ -275,7 +338,7 @@ static func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
 	ProceduralMob to consume. Called from generate_procedural_enemy after enemy data
 	is built, mirroring NPCManager's _build_procedural_mob.
 	"""
-	var archetypes: Array = ["quadruped", "insectoid", "behemoth", "aberrant"]
+	var archetypes: Array = ["quadruped", "insectoid", "behemoth", "aberrant", "floater", "mechanical"]
 	# Derive archetype from enemy_data's type/role hints
 	var archetype: String = str(enemy_data.get("archetype", "quadruped")).to_lower()
 	if archetype not in archetypes:
@@ -291,8 +354,103 @@ static func _build_procedural_mob(enemy_data: Dictionary) -> Dictionary:
 		size = s
 	elif s is float or s is int:
 		size = Vector2(float(s), float(s))
-	var proto: Dictionary = {"archetype": archetype, "color": color, "size": size}
+	var proto: Dictionary = {
+		"archetype": archetype,
+		"color": color,
+		"size": size,
+		"sprite_id": enemy_data.get("sprite_id", archetype),
+	}
+	# Pass colorshift data if present
+	if enemy_data.has("color_range"):
+		proto["color_range"] = enemy_data["color_range"]
+	if enemy_data.has("colorshift_preset"):
+		proto["colorshift_preset"] = enemy_data["colorshift_preset"]
 	return proto
+
+
+# -------------------------------------------------------------------------
+# Mob pool and sprite helpers
+# -------------------------------------------------------------------------
+
+static func _get_mob_pool(spawn_context: String, biome: String = "") -> Array[Dictionary]:
+	"""Get named mobs from mobs.json filtered by spawn_context and optional biome."""
+	if _mob_cache.is_empty():
+		_load_mob_cache()
+	var pool: Array[Dictionary] = []
+	# Search overworld.neutral, overworld.aggressive, and rift_only
+	for category in ["neutral", "aggressive"]:
+		var mobs: Array = _mob_cache.get("overworld", {}).get(category, [])
+		for mob in mobs:
+			if mob is Dictionary:
+				var ctx: String = str(mob.get("spawn_context", "upworld"))
+				if ctx == spawn_context or ctx == "both":
+					if _biome_matches(mob, biome):
+						pool.append(mob)
+	# Also check rift_only for rift context
+	if spawn_context == "rift":
+		var rift_mobs: Array = _mob_cache.get("rift_only", [])
+		for mob in rift_mobs:
+			if mob is Dictionary:
+				if _biome_matches(mob, biome):
+					pool.append(mob)
+	return pool
+
+
+static func _biome_matches(mob: Dictionary, biome: String) -> bool:
+	"""Check if a mob can spawn in the given biome (if biome filter is set)."""
+	if biome.is_empty():
+		return true
+	if not mob.has("preferred_biomes"):
+		return true  # No biome preference = can spawn anywhere
+	var preferred: Variant = mob["preferred_biomes"]
+	if preferred is Array:
+		for b in preferred:
+			if str(b) == biome:
+				return true
+		return false
+	return true
+
+
+static func _load_mob_cache() -> void:
+	"""Cache mobs.json data for pool filtering."""
+	var file: FileAccess = FileAccess.open(MOBS_PATH, FileAccess.READ)
+	if not file:
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary:
+		_mob_cache = parsed.duplicate(true)
+
+
+static func _get_sprite(sprite_id: String) -> Dictionary:
+	"""Get a sprite definition by ID from mob_sprites.json."""
+	if not _sprite_cache_loaded:
+		_load_sprite_cache_static()
+	return _sprite_cache.get(sprite_id, {})
+
+
+static func _load_sprite_cache_static() -> void:
+	var file: FileAccess = FileAccess.open(SPRITE_DATA_PATH, FileAccess.READ)
+	if not file:
+		_sprite_cache_loaded = true
+		return
+	var parsed: Variant = JSON.parse_string(file.get_as_text())
+	file.close()
+	if parsed is Dictionary:
+		_sprite_cache = parsed.get("sprites", {}).duplicate(true)
+	_sprite_cache_loaded = true
+
+
+static func _preset_to_archetype(preset: String) -> String:
+	"""Map a visual_preset name to a ProceduralMob archetype."""
+	match preset:
+		"beast_quadruped": return "quadruped"
+		"beast_insectoid": return "insectoid"
+		"beast_behemoth": return "behemoth"
+		"beast_floater": return "floater"
+		"mechanical_default": return "mechanical"
+		"rift_void", "rift_life", "rift_energy": return "aberrant"
+		_: return "quadruped"
 
 
 # -------------------------------------------------------------------------
@@ -311,7 +469,7 @@ static func random_overworld_mob(biome: String = "Ash Wastes", prefer_hostile: b
 		"0,0": {"name": biome, "rift_chance": 0.4}
 	}
 	var difficulty := {"min_level": 1, "max_level": 4, "danger_threshold": 0.5}
-	var enemy := generate_procedural_enemy(world_seed, dummy_tile_map, "0,0", difficulty)
+	var enemy := generate_procedural_enemy(world_seed, dummy_tile_map, "0,0", difficulty, null, "upworld", biome)
 	if enemy.is_empty():
 		enemy = {
 			"id": "mob_fallback_" + str(randi() % 1000),
@@ -323,7 +481,9 @@ static func random_overworld_mob(biome: String = "Ash Wastes", prefer_hostile: b
 			"damage": 3,
 			"speed": 0.4,
 			"has_procedural_assets": true,
-			"biome": biome
+			"biome": biome,
+			"spawn_context": "upworld",
+			"sprite_id": "quadruped"
 		}
 	return enemy
 
@@ -367,9 +527,16 @@ static func build_rift_room(
 	ly: int = -1
 ) -> Dictionary:
 	var diff := {"min_level": 2, "max_level": 7, "danger_threshold": 0.85}
+	# Boss encounters use higher difficulty
+	if encounter_type == "boss":
+		diff["danger_threshold"] = 0.95
+		diff["max_level"] = 10
 	var tm := {}
 	tm[tile_key] = {"name": biome, "rift_chance": 0.95}
-	var enemy := generate_procedural_enemy("rift_" + rift_id, tm, tile_key, diff)
+	var enemy := generate_procedural_enemy("rift_" + rift_id, tm, tile_key, diff, null, "rift", biome)
+	# For boss rooms, mark as boss if the mob isn't already
+	if encounter_type == "boss" and not enemy.is_empty() and not enemy.get("is_boss", false):
+		enemy["is_boss"] = true
 	var enc := build_overworld(char_data, enemy if not enemy.is_empty() else {}, tile_key, biome)
 	enc["source"] = SOURCE_RIFT
 	enc["rift_id"] = rift_id
