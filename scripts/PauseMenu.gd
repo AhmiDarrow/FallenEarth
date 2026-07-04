@@ -25,8 +25,17 @@ func _ready() -> void:
 
 func open() -> void:
 	visible = true
+	# Force full-viewport geometry since parent may not propagate layout
+	var vp_size: Vector2 = get_viewport_rect().size
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	custom_minimum_size = vp_size
+	size = vp_size
+	position = Vector2.ZERO
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	z_index = 100
+	move_to_front()
 	get_tree().paused = true
-	print("[PauseMenu] Opened. visible=", visible, " size=", size, " global_position=", global_position, " anchors=", anchor_left, ",", anchor_top, ",", anchor_right, ",", anchor_bottom)
+	print("[PauseMenu] Opened. size=", size, " pos=", position)
 
 
 func close() -> void:
