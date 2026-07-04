@@ -15,6 +15,7 @@ signal visual_updated(entity_node: Node3D)
 
 var entity_id: String = ""
 var entity_root: Node3D
+var animator: EntityAnimator
 var _viewport_ref: Entity3DViewport
 var _parent_2d: Node2D
 var _entity_data: Dictionary = {}
@@ -29,12 +30,21 @@ func setup(entity_data: Dictionary, viewport: Entity3DViewport) -> void:
 	if entity_root:
 		entity_root.name = "Entity_%s" % entity_id
 		_viewport_ref.add_entity(entity_root)
+		_setup_animator(entity_data)
 
 	if billboard:
 		_add_billboard()
 
 	if glow_color.a > 0.0:
 		_viewport_ref.add_point_light(entity_id, glow_color, 1.5, 3.0)
+
+func _setup_animator(data: Dictionary) -> void:
+	animator = EntityAnimator.new()
+	animator.name = "EntityAnimator"
+	var vis: Dictionary = data.get("visual", {})
+	var preset: String = vis.get("base_type", "humanoid")
+	animator.entity_type = preset
+	entity_root.add_child(animator)
 
 func attach_to_2d(node: Node2D) -> void:
 	_parent_2d = node
@@ -49,6 +59,9 @@ func attach_to_2d(node: Node2D) -> void:
 func detach() -> void:
 	if glow_color.a > 0.0:
 		_viewport_ref.remove_point_light(entity_id)
+	if animator:
+		animator.queue_free()
+		animator = null
 	if entity_root and _viewport_ref:
 		entity_root.queue_free()
 	entity_root = null
@@ -58,7 +71,12 @@ func detach() -> void:
 
 func set_animation_state(state: String) -> void:
 	animation_state = state
-	_update_animation()
+	if animator:
+		animator.set_state_by_name(state)
+
+func trigger_attack() -> void:
+	if animator:
+		animator.trigger_attack()
 
 func update_equipment(equip_data: Dictionary) -> void:
 	if not entity_root:
@@ -96,7 +114,7 @@ func _add_billboard() -> void:
 	_face_camera.name = "FaceCamera"
 	entity_root.add_child(_face_camera)
 	for child in entity_root.get_children():
-		if child != _face_camera and child is Node3D:
+		if child != _face_camera and child is Node3D and child != animator:
 			child.reparent(_face_camera)
 
 func _process(_delta: float) -> void:
@@ -123,7 +141,8 @@ func _sync_position() -> void:
 		_viewport_ref.update_point_light_position(entity_id, entity_root.position)
 
 func _update_animation() -> void:
-	pass
+	if animator:
+		animator.set_state_by_name(animation_state)
 
 func _get_viewport_center() -> Vector2:
 	var root := get_tree().root
