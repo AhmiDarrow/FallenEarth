@@ -113,3 +113,33 @@ The file has been created and verified. The "Missing data: enemy_archetypes.json
 top-down pixel art {race} {gender}, bare skin in underwear only, no armor no weapons no clothing, simple base character sprite, 2.5D game character facing south, consistent pixel art style
 ```
 Walk animation description: `"{race} {gender}, post-apocalyptic, underwear"`
+
+---
+
+## 2026-07-04 Stardew-Style Test Sprite → Human Male (REBUILT PIPELINE)
+
+### Trigger
+Previous human_male set used the (buggy) SDK pydantic models. SDK `Usage.type` expects `"usd"` but live API returns `{"type":"generations","generations":1.0}` — SDK is stale and unusable for direct calls. Switched pipeline to raw `requests.post` against `/v1` REST endpoints; bypasses SDK model binding entirely.
+
+### New pipeline (validated, resumable)
+- **Tool:** `tools/pixellab_test_sprite.py` (raw REST, idempotent — skips existing files via `_exists()`)
+- **Contact sheets:** `tools/make_contact_sheet.py` → `SHEET_idle.png` (1024×128, 8 dirs in a row), `SHEET_walk.png` (256×512, 8 dirs × 4 frames grid)
+- **Output dir:** `assets/characters/human_male_test/` (42 PNGs + 2 sheets)
+  - `human_male_test_base_128.png` (128px master, S facing)
+  - `human_male_test_base_64.png` (64px animation reference — required because `animate-with-text` hard-limits reference to 64×64)
+  - `human_male_test_{S,SE,E,NE,N,NW,W,SW}.png` (8 idle rotations, 128px) via `\rotate` with `from_direction:"south"`, `to_direction:<dir>`
+  - `human_male_test_walk_{dir}_{0..3}.png` (4-frame walk cycles × 8 dirs, 64px) via `\animate-with-text`
+- **Generations used:** 2 (pixflux) + 7 (rotate — S is a file copy, not an API call) + 8 (animate-with-text) = **17 total**. Plan limit 2000 ⇒ well within budget.
+- **Palette/lore anchors in prompt (per user direction):** "post-apocalyptic wasteland palette — rust, dust brown, pallid skin, subtle eldritch cyan undertone" (ties to `lore.md` Underearth/Upworlder split).
+- **Stardew convention reference:** 4-direction walk cycles × 4 frames each (Stardew uses 16×32; we use 128px idle masters + 64px animated frames for higher detail, still Stardew-shape sheet).
+
+### Godot editor race condition (FIX)
+When Godot editor is open and a PNG is written into a project folder, the editor's filesystem watcher can interfere mid-write and the source goes missing while only some rotations persist. **Fix:** place a `.gdignore` in the output folder during generation, then remove it once all PNGs are written so Godot imports the final set. `tools/pixellab_test_sprite.py` should write `.gdignore` first if needed; current run did this manually.
+
+### Reusable call structure (for remaining 23 race×gender combos)
+```
+POST /v1/generate-image-pixflux  → base 128 + base 64
+POST /v1/rotate                  → ×7 (skip S)
+POST /v1/animate-with-text       → ×8 (4 frames each)
+```
+Per combo: ~17 generations. 23 remaining × 17 ≈ 391 generations (budget ≈ 1968 remaining → fits).

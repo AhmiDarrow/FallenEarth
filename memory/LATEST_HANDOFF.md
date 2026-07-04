@@ -1,5 +1,5 @@
 ---
-name: resolution-options-handoff
+name: stardew-sprite-pipeline-handoff
 description: Added resolution/monitor options and responsive UI scaling
 ---
 
@@ -13,7 +13,7 @@ F5 manual testing to verify options menu works end-to-end across different monit
 
 ### Relevant Handoffs
 
-- [[resolution-options-handoff]] — this handoff (current focus)
+- [[stardew-sprite-pipeline-handoff]] — this handoff (current focus)
 - [[latter-handoff]] — previous procedural drawing milestone (still relevant for asset integration)
 
 ### Context Files
