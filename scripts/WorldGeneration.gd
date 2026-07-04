@@ -22,6 +22,8 @@ var _hex_nodes: Dictionary = {}  # "q,r" -> Polygon2D
 var _selected_key: String = ""
 var _world_size: int = 12
 var _updating_size: bool = false
+var _cursor_q: int = 0
+var _cursor_r: int = 0
 
 const DEFAULT_SEED := "UNDEREARTH_001"
 const SIZE_RADII := {"small": 6, "medium": 12, "large": 18}
@@ -48,6 +50,12 @@ func _ready() -> void:
 	small_btn.toggled.connect(_on_size_toggled.bind("small"))
 	medium_btn.toggled.connect(_on_size_toggled.bind("medium"))
 	large_btn.toggled.connect(_on_size_toggled.bind("large"))
+
+	# Allow mouse clicks to pass through to _unhandled_input
+	preview_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var margin := preview_panel.get_node("Margin") as Control
+	if is_instance_valid(margin):
+		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	seed_edit.text = DEFAULT_SEED
 	continue_btn.disabled = true
@@ -101,7 +109,12 @@ func _on_generate_pressed() -> void:
 	_update_world_info_label()
 
 	if start_tile_key != "":
+		var parts: PackedStringArray = start_tile_key.split(",")
+		if parts.size() >= 2:
+			_cursor_q = int(parts[0])
+			_cursor_r = int(parts[1])
 		select_hex(start_tile_key)
+		_update_cursor_highlight()
 
 	continue_btn.disabled = false
 	print("[WorldGeneration] Hex sphere generated with seed: ", chosen_seed)
@@ -174,17 +187,69 @@ func _render_hex_preview() -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if generated_world.is_empty():
 		return
-	if not (event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT):
-		return
 
-	var click_pos: Vector2 = hex_grid.get_local_mouse_position()
-	# Hit-test against each hex polygon
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		var click_pos: Vector2 = hex_grid.get_local_mouse_position()
+		for key in _hex_nodes:
+			var poly: Polygon2D = _hex_nodes[key]
+			var rel := click_pos - poly.position
+			if Geometry2D.is_point_in_polygon(rel, poly.polygon):
+				_cursor_q = poly.get_meta("q", 0)
+				_cursor_r = poly.get_meta("r", 0)
+				select_hex(key)
+				_update_cursor_highlight()
+				get_viewport().gui_release_focus()
+				return
+
+	if event is InputEventKey and event.pressed and not event.echo:
+		var dir: Vector2i
+		match event.keycode:
+			KEY_W, KEY_UP:
+				dir = Vector2i(0, -1)
+			KEY_S, KEY_DOWN:
+				dir = Vector2i(0, 1)
+			KEY_A, KEY_LEFT:
+				dir = Vector2i(-1, 0)
+			KEY_D, KEY_RIGHT:
+				dir = Vector2i(1, 0)
+			KEY_ENTER, KEY_SPACE:
+				_maybe_select_cursor()
+				return
+			_:
+				return
+		_try_move_cursor(dir.x, dir.y)
+
+
+func _try_move_cursor(dq: int, dr: int) -> void:
+	var nq := _cursor_q + dq
+	var nr := _cursor_r + dr
+	var key := "%d,%d" % [nq, nr]
+	if _hex_nodes.has(key):
+		_cursor_q = nq
+		_cursor_r = nr
+		_update_cursor_highlight()
+
+
+func _maybe_select_cursor() -> void:
+	var key := "%d,%d" % [_cursor_q, _cursor_r]
+	if _hex_nodes.has(key):
+		select_hex(key)
+
+
+func _update_cursor_highlight() -> void:
 	for key in _hex_nodes:
 		var poly: Polygon2D = _hex_nodes[key]
-		var rel := click_pos - poly.position
-		if Geometry2D.is_point_in_polygon(rel, poly.polygon):
-			select_hex(key)
-			return
+		if key == _selected_key:
+			continue
+		var is_cursor := (int(poly.get_meta("q", 0)) == _cursor_q and int(poly.get_meta("r", 0)) == _cursor_r)
+		if is_cursor:
+			poly.modulate = Color(1, 1, 1, 1)
+		else:
+			var tile: Dictionary = generated_world.get(key, {})
+			if tile.get("is_start_candidate", false):
+				poly.modulate = Color(1, 1, 1, 1)
+			else:
+				poly.modulate = Color(0.85, 0.85, 0.85, 0.85)
 
 
 func select_hex(key: String) -> void:
