@@ -131,8 +131,8 @@ func _enumerate_monitors() -> void:
 	_available_monitors.clear()
 	var screen_count := DisplayServer.get_screen_count()
 	for i in range(screen_count):
-		var monitor_name := DisplayServer.get_screen_name(i)
-		var screen_size := DisplayServer.get_screen_size(i)
+		var monitor_name: String = DisplayServer.get_screen_name(i)
+		var screen_size: Vector2i = DisplayServer.get_screen_size(i)
 		_available_monitors.append({
 			"index": i,
 			"name": monitor_name,
@@ -170,7 +170,7 @@ func _apply_settings() -> void:
 	# Set monitor
 	if monitor_index >= 0 and monitor_index < _available_monitors.size():
 		# Godot doesn't have a direct set_monitor; we can move window to that screen
-		var screen_pos := DisplayServer.get_screen_position(monitor_index)
+		var screen_pos: Vector2i = DisplayServer.get_screen_position(monitor_index)
 		DisplayServer.window_set_position(screen_pos)
 	# Set resolution
 	set_display_resolution(resolution_width, resolution_height)
@@ -189,7 +189,7 @@ func get_available_monitors() -> Array[Dictionary]:
 func set_monitor(index: int) -> void:
 	if index >= 0 and index < _available_monitors.size():
 		monitor_index = index
-		var screen_pos := DisplayServer.get_screen_position(index)
+		var screen_pos: Vector2i = DisplayServer.get_screen_position(index)
 		DisplayServer.window_set_position(screen_pos)
 		_save_settings()
 		print("[DisplayManager] Monitor set to %d (%s)" % [index, _available_monitors[index]["name"]])
