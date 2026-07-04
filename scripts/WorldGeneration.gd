@@ -149,7 +149,7 @@ func _render_hex_preview() -> void:
 
 		var poly := Polygon2D.new()
 		poly.polygon = shape
-		poly.position = pos - center_offset  # center the grid
+		poly.position = pos - center_offset
 		poly.color = _biome_color(str(tile.get("name", "")))
 
 		if tile.get("is_start_candidate", false):
@@ -162,6 +162,11 @@ func _render_hex_preview() -> void:
 		poly.set_meta("key", key)
 		hex_grid.add_child(poly)
 		_hex_nodes[key] = poly
+
+	# Position the grid at center of its parent container
+	var parent_ctrl := hex_grid.get_parent() as Control
+	if is_instance_valid(parent_ctrl) and parent_ctrl.size.length_squared() > 0.0:
+		hex_grid.position = parent_ctrl.size * 0.5
 
 	print("[WorldGeneration] Rendered %d hexes (radius=%d, size=%.1f)" % [generated_world.size(), _world_size, hex_size])
 
