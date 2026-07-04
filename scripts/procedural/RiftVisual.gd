@@ -39,16 +39,16 @@ func _draw() -> void:
 	# Background (irregular polygon)
 	var vertices := get_irregular_polygon(rect.size)
 	var bg_color := base.lerp(Color(0, 0, 0, 0.25), 0.6)
-	draw_polygon(vertices, bg_color, 0.0, 1.2)
+	draw_colored_polygon(vertices, bg_color)
 
 	# Inner glow
 	var inner := vertices * 0.75
 	var inner_color := glow.lerp(base, 0.4)
-	draw_polygon(inner, inner_color, 0.0, 1.8)
+	draw_colored_polygon(inner, inner_color)
 
 	# Edge shimmer
 	var rim := get_rim_rectangle(rect.size, 3.0)
-	draw_polygon(rim, Color(0.0, 0.0, 0.0, 0.3), 0.0, 1.2)
+	draw_colored_polygon(rim, Color(0.0, 0.0, 0.0, 0.3))
 
 	# Age fade
 	modulate = modulate * clampf(1.0 - age / 120.0, 0.0, 1.0)

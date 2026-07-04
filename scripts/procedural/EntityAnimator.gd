@@ -334,7 +334,7 @@ func is_playing() -> bool:
 
 func set_entity_type(new_type: String) -> void:
 	entity_type = new_type
-	if entity_type == "rift":
+	if entity_type == "rift" and _energy_particles.is_empty():
 		_setup_energy_particles()
 		_setup_energy_chains()
 

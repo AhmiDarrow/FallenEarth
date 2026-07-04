@@ -290,11 +290,7 @@ static func _apply_variations(root: Node3D, rng: RandomNumberGenerator, scale_ra
 				var orig := child.material_override if child.material_override else null
 				if orig and orig is StandardMaterial3D:
 					var c := orig.albedo_color
-					var h: float
-					var s: float
-					var v: float
-					c.to_hsv()
-					h = c.h + hue_shift
+					var h: float = c.h + hue_shift
 					if h < 0.0: h += 1.0
 					elif h > 1.0: h -= 1.0
 					var new_mat := MaterialLibrary.create_palette_material(

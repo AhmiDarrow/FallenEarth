@@ -1,7 +1,6 @@
 ## ParticleEmitters — Custom _process + _draw emitters (ash, sparks, void tendrils).
-extends CanvasLayer
-
-const DISPLAY = preload("res://scripts/DisplayManager.gd")
+## Extends Node2D so _draw() is called by the engine.
+extends Node2D
 
 @export var ash_enabled: bool = true
 @export var spark_enabled: bool = true
@@ -21,54 +20,51 @@ func _process(delta: float) -> void:
 	_update_sparks(delta)
 	_update_void(delta)
 	_update_energy(delta)
+	queue_redraw()
 
 func _update_ash(delta: float) -> void:
 	if not ash_enabled:
 		return
-	for p in range(_ash.size()):
+	for p in range(_ash.size() - 1, -1, -1):
 		var par: Dictionary = _ash[p]
 		par["pos"] += par["velocity"] * delta
 		par["age"] += delta
 		par["scale"] = lerp(par["scale"], 0.0, delta * 2.5)
 		if par["age"] > 2.0:
 			_ash.remove_at(p)
-			p -= 1
 
 func _update_sparks(delta: float) -> void:
 	if not spark_enabled:
 		return
-	for p in range(_sparks.size()):
+	for p in range(_sparks.size() - 1, -1, -1):
 		var par: Dictionary = _sparks[p]
 		par["pos"] += par["velocity"] * delta
 		par["age"] += delta
 		par["scale"] = lerp(par["scale"], 0.0, delta * 3.0)
 		if par["age"] > 0.8:
 			_sparks.remove_at(p)
-			p -= 1
 
 func _update_void(delta: float) -> void:
 	if not void_enabled:
 		return
-	for p in range(_void.size()):
+	for p in range(_void.size() - 1, -1, -1):
 		var par: Dictionary = _void[p]
 		par["pos"] += par["velocity"] * delta
 		par["age"] += delta
 		par["scale"] = lerp(par["scale"], 0.0, delta * 2.0)
 		if par["age"] > 3.0:
 			_void.remove_at(p)
-			p -= 1
 
 func _update_energy(delta: float) -> void:
 	if not energy_enabled:
 		return
-	for p in range(_energy.size()):
+	for p in range(_energy.size() - 1, -1, -1):
 		var par: Dictionary = _energy[p]
 		par["pos"] += par["velocity"] * delta
 		par["age"] += delta
 		par["scale"] = lerp(par["scale"], 0.0, delta * 1.5)
 		if par["age"] > 1.2:
 			_energy.remove_at(p)
-			p -= 1
 
 func spawn_ash(pos: Vector2, count: int = 5) -> void:
 	for _ in range(count):
@@ -114,37 +110,35 @@ func _draw() -> void:
 	if _ash.is_empty() and _sparks.is_empty() and _void.is_empty() and _energy.is_empty():
 		return
 
-	# Ash
 	for par in _ash:
 		var rect := Rect2(par["pos"], Vector2(par["scale"] * 12, par["scale"] * 8))
 		var alpha := 0.25 * clampf(1.0 - par["age"] / 2.0, 0.0, 1.0)
-		DISPLAY.draw_rect(rect, par["color"].with_alpha(alpha), 0.0)
+		draw_rect(rect, par["color"].with_alpha(alpha))
 
-	# Sparks
 	for par in _sparks:
-		var dot := Rect2(par["pos"], Vector2(par["scale"] * 6, par["scale"] * 6))
-		DISPLAY.draw_circle(dot, par["scale"] * 3.5, par["color"].with_alpha(0.7 * clampf(1.0 - par["age"] / 0.8, 0.0, 1.0)))
+		var dot_pos: Vector2 = par["pos"]
+		var dot_radius: float = par["scale"] * 3.5
+		var alpha := 0.7 * clampf(1.0 - par["age"] / 0.8, 0.0, 1.0)
+		draw_circle(dot_pos, dot_radius, par["color"].with_alpha(alpha))
 
-	# Void tendrils
 	for par in _void:
 		var size := par["scale"] * 22
-		var v := PackedVector2Array(
+		var v := PackedVector2Array([
 			par["pos"] - Vector2(0, size),
 			par["pos"] + Vector2(size, 0),
 			par["pos"] + Vector2(0, size),
 			par["pos"] - Vector2(size, 0),
-		)
+		])
 		var alpha := 0.15 * clampf(1.0 - par["age"] / 3.0, 0.0, 1.0)
-		DISPLAY.draw_polygon(v, par["color"].with_alpha(alpha), 0.0, 1.5)
+		draw_colored_polygon(v, par["color"].with_alpha(alpha))
 
-	# Energy trails
 	for par in _energy:
 		var size := par["scale"] * 18
-		var v := PackedVector2Array(
+		var v := PackedVector2Array([
 			par["pos"] - Vector2(0, size),
 			par["pos"] + Vector2(size, 0),
 			par["pos"] + Vector2(0, size),
 			par["pos"] - Vector2(size, 0),
-		)
+		])
 		var alpha := 0.25 * clampf(1.0 - par["age"] / 1.2, 0.0, 1.0)
-		DISPLAY.draw_polygon(v, par["color"].with_alpha(alpha), 0.0, 1.8)
+		draw_colored_polygon(v, par["color"].with_alpha(alpha))

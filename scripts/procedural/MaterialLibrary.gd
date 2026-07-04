@@ -40,7 +40,7 @@ static func create_outline_material(base_color: Color, outline_color: Color = Co
 
 	var shader := preload("res://assets/shaders/entity_outline.gdshader") as Shader
 	if not shader:
-		return create_palette_material(base_color) as ShaderMaterial
+		return create_palette_material(base_color)
 
 	var mat := ShaderMaterial.new()
 	mat.shader = shader
@@ -56,7 +56,7 @@ static func create_faction_tint_material(base_color: Color, faction_color: Color
 
 	var shader := preload("res://assets/shaders/entity_noise.gdshader") as Shader
 	if not shader:
-		return create_palette_material(base_color) as ShaderMaterial
+		return create_palette_material(base_color)
 
 	var mat := ShaderMaterial.new()
 	mat.shader = shader
@@ -72,7 +72,7 @@ static func create_damage_flash_material(base_color: Color) -> ShaderMaterial:
 
 	var shader := preload("res://assets/shaders/entity_noise.gdshader") as Shader
 	if not shader:
-		return create_palette_material(base_color) as ShaderMaterial
+		return create_palette_material(base_color)
 
 	var mat := ShaderMaterial.new()
 	mat.shader = shader

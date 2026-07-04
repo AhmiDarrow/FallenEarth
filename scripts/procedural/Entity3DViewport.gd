@@ -179,7 +179,7 @@ func _wire_display() -> void:
 			display.material = mat
 
 func set_world_environment(world_env: WorldEnvironment) -> void:
-	if world_env:
+	if world_env and world_env.world_3d:
 		sub_viewport.world_3d = world_env.world_3d.duplicate()
 
 func add_entity(entity: Node3D) -> void:
@@ -264,7 +264,6 @@ func remove_entity_with_LOD(entity_id: String) -> void:
 		if is_instance_valid(data["root"]):
 			data["root"].queue_free()
 		_entity_metadata.erase(entity_id)
-	_entity_metadata.erase(entity_id)
 	entity_count_changed.emit(entity_root.get_child_count())
 
 func acquire_from_pool(entity_type: String = "generic", visual_data: Dictionary = {}) -> Node3D:
