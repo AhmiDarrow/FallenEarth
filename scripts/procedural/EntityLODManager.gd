@@ -1,7 +1,6 @@
 ## EntityLODManager — Distance-based LOD system for procedural 3D entities.
 ## Manages 3 LOD levels per entity: full detail, simplified, billboard/cull.
 ## Attach as child of Entity3DViewport to manage all entities automatically.
-class_name EntityLODManager
 extends Node
 
 signal lod_changed(entity_id: String, new_lod: int)
@@ -14,12 +13,12 @@ enum LOD { FULL = 0, SIMPLIFIED = 1, CULLED = 2 }
 
 var _entities: Dictionary = {}
 var _check_timer: float = 0.0
-var _viewport_ref: Entity3DViewport
+var _viewport_ref # Entity3DViewport (untyped to avoid circular dependency)
 
-func setup(viewport: Entity3DViewport) -> void:
+func setup(viewport) -> void:
 	_viewport_ref = viewport
 
-func register_entity(entity_id: String, entity_root: Node3D, animator: EntityAnimator) -> void:
+func register_entity(entity_id: String, entity_root: Node3D, animator) -> void:
 	_entities[entity_id] = {
 		"root": entity_root,
 		"animator": animator,
@@ -40,10 +39,10 @@ func _process(delta: float) -> void:
 		_update_all_lods()
 
 func _update_all_lods() -> void:
-	var cam := _viewport_ref.camera
+	var cam = _viewport_ref.camera if _viewport_ref else null
 	if not cam:
 		return
-	var cam_pos := cam.global_position
+	var cam_pos: Vector3 = cam.global_position
 	for entity_id in _entities:
 		var data: Dictionary = _entities[entity_id]
 		var root: Node3D = data["root"]
@@ -65,7 +64,7 @@ func _apply_lod(entity_id: String, data: Dictionary, new_lod: int) -> void:
 	var old_lod: int = data["lod"]
 	data["lod"] = new_lod
 	var root: Node3D = data["root"]
-	var animator: EntityAnimator = data["animator"]
+	var animator = data["animator"]
 	var orig_scale: Vector3 = data["original_scale"]
 
 	match new_lod:

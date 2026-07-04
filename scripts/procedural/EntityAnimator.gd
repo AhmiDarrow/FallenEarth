@@ -2,7 +2,6 @@
 ## Drives limb swing, breathing, idle sway, attack strikes, and death collapse
 ## via _process with sine/cosine oscillators. Attach as child of the entity root.
 ## Phase 4: Enhanced with rift-specific animations and energy tendrils.
-class_name EntityAnimator
 extends Node
 
 enum State { IDLE, WALK, COMBAT, DEAD }
@@ -237,7 +236,7 @@ func _process_walk(_delta: float) -> void:
 	var t := _time
 	var step_cycle := sin(t * 6.0)
 	var arm_cycle := sin(t * 6.0 + PI)
-	var bob := abs(sin(t * 6.0)) * 0.04
+	var bob: float = abs(sin(t * 6.0)) * 0.04
 
 	if _torso_ref:
 		_torso_ref.transform = _initial_torso
@@ -307,7 +306,7 @@ func _process_dead(_delta: float) -> void:
 	var fade_target := 1.0 - eased * 0.7
 	for child in p.get_children():
 		if child is MeshInstance3D:
-			var mat := child.material_override
+			var mat = child.material_override
 			if not mat:
 				mat = child.get_surface_override_material(0)
 			if mat:
@@ -383,7 +382,7 @@ func _animate_door(t: float) -> void:
 	_door_panel_ref.transform = _initial_door_panel
 	var glow_pulse := 0.5 + sin(t * 1.2) * 0.3
 	if _highlight_ref and _highlight_ref is MeshInstance3D:
-		var mat := _highlight_ref.get_surface_override_material(0)
+		var mat = _highlight_ref.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
 			mat.emission_energy_multiplier = glow_pulse * 2.0
 
@@ -393,7 +392,7 @@ func _animate_container(t: float) -> void:
 		var wobble := sin(t * 0.8) * 0.02
 		_container_lid_ref.rotation.x = wobble
 	if _highlight_ref and _highlight_ref is MeshInstance3D:
-		var mat := _highlight_ref.get_surface_override_material(0)
+		var mat = _highlight_ref.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
 			var pulse := 0.6 + sin(t * 1.5) * 0.4
 			mat.emission_energy_multiplier = pulse * 2.0
@@ -409,7 +408,7 @@ func _animate_vehicle(t: float) -> void:
 
 func _animate_structure(t: float) -> void:
 	if _highlight_ref and _highlight_ref is MeshInstance3D:
-		var mat := _highlight_ref.get_surface_override_material(0)
+		var mat = _highlight_ref.get_surface_override_material(0)
 		if mat is StandardMaterial3D:
 			var pulse := 0.4 + sin(t * 0.8) * 0.3
 			mat.emission_energy_multiplier = pulse * 1.5

@@ -1,7 +1,6 @@
 ## EntityPool — Object pool for recycling procedural entity Node3D hierarchies.
 ## Avoids constant create/free cycles by keeping unused entities in a pool.
 ## Attach as child of Entity3DViewport or use as standalone utility.
-class_name EntityPool
 extends Node
 
 @export var max_pool_size: int = 100
@@ -35,7 +34,8 @@ func acquire(entity_type: String = "generic", visual_data: Dictionary = {}) -> N
 
 	var entity_root: Node3D
 	if not visual_data.is_empty():
-		entity_root = ProceduralEntityGenerator.create_visual(visual_data)
+		var gen_script = preload("res://scripts/procedural/ProceduralEntityGenerator.gd")
+		entity_root = gen_script.create_visual(visual_data)
 	else:
 		entity_root = Node3D.new()
 		entity_root.name = "Entity_%s_%d" % [entity_type, randi()]
@@ -55,7 +55,7 @@ func release(entity: Node3D) -> void:
 	entity.scale = Vector3.ONE
 
 	for child in entity.get_children():
-		if child is EntityAnimator:
+		if child.get_script() and child.get_script().get_global_name() == "EntityAnimator":
 			child.queue_free()
 		elif child.name.begins_with("Equip_"):
 			child.queue_free()

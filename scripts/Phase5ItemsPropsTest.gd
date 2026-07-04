@@ -2,8 +2,8 @@
 ## Demonstrates floating items, held equipment, prop interactions, and portal distortion.
 extends Control
 
-var _viewport: Entity3DViewport
-var _current_entities: Array[EntityVisualComponent] = []
+var _viewport  # Entity3DViewport (untyped)
+var _current_entities: Array = []  # Array of EntityVisualComponent
 var _spawn_index: int = 0
 
 var _test_presets: Array[Dictionary] = [
@@ -168,7 +168,7 @@ var _test_presets: Array[Dictionary] = [
 ]
 
 func _ready() -> void:
-	_viewport = $Entity3DLayer as Entity3DViewport
+	_viewport = $Entity3DLayer
 	_setup_ui()
 	_spawn_current()
 
@@ -183,7 +183,8 @@ func _spawn_current() -> void:
 	if _spawn_index < 0 or _spawn_index >= _test_presets.size():
 		return
 	var preset: Dictionary = _test_presets[_spawn_index]
-	var comp := EntityVisualComponent.new()
+	var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
+	var comp = comp_script.new()
 	comp.setup(preset["data"], _viewport)
 	comp.set_animation_state("idle")
 	_current_entities.append(comp)
@@ -204,8 +205,9 @@ func _on_next() -> void:
 func _on_spawn_all() -> void:
 	_clear_entities()
 	var offset := 0.0
+	var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
 	for preset in _test_presets:
-		var comp := EntityVisualComponent.new()
+		var comp = comp_script.new()
 		var data: Dictionary = preset["data"].duplicate(true)
 		comp.setup(data, _viewport)
 		if comp.entity_root:

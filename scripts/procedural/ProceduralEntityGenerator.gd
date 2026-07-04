@@ -9,6 +9,9 @@ const RACE_DATA_PATH := "res://data/races.json"
 const APPEARANCE_PATH := "res://data/appearance.json"
 const MOBS_PATH := "res://data/mobs.json"
 
+const _PML = preload("res://scripts/procedural/PrimitiveMeshLibrary.gd")
+const _ML = preload("res://scripts/procedural/MaterialLibrary.gd")
+
 static func resolve_visual_data(data: Dictionary) -> Dictionary:
 	if data.has("visual") and not data.get("visual", {}).is_empty():
 		return data["visual"]
@@ -31,10 +34,10 @@ static func resolve_visual_data(data: Dictionary) -> Dictionary:
 	return {}
 
 static func _load_preset(preset_name: String) -> Dictionary:
-	var file := FileAccess.open(APPEARANCE_PATH, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(APPEARANCE_PATH, FileAccess.READ)
 	if not file:
 		return {}
-	var json := JSON.parse_string(file.get_as_text())
+	var json = JSON.parse_string(file.get_as_text())
 	file.close()
 	if json is Dictionary:
 		var presets: Dictionary = json.get("visual_presets", {})
@@ -89,7 +92,7 @@ static func _build_humanoid(data: Dictionary, rng: RandomNumberGenerator) -> Nod
 	var head_data: Dictionary = vis.get("head", {})
 	var limbs_data: Dictionary = vis.get("limbs", {})
 
-	var root := PrimitiveMeshLibrary.compose_humanoid(
+	var root: Node3D = _PML.compose_humanoid(
 		torso_data.get("height", 1.0),
 		head_data.get("scale", 0.2),
 		limbs_data.get("leg_height", 0.6),
@@ -114,7 +117,7 @@ static func _build_beast(data: Dictionary, rng: RandomNumberGenerator) -> Node3D
 	var body_data: Dictionary = vis.get("torso", vis.get("body", {}))
 	var head_data: Dictionary = vis.get("head", {})
 
-	var root := PrimitiveMeshLibrary.compose_beast(
+	var root: Node3D = _PML.compose_beast(
 		body_data.get("length", 1.2),
 		body_data.get("height", 0.6),
 		head_data.get("scale", 0.18),
@@ -128,7 +131,7 @@ static func _build_beast(data: Dictionary, rng: RandomNumberGenerator) -> Node3D
 
 static func _build_mechanical(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 	var vis: Dictionary = data.get("visual", {})
-	var root := PrimitiveMeshLibrary.compose_humanoid(
+	var root: Node3D = _PML.compose_humanoid(
 		vis.get("torso", {}).get("height", 1.0),
 		vis.get("head", {}).get("scale", 0.2),
 		vis.get("limbs", {}).get("leg_height", 0.6),
@@ -136,41 +139,41 @@ static func _build_mechanical(data: Dictionary, rng: RandomNumberGenerator) -> N
 	)
 	root.name = data.get("entity_id", "Mechanical")
 
-	var mat: Material = MaterialLibrary.create_metallic_material(
+	var mat: Material = _ML.create_metallic_material(
 		Color(0.5, 0.5, 0.55),
 		vis.get("material", {}).get("roughness", 0.3)
 	)
 	_apply_material_to_children(root, mat)
 
-	var glow_node := PrimitiveMeshLibrary.body_sphere(0.1)
+	var glow_node: Node3D = _PML.body_sphere(0.1)
 	glow_node.name = "CoreGlow"
 	glow_node.position.y = 0.5
 	glow_node.set_surface_override_material(0,
-		MaterialLibrary.create_glow_material(Color(0.3, 0.6, 1.0)))
+		_ML.create_glow_material(Color(0.3, 0.6, 1.0)))
 	root.add_child(glow_node)
 
 	return root
 
 static func _build_rift(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
-	var root := PrimitiveMeshLibrary.compose_rift(
+	var root: Node3D = _PML.compose_rift(
 		data.get("visual", {}).get("radius", 1.5)
 	)
 	root.name = data.get("entity_id", "Rift")
 
 	var rift_color: Color = _rift_type_color(data.get("rift_type", 0))
-	var portal_mat := MaterialLibrary.create_portal_material(rift_color, 1.2)
+	var portal_mat: Material = _ML.create_portal_material(rift_color, 1.2)
 	_apply_material_to_children(root, portal_mat)
 
-	var ring_mat := MaterialLibrary.create_glow_material(
+	var ring_mat: Material = _ML.create_glow_material(
 		rift_color.lightened(0.3), 0.8)
-	var ring := root.get_node_or_null("Ring")
+	var ring: Node3D = root.get_node_or_null("Ring")
 	if ring:
 		ring.set_surface_override_material(0, ring_mat)
 
-	var core := root.get_node_or_null("Core")
+	var core: Node3D = root.get_node_or_null("Core")
 	if core:
 		core.set_surface_override_material(0,
-			MaterialLibrary.create_glow_material(rift_color.lightened(0.5), 2.0))
+			_ML.create_glow_material(rift_color.lightened(0.5), 2.0))
 
 	return root
 
@@ -183,33 +186,33 @@ static func _build_item(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 		"weapon":
 			var length: float = vis.get("length", 0.6)
 			var width: float = vis.get("width", 0.06)
-			root = PrimitiveMeshLibrary.compose_item_weapon(length, width)
+			root = _PML.compose_item_weapon(length, width)
 			var color_arr: Array = vis.get("color", [0.6, 0.6, 0.65])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.2))
+			_apply_material_to_children(root, _ML.create_metallic_material(color, 0.2))
 		"armor":
 			var radius: float = vis.get("radius", 0.25)
-			root = PrimitiveMeshLibrary.compose_item_armor(radius)
+			root = _PML.compose_item_armor(radius)
 			var color_arr: Array = vis.get("color", [0.5, 0.5, 0.55])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.3))
+			_apply_material_to_children(root, _ML.create_metallic_material(color, 0.3))
 		"consumable":
 			var radius: float = vis.get("radius", 0.12)
-			root = PrimitiveMeshLibrary.compose_item_consumable(radius)
+			root = _PML.compose_item_consumable(radius)
 			var color_arr: Array = vis.get("color", [0.3, 0.7, 0.4])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_glow_material(color, 0.8))
+			_apply_material_to_children(root, _ML.create_glow_material(color, 0.8))
 		_:
 			var radius: float = vis.get("radius", 0.2)
-			root = PrimitiveMeshLibrary.compose_item_orb(radius)
+			root = _PML.compose_item_orb(radius)
 			var color_arr: Array = vis.get("color", [0.4, 0.7, 1.0])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			var mat := MaterialLibrary.create_glow_material(color, 0.6)
+			var mat: Material = _ML.create_glow_material(color, 0.6)
 			_apply_material_to_children(root, mat)
 			var orb := root.get_node_or_null("Orb")
 			if orb:
 				orb.set_surface_override_material(0,
-					MaterialLibrary.create_glow_material(color.lightened(0.3), 1.0))
+					_ML.create_glow_material(color.lightened(0.3), 1.0))
 
 	root.name = data.get("entity_id", "Item")
 	return root
@@ -223,10 +226,10 @@ static func _build_prop(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 		"door":
 			var width: float = vis.get("width", 1.2)
 			var height: float = vis.get("height", 2.4)
-			root = PrimitiveMeshLibrary.compose_door(width, height)
+			root = _PML.compose_door(width, height)
 			var color_arr: Array = vis.get("color", [0.4, 0.3, 0.25])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_organic_material(color, 0.9))
+			_apply_material_to_children(root, _ML.create_organic_material(color, 0.9))
 			var highlight := _create_interaction_highlight(Vector3(width * 0.6, height * 0.5, 0.3))
 			highlight.position = Vector3(0.0, height * 0.5, 0.2)
 			root.add_child(highlight)
@@ -234,10 +237,10 @@ static func _build_prop(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 			var width: float = vis.get("width", 0.8)
 			var height: float = vis.get("height", 0.6)
 			var depth: float = vis.get("depth", 0.6)
-			root = PrimitiveMeshLibrary.compose_container(width, height, depth)
+			root = _PML.compose_container(width, height, depth)
 			var color_arr: Array = vis.get("color", [0.45, 0.35, 0.3])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.5))
+			_apply_material_to_children(root, _ML.create_metallic_material(color, 0.5))
 			var highlight := _create_interaction_highlight(Vector3(width * 0.5, height * 0.5, depth * 0.5))
 			highlight.position = Vector3(0.0, height * 0.5, 0.0)
 			root.add_child(highlight)
@@ -245,18 +248,18 @@ static func _build_prop(data: Dictionary, rng: RandomNumberGenerator) -> Node3D:
 			var length: float = vis.get("length", 2.0)
 			var width: float = vis.get("width", 1.0)
 			var height: float = vis.get("height", 0.8)
-			root = PrimitiveMeshLibrary.compose_vehicle(length, width, height)
+			root = _PML.compose_vehicle(length, width, height)
 			var color_arr: Array = vis.get("color", [0.4, 0.4, 0.45])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_metallic_material(color, 0.4))
+			_apply_material_to_children(root, _ML.create_metallic_material(color, 0.4))
 		_:
 			var width: float = vis.get("width", 1.5)
 			var height: float = vis.get("height", 2.0)
 			var depth: float = vis.get("depth", 1.5)
-			root = PrimitiveMeshLibrary.compose_structure(width, height, depth)
+			root = _PML.compose_structure(width, height, depth)
 			var color_arr: Array = vis.get("color", [0.5, 0.45, 0.4])
 			var color := Color(color_arr[0], color_arr[1], color_arr[2])
-			_apply_material_to_children(root, MaterialLibrary.create_organic_material(color, 0.85))
+			_apply_material_to_children(root, _ML.create_organic_material(color, 0.85))
 
 	root.name = data.get("entity_id", "Prop")
 	return root
@@ -267,7 +270,7 @@ static func _create_interaction_highlight(extents: Vector3) -> MeshInstance3D:
 	var box := BoxMesh.new()
 	box.size = extents
 	mi.mesh = box
-	var mat := MaterialLibrary.create_outline_material(Color(0.4, 0.8, 1.0))
+	var mat: Material = _ML.create_outline_material(Color(0.4, 0.8, 1.0))
 	mi.set_surface_override_material(0, mat)
 	return mi
 
@@ -287,13 +290,13 @@ static func _apply_variations(root: Node3D, rng: RandomNumberGenerator, scale_ra
 			)
 			child.position += pos_offset
 			if child.get_surface_override_material(0) == null:
-				var orig := child.material_override if child.material_override else null
+				var orig = child.material_override if child.material_override else null
 				if orig and orig is StandardMaterial3D:
-					var c := orig.albedo_color
+					var c: Color = orig.albedo_color
 					var h: float = c.h + hue_shift
 					if h < 0.0: h += 1.0
 					elif h > 1.0: h -= 1.0
-					var new_mat := MaterialLibrary.create_palette_material(
+					var new_mat: Material = _ML.create_palette_material(
 						Color.from_hsv(h, c.s, c.v),
 						{"roughness": orig.roughness, "metallic": orig.metallic}
 					)
@@ -303,8 +306,8 @@ static func _resolve_material(data: Dictionary) -> Material:
 	var vis: Dictionary = data.get("visual", {})
 	var mat_data: Dictionary = vis.get("material", vis)
 	if mat_data.is_empty():
-		return MaterialLibrary.create_organic_material(Color(0.5, 0.5, 0.5))
-	return MaterialLibrary.material_from_visual_data(vis)
+		return _ML.create_organic_material(Color(0.5, 0.5, 0.5))
+	return _ML.material_from_visual_data(vis)
 
 static func _apply_material_to_children(root: Node3D, mat: Material) -> void:
 	for child in root.get_children():
@@ -314,10 +317,10 @@ static func _apply_material_to_children(root: Node3D, mat: Material) -> void:
 static func _create_attachment(att_name: String, rng: RandomNumberGenerator) -> Node3D:
 	match att_name.to_lower():
 		"horns":
-			var horn_l := PrimitiveMeshLibrary.attachment_horn()
+			var horn_l: Node3D = _PML.attachment_horn()
 			horn_l.rotation.z = deg_to_rad(15.0)
 			horn_l.position = Vector3(-0.12, 0.0, 0.0)
-			var horn_r := PrimitiveMeshLibrary.attachment_horn()
+			var horn_r: Node3D = _PML.attachment_horn()
 			horn_r.rotation.z = deg_to_rad(-15.0)
 			horn_r.position = Vector3(0.12, 0.0, 0.0)
 			var group := Node3D.new()
@@ -326,10 +329,10 @@ static func _create_attachment(att_name: String, rng: RandomNumberGenerator) -> 
 			group.add_child(horn_r)
 			return group
 		"wings":
-			var wing_l := PrimitiveMeshLibrary.attachment_wing()
+			var wing_l: Node3D = _PML.attachment_wing()
 			wing_l.position = Vector3(-0.15, 0.1, 0.0)
 			wing_l.rotation.y = deg_to_rad(20.0)
-			var wing_r := PrimitiveMeshLibrary.attachment_wing()
+			var wing_r: Node3D = _PML.attachment_wing()
 			wing_r.position = Vector3(0.15, 0.1, 0.0)
 			wing_r.rotation.y = deg_to_rad(-20.0)
 			var group := Node3D.new()
@@ -338,13 +341,13 @@ static func _create_attachment(att_name: String, rng: RandomNumberGenerator) -> 
 			group.add_child(wing_r)
 			return group
 		"tail":
-			return PrimitiveMeshLibrary.attachment_tail()
+			return _PML.attachment_tail()
 		"armor_plate":
-			return PrimitiveMeshLibrary.attachment_armor_plate()
+			return _PML.attachment_armor_plate()
 		"weapon":
-			return PrimitiveMeshLibrary.attachment_weapon()
+			return _PML.attachment_weapon()
 		"shield":
-			return PrimitiveMeshLibrary.attachment_shield()
+			return _PML.attachment_shield()
 	return null
 
 static func _rift_type_color(rift_type: int) -> Color:
@@ -355,10 +358,10 @@ static func _rift_type_color(rift_type: int) -> Color:
 		_: return Color(0.3, 0.3, 0.5)
 
 static func load_race_visual(race_key: String) -> Dictionary:
-	var file := FileAccess.open(RACE_DATA_PATH, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(RACE_DATA_PATH, FileAccess.READ)
 	if not file:
 		return {}
-	var json := JSON.parse_string(file.get_as_text())
+	var json = JSON.parse_string(file.get_as_text())
 	file.close()
 	if json is Dictionary:
 		for origin in json.values():
@@ -370,10 +373,10 @@ static func load_race_visual(race_key: String) -> Dictionary:
 	return {}
 
 static func load_mob_visual(mob_type: String) -> Dictionary:
-	var file := FileAccess.open(MOBS_PATH, FileAccess.READ)
+	var file: FileAccess = FileAccess.open(MOBS_PATH, FileAccess.READ)
 	if not file:
 		return {}
-	var json := JSON.parse_string(file.get_as_text())
+	var json = JSON.parse_string(file.get_as_text())
 	file.close()
 	if json is Dictionary:
 		var overworld: Dictionary = json.get("overworld", {})

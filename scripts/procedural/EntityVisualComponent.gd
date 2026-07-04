@@ -1,7 +1,6 @@
 ## EntityVisualComponent — Attaches procedural 3D visuals to existing 2D nodes.
 ## Syncs position/rotation between the 2D node and its 3D representation
 ## in the Entity3DViewport every frame via _process.
-class_name EntityVisualComponent
 extends Node
 
 signal visual_updated(entity_node: Node3D)
@@ -15,18 +14,19 @@ signal visual_updated(entity_node: Node3D)
 
 var entity_id: String = ""
 var entity_root: Node3D
-var animator: EntityAnimator
-var _viewport_ref: Entity3DViewport
+var animator  # EntityAnimator (untyped to avoid circular dependency)
+var _viewport_ref  # Entity3DViewport (untyped to avoid circular dependency)
 var _parent_2d: Node2D
 var _entity_data: Dictionary = {}
-var _face_camera: FaceCamera3D
+var _face_camera  # FaceCamera3D (untyped)
 
-func setup(entity_data: Dictionary, viewport: Entity3DViewport) -> void:
+func setup(entity_data: Dictionary, viewport) -> void:
 	_entity_data = entity_data
 	entity_id = entity_data.get("entity_id", str(entity_data.hash()))
 	_viewport_ref = viewport
 
-	entity_root = ProceduralEntityGenerator.create_visual(entity_data)
+	var gen_script = load("res://scripts/procedural/ProceduralEntityGenerator.gd")
+	entity_root = gen_script.create_visual(entity_data)
 	if entity_root:
 		entity_root.name = "Entity_%s" % entity_id
 		_viewport_ref.add_entity(entity_root)
@@ -39,7 +39,8 @@ func setup(entity_data: Dictionary, viewport: Entity3DViewport) -> void:
 		_viewport_ref.add_point_light(entity_id, glow_color, 1.5, 3.0)
 
 func _setup_animator(data: Dictionary) -> void:
-	animator = EntityAnimator.new()
+	var animator_script = load("res://scripts/procedural/EntityAnimator.gd")
+	animator = animator_script.new()
 	animator.name = "EntityAnimator"
 	var vis: Dictionary = data.get("visual", {})
 	var preset: String = vis.get("base_type", "humanoid")
@@ -88,9 +89,11 @@ func update_equipment(equip_data: Dictionary) -> void:
 
 		if item_data is Dictionary:
 			item_dict = item_data
-			att = ProceduralEntityGenerator.create_visual(item_dict)
+			var gen_script = load("res://scripts/procedural/ProceduralEntityGenerator.gd")
+			att = gen_script.create_visual(item_dict)
 		elif item_data is String:
-			att = ProceduralEntityGenerator._create_attachment(
+			var gen_script = load("res://scripts/procedural/ProceduralEntityGenerator.gd")
+			att = gen_script._create_attachment(
 				item_data,
 				RandomNumberGenerator.new()
 			)
@@ -145,7 +148,8 @@ func set_glow(color: Color, energy: float = 1.5, radius: float = 3.0) -> void:
 func _add_billboard() -> void:
 	if not entity_root:
 		return
-	_face_camera = FaceCamera3D.new()
+	var face_cam_script = load("res://scripts/procedural/FaceCamera3D.gd")
+	_face_camera = face_cam_script.new()
 	_face_camera.name = "FaceCamera"
 	entity_root.add_child(_face_camera)
 	for child in entity_root.get_children():

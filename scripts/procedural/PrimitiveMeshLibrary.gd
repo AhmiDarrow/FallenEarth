@@ -72,7 +72,7 @@ static func body_cylinder(height: float = 1.0, radius: float = 0.3) -> MeshInsta
 static func body_cone(height: float = 0.8, radius: float = 0.4) -> MeshInstance3D:
 	var key := _cache_key("cone", {"h": height, "r": radius})
 	var mesh: Mesh = _cached_or_create(key, func():
-		var m := ConeMesh.new()
+		var m := CylinderMesh.new()
 		m.top_radius = 0.0
 		m.bottom_radius = radius
 		m.height = height
@@ -86,9 +86,10 @@ static func body_cone(height: float = 0.8, radius: float = 0.4) -> MeshInstance3
 static func body_torus(inner_radius: float = 0.2, outer_radius: float = 0.5) -> MeshInstance3D:
 	var key := _cache_key("torus", {"ir": inner_radius, "or": outer_radius})
 	var mesh: Mesh = _cached_or_create(key, func():
-		var m := TorusMesh.new()
-		m.inner_radius = inner_radius
-		m.outer_radius = outer_radius
+		var m := CylinderMesh.new()
+		m.top_radius = outer_radius
+		m.bottom_radius = outer_radius
+		m.height = 0.05
 		m.material = _default_material()
 		return m
 	)

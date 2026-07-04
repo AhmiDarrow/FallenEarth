@@ -3,7 +3,6 @@
 ## Creates and manages a SubViewport with orthographic Camera3D, transparent
 ## background, lighting, and provides the ViewportTexture for use in Sprite2D/TextureRect.
 ## Phase 6: Added LOD management, entity pooling, culling, render distance, and perf stats.
-class_name Entity3DViewport
 extends Node
 
 signal entity_selected(entity_node: Node3D)
@@ -32,8 +31,8 @@ var directional_light: DirectionalLight3D
 var viewport_texture: ViewportTexture
 var display_sprite: Sprite2D
 var display_texture_rect: TextureRect
-var lod_manager: EntityLODManager
-var entity_pool: EntityPool
+var lod_manager # EntityLODManager (untyped to avoid circular dependency)
+var entity_pool # EntityPool (untyped to avoid circular dependency)
 
 var _point_lights: Dictionary = {}
 var _entity_metadata: Dictionary = {}
@@ -80,7 +79,6 @@ func _setup_viewport() -> void:
 	sub_viewport.disable_3d = false
 	sub_viewport.handle_input_locally = false
 	sub_viewport.render_target_update_mode = SubViewport.UPDATE_WHEN_VISIBLE
-	sub_viewport.render_target_v_flip = true
 	add_child(sub_viewport)
 
 	camera = Camera3D.new()
@@ -228,7 +226,8 @@ func create_display_texture_rect() -> TextureRect:
 func _setup_lod_manager() -> void:
 	if not enable_lod:
 		return
-	lod_manager = EntityLODManager.new()
+	var lod_script = load("res://scripts/procedural/EntityLODManager.gd")
+	lod_manager = lod_script.new()
 	lod_manager.name = "EntityLODManager"
 	lod_manager.setup(self)
 	add_child(lod_manager)
@@ -236,7 +235,8 @@ func _setup_lod_manager() -> void:
 func _setup_entity_pool() -> void:
 	if not enable_pooling:
 		return
-	entity_pool = EntityPool.new()
+	var pool_script = load("res://scripts/procedural/EntityPool.gd")
+	entity_pool = pool_script.new()
 	entity_pool.name = "EntityPool"
 	add_child(entity_pool)
 
@@ -246,10 +246,10 @@ func add_entity_with_LOD(entity: Node3D, entity_id: String = "") -> void:
 	if entity_id.is_empty():
 		entity_id = entity.name
 	entity_root.add_child(entity)
-	var animator: EntityAnimator = null
+	var animator = null
 	for child in entity.get_children():
-		if child is EntityAnimator:
-			animator = child as EntityAnimator
+		if child.get_script() and child.get_script().get_global_name() == "EntityAnimator":
+			animator = child
 			break
 	if lod_manager:
 		lod_manager.register_entity(entity_id, entity, animator)
@@ -309,9 +309,9 @@ func get_entity_stats() -> Dictionary:
 		for entity_id in lod_manager._entities:
 			var lod: int = lod_manager._entities[entity_id]["lod"]
 			match lod:
-				EntityLODManager.LOD.FULL: stats["lod_full"] += 1
-				EntityLODManager.LOD.SIMPLIFIED: stats["lod_simplified"] += 1
-				EntityLODManager.LOD.CULLED: stats["lod_culled"] += 1
+				0: stats["lod_full"] += 1
+				1: stats["lod_simplified"] += 1
+				2: stats["lod_culled"] += 1
 	return stats
 
 func set_render_distance(dist: float) -> void:

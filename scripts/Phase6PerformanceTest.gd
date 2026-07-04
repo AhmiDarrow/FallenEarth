@@ -2,8 +2,8 @@
 ## Spawns 50+ varied entities to measure FPS, LOD switching, pooling, and culling.
 extends Control
 
-var _viewport: Entity3DViewport
-var _entities: Array[EntityVisualComponent] = []
+var _viewport  # Entity3DViewport (untyped)
+var _entities: Array = []  # Array of EntityVisualComponent
 var _spawn_timer: float = 0.0
 var _spawn_batch: int = 5
 var _auto_spawn: bool = false
@@ -23,7 +23,7 @@ var _preset_pool: Array[Dictionary] = [
 ]
 
 func _ready() -> void:
-	_viewport = $Entity3DLayer as Entity3DViewport
+	_viewport = $Entity3DLayer
 	_setup_ui()
 	_spawn_batch_entities(10)
 
@@ -51,7 +51,8 @@ func _spawn_batch_entities(count: int) -> void:
 		var data: Dictionary = _preset_pool[preset_idx].duplicate(true)
 		data["entity_id"] = "stress_%d_%d" % [Time.get_ticks_msec(), randi()]
 
-		var comp := EntityVisualComponent.new()
+		var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
+		var comp = comp_script.new()
 		comp.setup(data, _viewport)
 
 		if comp.entity_root:
