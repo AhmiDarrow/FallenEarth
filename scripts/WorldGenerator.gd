@@ -11,7 +11,7 @@ signal world_generated(seed_string: String)
 
 const VERSION := "0.2.0"
 const DATA_PATH := "res://data/biomes.json"
-const HEX_RADIUS := 12  # Size of hex "sphere" patch (axial)
+var _hex_radius: int = 12  # Size of hex "sphere" patch (axial); set via generate() size param
 
 var _seed: String = ""
 var _tile_map: Dictionary = {}  # key "q,r" -> tile dict
@@ -53,18 +53,20 @@ func initialize() -> bool:
 
 
 ## Generate hex sphere world (axial coords q,r). RimWorld-like: lat/temp + elev + noise for biome.
-func generate(world_seed: String, difficulty_modifier: float = 1.0) -> Dictionary:
+## size: desired hex radius (small=6, medium=12, large=18)
+func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 12) -> Dictionary:
 	_seed = world_seed
+	_hex_radius = size
 	randseed_from_string(world_seed)
 
 	var tile_map: Dictionary = {}
 	var biomes = _biome_definitions
 
 	# Generate hex tiles in a large "sphere" patch using axial coords
-	for q in range(-HEX_RADIUS, HEX_RADIUS + 1):
-		for r in range(max(-HEX_RADIUS, -q - HEX_RADIUS), min(HEX_RADIUS, -q + HEX_RADIUS) + 1):
+	for q in range(-_hex_radius, _hex_radius + 1):
+		for r in range(max(-_hex_radius, -q - _hex_radius), min(_hex_radius, -q + _hex_radius) + 1):
 			# Simulate latitude from r (polar bias)
-			var lat = float(r) / float(HEX_RADIUS) * 90.0  # -90 to 90
+			var lat = float(r) / float(_hex_radius) * 90.0  # -90 to 90
 			var abs_lat = abs(lat)
 
 			# Elevation noise (RimWorld hilliness/elev)
@@ -164,6 +166,19 @@ static func axial_to_pixel(q: int, r: int, hex_size: float) -> Vector2:
 	var x := hex_size * (sqrt(3.0) * float(q) + sqrt(3.0) / 2.0 * float(r))
 	var y := hex_size * (1.5 * float(r))
 	return Vector2(x, y)
+
+
+## Return the 6 vertices of a pointy-top hex polygon centered at origin.
+static func hex_shape(size: float) -> PackedVector2Array:
+	var points := PackedVector2Array()
+	for i in 6:
+		var angle := deg_to_rad(60.0 * i - 30.0)
+		points.append(Vector2(cos(angle) * size, sin(angle) * size))
+	return points
+
+
+func get_hex_radius() -> int:
+	return _hex_radius
 
 
 ## Get axial neighbors for hex movement (RimWorld tile travel)
