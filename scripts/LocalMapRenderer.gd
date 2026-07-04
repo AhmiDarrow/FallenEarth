@@ -18,9 +18,17 @@ var _player_cell := Vector2i.ZERO
 func configure(map_data: Dictionary) -> void:
 	_map_data = map_data.duplicate(true)
 	var terrain: PackedByteArray = _map_data.get("terrain", PackedByteArray())
-	print("[LocalMapRenderer] configure: map size=%d, terrain bytes=%d" % [
-		_map_data.get("size", 0), terrain.size()
-	])
+	var map_size: int = _map_data.get("size", 0)
+	print("[LocalMapRenderer] configure: map_size=%d, terrain.size=%d, has_terrain=%s" % [map_size, terrain.size(), not terrain.is_empty()])
+	if not terrain.is_empty():
+		var blocked := 0
+		var ground := 0
+		for i in mini(terrain.size(), 1000):
+			if terrain[i] == 3:
+				blocked += 1
+			elif terrain[i] == 0:
+				ground += 1
+		print("[LocalMapRenderer] First 1000 tiles: ground=%d blocked=%d" % [ground, blocked])
 	_clear_all_chunks()
 
 

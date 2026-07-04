@@ -109,6 +109,8 @@ func _ready() -> void:
 
 	_setup_map_renderer()
 	if is_instance_valid(_map_renderer):
+		var terrain_bytes: PackedByteArray = _local_map.get("terrain", PackedByteArray())
+		print("[HubWorld] _local_map terrain bytes: %d, map size: %d" % [terrain_bytes.size(), _local_map.get("size", 0)])
 		_map_renderer.configure(_local_map)
 	_setup_player_visual()
 	_game_time = Time.get_ticks_msec() / 1000.0

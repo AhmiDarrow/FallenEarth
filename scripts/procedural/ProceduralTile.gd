@@ -305,6 +305,8 @@ func _draw_rune() -> void:
 func setup_for(data: Dictionary) -> void:
 	biome = str(data.get("biome", "Ash Wastes"))
 	terrain_type = int(data.get("terrain_type", 0))
+	if terrain_type != 0:
+		print("[ProceduralTile] terrain_type=%d biome=%s" % [terrain_type, biome])
 	terrain = data.get("terrain", PackedByteArray())
 	explored_pct = float(data.get("explored_pct", 0.0))
 	has_rift = bool(data.get("has_rift", false))
