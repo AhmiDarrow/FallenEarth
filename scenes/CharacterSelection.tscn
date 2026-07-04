@@ -61,6 +61,19 @@ size_flags_horizontal = 3
 placeholder_text = "Enter your name (optional, defaults to Recruit)"
 max_length = 32
 
+[node name="GenderHBox" type="HBoxContainer" parent="MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="GenderLabel" type="Label" parent="MainVBox/GenderHBox"]
+layout_mode = 2
+text = "Gender:"
+
+[node name="GenderButtonList" type="HBoxContainer" parent="MainVBox/GenderHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
 [node name="RaceHeader" type="RichTextLabel" parent="MainVBox"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2

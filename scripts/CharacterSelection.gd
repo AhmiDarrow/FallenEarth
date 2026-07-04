@@ -15,6 +15,7 @@ const CLASS_DATA_PATH := "res://data/character_classes.json"
 # -- state --
 var _selected_race_key: String = ""
 var _selected_class_key: String = ""
+var _selected_gender: String = "male"
 var available_races: Array[String] = []
 var available_classes: Array[String] = []
 var _race_info_cache: Dictionary = {}
@@ -30,6 +31,7 @@ func _ready() -> void:
 	if is_instance_valid(name_edit):
 		name_edit.text_changed.connect(_on_name_changed)
 	
+	_build_gender_buttons()
 	prefill_upworld_races()
 	prefill_underworld_races()
 	prefill_class_buttons()
@@ -296,6 +298,73 @@ func _on_class_selected(class_key: String):
 	print("[CharacterSelection] Selected class: %s" % class_key)
 
 
+# ===================================================================
+# Gender Selection
+# ===================================================================
+
+func _build_gender_buttons():
+	var list := $MainVBox/GenderHBox/GenderButtonList as HBoxContainer
+	if not is_instance_valid(list):
+		push_error("[CharacterSelection] GenderButtonList not found.")
+		return
+	for child in list.get_children():
+		child.queue_free()
+	var group := ButtonGroup.new()
+	for gender in ["male", "female"]:
+		var btn := Button.new()
+		btn.text = gender.capitalize()
+		btn.custom_minimum_size = Vector2(120, 32)
+		btn.toggle_mode = true
+		btn.button_group = group
+		btn.set_meta("gender", gender)
+		_apply_gender_button_style(btn, gender == _selected_gender)
+		btn.pressed.connect(_on_gender_selected.bind(gender))
+		list.add_child(btn)
+	if _selected_gender.is_empty():
+		_selected_gender = "male"
+	_update_gender_buttons()
+
+
+func _on_gender_selected(gender: String) -> void:
+	_selected_gender = gender
+	_update_gender_buttons()
+	_update_selection_summary()
+	print("[CharacterSelection] Selected gender: %s" % gender)
+
+
+func _apply_gender_button_style(btn: Button, is_selected: bool):
+	var style := StyleBoxFlat.new()
+	if is_selected:
+		style.bg_color = Color(0.3, 0.25, 0.45)
+		style.border_width_bottom = 2
+		style.border_width_top = 2
+		style.border_width_left = 2
+		style.border_width_right = 2
+		style.border_color = Color(0.85, 0.75, 1.0)
+		btn.self_modulate = Color(1.0, 1.0, 0.6)
+	else:
+		style.bg_color = Color(0.15, 0.1, 0.25)
+		style.border_width_bottom = 1
+		style.border_width_top = 1
+		style.border_width_left = 1
+		style.border_width_right = 1
+		style.border_color = Color(0.4, 0.3, 0.6)
+		btn.self_modulate = Color.WHITE
+	btn.add_theme_stylebox_override("normal", style)
+	var hover_style := style.duplicate()
+	hover_style.bg_color = Color(0.25, 0.15, 0.35)
+	btn.add_theme_stylebox_override("hover", hover_style)
+
+
+func _update_gender_buttons():
+	var list := $MainVBox/GenderHBox/GenderButtonList as HBoxContainer
+	if not is_instance_valid(list):
+		return
+	for child in list.get_children():
+		if child is Button and child.has_meta("gender"):
+			_apply_gender_button_style(child, child.get_meta("gender") == _selected_gender)
+
+
 func _update_selection_summary():
 	var name_edit := $MainVBox/NameHBox/NameEdit as LineEdit
 	var char_name := name_edit.text.strip_edges() if is_instance_valid(name_edit) else ""
@@ -323,6 +392,8 @@ func _update_selection_summary():
 	else:
 		parts.append("[i]No race selected[/i]")
 	
+	parts.append("[b]Gender:[/b] %s" % _selected_gender.capitalize())
+
 	if not _selected_class_key.is_empty():
 		parts.append("[b]Class:[/b] %s (starts Lv.1, max Lv.256)" % _selected_class_key)
 	else:
@@ -370,7 +441,7 @@ func commit_character(char_name: String = "") -> bool:
 		push_error("[CharacterSelection] GameState autoload not found.")
 		return false
 	
-	var create_success: bool = gs.create_character(_selected_race_key, _selected_class_key, origin, char_name)
+	var create_success: bool = gs.create_character(_selected_race_key, _selected_class_key, origin, char_name, _selected_gender)
 	if not create_success:
 		push_error("[CharacterSelection] GameState.create_character failed for %s/%s." % [_selected_race_key, _selected_class_key])
 		return false
@@ -405,6 +476,7 @@ func _on_character_created_and_ready(race_key: String, class_key: String, origin
 			"race": race_key,
 			"class": class_key,
 			"origin": origin,
+			"gender": _selected_gender,
 			"stats": char_data.get("stats", {})
 		})
 	else:
@@ -433,11 +505,13 @@ func auto_save_character(char_data: Dictionary) -> bool:
 func reset_selection():
 	_selected_race_key = ""
 	_selected_class_key = ""
+	_selected_gender = "male"
 	
 	var name_edit := $MainVBox/NameHBox/NameEdit as LineEdit
 	if is_instance_valid(name_edit):
 		name_edit.text = ""
 	
+	_build_gender_buttons()
 	prefill_upworld_races()
 	prefill_underworld_races()
 	prefill_class_buttons()
