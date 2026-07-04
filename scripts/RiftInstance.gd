@@ -123,10 +123,14 @@ func _setup_grid() -> void:
 			_grid_cells.append(cell)
 
 
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
+var _escape_was_pressed: bool = false
+
+
+func _process(delta: float) -> void:
+	var esc_pressed: bool = Input.is_key_pressed(KEY_ESCAPE)
+	if esc_pressed and not _escape_was_pressed:
 		_toggle_pause_menu()
-		get_viewport().set_input_as_handled()
+	_escape_was_pressed = esc_pressed
 
 
 func _unhandled_input(event: InputEvent) -> void:

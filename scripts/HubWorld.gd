@@ -120,19 +120,21 @@ func _ready() -> void:
 	_save_to_autoslot_if_can()
 
 
+var _escape_was_pressed: bool = false
+
+
 func _process(delta: float) -> void:
+	var esc_pressed: bool = Input.is_key_pressed(KEY_ESCAPE)
+	if esc_pressed and not _escape_was_pressed:
+		_toggle_pause_menu()
+	_escape_was_pressed = esc_pressed
+
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_rift_check_timer += delta
 	if _rift_check_timer >= RIFT_CHECK_INTERVAL:
 		_rift_check_timer = 0.0
 		_tick_rifts()
 		_tick_missions()
-
-
-func _input(event: InputEvent) -> void:
-	if event.is_action_pressed("ui_cancel"):
-		_toggle_pause_menu()
-		get_viewport().set_input_as_handled()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -829,6 +831,7 @@ func _on_save_pressed() -> void:
 
 func _toggle_pause_menu() -> void:
 	if is_instance_valid(_pause_menu) and _pause_menu.visible:
+		print("[HubWorld] Closing pause menu")
 		_pause_menu.close()
 		return
 	if not is_instance_valid(_pause_menu):
@@ -836,5 +839,9 @@ func _toggle_pause_menu() -> void:
 		if is_instance_valid(scene):
 			_pause_menu = scene.instantiate() as PauseMenu
 			add_child(_pause_menu)
+			print("[HubWorld] Pause menu instantiated")
+		else:
+			print("[HubWorld] ERROR: Could not load PauseMenu.tscn")
 	if is_instance_valid(_pause_menu):
+		print("[HubWorld] Opening pause menu")
 		_pause_menu.open()

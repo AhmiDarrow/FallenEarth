@@ -26,7 +26,7 @@ func _ready() -> void:
 func open() -> void:
 	visible = true
 	get_tree().paused = true
-	print("[PauseMenu] Opened.")
+	print("[PauseMenu] Opened. visible=", visible, " size=", size, " global_position=", global_position, " anchors=", anchor_left, ",", anchor_top, ",", anchor_right, ",", anchor_bottom)
 
 
 func close() -> void:
