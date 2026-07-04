@@ -42,6 +42,7 @@ var _pause_menu: PauseMenu = null
 
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[HubWorld] Local overworld map loading.")
 
 	_enter_btn = $BottomBar/EnterRift as Button
