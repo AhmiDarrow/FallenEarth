@@ -367,18 +367,6 @@ static func _build_name(parts: Dictionary, origin: String, archetype_key: String
 	return "%s %s%s" % [first, last, title]
 
 
-static func _build_procedural_mob(npc_data: Dictionary) -> Dictionary:
-	var archetype: String = str(npc_data.get("archetype", "quadruped"))
-	var color: String = str(npc_data.get("appearance", {}).get("hair_color", "rags"))
-	var size: Vector2 = Vector2(48, 48)
-
-	return {
-		"archetype": archetype,
-		"color": color,
-		"size": size,
-		"has_procedural_assets": true,
-	}
-
 static func _personality_summary(traits: Array[String], role: String) -> String:
 	if traits.is_empty():
 		return "A %s with an unreadable past." % role.to_lower()

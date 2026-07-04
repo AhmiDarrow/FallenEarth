@@ -1,7 +1,7 @@
 ## ProceduralMob — Procedurally drawn creatures/mobs for overworld encounters.
 ## Extends ProceduralRenderer. Supports archetypes: quadruped, insectoid, behemoth, aberrant.
 ## Each archetype has distinct draw logic with idle/walk/attack states.
-## Called from NPCManager / EncounterBuilder when spawning procedural NPCs or enemy mobs.
+## Called from EncounterBuilder when spawning procedural enemy mobs.
 
 extends ProceduralRenderer
 

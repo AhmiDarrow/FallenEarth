@@ -57,12 +57,6 @@ func _ready() -> void:
 		sm.start_autosave_timer()
 		sm.auto_save_triggered.connect(_on_autosave_tick)
 
-	# Wire NPCManager's procedural_mob_generated signal
-	var nm: Node = get_node_or_null("/root/NPCManager")
-	if is_instance_valid(nm):
-		set_npc_manager_procedural_mob_handler(nm, func(nm_: Node, proto: Dictionary):
-			print("[GameState] Procedural mob generated from NPCManager: archetype=%s, color=%s" % [proto.get("archetype", ""), proto.get("color", "")]))
-
 func _on_autosave_tick() -> void:
 	if not is_instance_valid(SaveManager):
 		return
@@ -761,18 +755,6 @@ func set_world_npcs(
 		for entry in recruited_ids:
 			_recruited_npc_ids.append(str(entry))
 
-
-func set_npc_manager_procedural_mob_handler(npc_manager: Node, callback: Callable) -> void:
-	"""Wire NPCManager's procedural_mob_generated signal to a GameState callback.
-
-	Called in GameState._ready() so that when NPCManager creates procedural mobs
-	for NPCs missing assets, GameState can forward the data to any listener (e.g.
-	HubWorld) via a GameState signal. The callback is invoked with the NPCManager
-	instance and the proto dict (archetype/color/size).
-	"""
-	if not npc_manager or not npc_manager.has_method("procedural_mob_generated"):
-		return
-	npc_manager.connect("procedural_mob_generated", callback)
 
 func get_world_npcs() -> Dictionary:
 	return _world_npcs.duplicate(true)

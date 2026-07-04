@@ -2,6 +2,7 @@
 ## Extends ProceduralRenderer. Supports archetypes: quadruped, insectoid, behemoth,
 ## aberrant, floater, mechanical. Each has distinct draw logic with idle/walk/attack states.
 ## Sprite definitions loaded from mob_sprites.json provide per-mob draw_params and color ranges.
+## Mobs are enemies only. NPCs are handled separately via CharacterVisual.
 
 class_name ProceduralMob
 extends ProceduralRenderer
