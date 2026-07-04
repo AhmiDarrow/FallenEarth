@@ -126,7 +126,7 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not (event is InputEventKey and event.pressed and not event.echo):
+	if not (event is InputEventKey and event.pressed):
 		return
 	var dir := Vector2i.ZERO
 	match event.keycode:
