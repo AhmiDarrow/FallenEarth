@@ -83,11 +83,11 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 			else:
 				terrain[idx] = TERRAIN_GROUND
 
-	# Clear a homestead pocket at center for the starting hex spawn.
+	# Clear a large homestead pocket at center so the player has room to explore on spawn.
 	var cx := MAP_SIZE / 2
 	var cy := MAP_SIZE / 2
-	for dy in range(-6, 7):
-		for dx in range(-6, 7):
+	for dy in range(-24, 25):
+		for dx in range(-24, 25):
 			var px := cx + dx
 			var py := cy + dy
 			if px < 0 or py < 0 or px >= MAP_SIZE or py >= MAP_SIZE:
