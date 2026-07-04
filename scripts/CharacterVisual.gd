@@ -29,12 +29,28 @@ var _sprite_sheet: Texture2D = null
 var _frame_textures: Dictionary = {}  # { "idle_S_0": AtlasTexture, ... }
 var _use_procedural_graphics: bool = false  # Use sprites by default
 
+# Animation timing
+var _anim_timer: float = 0.0
+var _anim_speed: float = 0.18  # seconds per frame
+var _is_moving: bool = false
+
 
 # -----------------------------------------------------------------------------
 # Initialization
 # -----------------------------------------------------------------------------
 func _ready() -> void:
 	pass
+
+
+func _process(delta: float) -> void:
+	if _sprite_sheet == null or _use_procedural_graphics:
+		return
+	_anim_timer += delta
+	if _anim_timer >= _anim_speed:
+		_anim_timer -= _anim_speed
+		var max_frame: int = 4 if _is_moving else 4
+		current_frame = (current_frame + 1) % max_frame
+		queue_redraw()
 
 
 # -----------------------------------------------------------------------------
@@ -108,6 +124,8 @@ func play_animation(anim_name: String, direction: int = 0, frame: int = 0) -> vo
 	current_anim = anim_name
 	current_direction = clampi(direction, 0, 7)
 	current_frame = clampi(frame, 0, FRAMES_PER_ANIM - 1)
+	_is_moving = (anim_name == "walk" or anim_name == "run")
+	_anim_timer = 0.0
 	queue_redraw()
 
 
