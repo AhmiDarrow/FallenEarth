@@ -131,7 +131,7 @@ func _enumerate_monitors() -> void:
 	_available_monitors.clear()
 	var screen_count := DisplayServer.get_screen_count()
 	for i in range(screen_count):
-		var monitor_name: String = DisplayServer.screen_get_name(i)
+		var monitor_name: String = OS.get_screen_name(i)
 		var screen_size: Vector2i = DisplayServer.screen_get_size(i)
 		_available_monitors.append({
 			"index": i,
