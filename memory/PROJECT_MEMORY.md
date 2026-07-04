@@ -103,8 +103,8 @@ The file has been created and verified. The "Missing data: enemy_archetypes.json
 - **Style:** Bare base model, underwear only, transparent background, low top-down view
 
 ### Remaining Characters (23 combos)
-- **Upworld:** Human×female, Human×nonbinary, Mutant×male/female/nonbinary, SentientAI×male/female/nonbinary, Cyborg×male/female/nonbinary
-- **Underworld:** Chthon×male/female/nonbinary, Vesperid×male/female/nonbinary, Nullborn×male/female/nonbinary, Revenant×male/female/nonbinary
+- **Upworld:** Human×female, Mutant×male/female, SentientAI×male/female, Cyborg×male/female
+- **Underworld:** Chthon×male/female, Vesperid×male/female, Nullborn×male/female, Revenant×male/female
 - **Estimated generations:** ~345 (15 per combo × 23)
 - **Estimated remaining budget:** ~1640 (sufficient)
 

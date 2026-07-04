@@ -56,7 +56,7 @@ static func generate_procedural_enemy(
 	var level: int = clampi(min_level + rng.randi_range(0, max_level - min_level), min_level, max_level)
 	var race_id: String = _pick_enemy_race(archetype_key, rng)
 	var class_id: String = _pick_enemy_class(archetype_key, rng)
-	var gender: String = ["male", "female", "nonbinary"][rng.randi() % 3]
+	var gender: String = ["male", "female"][rng.randi() % 2]
 	var traits: Array[String] = _pick_enemy_traits(archetype_key, rng)
 
 	var stats: Dictionary = {

@@ -1,5 +1,5 @@
 {
-  "gender": ["male", "female", "nonbinary"],
+  "gender": ["male", "female"],
   "head": ["bald", "short_hair", "long_hair", "spiked", "hooded", "helmet", "chitin_plates", "circuit_mask"],
   "body": ["light_armor", "heavy_armor", "rags", "jumpsuit", "chitin_plating", "synthetic_mesh"],
   "arms": ["standard", "cyber_grafted", "chitin_limbs", "power_bracers"],

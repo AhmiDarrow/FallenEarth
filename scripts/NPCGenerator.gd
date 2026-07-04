@@ -11,7 +11,7 @@ const GENERATION_SALT := "fallen_npcs_v1"
 const WANDERER_COUNT := 4
 
 const STAT_KEYS := ["str", "dex", "con", "int", "wis", "cha"]
-const GENDERS := ["male", "female", "nonbinary"]
+const GENDERS := ["male", "female"]
 
 const VENDOR_TEMPLATES := {
 	"weapons": ["Rustblade", "Scrap Pike", "Reinforced Baton", "Salvaged Rifle"],
