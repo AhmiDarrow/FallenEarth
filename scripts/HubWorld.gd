@@ -7,6 +7,7 @@ signal back_to_menu_requested()
 
 const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
+const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 
@@ -39,6 +40,7 @@ var _mission_info_label: RichTextLabel = null
 var _npc_manager: Node = null
 var _mission_manager: Node = null
 var _pause_menu: PauseMenu = null
+var _player_visual: Node2D = null
 
 
 func _ready() -> void:
@@ -108,6 +110,7 @@ func _ready() -> void:
 	_setup_map_renderer()
 	if is_instance_valid(_map_renderer):
 		_map_renderer.configure(_local_map)
+	_setup_player_visual()
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_build_local_view()
 	_update_tile_info()
@@ -181,9 +184,38 @@ func _setup_map_renderer() -> void:
 	world_grid.add_child(_marker_layer)
 
 
+func _setup_player_visual() -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return
+	var char_data: Dictionary = gs.get_character_data()
+	if char_data.is_empty():
+		return
+
+	_player_visual = CharacterVisualScript.new() as Node2D
+	_player_visual.name = "PlayerVisual"
+	world_grid.add_child(_player_visual)
+
+	var race: String = str(char_data.get("race", "human"))
+	var gender: String = str(char_data.get("gender", "male"))
+	_player_visual.call("set_base_sprite", race, gender)
+	_player_visual.position = Vector2(
+		_local_x * _map_renderer.get_cell_size() + _map_renderer.get_cell_size() * 0.5,
+		_local_y * _map_renderer.get_cell_size() + _map_renderer.get_cell_size() * 0.5
+	)
+	_player_visual.z_index = 10
+	print("[HubWorld] Player visual set: race=%s gender=%s" % [race, gender])
+
+
 func _build_local_view() -> void:
 	if is_instance_valid(_map_renderer):
 		_map_renderer.set_player_cell(_local_x, _local_y)
+	if is_instance_valid(_player_visual):
+		var cell_size: int = _map_renderer.get_cell_size() if is_instance_valid(_map_renderer) else 24
+		_player_visual.position = Vector2(
+			_local_x * cell_size + cell_size * 0.5,
+			_local_y * cell_size + cell_size * 0.5
+		)
 	_refresh_markers()
 	_update_camera()
 
@@ -195,8 +227,7 @@ func _refresh_markers() -> void:
 	_marker_nodes.clear()
 	var cell_size: int = _map_renderer.get_cell_size() if is_instance_valid(_map_renderer) else 24
 
-	_add_marker(_local_x, _local_y, Color(0.4, 0.95, 0.5), "◎", "player", cell_size)
-
+	# Player visual is handled by _player_visual node — skip circle marker
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if not is_instance_valid(gs):
 		return
