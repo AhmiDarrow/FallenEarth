@@ -10,12 +10,15 @@ signal visual_updated(entity_node: Node3D)
 @export var facing_angle: float = 0.0
 @export var height_offset: float = 0.0
 @export var track_2d_node: bool = true
+@export var billboard: bool = false
+@export var glow_color: Color = Color.TRANSPARENT
 
 var entity_id: String = ""
 var entity_root: Node3D
 var _viewport_ref: Entity3DViewport
 var _parent_2d: Node2D
 var _entity_data: Dictionary = {}
+var _face_camera: FaceCamera3D
 
 func setup(entity_data: Dictionary, viewport: Entity3DViewport) -> void:
 	_entity_data = entity_data
@@ -26,6 +29,12 @@ func setup(entity_data: Dictionary, viewport: Entity3DViewport) -> void:
 	if entity_root:
 		entity_root.name = "Entity_%s" % entity_id
 		_viewport_ref.add_entity(entity_root)
+
+	if billboard:
+		_add_billboard()
+
+	if glow_color.a > 0.0:
+		_viewport_ref.add_point_light(entity_id, glow_color, 1.5, 3.0)
 
 func attach_to_2d(node: Node2D) -> void:
 	_parent_2d = node
@@ -38,6 +47,8 @@ func attach_to_2d(node: Node2D) -> void:
 		set_process(true)
 
 func detach() -> void:
+	if glow_color.a > 0.0:
+		_viewport_ref.remove_point_light(entity_id)
 	if entity_root and _viewport_ref:
 		entity_root.queue_free()
 	entity_root = null
@@ -71,6 +82,23 @@ func update_equipment(equip_data: Dictionary) -> void:
 					att.position = Vector3(0.3, 0.2, 0.0)
 			entity_root.add_child(att)
 
+func set_glow(color: Color, energy: float = 1.5, radius: float = 3.0) -> void:
+	glow_color = color
+	if glow_color.a > 0.0:
+		_viewport_ref.add_point_light(entity_id, color, energy, radius)
+	else:
+		_viewport_ref.remove_point_light(entity_id)
+
+func _add_billboard() -> void:
+	if not entity_root:
+		return
+	_face_camera = FaceCamera3D.new()
+	_face_camera.name = "FaceCamera"
+	entity_root.add_child(_face_camera)
+	for child in entity_root.get_children():
+		if child != _face_camera and child is Node3D:
+			child.reparent(_face_camera)
+
 func _process(_delta: float) -> void:
 	if track_2d_node and _parent_2d:
 		_sync_position()
@@ -90,6 +118,9 @@ func _sync_position() -> void:
 
 	entity_root.position = Vector3(x_3d, y_3d, z_3d)
 	entity_root.rotation.y = facing_angle
+
+	if _viewport_ref and glow_color.a > 0.0:
+		_viewport_ref.update_point_light_position(entity_id, entity_root.position)
 
 func _update_animation() -> void:
 	pass
