@@ -70,6 +70,10 @@ func _load_chunk(cx: int, cy: int) -> void:
 	chunk_root.position = Vector2(cx * CHUNK_CELLS * CELL_SIZE, cy * CHUNK_CELLS * CELL_SIZE)
 	add_child(chunk_root)
 
+	var biome_name: String = str(_map_data.get("biome", "Ash Wastes"))
+	var btm: BiomeTilesetManager = get_node_or_null("/root/BiomeTilesetManager") as BiomeTilesetManager
+	var has_ts: bool = is_instance_valid(btm) and btm.has_tileset(biome_name)
+
 	var cells: Dictionary = {}
 	var start_x := cx * CHUNK_CELLS
 	var start_y := cy * CHUNK_CELLS
@@ -79,17 +83,44 @@ func _load_chunk(cx: int, cy: int) -> void:
 			var y := start_y + dy
 			var terrain: int = LocalMapGen.get_terrain(_map_data, x, y)
 			var local_key := LocalMapGen.local_key(x, y)
-			var tile: Dictionary = _map_data.get(local_key, {}) as Dictionary
-			var tile_key := "%d,%d" % [terrain, tile.get("terrain_type", 0)]
+
+			# Build tile data with correct biome + terrain type
+			var tile_data := {
+				"biome": biome_name,
+				"terrain_type": terrain,
+			}
+
+			# Ground cells: use Wang tile sprite if available
+			if has_ts and terrain == LocalMapGen.TERRAIN_GROUND:
+				var wang_id: int = _compute_wang_id(x, y, terrain)
+				var tex: Texture2D = btm.get_tile(biome_name, wang_id)
+				if tex:
+					var spr := Sprite2D.new()
+					spr.texture = tex
+					spr.position = Vector2(dx * CELL_SIZE + CELL_SIZE * 0.5, dy * CELL_SIZE + CELL_SIZE * 0.5)
+					spr.scale = Vector2(float(CELL_SIZE) / tex.get_width(), float(CELL_SIZE) / tex.get_height())
+					chunk_root.add_child(spr)
+					cells[local_key] = spr
+					continue
+
+			# Non-ground or fallback: procedural tile with correct biome/terrain
 			var pt: ProceduralTile = ProceduralTile.new()
 			pt.size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
 			pt.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
-			pt.setup_for(tile)
-			pt.name = "Tile_%s" % tile_key
+			pt.setup_for(tile_data)
+			pt.name = "Tile_%d" % terrain
 			chunk_root.add_child(pt)
 			cells[local_key] = pt
 
 	_loaded_chunks[ck] = {"root": chunk_root, "cells": cells}
+
+
+func _compute_wang_id(x: int, y: int, terrain: int) -> int:
+	var n: int = LocalMapGen.get_terrain(_map_data, x, y - 1)
+	var e: int = LocalMapGen.get_terrain(_map_data, x + 1, y)
+	var s: int = LocalMapGen.get_terrain(_map_data, x, y + 1)
+	var w: int = LocalMapGen.get_terrain(_map_data, x - 1, y)
+	return BiomeTilesetManager.compute_wang_id(terrain, n, e, s, w)
 
 
 func _unload_chunk(ck: String) -> void:
