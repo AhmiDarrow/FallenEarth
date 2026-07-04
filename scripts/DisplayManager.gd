@@ -11,6 +11,10 @@ signal ui_mode_changed(mode: String)  # "hud", "pause_menu", "character_sheet"
 
 @export var display_scale: float = 1.0
 @export var fullscreen: bool = false
+@export var vsync: bool = true
+@export var monitor_index: int = 0
+@export var resolution_width: int = 1280
+@export var resolution_height: int = 720
 @export var ui_visibility: Dictionary = {
 	"health_bar": true,
 	"inventory_panel": true,
@@ -18,12 +22,19 @@ signal ui_mode_changed(mode: String)  # "hud", "pause_menu", "character_sheet"
 	"class_info": true
 }
 
+const SETTINGS_PATH := "user://settings.cfg"
+
 var _current_hud_targets: Array[Dictionary] = []
 var _current_mode: String = ""
+var _available_monitors: Array[Dictionary] = []
+var _available_resolutions: Array[Vector2i] = []
 
 
 func _ready() -> void:
 	reset_display_state()
+	_enumerate_monitors()
+	_load_settings()
+	_apply_settings()
 	print("[DisplayManager] Initialized (v0.2.0).")
 
 
@@ -114,6 +125,104 @@ func toggle_fullscreen(enabled := true) -> void:
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED)
 	fullscreen = enabled
 	print("[DisplayManager] Fullscreen toggled to %s" % "on" if enabled else "off")
+# -- Settings persistence --
+
+func _enumerate_monitors() -> void:
+	_available_monitors.clear()
+	var screen_count := DisplayServer.get_screen_count()
+	for i in range(screen_count):
+		var monitor_name := DisplayServer.get_screen_name(i)
+		var screen_size := DisplayServer.get_screen_size(i)
+		_available_monitors.append({
+			"index": i,
+			"name": monitor_name,
+			"size": screen_size
+		})
+	print("[DisplayManager] Enumerated %d monitors" % screen_count)
+
+func _load_settings() -> void:
+	var config := ConfigFile.new()
+	var err := config.load(SETTINGS_PATH)
+	if err != OK:
+		print("[DisplayManager] No settings file found, using defaults.")
+		return
+	monitor_index = config.get_value("display", "monitor", 0)
+	resolution_width = config.get_value("display", "width", 1280)
+	resolution_height = config.get_value("display", "height", 720)
+	fullscreen = config.get_value("display", "fullscreen", false)
+	vsync = config.get_value("display", "vsync", true)
+	print("[DisplayManager] Settings loaded from %s" % SETTINGS_PATH)
+
+func _save_settings() -> void:
+	var config := ConfigFile.new()
+	config.set_value("display", "monitor", monitor_index)
+	config.set_value("display", "width", resolution_width)
+	config.set_value("display", "height", resolution_height)
+	config.set_value("display", "fullscreen", fullscreen)
+	config.set_value("display", "vsync", vsync)
+	var err := config.save(SETTINGS_PATH)
+	if err != OK:
+		push_error("[DisplayManager] Failed to save settings to %s" % SETTINGS_PATH)
+	else:
+		print("[DisplayManager] Settings saved to %s" % SETTINGS_PATH)
+
+func _apply_settings() -> void:
+	# Set monitor
+	if monitor_index >= 0 and monitor_index < _available_monitors.size():
+		# Godot doesn't have a direct set_monitor; we can move window to that screen
+		var screen_pos := DisplayServer.get_screen_position(monitor_index)
+		DisplayServer.window_set_position(screen_pos)
+	# Set resolution
+	set_display_resolution(resolution_width, resolution_height)
+	# Set fullscreen
+	toggle_fullscreen(fullscreen)
+	# Set vsync
+	if vsync:
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
+	else:
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	print("[DisplayManager] Settings applied")
+
+func get_available_monitors() -> Array[Dictionary]:
+	return _available_monitors
+
+func set_monitor(index: int) -> void:
+	if index >= 0 and index < _available_monitors.size():
+		monitor_index = index
+		var screen_pos := DisplayServer.get_screen_position(index)
+		DisplayServer.window_set_position(screen_pos)
+		_save_settings()
+		print("[DisplayManager] Monitor set to %d (%s)" % [index, _available_monitors[index]["name"]])
+
+func get_current_monitor() -> int:
+	return monitor_index
+
+func get_available_resolutions(monitor: int = -1) -> Array[Vector2i]:
+	# Godot doesn't have a direct get_resolutions per monitor; we can return common resolutions
+	# For simplicity, return a fixed list of common resolutions
+	var resolutions: Array[Vector2i] = []
+	resolutions.append(Vector2i(640, 480))
+	resolutions.append(Vector2i(800, 600))
+	resolutions.append(Vector2i(1024, 768))
+	resolutions.append(Vector2i(1280, 720))
+	resolutions.append(Vector2i(1280, 800))
+	resolutions.append(Vector2i(1366, 768))
+	resolutions.append(Vector2i(1440, 900))
+	resolutions.append(Vector2i(1600, 900))
+	resolutions.append(Vector2i(1920, 1080))
+	resolutions.append(Vector2i(2560, 1440))
+	resolutions.append(Vector2i(3840, 2160))
+	# Filter out resolutions larger than monitor size
+	if monitor >= 0 and monitor < _available_monitors.size():
+		var monitor_size: Vector2i = _available_monitors[monitor]["size"]
+		resolutions = resolutions.filter(func(res: Vector2i) -> bool: return res.x <= monitor_size.x and res.y <= monitor_size.y)
+	return resolutions
+
+func set_resolution(width: int, height: int) -> void:
+	resolution_width = width
+	resolution_height = height
+	set_display_resolution(width, height)
+	_save_settings()
 
 
 func _enter_tree() -> void:

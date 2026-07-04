@@ -3,6 +3,7 @@ extends SceneTree
 const SCENES := [
 	"res://scenes/ui/Splash.tscn",
 	"res://scenes/ui/MainMenu.tscn",
+	"res://scenes/ui/Options.tscn",
 	"res://scenes/WorldGeneration.tscn",
 	"res://scenes/CharacterSelection.tscn",
 	"res://scenes/HubWorld.tscn",
@@ -36,6 +37,8 @@ const SCRIPTS := [
 	"res://scripts/MissionGenerator.gd",
 	"res://scripts/MissionManager.gd",
 	"res://scenes/ui/Splash.gd",
+	"res://scripts/Options.gd",
+	"res://scripts/DisplayManager.gd",
 ]
 
 func _initialize() -> void:

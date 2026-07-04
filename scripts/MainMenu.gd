@@ -168,7 +168,7 @@ func _show_load_popup(slots: Array[Dictionary]) -> void:
 
 
 func _on_options() -> void:
-	print("[MainMenu] Options — placeholder")
+	get_tree().change_scene_to_file("res://scenes/ui/Options.tscn")
 
 
 func _on_exit() -> void:

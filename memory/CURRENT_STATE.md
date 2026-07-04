@@ -1,7 +1,7 @@
 # CURRENT STATE — Fallen Earth
 
 **Version:** 0.2.0  
-**Last Updated:** 2026-07-01  
+**Last Updated:** 2026-07-04  
 **Active Agent:** — (session ended)  
 **Current Phase:** Phase 6 in progress (chunk renderer ✅ · settlement ⏳ · tile overlay blocked on assets)
 
@@ -35,6 +35,7 @@ Splash → MainMenu → WorldGeneration (pick start hex)
 | Tactical combat (FFT) | ✅ | `TacticalCombat.gd`, `CombatManager.gd` |
 | Missions (local mobs) | ✅ | `MissionManager.gd` |
 | Save/load (world layer) | ✅ | `GameState.gd`, `SaveManager.gd` |
+| Display options | ✅ | `DisplayManager.gd`, `Options.gd`, `scenes/ui/Options.tscn` |
 | Hand-drawn visuals | 🔄 | Asset agent — `assets/tilesets/`, ComfyUI workflows |
 | Settlement building | ⏳ | Not started — `hex_state.settlement` stub in generator |
 

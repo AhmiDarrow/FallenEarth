@@ -1,26 +1,26 @@
 ---
-name: latter-handoff
-description: Procedural drawing system milestone — characters, mobs, tiles integrated
+name: resolution-options-handoff
+description: Added resolution/monitor options and responsive UI scaling
 ---
 
-## Current Focus: Procedural Drawing System Milestone
+## Current Focus: Display Options & Responsive UI
 
-The full procedural drawing conversion has reached integration phase — all core files created and wired into the game. Characters now render procedurally in CharacterVisual.gd when assets missing, LocalMapRenderer uses ProceduralTile instances, and WorldGenerator has helper methods.
+The options menu now includes monitor selection, resolution picker, fullscreen/vsync toggles, with settings persisted to `user://settings.cfg`. All menu backgrounds (Splash, MainMenu, CharacterSelect, Options) have been converted to `TextureRect` with anchor-based scaling for resolution independence.
 
 ### Immediate Next Step
 
-Integrate ProceduralMob into NPCManager for NPC spawning, then wire procedural fallback in EncounterBuilder for enemy spawns. After that, modify test scenes and consider adding a runtime toggle (hotkey F8) for polish.
+F5 manual testing to verify options menu works end-to-end across different monitor configurations. Then proceed with next task from `docs/NEXT_TASKS.md`.
 
 ### Relevant Handoffs
 
-- [[procedural-drawn-conversion-milestone]] — full procedural drawing milestone with all completed work
-- [[latter-handoff]] — this handoff (current focus)
+- [[resolution-options-handoff]] — this handoff (current focus)
+- [[latter-handoff]] — previous procedural drawing milestone (still relevant for asset integration)
 
 ### Context Files
 
-- `.hermes/plans/PROCEDURAL_DRAWN_CONVERSION_PLAN.md` — detailed plan tracking
-- `memory/SESSION_NOTES/PROCEDURAL_DRAWN_CONVERSION.MD` — milestone summary
+- `docs/NEXT_TASKS.md` — project task queue
+- `memory/PROJECT_MEMORY.md` — display conventions updated with new patterns
 
 ---
 
-Proceed with NPCManager integration.
+Proceed with F5 testing or next priority task.
