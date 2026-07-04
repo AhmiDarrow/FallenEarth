@@ -73,6 +73,10 @@ func _load_chunk(cx: int, cy: int) -> void:
 	var biome_name: String = str(_map_data.get("biome", "Ash Wastes"))
 	var btm: BiomeTilesetManager = get_node_or_null("/root/BiomeTilesets") as BiomeTilesetManager
 	var has_ts: bool = is_instance_valid(btm) and btm.has_tileset(biome_name)
+	if has_ts:
+		print("[LocalMapRenderer] Using Pixellab tileset for: %s" % biome_name)
+	else:
+		print("[LocalMapRenderer] No tileset for %s, using procedural tiles." % biome_name)
 
 	var cells: Dictionary = {}
 	var start_x := cx * CHUNK_CELLS
@@ -97,8 +101,10 @@ func _load_chunk(cx: int, cy: int) -> void:
 				if tex:
 					var spr := Sprite2D.new()
 					spr.texture = tex
-					spr.position = Vector2(dx * CELL_SIZE + CELL_SIZE * 0.5, dy * CELL_SIZE + CELL_SIZE * 0.5)
-					spr.scale = Vector2(float(CELL_SIZE) / tex.get_width(), float(CELL_SIZE) / tex.get_height())
+					spr.centered = false
+					spr.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
+					spr.scale = Vector2(float(CELL_SIZE - 1) / tex.get_width(), float(CELL_SIZE - 1) / tex.get_height())
+					spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 					chunk_root.add_child(spr)
 					cells[local_key] = spr
 					continue
