@@ -1,6 +1,6 @@
 # NEXT_TASKS — Fallen Earth
 
-**Version:** 0.4.0-dev · **Updated:** 2026-07-05 · **Phase:** 0 done, Phase 1 next
+**Version:** 0.5.0-complete · **Updated:** 2026-07-05 05:30 · **Phase:** v0.4.0 + v0.5.0 complete
 
 *Aligns with `docs/PLAN_v040_crafting_progression.md`, `docs/HANDOFF_PROTOCOL.md`, and `memory/CURRENT_STATE.md`.*
 
@@ -8,7 +8,44 @@
 
 ## TOP PRIORITY — Next session
 
-### P0 — Phase 1 (resource nodes + gathering)
+### P0 — Pre-existing v0.4.0 polish (not blocking, but flagged in last handoff)
+
+| ID | Task | Status |
+|----|------|--------|
+| P0-1 | **`MissionManager.gd:214`** — `GameState.mob_key(...)` reference uses autoload name as a class. GDScript parser flags "Identifier not found: GameState" but runtime works. Fix: use `get_node("/root/GameState").mob_key(...)` or add a `class_name` to GameState. | ⏳ READY |
+| P0-2 | **`smoke_phase5.gd:203`** — `gs.faction_rep_changed = Callable()` tries to assign to a signal. Signals can't be reassigned. Delete the line. | ⏳ READY |
+| P0-3 | **`smoke_phase5.gd` `spawn_for_hex` test** — RNG-flaky (sometimes produces no NPC in 10 calls). Make deterministic: seed RNG, or iterate until success with a max-attempts cap (e.g. 100). | ⏳ READY |
+| P0-4 | **`smoke_tile_system.gd` rift_scar normalization** — ERROR is logged but test reports "ok" on the next line. Trace the LocalMapView code path; the normalization check is partially broken. | ⏳ READY |
+
+### P1 — v0.6.0 planning
+
+Pick the next milestone from the PLAN's "Not yet done in v0.5.0+" list:
+- **Real procedural NPC spawn in settlements** (replace the 3 hard-coded test NPCs in PartyNPCManager with biome-aware procedural generation)
+- **Full settlement interiors** (rooms, traveling NPCs, mini-quests, visual variety)
+- **Settlement-to-Riftspire travel** (Riftspire entry from the World Map, return path)
+- **Button asset set** (procedural pixel-art buttons + pixel font; partially drafted in Phase 3 but not generated yet)
+- **Real combat damage wiring** (merge `_resolve_attack` with EquipmentManager stats; expand `use_item` to support stamina potions, etc.)
+
+**Recommended: real combat damage wiring + more consumables.** It's the most player-facing and builds directly on v0.5.0.
+
+### P2 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
+
+(Full list in the plan doc; phases 2 → 8 follow Phase 1, each with own end-of-phase stop/commit/push.)
+
+---
+
+## COMPLETED
+
+### v0.5.0 — HP/MP combat wiring ✅ (2026-07-05 05:30)
+
+| ID | Task | Notes |
+|----|------|-------|
+| v050-1 | `CombatManager` autoload-aware max_hp/mp/attack/armor | `_spawn_player` reads from `EquipmentManager` when autoload present, falls back to stat-only. |
+| v050-2 | `use_item("bandage")` heals 30 HP, consumes from InventoryManager, marks unit as acted | Returns `{ok, message, heal, remaining_hp, max_hp}`. |
+| v050-3 | `TacticalCombat._combat` type RefCounted → Node | To match new `CombatManager` so it can call autoload methods. |
+| v050-4 | `smoke_v050.gd` — 6 test groups, all green | Bug 1: `await process_frame` in `_initialize` lets autoloads finish init. Bug 2: set `active_unit_id = "player"` before `_get_unit_ref` in test 5/6. |
+
+### v0.4.0 Phase 0 ✅ (2026-07-05)
 
 | ID | Task | Status |
 |----|------|--------|

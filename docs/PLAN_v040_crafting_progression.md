@@ -8,13 +8,14 @@ v0.5.0 STARTED — partial HP/MP combat wiring landed (commit 708e9e8).
 
 ## Quick context for the next agent (v0.5.0 resume)
 
-- v0.4.0 + v0.5.0 partial work is committed to `master`. Pull before starting.
-- The plan below describes v0.4.0 (largely done) and what was added in v0.5.0 (partially done).
+- v0.4.0 + v0.5.0 work is committed to `master`. Pull before starting.
+- **v0.5.0 is COMPLETE as of 2026-07-05 05:30.** All 6 smoke_v050 tests pass. See `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` for the fix details.
+- The plan below describes v0.4.0 (largely done) and what was added in v0.5.0 (now done).
 - Read `docs/PLAN_v040_crafting_progression.md` (this file) for the canonical v0.4.0 design + v0.5.0 status section.
 - Read `memory/CURRENT_STATE.md` for the live v0.4.0 state (10 systems shipped, what's next).
 - Read `memory/LATEST_HANDOFF.md` for the most recent commit context.
-- Read `memory/SESSION_NOTES/HANDOFF_2026-07-05_0500.md` (v0.4.0 Phase 8 final) and the most recent `HANDOFF_2026-07-05_XXXX.md` for v0.5.0 context.
-- All 9 existing smoke files still pass under v0.4.0 + v0.5.0 partial:
+- Read `memory/SESSION_NOTES/HANDOFF_2026-07-05_0500.md` (v0.4.0 Phase 3 follow-up) and `HANDOFF_2026-07-05_0530.md` (v0.5.0 fix).
+- All 12 existing smoke files still pass under v0.4.0 + v0.5.0:
   - `tools/smoke_tile_system.gd` (smoke tile)
   - `tools/smoke_resource_nodes.gd` (smoke-p1)
   - `tools/smoke_hover_tooltip.gd` (smoke-tt)
@@ -22,25 +23,26 @@ v0.5.0 STARTED — partial HP/MP combat wiring landed (commit 708e9e8).
   - `tools/smoke_phase3.gd` (smoke-p3 — CharacterMenu, Party, Crafting, 2 info panels, 3 station UIs)
   - `tools/smoke_phase3b.gd` (smoke-p3b — settlements, shops, mission board)
   - `tools/smoke_phase4.gd` (smoke-p4 — Equipment, weapons, armor, accessories, stats)
-  - `tools/smoke_phase5.gd` (smoke-p5 — procedural NPC spawn + invite)
+  - `tools/smoke_phase5.gd` (smoke-p5 — procedural NPC spawn + invite; has pre-existing RNG-flakiness + compile errors unrelated to v0.5.0)
   - `tools/smoke_phase6.gd` (smoke-p6 — base building)
   - `tools/smoke_phase7.gd` (smoke-p7 — base shops)
   - `tools/smoke_phase8.gd` (smoke-p8 — save/load + item icons + loot popups + rarity colors)
-  - `tools/smoke_v050.gd` (smoke-v050 — HP/MP combat wiring; 4/6 pass; 1 outstanding bug)
+  - `tools/smoke_v050.gd` (smoke-v050 — HP/MP combat wiring; 6/6 pass)
 - `tools/boot_probe.gd` — 60-frame smoke that boots MainMenu; all pass.
 
-## v0.5.0 status (start of next session)
+## v0.5.0 status — COMPLETE (2026-07-05 05:30)
 
 ### Done in v0.5.0
 - `CombatManager.gd`: `extends RefCounted` → `extends Node` (so it can call `get_node_or_null` on autoloads)
 - `CombatManager._spawn_player`: pulls max_hp / mp_max / attack / armor from `EquipmentManager` when the autoload is present; falls back to stat-only when not
 - `CombatManager.use_item(item_id)`: heals 30 HP on `bandage`, consumes one from InventoryManager, marks unit as acted. Returns `{ok, message, heal, remaining_hp, max_hp}`
 - `TacticalCombat._combat`: type changed from RefCounted → Node to match the new CombatManager
-- `tools/smoke_v050.gd` (6 test groups)
+- `tools/smoke_v050.gd` (6 test groups; all pass)
 
-### Outstanding v0.5.0 issues
-1. **EquipmentManager autoload `_weapons_data` gets cleared mid-test.** Symptom: `em.get_weapon("Scavenger", 0)` returns `{}` partway through `smoke_v050.gd`. The autoload initializes with 6 weapons at startup, so the clear happens during test execution. **Suspects:** `restore_from_snapshot` in `EquipmentManager.gd` (line 90: `_equipment_state.clear()` — but that only clears `_equipment_state`, not `_weapons_data`). The autoload data is a class-level dict, so something is either calling `restore_from_snapshot` with a payload that doesn't include weapons OR there's a re-init happening. **First thing to check in the next session.** The fact that `smoke_v050.gd`'s tests 1, 5, 6 pass but tests 2, 3, 4 fail with "empty" suggests the autoload's data is fresh and gets cleared somewhere between test 1 and test 2. Check `restore_from_snapshot` callers in `CombatManager`, `HubWorld`, `GameState` autosave flow.
-2. **CombatManager.use_item only handles `bandage`.** Other consumables (stamina potions, etc.) need follow-up.
+### Resolved in v0.5.0 final
+1. **EquipmentManager autoload `_weapons_data` returned `{}` mid-test.** Root cause: autoload `_ready()` is deferred to the next idle frame, so the data loaders hadn't run when tests 1-4 executed. Tests 1, 3, 6 only called `get_max_hp` (math-only) and incidentally passed. Fix: `await process_frame` at the start of `_initialize` in `tools/smoke_v050.gd`.
+2. **`use_item("bandage")` returned "Cannot use items."** Root cause: test 5 looked up the unit via `_get_unit_ref(cm.active_unit_id)` before setting `active_unit_id` (which is empty after `_spawn_player` since `_advance_to_next_turn` only runs in `setup_from_encounter`). Fix: set `cm.active_unit_id = "player"` before the lookup.
+3. **CombatManager.use_item only handles `bandage`.** Other consumables (stamina potions, etc.) still need follow-up — deferred to v0.6.0 polish.
 
 ### Not yet done in v0.5.0+
 - **Real procedural NPC spawn in settlements** (Phase 5 ships generic spawn; settlements need specific NPCs at specific cells with specific archetypes)

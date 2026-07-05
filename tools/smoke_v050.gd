@@ -21,6 +21,11 @@ func _ok(msg: String) -> void:
 
 func _initialize() -> void:
 	print("[smoke-v050] v0.5.0 HP/MP combat + equipment-aware stats")
+	# Autoloads are added to the tree before _initialize, but their
+	# _ready() (which loads data files) is deferred to the next idle
+	# frame. Wait one frame so all autoloads finish initializing
+	# before any test runs.
+	await process_frame
 	await _test_combat_manager_max_hp_uses_equipment()
 	await _test_combat_manager_attack_uses_equipment()
 	await _test_equipment_manager_max_hp_uses_mods()
@@ -161,12 +166,14 @@ func _test_combat_manager_bandage_heal() -> void:
 	}
 	cm._class_combat = {}
 	cm._spawn_player(Vector2i(2, 2))
+	# Set battle phase + active unit FIRST (the player id is "player",
+	# set inside _spawn_player; active_unit_id isn't auto-populated
+	# because _advance_to_next_turn only runs in setup_from_encounter).
+	cm.battle_phase = cm.BattlePhase.ACTIVE
+	cm.active_unit_id = "player"
 	var unit: Dictionary = cm._get_unit_ref(cm.active_unit_id)
 	# Wound the player
 	unit["hp"] = 30
-	# Set battle phase + active unit
-	cm.battle_phase = cm.BattlePhase.ACTIVE
-	cm.active_unit_id = unit.get("id", "")
 	# Use bandage
 	var result: Dictionary = cm.use_item("bandage")
 	if not bool(result.get("ok", false)):
@@ -204,9 +211,9 @@ func _test_combat_manager_bandage_no_consume_when_none() -> void:
 	}
 	cm._class_combat = {}
 	cm._spawn_player(Vector2i(2, 2))
-	var unit: Dictionary = cm._get_unit_ref(cm.active_unit_id)
 	cm.battle_phase = cm.BattlePhase.ACTIVE
-	cm.active_unit_id = unit.get("id", "")
+	cm.active_unit_id = "player"
+	var unit: Dictionary = cm._get_unit_ref(cm.active_unit_id)
 	var result: Dictionary = cm.use_item("bandage")
 	if bool(result.get("ok", false)):
 		_fail("CombatManager.use_item bandage should fail when no bandages; result=%s" % result)

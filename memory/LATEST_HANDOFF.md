@@ -1,28 +1,36 @@
 ---
-name: v040-phase3-character-menu
-description: v0.4.0 Phase 3 in progress. CharacterMenu tabs + Party + Crafting + keyboard hotkeys shipped. World-gen towns + Riftspire gating deferred.
+name: v050-hpmp-combat-wiring
+description: v0.5.0 HP/MP combat wiring COMPLETE. Both outstanding v0.5.0 issues fixed; all 6 smoke_v050 tests green.
 ---
 
-## Current Focus: v0.4.0 Phase 3 in progress (CharacterMenu + Party + Crafting shipped); world-gen + Riftspire deferred
+## Current Focus: v0.5.0 HP/MP combat wiring COMPLETE
 
-`CharacterMenu` is a tabbed Control with Inventory / Equipment / Crafting / Party / Stats tabs. `I` `E` `C` `P` `S` open each tab; `Tab`/`Shift+Tab` cycle; `Esc` closes. `PartyScreen` lists party + "Add from available" for `PartyNPCManager` (3 test NPCs seeded). `CraftingManager` autoload handles recipes. All 8 Phase 3 tests green.
+v0.5.0 is now fully shipped. The two outstanding issues from the PLAN are both fixed and all 6 `smoke_v050` tests pass. The fixes were entirely in the test harness (`tools/smoke_v050.gd`); production code (CombatManager.use_item, EquipmentManager.get_max_hp/attack) was already correct.
+
+**Key insight:** Autoload `_ready` is deferred to the next idle frame, so any smoke test that calls `root.get_node_or_null("/root/SomeAutoload")` and immediately reads data sees an empty dict. Fix is `await process_frame` at the start of `_initialize`. **This pattern should be in every smoke test that depends on autoload data.**
 
 ### Immediate Next Step
 
-Either (a) do the Phase 3 follow-up (town placement, Riftspire gating, 3 station UIs) before moving to Phase 4, or (b) skip the follow-up and start Phase 4 (Equipment + weapons + armor + accessories + stats). The deferred work doesn't block Phase 4; Phase 4 is independent.
+The pre-existing v0.4.0 issues surfaced by the test suite (not introduced by v0.5.0) are the next priority:
+1. `MissionManager.gd:214` — `GameState.mob_key` reference (autoload treated as class; parser flags but runtime works).
+2. `smoke_phase5.gd:203` — `gs.faction_rep_changed = Callable()` (can't assign to signal).
+3. `smoke_phase5` — `spawn_for_hex` is RNG-flaky.
+4. `smoke_tile_system` — LocalMapView legacy rift_scar normalization logs an ERROR but reports "ok".
+
+After those are cleaned up, plan v0.6.0 (see PLAN's "Not yet done in v0.5.0+" list).
 
 ### Relevant Handoffs
 
-- [[v040-phase3-character-menu]] — this handoff (current focus)
-- [[v040-phase2-hud-hotbar-minimap]] — Phase 2 handoff
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0400.md` — full 9-section details
+- [[v050-hpmp-combat-wiring]] — this handoff (v0.5.0 complete)
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` — full 9-section details
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0500.md` — v0.4.0 Phase 3 follow-up
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0400.md` — v0.4.0 Phase 3 first half
 
 ### Context Files
 
-- `docs/PLAN_v040_crafting_progression.md` — canonical design
-- `memory/CURRENT_STATE.md` — v0.4.0-dev state, Phase 3 changes documented
-- `backups/2026-07-05_0340_pre_phase_3/` — pre-Phase 3 snapshot
+- `docs/PLAN_v040_crafting_progression.md` — canonical design (mark v0.5.0 issues section as resolved)
+- `memory/CURRENT_STATE.md` — v0.5.0-dev state
 
 ---
 
-**Awaiting your decision: continue Phase 3 follow-up (towns + Riftspire), or start Phase 4 (Equipment + weapons + armor + accessories)?**
+**Awaiting your decision: fix the 4 pre-existing v0.4.0 polish issues, or plan v0.6.0?**
