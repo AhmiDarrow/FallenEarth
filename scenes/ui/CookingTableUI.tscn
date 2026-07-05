@@ -1,0 +1,38 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/CookingTableUI.gd" id="1_ctui"]
+
+[node name="CookingTableUI" type="Control"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1_ctui")
+
+[node name="Background" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.05, 0.05, 0.08, 0.85)
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 40
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 40
+
+[node name="VBox" type="VBoxContainer" parent="Margin"]
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Margin/VBox"]
+text = "Cooking Table"
+theme_override_font_sizes/font_size = 24
+
+[node name="Instructions" type="Label" parent="Margin/VBox"]
+text = "Cook raw ingredients into food and potions. Esc to close."
+modulate = Color(0.7, 0.7, 0.7, 1.0)
+
+[node name="RecipeList" type="VBoxContainer" parent="Margin/VBox"]
+theme_override_constants/separation = 6

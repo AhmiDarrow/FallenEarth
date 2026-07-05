@@ -16,6 +16,9 @@ y_sort_enabled = true
 [node name="SettlementLayer" type="Node2D" parent="."]
 y_sort_enabled = true
 
+[node name="StationLayer" type="Node2D" parent="."]
+y_sort_enabled = true
+
 [node name="MobLayer" type="Node2D" parent="."]
 y_sort_enabled = true
 

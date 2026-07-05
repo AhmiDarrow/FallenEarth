@@ -8,20 +8,19 @@
 
 ## TOP PRIORITY — Next session
 
-### P0 — v0.6.0 follow-ups (small, optional)
+### P0 — v0.6.0 follow-up polish (small, 1-2 hours total)
 
 | ID | Task | Status |
 |----|------|--------|
-| P0-1 | Add `stamina_potion` (CT-based potion — restore 30 CT) | ⏳ READY |
-| P0-2 | Add crafting recipes for `mana_potion`, `cooked_meat`, `antidote` in `data/recipes.json` | ⏳ READY |
-| P0-3 | Generate icons for the 3 new items via `tools/generate_item_icons.py` | ⏳ READY |
-| P0-4 | Wire status effects so `antidote` actually cures something (when status effects land) | ⏳ FUTURE (needs status system first) |
+| P0-1 | **`LocalMapGenerator`** — emit `cooking_tables: [{x, y, station_id}]` in `map_data` so a cooking table auto-spawns in the start hex (~30 min) | ⏳ READY |
+| P0-2 | **Generate `cooking_table.png` sprite** via `tools/generate_station_sprites.py` (~1 hour PIL) | ⏳ READY |
+| P0-3 | Generate icons for new items (`raw_meat`, `mana_potion`, `cooked_meat`, `antidote`) via `tools/generate_item_icons.py` | ⏳ READY |
 
-### P1 — v0.7.0 candidate
+### P1 — v0.7.0 candidates
 
-**Real procedural NPC spawn in settlements** (replace the 3 hard-coded test NPCs in `PartyNPCManager` with biome-aware procedural generation). Builds on `PartyNPCManager` template system from v0.4.0 Phase 5. ~3-4 hours. Other candidates:
-
-- Full settlement interiors (rooms, traveling NPCs, mini-quests)
+Pick the next milestone from the PLAN's "Not yet done" list:
+- **Real procedural NPC spawn in settlements** (replace 3 hard-coded test NPCs in `PartyNPCManager` with biome-aware procedural generation) **[Recommended]**
+- Full settlement interiors
 - Settlement-to-Riftspire travel
 - Button asset set
 
@@ -32,6 +31,19 @@
 ---
 
 ## COMPLETED
+
+### v0.6.0 follow-up — cooking table + mob drops + recipes ✅ (2026-07-05 15:00)
+
+| ID | Task | Notes |
+|----|------|-------|
+| v060f-1 | `raw_meat` item | `data/items.json` — `raw_meat` (category: raw_material, max_stack 20, sell 3 EC) |
+| v060f-2 | Mob drops | `data/mobs.json` — added `drops: [...]` to 7 mobs: ashveil_grazer, echo_chorister, iron_buck, charnel_stalker, mycelial_behemoth, rift_elk, storm_raptor. `LootRoller.roll` already supported drops. |
+| v060f-3 | CookingTable node | `scripts/CookingTable.gd` + `scenes/CookingTable.tscn` — interactable station. Sprite path: `assets/sprites/stations/cooking_table.png` (fallback to generic). |
+| v060f-4 | CookingTableUI | `scripts/ui/CookingTableUI.gd` + `scenes/ui/CookingTableUI.tscn` — recipe list modal. Populates from `CraftingManager.recipes_for_station("cooking_table")`. Esc closes. |
+| v060f-5 | StationLayer | `scenes/LocalMapView.tscn` + `scripts/LocalMapView.gd` — new `StationLayer` (generic, future-station-ready). `_populate_cooking_tables`, `get_cooking_table_at`, `get_station_layer`. |
+| v060f-6 | HubWorld wiring | `scripts/HubWorld.gd` — `_cooking_table_ui` member, `_adjacent_cooking_table()` and `_open_cooking_table_ui()` helpers. E-key handler checks cooking table before gather fallback. |
+| v060f-7 | 3 cooking recipes | `data/recipes.json` — `cooked_meat` (L1, 1 raw_meat), `mana_potion` (L5, 2 withered_branch + 1 teal_crystal), `antidote` (L3, 1 kelp_fibre + 1 rusted_scrap). All `station: "cooking_table"`. |
+| v060f-8 | `smoke_cooking.gd` — 15 test groups, all green | Verified deterministic across 10 runs. |
 
 ### v0.6.0 — Combat damage + consumables ✅ (2026-07-05 14:00)
 

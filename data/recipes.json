@@ -1,5 +1,5 @@
 {
-  "_comment": "Crafting recipes. Phase 1 seeds the two stone-tool recipes (L1, no station) so the player has a complete loop from minute 1: pick up sticks/stones off the ground -> craft Stone Axe or Stone Pickaxe -> chop trees / mine ore -> craft better tools. Later phases will add bandage, worktable, armor table, and blacksmith recipes.",
+  "_comment": "Crafting recipes. Phase 1 seeds the two stone-tool recipes (L1, no station) so the player has a complete loop from minute 1: pick up sticks/stones off the ground -> craft Stone Axe or Stone Pickaxe -> chop trees / mine ore -> craft better tools. v0.6.0 follow-up adds cooking-table recipes (cooked_meat, mana_potion, antidote) so the food consumable added in v0.6.0 has a crafting path.",
   "recipes": [
     {
       "id": "stone_axe",
@@ -34,6 +34,41 @@
         {"item": "withered_branch", "qty": 1}
       ],
       "result": {"item": "bandage", "qty": 1},
+      "category": "consumable"
+    },
+    {
+      "id": "cooked_meat",
+      "name": "Cooked Meat",
+      "station": "cooking_table",
+      "level_required": 1,
+      "ingredients": [
+        {"item": "raw_meat", "qty": 1}
+      ],
+      "result": {"item": "cooked_meat", "qty": 1},
+      "category": "food"
+    },
+    {
+      "id": "mana_potion",
+      "name": "Mana Potion",
+      "station": "cooking_table",
+      "level_required": 5,
+      "ingredients": [
+        {"item": "withered_branch", "qty": 2},
+        {"item": "teal_crystal", "qty": 1}
+      ],
+      "result": {"item": "mana_potion", "qty": 1},
+      "category": "consumable"
+    },
+    {
+      "id": "antidote",
+      "name": "Antidote",
+      "station": "cooking_table",
+      "level_required": 3,
+      "ingredients": [
+        {"item": "kelp_fibre", "qty": 1},
+        {"item": "rusted_scrap", "qty": 1}
+      ],
+      "result": {"item": "antidote", "qty": 1},
       "category": "consumable"
     }
   ]

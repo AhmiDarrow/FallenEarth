@@ -1,31 +1,31 @@
 ---
-name: v060-combat-damage-and-consumables
-description: v0.6.0 real combat damage wiring (per-class weapon stats + dynamic equipment) + 3 new consumables (mana_potion, cooked_meat, antidote). 11 smoke_v060 tests green; full 15-script suite all pass.
+name: v060-followup-cooking
+description: v0.6.0 follow-up — cooking table station + raw_meat drops + 3 cooking recipes. 15 smoke_cooking tests green; full 16-script suite all pass.
 ---
 
-## Current Focus: v0.6.0 combat damage + consumables COMPLETE
+## Current Focus: v0.6.0 follow-up (cooking table) COMPLETE
 
-v0.6.0 is shipped. The user's key reminder ("not all class weapons use the same stat") drove the fix: `em.get_attack` now sums stat_mods from all equipment, so Technicians get +1 int (not +0 str), Riftbinders get +3 int+wis, Wardens get +2 str+con, etc. Equipment reads are now dynamic in `_effective_attack` / `_effective_armor` (equip changes mid-combat take effect). 3 new consumables: `mana_potion` (restore 25 MP), `cooked_meat` (heal 15 + +1 attack for 3 turns), `antidote` (heal 10 + status-cure placeholder).
+The user's brief — "if we have food we'll also need a cooking table, and associated recipes, raw meat drops from certain mobs, and the ability to cook it" — landed as 4 features: (1) raw_meat drops on 7 mobs (charnel_stalker, mycelial_behemoth, rift_elk, etc.), (2) 3 new cooking recipes (`cooked_meat` L1, `mana_potion` L5, `antidote` L3), (3) a CookingTable node + scene in a new generic `StationLayer`, and (4) the E-key interaction that opens the CookingTableUI modal. The `StationLayer` is generic so future stations (Worktable, ArmorTable, Blacksmith from Phase 3) can reuse it.
 
-**Key insight:** v0.5.0's `attack_bonus += em.get_attack - maxi(4, str/2+2)` math was buggy (double-subtracted the base). v0.6.0 stores base only on the unit, then adds equipment dynamically at damage time. Cleaner separation, more flexible, and matches the user's intent for per-class scaling.
+**Key design choice:** `LootRoller.roll` and `CraftingManager.craft` were already station-aware from previous phases, so the loot-drop data change was a JSON-only edit and the recipes slotted in via the existing `station: "cooking_table"` filter — no production code change for those subsystems.
 
 ### Immediate Next Step
 
-Small v0.6.0 follow-ups (stamina_potion, status effects for antidote, crafting recipes for new items) OR v0.7.0 candidates from the PLAN's "Not yet done" list. Recommended: **v0.7.0 real procedural NPC spawn in settlements** — replace the 3 hard-coded test NPCs with biome-aware procedural generation. Builds on PartyNPCManager, which already has the template system.
+Two small polish items remain: (1) wire `LocalMapGenerator` to emit `cooking_tables` in `map_data` so a cooking table auto-spawns in the start hex (~30 min), and (2) generate a real `cooking_table.png` sprite (~1 hour PIL). After that, v0.7.0 candidates (procedural NPC spawn, settlement interiors, settlement-to-Riftspire travel, button asset set).
 
 ### Relevant Handoffs
 
-- [[v060-combat-damage-and-consumables]] — this handoff (v0.6.0 complete)
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1400.md` — full 9-section details
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1300.md` — v0.4.0 polish (4 fixes + bonus prod bug)
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` — v0.5.0 final
+- [[v060-followup-cooking]] — this handoff (cooking table complete)
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1500.md` — full 9-section details
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1400.md` — v0.6.0 combat damage + consumables
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1300.md` — v0.4.0 polish
 
 ### Context Files
 
 - `docs/PLAN_v040_crafting_progression.md` — canonical design
-- `memory/CURRENT_STATE.md` — v0.6.0-complete state
-- `docs/NEXT_TASKS.md` — v0.7.0 candidates
+- `memory/CURRENT_STATE.md` — v0.6.0 + cooking complete
+- `docs/NEXT_TASKS.md` — P0 done; P1 = local-map wiring + sprite gen
 
 ---
 
-**Awaiting your decision: v0.6.0 follow-ups (small) or v0.7.0 procedural NPC spawn (medium)?**
+**Awaiting your decision: P1 polish (local-map wiring + sprite), or v0.7.0 candidate?**

@@ -13,9 +13,11 @@ const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const HarvestNodeScript = preload("res://scripts/HarvestNode.gd")
 const FloorPickupScript = preload("res://scripts/FloorPickup.gd")
 const SettlementNodeScript = preload("res://scripts/SettlementNode.gd")
+const CookingTableScript = preload("res://scripts/CookingTable.gd")
 const HarvestNodeScene = preload("res://scenes/HarvestNode.tscn")
 const FloorPickupScene = preload("res://scenes/FloorPickup.tscn")
 const SettlementNodeScene = preload("res://scenes/SettlementNode.tscn")
+const CookingTableScene = preload("res://scenes/CookingTable.tscn")
 
 const CELL_SIZE := 24
 
@@ -25,6 +27,7 @@ var mob_layer: Node2D
 var node_layer: Node2D
 var pickup_layer: Node2D
 var settlement_layer: Node2D
+var station_layer: Node2D
 
 var _current_biome: String = ""
 
@@ -47,6 +50,8 @@ func _ready() -> void:
 		pickup_layer.y_sort_enabled = true
 	if is_instance_valid(settlement_layer):
 		settlement_layer.y_sort_enabled = true
+	if is_instance_valid(station_layer):
+		station_layer.y_sort_enabled = true
 
 
 func configure(map_data: Dictionary) -> void:
@@ -86,6 +91,8 @@ func configure(map_data: Dictionary) -> void:
 	_populate_resource_nodes(map_data.get("resource_nodes", []))
 	# Spawn floor pickups (sticks, stones)
 	_populate_floor_pickups(map_data.get("floor_pickups", []))
+	# Spawn cooking tables (Phase 3 follow-up: cooking station)
+	_populate_cooking_tables(map_data.get("cooking_tables", []))
 	# Spawn settlement structures (Phase 3: NPC towns). The settlement
 	# data comes from world_data.towns_seeded; we look that up via
 	# GameState. Each town is placed at its hex key (the player walks
@@ -132,6 +139,42 @@ func get_settlement_at(cell: Vector2i) -> Node2D:
 		if cx == cell.x and cy == cell.y:
 			return child
 	return null
+
+
+## v0.6.0 follow-up: populate cooking table stations on the map.
+## The `tables` array contains {x, y, station_id} dicts (station_id is
+## always "cooking_table" for v0.6.0; future phases may add more).
+func _populate_cooking_tables(tables: Array) -> void:
+	if not is_instance_valid(station_layer):
+		return
+	for entry in tables:
+		if not (entry is Dictionary):
+			continue
+		var node: Node2D = CookingTableScene.instantiate()
+		station_layer.add_child(node)
+		node.position = cell_to_world(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+
+
+## Returns the CookingTable at the given cell, or null.
+func get_cooking_table_at(cell: Vector2i) -> Node2D:
+	if not is_instance_valid(station_layer):
+		return null
+	for child in station_layer.get_children():
+		if not (child is Node2D):
+			continue
+		if not child.has_method("get_station_id"):
+			continue
+		var p: Vector2 = child.global_position
+		var cx: int = int(floor(p.x / CELL_SIZE))
+		var cy: int = int(floor(p.y / CELL_SIZE))
+		if cx == cell.x and cy == cell.y:
+			return child
+	return null
+
+
+## Returns the station layer (for HubWorld to query stations).
+func get_station_layer() -> Node2D:
+	return station_layer
 
 
 func _populate_resource_nodes(nodes: Array) -> void:

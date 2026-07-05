@@ -72,6 +72,9 @@ var _character_menu: Control = null
 # Phase 6: base (player-chosen placement, upgrades, leave-base)
 var _base_node: Node2D = null
 var _base_interior: Control = null
+
+# v0.6.0: currently-open CookingTableUI (null when not open).
+var _cooking_table_ui: Control = null
 var _base_placement_open: bool = false
 var _rift_runner: Node = null
 var _game_time: float = 0.0
@@ -278,6 +281,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		if bm_e != null and bm_e.can_unlock() and bm_e.is_unplaced():
 			_open_base_placement()
 			return
+		# v0.6.0: open a Cooking Table UI if adjacent
+		if _adjacent_cooking_table() != null:
+			_open_cooking_table_ui()
+			return
 		# Try to enter a settlement first (handled in the I/E block above)
 		# If we get here, the settlement check above didn't fire (no
 		# adjacent settlement), so try to gather.
@@ -336,6 +343,47 @@ func _adjacent_settlement_hex() -> String:
 			if s_node != null:
 				return s_node.get_cell(24) if s_node.has_method("get_cell") else str(s_node.get_meta("hex", ""))
 	return ""
+
+
+## v0.6.0: Returns the adjacent CookingTable node, or null. Used by
+## the E key to open the CookingTableUI.
+func _adjacent_cooking_table() -> Node2D:
+	if not is_instance_valid(_map_view):
+		return null
+	# Walk adjacent cells (and the player's own cell) looking for a
+	# cooking table. Like the settlement check, the table may be on the
+	# cell the player is on.
+	for dx in [-1, 0, 1]:
+		for dy in [-1, 0, 1]:
+			if dx == 0 and dy == 0:
+				continue
+			var cell := Vector2i(_local_x + dx, _local_y + dy)
+			var t_node: Node2D = _map_view.get_cooking_table_at(cell)
+			if t_node != null:
+				return t_node
+	return null
+
+
+## v0.6.0: Open the CookingTableUI as a modal overlay.
+func _open_cooking_table_ui() -> void:
+	if _cooking_table_ui != null and is_instance_valid(_cooking_table_ui):
+		# Already open — focus it
+		return
+	var CookingTableUIScene: PackedScene = load("res://scenes/ui/CookingTableUI.tscn") as PackedScene
+	if CookingTableUIScene == null:
+		push_error("[HubWorld] CookingTableUI scene not found")
+		return
+	_cooking_table_ui = CookingTableUIScene.instantiate()
+	add_child(_cooking_table_ui)
+	_cooking_table_ui.set_on_close(_on_cooking_table_closed)
+	print("[HubWorld] Opened CookingTableUI")
+
+
+func _on_cooking_table_closed() -> void:
+	if _cooking_table_ui != null and is_instance_valid(_cooking_table_ui):
+		_cooking_table_ui.queue_free()
+	_cooking_table_ui = null
+	print("[HubWorld] Closed CookingTableUI")
 
 
 ## Enter the settlement adjacent to the player (if any). Riftspire

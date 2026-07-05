@@ -10,6 +10,8 @@ const SCENES := [
 	"res://scenes/WorldMapScreen.tscn",
 	"res://scenes/RiftInstance.tscn",
 	"res://scenes/TacticalCombat.tscn",
+	"res://scenes/CookingTable.tscn",
+	"res://scenes/ui/CookingTableUI.tscn",
 ]
 
 const SCRIPTS := [
@@ -69,6 +71,8 @@ const SCRIPTS := [
 	"res://scripts/NPCManager.gd",
 	"res://scripts/MissionGenerator.gd",
 	"res://scripts/MissionManager.gd",
+	"res://scripts/CookingTable.gd",
+	"res://scripts/ui/CookingTableUI.gd",
 	"res://scenes/ui/Splash.gd",
 	"res://scripts/Options.gd",
 	"res://scripts/DisplayManager.gd",

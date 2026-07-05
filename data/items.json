@@ -32,6 +32,16 @@
       "description": "A dry, twisted branch. Chopped from trees in any biome. Basic crafting ingredient."
     },
     {
+      "id": "raw_meat",
+      "name": "Raw Meat",
+      "category": "raw_material",
+      "stackable": true,
+      "max_stack": 20,
+      "sell_value_ec": 3,
+      "icon": "item_raw_meat",
+      "description": "Uncooked flesh from a beast. Dropped by predatory mobs. Cook at a Cooking Table to make Cooked Meat."
+    },
+    {
       "id": "kelp_fibre",
       "name": "Kelp Fibre",
       "category": "material",
