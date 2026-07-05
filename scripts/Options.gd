@@ -4,6 +4,7 @@ extends Control
 @onready var resolution_option: OptionButton = $VBoxContainer/ResolutionHBox/ResolutionOption as OptionButton
 @onready var fullscreen_check: CheckBox = $VBoxContainer/FullscreenHBox/FullscreenCheck as CheckBox
 @onready var vsync_check: CheckBox = $VBoxContainer/VSyncHBox/VSyncCheck as CheckBox
+@onready var keybinds_btn: Button = $VBoxContainer/ButtonHBox/KeybindsBtn as Button
 @onready var apply_btn: Button = $VBoxContainer/ButtonHBox/ApplyBtn as Button
 @onready var back_btn: Button = $VBoxContainer/ButtonHBox/BackBtn as Button
 
@@ -19,6 +20,7 @@ func _ready() -> void:
 	vsync_check.toggled.connect(_on_vsync_toggled)
 	apply_btn.pressed.connect(_on_apply)
 	back_btn.pressed.connect(_on_back)
+	keybinds_btn.pressed.connect(_on_keybinds_pressed)
 	# Initialize UI with current settings
 	monitor_option.select(DisplayManager.get_current_monitor())
 	fullscreen_check.button_pressed = DisplayManager.fullscreen
@@ -65,6 +67,17 @@ func _on_vsync_toggled(button_pressed: bool) -> void:
 func _on_apply() -> void:
 	DisplayManager.apply_settings()
 	DisplayManager.save_settings()
+
+
+func _on_keybinds_pressed() -> void:
+	var script: GDScript = load("res://scripts/ui/KeybindsScreen.gd")
+	if script == null:
+		push_error("[Options] KeybindsScreen.gd not found")
+		return
+	var screen = script.new()
+	screen.name = "KeybindsScreen"
+	add_child(screen)
+
 
 func _on_back() -> void:
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState

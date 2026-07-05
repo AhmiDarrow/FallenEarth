@@ -248,79 +248,99 @@ func _unhandled_input(event: InputEvent) -> void:
 	# Block game input when any UI overlay is open
 	if _is_ui_overlay_open():
 		return
-	# Character-menu hotkeys (work anywhere; CharacterMenu has its own
-	# _unhandled_key_input for Tab cycle and Esc close)
-	match event.keycode:
-		KEY_I:
-			open_character_tab("inventory")
+
+	var km: Node = get_node_or_null("/root/KeybindManager")
+	if km == null:
+		_fallback_unhandled_input(event)
+		return
+
+	# Character-menu hotkeys
+	if km.is_action_pressed("inventory", event):
+		open_character_tab("inventory")
+		return
+	if km.is_action_pressed("equipment", event):
+		if not _has_adjacent_harvest_node():
+			open_character_tab("equipment")
 			return
-		KEY_E:
-			# E is also the gather key. We disambiguate: with no adjacent
-			# HarvestNode, treat as open-Equipment-tab.
-			if not _has_adjacent_harvest_node():
-				open_character_tab("equipment")
-				return
-		KEY_C:
-			open_character_tab("crafting")
-			return
-		KEY_P:
-			open_character_tab("party")
-			return
-		KEY_S:
-			# S is also the down-move key. With nothing on the line below
-			# (or with character menu focus), open Stats tab. We just
-			# always open it; if a movement is wanted, hold Shift to
-			# guarantee movement. (Tweak as needed in F5.)
-			open_character_tab("stats")
-			return
-		_:
-			pass
-	# E key (no direction) starts a gather if adjacent
-	if event.keycode == KEY_E and not event.echo:
-		# If we're already inside a settlement, leave it
+	if km.is_action_pressed("crafting", event):
+		open_character_tab("crafting")
+		return
+	if km.is_action_pressed("party", event):
+		open_character_tab("party")
+		return
+	if km.is_action_pressed("stats", event):
+		open_character_tab("stats")
+		return
+
+	# Interact / gather
+	if km.is_action_pressed("interact", event) and not event.echo:
 		var sm_inner: Node = get_node_or_null("/root/SettlementManager")
 		if sm_inner != null and sm_inner.is_inside_settlement():
 			_leave_settlement()
 			return
-		# If we're inside the base, leave it
 		if is_instance_valid(_base_interior):
 			_leave_base()
 			return
-		# Phase 6: trigger base placement if L10 and unplaced
 		var bm_e: Node = get_node_or_null("/root/BaseManager")
 		if bm_e != null and bm_e.can_unlock() and bm_e.is_unplaced():
 			_open_base_placement()
 			return
-		# v0.6.0: open a Cooking Table UI if adjacent
 		if _adjacent_cooking_table() != null:
 			_open_cooking_table_ui()
 			return
-		# v0.8.0: interact with a settlement building if adjacent
 		var adj_bld: Node2D = _adjacent_building()
 		if adj_bld != null:
 			_interact_building(adj_bld)
 			return
-		# Try to enter a settlement first (handled in the I/E block above)
-		# If we get here, the settlement check above didn't fire (no
-		# adjacent settlement), so try to gather.
 		_try_start_gather()
 		return
+
+	# World map
+	if km.is_action_pressed("world_map", event):
+		_on_world_map_pressed()
+		return
+
+	# Movement
 	var dir := Vector2i.ZERO
+	if km.is_action_pressed("move_up", event):
+		dir = Vector2i(0, -1)
+	elif km.is_action_pressed("move_down", event):
+		dir = Vector2i(0, 1)
+	elif km.is_action_pressed("move_left", event):
+		dir = Vector2i(-1, 0)
+	elif km.is_action_pressed("move_right", event):
+		dir = Vector2i(1, 0)
+
+	if dir != Vector2i.ZERO:
+		_try_move_local(dir.x, dir.y)
+
+
+## Fallback when KeybindManager is not available (uses hardcoded defaults).
+func _fallback_unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventKey and event.pressed):
+		return
 	match event.keycode:
-		KEY_UP, KEY_W:
-			dir = Vector2i(0, -1)
-		KEY_DOWN, KEY_S:
-			dir = Vector2i(0, 1)
-		KEY_LEFT, KEY_A:
-			dir = Vector2i(-1, 0)
-		KEY_RIGHT, KEY_D:
-			dir = Vector2i(1, 0)
+		KEY_I:
+			open_character_tab("inventory")
+		KEY_E:
+			if not _has_adjacent_harvest_node():
+				open_character_tab("equipment")
+		KEY_C:
+			open_character_tab("crafting")
+		KEY_P:
+			open_character_tab("party")
+		KEY_S:
+			open_character_tab("stats")
 		KEY_M:
 			_on_world_map_pressed()
-			return
-		_:
-			return
-	_try_move_local(dir.x, dir.y)
+		KEY_UP, KEY_W:
+			_try_move_local(0, -1)
+		KEY_DOWN, KEY_S:
+			_try_move_local(0, 1)
+		KEY_LEFT, KEY_A:
+			_try_move_local(-1, 0)
+		KEY_RIGHT, KEY_D:
+			_try_move_local(1, 0)
 
 
 ## True if there's a HarvestNode adjacent to the player that the

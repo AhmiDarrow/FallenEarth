@@ -43,6 +43,7 @@ QuestTracker="*res://scripts/QuestTracker.gd"
 LoadingTips="*res://scripts/LoadingTips.gd"
 AmbientAudio="*res://scripts/AmbientAudio.gd"
 MusicManager="*res://scripts/MusicManager.gd"
+KeybindManager="*res://scripts/KeybindManager.gd"
 
 [display]
 

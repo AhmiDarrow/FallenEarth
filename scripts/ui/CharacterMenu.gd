@@ -177,8 +177,11 @@ func close_menu() -> void:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
 		return
+
+	var km: Node = get_node_or_null("/root/KeybindManager")
+
 	# Tab / Shift+Tab cycle
-	if event.keycode == KEY_TAB:
+	if (km != null and km.is_action_pressed("tab_next", event)) or event.keycode == KEY_TAB:
 		var dir: int = -1 if event.shift_pressed else 1
 		var current_idx: int = -1
 		for i in TABS.size():
@@ -193,11 +196,33 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 		return
 	# Escape closes
-	if event.keycode == KEY_ESCAPE:
+	if (km != null and km.is_action_pressed("pause_menu", event)) or event.keycode == KEY_ESCAPE:
 		close_menu()
 		get_viewport().set_input_as_handled()
 		return
-	# I / E / C / P / S — open the matching tab
+	# Character tab hotkeys via KeybindManager
+	if km != null:
+		if km.is_action_pressed("inventory", event):
+			select_tab("inventory")
+			get_viewport().set_input_as_handled()
+			return
+		if km.is_action_pressed("equipment", event):
+			select_tab("equipment")
+			get_viewport().set_input_as_handled()
+			return
+		if km.is_action_pressed("crafting", event):
+			select_tab("crafting")
+			get_viewport().set_input_as_handled()
+			return
+		if km.is_action_pressed("party", event):
+			select_tab("party")
+			get_viewport().set_input_as_handled()
+			return
+		if km.is_action_pressed("stats", event):
+			select_tab("stats")
+			get_viewport().set_input_as_handled()
+			return
+	# Fallback: hardcoded keys
 	for tab in TABS:
 		if event.keycode == tab.key:
 			select_tab(tab.id)
