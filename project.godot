@@ -36,6 +36,7 @@ CraftingManager="*res://scripts/CraftingManager.gd"
 TownManager="*res://scripts/TownManager.gd"
 SettlementManager="*res://scripts/SettlementManager.gd"
 EquipmentManager="*res://scripts/EquipmentManager.gd"
+BaseManager="*res://scripts/BaseManager.gd"
 
 [display]
 

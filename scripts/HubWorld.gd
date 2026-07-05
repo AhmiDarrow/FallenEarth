@@ -16,6 +16,9 @@ const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
 const LootRollerScript = preload("res://scripts/LootRoller.gd")
 const HUDScript = preload("res://scripts/ui/HUD.gd")
 const CharacterMenuScript = preload("res://scripts/ui/CharacterMenu.gd")
+const BaseMgrScript = preload("res://scripts/BaseManager.gd")
+const BaseNodeScene = preload("res://scenes/BaseNode.tscn")
+const BaseScene = preload("res://scenes/Base.tscn")
 const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
@@ -60,6 +63,14 @@ var _hover_tooltip: Control = null
 # Phase 2: full in-game HUD (top bar, HP/MP/XP bars, minimap, hotbar).
 var _hud: Control = null
 var _hud_minimap_tick: float = 0.0
+
+# Phase 3: settlement enter / exit
+var _settlement_label: Label
+var _character_menu: Control = null
+# Phase 6: base (player-chosen placement, upgrades, leave-base)
+var _base_node: Node2D = null
+var _base_interior: Control = null
+var _base_placement_open: bool = false
 var _rift_runner: Node = null
 var _game_time: float = 0.0
 var _rift_check_timer: float = 0.0
@@ -256,6 +267,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		if sm_inner != null and sm_inner.is_inside_settlement():
 			_leave_settlement()
 			return
+		# If we're inside the base, leave it
+		if is_instance_valid(_base_interior):
+			_leave_base()
+			return
+		# Phase 6: trigger base placement if L10 and unplaced
+		var bm_e: Node = get_node_or_null("/root/BaseManager")
+		if bm_e != null and bm_e.can_unlock() and bm_e.is_unplaced():
+			_open_base_placement()
+			return
 		# Try to enter a settlement first (handled in the I/E block above)
 		# If we get here, the settlement check above didn't fire (no
 		# adjacent settlement), so try to gather.
@@ -358,6 +378,90 @@ func _leave_settlement() -> void:
 		return
 	sm.leave_settlement()
 	# Restore the world view
+	world_grid.visible = true
+	if is_instance_valid(_hud):
+		_hud.notify_cell_changed()
+
+
+# ---------------------------------------------------------------------------
+# Phase 6: base (player-chosen placement, upgrades, leave-base)
+# ---------------------------------------------------------------------------
+
+## E-key disambiguation now also checks for a base. Priority order:
+## settlement > base > harvest > equipment tab.
+func _has_adjacent_base() -> bool:
+	if _base_node != null and is_instance_valid(_base_node):
+		var cell: Vector2i = _base_node.get_cell(24) if _base_node.has_method("get_cell") else Vector2i.ZERO
+		# Base is "adjacent" if the player is on the same cell (base is
+		# the player's home; they spawn on top of it) or on an
+		# immediate-neighbor cell.
+		if cell == Vector2i(_local_x, _local_y):
+			return true
+		var dx: int = abs(cell.x - _local_x)
+		var dy: int = abs(cell.y - _local_y)
+		if dx <= 1 and dy <= 1:
+			return true
+	return false
+
+
+## Open the base-placement UI overlay (player picks a cell with the
+## 50-tile buffer). For Phase 6 this is a minimal overlay: a label +
+## arrows (WASD moves a ghost preview; E confirms). Confirming checks
+## is_valid_placement_cell and calls BaseManager.place.
+func _open_base_placement() -> void:
+	_base_placement_open = true
+	_show_settlement_message("Pick a base location: 50-tile buffer from map edges. (Phase 6: auto-places at the local center; full placement UI in Phase 8.)")
+	# Minimal placeholder: auto-place at the center of the local map.
+	var cx: int = 256
+	var cy: int = 256
+	var bm: Node = get_node_or_null("/root/BaseManager")
+	if bm != null and bm.can_unlock() and bm.is_unplaced():
+		var hex_key: String = "%d,%d" % [_player_q, _player_r]
+		if bm.place(hex_key, cx, cy):
+			_spawn_base_node(hex_key, cx, cy)
+			_show_settlement_message("Base placed at (%d, %d) — level 1, capacity 5." % [cx, cy])
+	_base_placement_open = false
+
+
+func _spawn_base_node(hex_key: String, lx: int, ly: int) -> void:
+	if _base_node != null and is_instance_valid(_base_node):
+		_base_node.queue_free()
+	_base_node = BaseNodeScene.instantiate()
+	_base_node.name = "BaseNode"
+	# Pull the latest snapshot
+	var bm: Node = get_node_or_null("/root/BaseManager")
+	var snap: Dictionary = bm.get_snapshot() if bm != null else {}
+	_base_node.setup({"placement": snap.get("placement", {}), "level": int(snap.get("level", 1))})
+	_base_node.position = Vector2(lx * 24 + 12, ly * 24 + 12)
+	if has_node("WorldGrid"):
+		# Place on the world_grid so it renders with the world
+		var wg: Node = get_node("WorldGrid")
+		wg.add_child(_base_node)
+	# Add to map_view's settlement layer for hit-test parity
+	if is_instance_valid(_map_view) and _map_view.has_method("get_settlement_layer"):
+		pass  # settlements are towns; the base has its own rendering
+
+
+## Open the base interior (called when player presses E on the base).
+func _try_enter_base() -> void:
+	var bm: Node = get_node_or_null("/root/BaseManager")
+	if bm == null or bm.is_unplaced():
+		return
+	# Spawn the interior
+	_base_interior = BaseScene.instantiate()
+	_base_interior.name = "Base"
+	_base_interior.setup(bm.get_snapshot(), self)
+	add_child(_base_interior)
+	world_grid.visible = false
+	if is_instance_valid(_hud):
+		_hud.notify_cell_changed()
+
+
+## Leave the base interior.
+func _leave_base() -> void:
+	if is_instance_valid(_base_interior):
+		_base_interior.queue_free()
+	_base_interior = null
 	world_grid.visible = true
 	if is_instance_valid(_hud):
 		_hud.notify_cell_changed()
