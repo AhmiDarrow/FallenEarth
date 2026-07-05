@@ -209,7 +209,7 @@ var _escape_was_pressed: bool = false
 
 func _process(delta: float) -> void:
 	var esc_pressed: bool = Input.is_key_pressed(KEY_ESCAPE)
-	if esc_pressed and not _escape_was_pressed:
+	if esc_pressed and not _escape_was_pressed and not _is_ui_overlay_open():
 		_toggle_pause_menu()
 	_escape_was_pressed = esc_pressed
 
@@ -244,6 +244,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
 	if get_tree().paused:
+		return
+	# Block game input when any UI overlay is open
+	if _is_ui_overlay_open():
 		return
 	# Character-menu hotkeys (work anywhere; CharacterMenu has its own
 	# _unhandled_key_input for Tab cycle and Esc close)
@@ -330,6 +333,22 @@ func _has_adjacent_harvest_node() -> bool:
 		Vector2i(_local_x, _local_y), GATHER_RANGE_CELLS
 	)
 	return not nodes.is_empty()
+
+
+## True if any UI overlay is blocking game input (character menu,
+## cooking table, base interior, settlement interior, world map).
+func _is_ui_overlay_open() -> bool:
+	if _hud != null and is_instance_valid(_hud) and _hud.has_method("is_character_menu_open"):
+		if _hud.is_character_menu_open():
+			return true
+	if _cooking_table_ui != null and is_instance_valid(_cooking_table_ui):
+		return true
+	if _base_interior != null and is_instance_valid(_base_interior):
+		return true
+	var sm: Node = get_node_or_null("/root/SettlementManager")
+	if sm != null and sm.has_method("is_inside_settlement") and sm.is_inside_settlement():
+		return true
+	return false
 
 
 # ---------------------------------------------------------------------------
@@ -861,6 +880,10 @@ func _refresh_markers() -> void:
 		for child in _marker_layer.get_children():
 			child.queue_free()
 	_marker_nodes.clear()
+	# Clear old mob sprites from MobLayer
+	if is_instance_valid(_mob_layer):
+		for child in _mob_layer.get_children():
+			child.queue_free()
 	var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
 
 	# Player visual is handled by _player_visual node — skip circle marker
@@ -1503,12 +1526,12 @@ func _seed_local_mobs() -> void:
 	var skipped_no_enemy := 0
 
 	for i in count:
-		var lx := rng.randi_range(20, LocalMapGen.MAP_SIZE - 20)
-		var ly := rng.randi_range(20, LocalMapGen.MAP_SIZE - 20)
+		var lx := rng.randi_range(10, LocalMapGen.MAP_SIZE - 10)
+		var ly := rng.randi_range(10, LocalMapGen.MAP_SIZE - 10)
 		if LocalMapGen.get_movement_cost(_local_map, lx, ly) < 0:
 			skipped_blocked += 1
 			continue
-		if abs(lx - _local_x) + abs(ly - _local_y) < 12:
+		if abs(lx - _local_x) + abs(ly - _local_y) < 5:
 			skipped_near += 1
 			continue
 		# v0.8.0: skip mobs inside the town boundary (clearing + buildings)

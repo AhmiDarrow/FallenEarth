@@ -295,3 +295,8 @@ func notify_cell_changed() -> void:
 ## Returns the hotbar (or null if not yet ready).
 func get_hotbar() -> Hotbar:
 	return _hotbar
+
+
+## Returns true if the character menu is currently open.
+func is_character_menu_open() -> bool:
+	return _character_menu != null and is_instance_valid(_character_menu)

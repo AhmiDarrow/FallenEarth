@@ -50,6 +50,7 @@ func _ready() -> void:
 	anchor_right = 1.0
 	anchor_bottom = 1.0
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	z_index = 50  # Ensure menu draws on top of HUD
 	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.02, 0.02, 0.04, 0.92)
