@@ -8,24 +8,39 @@
 
 ## TOP PRIORITY — Next session
 
-### P0 — v0.6.0 candidate selection
+### P0 — v0.6.0 follow-ups (small, optional)
 
-All 4 pre-existing v0.4.0 polish issues from `HANDOFF_2026-07-05_0530.md` are FIXED (see COMPLETED below). Plus a bonus production bug found during the fix: `_faction_rep_for` had a stale `_faction_names.is_empty()` early-return that broke faction rep checks for new players. Removed in `HANDOFF_2026-07-05_1300.md`.
+| ID | Task | Status |
+|----|------|--------|
+| P0-1 | Add `stamina_potion` (CT-based potion — restore 30 CT) | ⏳ READY |
+| P0-2 | Add crafting recipes for `mana_potion`, `cooked_meat`, `antidote` in `data/recipes.json` | ⏳ READY |
+| P0-3 | Generate icons for the 3 new items via `tools/generate_item_icons.py` | ⏳ READY |
+| P0-4 | Wire status effects so `antidote` actually cures something (when status effects land) | ⏳ FUTURE (needs status system first) |
 
-Pick the next milestone from the PLAN's "Not yet done in v0.5.0+" list:
-- **Real combat damage wiring** (merge `_resolve_attack` with EquipmentManager stats; expand `use_item` to support stamina potions, etc.) **[Recommended]** — most player-facing, builds directly on v0.5.0.
-- **Real procedural NPC spawn in settlements** (replace the 3 hard-coded test NPCs in PartyNPCManager with biome-aware procedural generation)
-- **Full settlement interiors** (rooms, traveling NPCs, mini-quests, visual variety)
-- **Settlement-to-Riftspire travel** (Riftspire entry from the World Map, return path)
-- **Button asset set** (procedural pixel-art buttons + pixel font; partially drafted in Phase 3 but not generated yet)
+### P1 — v0.7.0 candidate
 
-### P1 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
+**Real procedural NPC spawn in settlements** (replace the 3 hard-coded test NPCs in `PartyNPCManager` with biome-aware procedural generation). Builds on `PartyNPCManager` template system from v0.4.0 Phase 5. ~3-4 hours. Other candidates:
+
+- Full settlement interiors (rooms, traveling NPCs, mini-quests)
+- Settlement-to-Riftspire travel
+- Button asset set
+
+### P2 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
 
 (Full list in the plan doc; phases 2 → 8 follow Phase 1, each with own end-of-phase stop/commit/push.)
 
 ---
 
 ## COMPLETED
+
+### v0.6.0 — Combat damage + consumables ✅ (2026-07-05 14:00)
+
+| ID | Task | Notes |
+|----|------|-------|
+| v060-1 | Per-class weapon stats | `em.get_attack` now sums stat_mods from all equipment. Each class scales with its own stat (Scavenger=str, Technician=int, Survivor=con, Striker=str, Riftbinder=int+wis, Warden=str+con). Fixes the v0.5.0 bug where all class weapons effectively used str. |
+| v060-2 | Dynamic equipment reads | `_spawn_player` stores `unit.attack`/`unit.armor` as base only. `_effective_attack`/`_effective_armor` call `em.get_attack(unit_id)`/`em.get_defense(unit_id)` at damage time. Equip changes mid-combat take effect immediately. |
+| v060-3 | 3 new consumables | `mana_potion` (+25 MP), `cooked_meat` (+15 HP + +1 attack for 3 turns), `antidote` (+10 HP, status-cure placeholder). `use_item` refactored to dispatch via `_apply_consumable` helper. |
+| v060-4 | `smoke_v060.gd` — 11 test groups, all green | Verified deterministic across 10 runs. |
 
 ### v0.4.0 pre-existing polish ✅ (2026-07-05 13:00)
 

@@ -1,31 +1,31 @@
 ---
-name: v040-pre-existing-polish
-description: All 4 pre-existing v0.4.0 polish issues FIXED. Full v0.4.0 + v0.5.0 test suite is green and deterministic (smoke_phase5 verified 10/10 runs).
+name: v060-combat-damage-and-consumables
+description: v0.6.0 real combat damage wiring (per-class weapon stats + dynamic equipment) + 3 new consumables (mana_potion, cooked_meat, antidote). 11 smoke_v060 tests green; full 15-script suite all pass.
 ---
 
-## Current Focus: Pre-existing v0.4.0 polish COMPLETE
+## Current Focus: v0.6.0 combat damage + consumables COMPLETE
 
-All 4 polish issues from `HANDOFF_2026-07-05_0530.md` are fixed. Plus one bonus production bug (`_faction_rep_for` early-return on empty `_faction_names`) that surfaced when the RNG fix exposed a downstream test bug. Full 14-script test suite is green; smoke_phase5 is now deterministic.
+v0.6.0 is shipped. The user's key reminder ("not all class weapons use the same stat") drove the fix: `em.get_attack` now sums stat_mods from all equipment, so Technicians get +1 int (not +0 str), Riftbinders get +3 int+wis, Wardens get +2 str+con, etc. Equipment reads are now dynamic in `_effective_attack` / `_effective_armor` (equip changes mid-combat take effect). 3 new consumables: `mana_potion` (restore 25 MP), `cooked_meat` (heal 15 + +1 attack for 3 turns), `antidote` (heal 10 + status-cure placeholder).
 
-**Key insight chain (Remedy's favorite bug story):** Seeding the RNG → faction rep test started failing consistently → traced to wrong ProgressionManager instance in test → noticed the test was using a local `TestProg7` instead of the autoload → also noticed `_faction_rep_for` had a `_faction_names.is_empty()` early-return that silently broke the function for new players. Two bugs in one investigation.
+**Key insight:** v0.5.0's `attack_bonus += em.get_attack - maxi(4, str/2+2)` math was buggy (double-subtracted the base). v0.6.0 stores base only on the unit, then adds equipment dynamically at damage time. Cleaner separation, more flexible, and matches the user's intent for per-class scaling.
 
 ### Immediate Next Step
 
-Plan v0.6.0. Recommended: **real combat damage wiring + more consumables** (builds directly on v0.5.0). Alternative candidates: procedural NPC spawn in settlements, settlement interiors, settlement-to-Riftspire travel, button asset set.
+Small v0.6.0 follow-ups (stamina_potion, status effects for antidote, crafting recipes for new items) OR v0.7.0 candidates from the PLAN's "Not yet done" list. Recommended: **v0.7.0 real procedural NPC spawn in settlements** — replace the 3 hard-coded test NPCs with biome-aware procedural generation. Builds on PartyNPCManager, which already has the template system.
 
 ### Relevant Handoffs
 
-- [[v040-pre-existing-polish]] — this handoff
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1300.md` — full 9-section details
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` — v0.5.0 final (fixes for 2 outstanding v0.5.0 issues)
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0500.md` — v0.4.0 Phase 3 follow-up
+- [[v060-combat-damage-and-consumables]] — this handoff (v0.6.0 complete)
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1400.md` — full 9-section details
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1300.md` — v0.4.0 polish (4 fixes + bonus prod bug)
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` — v0.5.0 final
 
 ### Context Files
 
 - `docs/PLAN_v040_crafting_progression.md` — canonical design
-- `memory/CURRENT_STATE.md` — full state
-- `docs/NEXT_TASKS.md` — v0.6.0 candidate list
+- `memory/CURRENT_STATE.md` — v0.6.0-complete state
+- `docs/NEXT_TASKS.md` — v0.7.0 candidates
 
 ---
 
-**Awaiting your decision: which v0.6.0 candidate to pursue first?**
+**Awaiting your decision: v0.6.0 follow-ups (small) or v0.7.0 procedural NPC spawn (medium)?**

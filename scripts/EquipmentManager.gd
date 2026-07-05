@@ -382,18 +382,31 @@ func get_max_mp(class_id: String, level: int, stat_mods: Dictionary) -> int:
 	return base + int(stat_mods.get("int", 0)) * 3
 
 
-## Returns the attack power (weapon damage + str contribution).
+## Returns the attack power (weapon damage + stat mods from all equipment).
+## v0.6.0: each class's weapon scales with its own stats (not just str).
+## Scavenger blade → str, Technician pistol → int, Survivor rifle → con,
+## Striker heavy blade → str, Riftbinder focus → int (+ wis secondary),
+## Warden shield+hammer → str (+ con secondary). The weapon's
+## `stat_mods` (set from the class config) is summed for the bonus.
+## All other equipment (armor, accessories) also contribute their
+## stat_mods, so an iron_grip (+2 str) in acc1 adds +2 attack.
 func get_attack(npc_id: String) -> int:
 	var mainhand: String = get_main_hand_item(npc_id)
 	var weapon_damage: int = 0
 	if not mainhand.is_empty():
 		var entry: Dictionary = _resolve_item(mainhand)
 		weapon_damage = int(entry.get("damage", 0))
-	var eq: Dictionary = get_equipment(npc_id)
+	# Sum stat mods from ALL equipment (mainhand weapon + armor + accessories).
+	# Different classes' weapons have different stat_mods (Scavenger str,
+	# Technician int, Survivor con, Striker str, Riftbinder int+wis,
+	# Warden str+con), so each class benefits from its own primary stats.
+	# The weapon's own stat_mods determine the class's "innate" attack
+	# bonus, while armor and accessory stat_mods add additional bonuses.
 	var mods: Dictionary = get_stat_mods(npc_id)
-	# Str contributes to melee damage
-	var str_bonus: int = int(mods.get("str", 0))
-	return weapon_damage + str_bonus
+	var mod_bonus: int = 0
+	for k in mods:
+		mod_bonus += int(mods[k])
+	return weapon_damage + mod_bonus
 
 
 ## Returns the defense (armor + con contribution).

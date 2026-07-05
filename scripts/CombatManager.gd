@@ -246,31 +246,91 @@ func wait_action() -> Dictionary:
 	return {"ok": true, "message": "Wait."}
 
 
-## Phase 8: Use an item from the player's inventory in combat.
-## Phase 8 ships 'bandage' which heals 30 HP. Returns the action
-## result dict. Consumes one bandage from InventoryManager.
+## v0.6.0: Use an item from the player's inventory in combat.
+## Supported consumables:
+##   - bandage: heal 30 HP (Phase 8)
+##   - mana_potion: restore 25 MP (v0.6.0)
+##   - cooked_meat: heal 15 HP + grant +1 attack for 3 turns (v0.6.0)
+##   - antidote: heal 10 HP (placeholder for status-cure in future) (v0.6.0)
+## Returns the action result dict. Consumes one item from InventoryManager.
 func use_item(item_id: String) -> Dictionary:
 	if battle_phase != BattlePhase.ACTIVE or not is_player_active():
 		return {"ok": false, "message": "Cannot use items."}
-	if item_id != "bandage":
-		return {"ok": false, "message": "Cannot use %s in combat." % item_id}
 	var inv: Node = get_node_or_null("/root/InventoryManager")
 	if inv == null:
 		return {"ok": false, "message": "InventoryManager unavailable."}
-	if not inv.has_item("bandage", 1):
-		return {"ok": false, "message": "No bandages left."}
+	if not inv.has_item(item_id, 1):
+		return {"ok": false, "message": "No %s left." % item_id}
 	var unit: Dictionary = _get_unit_ref(active_unit_id)
-	var cur_hp: int = int(unit.get("hp", 0))
-	var max_hp: int = int(unit.get("max_hp", 1))
-	var heal: int = 30
-	unit["hp"] = mini(max_hp, cur_hp + heal)
-	inv.remove_item("bandage", 1)
-	_add_log("%s uses a bandage (+%d HP, now %d/%d)." % [
-		unit.get("name", "?"), heal, int(unit["hp"]), max_hp
-	])
+	if unit.is_empty():
+		return {"ok": false, "message": "No active unit."}
+
+	# Dispatch on item_id
+	var result: Dictionary = _apply_consumable(item_id, unit)
+	if not bool(result.get("ok", false)):
+		return result
+
+	inv.remove_item(item_id, 1)
 	unit["has_acted"] = true
 	_finish_active_turn()
-	return {"ok": true, "message": "Healed %d HP." % heal, "heal": heal, "remaining_hp": int(unit["hp"]), "max_hp": max_hp}
+	return result
+
+
+## v0.6.0: Apply a consumable to a unit. Returns {ok, message, ...}.
+## Does NOT consume the item or advance the turn — caller does that.
+func _apply_consumable(item_id: String, unit: Dictionary) -> Dictionary:
+	match item_id:
+		"bandage":
+			var heal: int = 30
+			var cur_hp: int = int(unit.get("hp", 0))
+			var max_hp: int = int(unit.get("max_hp", 1))
+			unit["hp"] = mini(max_hp, cur_hp + heal)
+			_add_log("%s uses a bandage (+%d HP, now %d/%d)." % [
+				unit.get("name", "?"), heal, int(unit["hp"]), max_hp
+			])
+			return {"ok": true, "message": "Healed %d HP." % heal, "heal": heal,
+					"remaining_hp": int(unit["hp"]), "max_hp": max_hp}
+		"mana_potion":
+			var restore: int = 25
+			var cur_mp: int = int(unit.get("mp", 0))
+			var max_mp: int = int(unit.get("mp_max", 1))
+			unit["mp"] = mini(max_mp, cur_mp + restore)
+			_add_log("%s drinks a mana potion (+%d MP, now %d/%d)." % [
+				unit.get("name", "?"), restore, int(unit["mp"]), max_mp
+			])
+			return {"ok": true, "message": "Restored %d MP." % restore, "restored_mp": restore,
+					"remaining_mp": int(unit["mp"]), "max_mp": max_mp}
+		"cooked_meat":
+			var heal_meat: int = 15
+			var cur_hp: int = int(unit.get("hp", 0))
+			var max_hp: int = int(unit.get("max_hp", 1))
+			unit["hp"] = mini(max_hp, cur_hp + heal_meat)
+			# Add a +1 attack buff for 3 turns
+			var buffs: Dictionary = unit.get("buffs", {}) as Dictionary
+			buffs = buffs.duplicate(true)
+			buffs["attack_add"] = int(buffs.get("attack_add", 0)) + 1
+			buffs["turns"] = 3
+			unit["buffs"] = buffs
+			_add_log("%s eats cooked meat (+%d HP, +1 attack for 3 turns)." % [
+				unit.get("name", "?"), heal_meat
+			])
+			return {"ok": true, "message": "Healed %d HP and gained +1 attack." % heal_meat,
+					"heal": heal_meat, "buff_attack": 1, "buff_turns": 3,
+					"remaining_hp": int(unit["hp"]), "max_hp": max_hp}
+		"antidote":
+			var heal_anti: int = 10
+			var cur_hp: int = int(unit.get("hp", 0))
+			var max_hp: int = int(unit.get("max_hp", 1))
+			unit["hp"] = mini(max_hp, cur_hp + heal_anti)
+			# Status-cure placeholder: when status effects land in a
+			# future phase, remove them here. For v0.6.0 just heal.
+			_add_log("%s drinks an antidote (+%d HP)." % [
+				unit.get("name", "?"), heal_anti
+			])
+			return {"ok": true, "message": "Healed %d HP." % heal_anti, "heal": heal_anti,
+					"remaining_hp": int(unit["hp"]), "max_hp": max_hp}
+		_:
+			return {"ok": false, "message": "Cannot use %s in combat." % item_id}
 
 
 func finish_turn() -> Dictionary:
@@ -363,10 +423,14 @@ func _spawn_player(start_pos: Vector2i) -> void:
 	var abilities: Array = cc.get("abilities", []) as Array
 	var player_class: String = str(_character_snapshot.get("class", ""))
 
-	# Phase 4 (EquipmentManager) and Phase 8 (HP/MP) integration: if
-	# the autoloads exist, use the equipment-aware max HP/MP and
-	# current Attack / Defense (gear bonuses + base stats). Fall back
-	# to the stat-only calculation if the autoloads aren't present.
+	# v0.6.0: store base attack/armor on the unit (no equipment delta).
+	# The equipment bonus is added DYNAMICALLY in _effective_attack /
+	# _effective_armor at damage time, so equip changes mid-combat take
+	# effect without needing to re-spawn the player.
+	#
+	# max_hp / mp_max are still computed here at spawn time (they're
+	# stored on the unit and used for HP/MP bar display, not for damage).
+	# If the autoload isn't present, fall back to the stat-only formula.
 	var em: Node = get_node_or_null("/root/EquipmentManager")
 	var pm: Node = get_node_or_null("/root/ProgressionManager")
 	if em != null and pm != null and em.has_method("get_max_hp"):
@@ -374,12 +438,6 @@ func _spawn_player(start_pos: Vector2i) -> void:
 		var mods: Dictionary = em.get_stat_mods("player")
 		max_hp = em.get_max_hp("", player_level, mods)
 		mp_max = em.get_max_mp("", player_level, mods)
-		attack_bonus += em.get_attack("player") - maxi(4, str_val / 2 + 2)
-		armor_bonus += em.get_defense("player") - (con_val / 3 + dex_val / 5)
-		# Clamp to non-negative (don't let the equipment deltas make
-		# attack/armor go below zero)
-		attack_bonus = maxi(0, attack_bonus)
-		armor_bonus = maxi(0, armor_bonus)
 
 	_units.append({
 		"id": "player",
@@ -392,8 +450,8 @@ func _spawn_player(start_pos: Vector2i) -> void:
 		"level": int(_character_snapshot.get("level", 1)),
 		"mp": mp_max,
 		"mp_max": mp_max,
-		"armor": con_val / 3 + dex_val / 5 + armor_bonus,
-		"attack": maxi(4, str_val / 2 + 2 + attack_bonus),
+		"armor": con_val / 3 + dex_val / 5,  # base only; equipment added in _effective_armor
+		"attack": maxi(4, str_val / 2 + 2),  # base only; equipment added in _effective_attack
 		"magic": maxi(4, int_val / 2 + 2),
 		"speed": clampi(dex_val + wis_val / 2 + speed_bonus, 3, 20),
 		"move": clampi(dex_val / 3 + 3 + move_bonus, 2, 8),
@@ -727,13 +785,30 @@ func _find_ability(unit: Dictionary, skill_id: String) -> Dictionary:
 func _effective_armor(unit: Dictionary) -> int:
 	var base: int = int(unit.get("armor", 0))
 	var buffs: Dictionary = unit.get("buffs", {}) as Dictionary
-	return base + int(buffs.get("armor_add", 0))
+	# v0.6.0: dynamically add equipment bonus (armor from gear + con mod).
+	# Read at damage time so equip changes mid-combat take effect.
+	var equipment_bonus: int = 0
+	var em: Node = get_node_or_null("/root/EquipmentManager")
+	if em != null and em.has_method("get_defense"):
+		var unit_id: String = str(unit.get("id", ""))
+		if not unit_id.is_empty():
+			equipment_bonus = em.get_defense(unit_id)
+	return base + equipment_bonus + int(buffs.get("armor_add", 0))
 
 
 func _effective_attack(unit: Dictionary) -> int:
 	var base: int = int(unit.get("attack", 1))
 	var buffs: Dictionary = unit.get("buffs", {}) as Dictionary
-	return base + int(buffs.get("attack_add", 0))
+	# v0.6.0: dynamically add equipment bonus (weapon damage + stat mods
+	# from the weapon). Read at damage time so equip changes mid-combat
+	# take effect.
+	var equipment_bonus: int = 0
+	var em: Node = get_node_or_null("/root/EquipmentManager")
+	if em != null and em.has_method("get_attack"):
+		var unit_id: String = str(unit.get("id", ""))
+		if not unit_id.is_empty():
+			equipment_bonus = em.get_attack(unit_id)
+	return base + equipment_bonus + int(buffs.get("attack_add", 0))
 
 
 func _tick_buffs(unit: Dictionary) -> void:

@@ -140,6 +140,36 @@
       "sell_value_ec": 5,
       "icon": "item_bandage",
       "description": "Heals 30 HP on use. Craftable from withered_branch at L1."
+    },
+    {
+      "id": "mana_potion",
+      "name": "Mana Potion",
+      "category": "consumable",
+      "stackable": true,
+      "max_stack": 20,
+      "sell_value_ec": 25,
+      "icon": "item_mana_potion",
+      "description": "Restores 25 MP on use. v0.6.0 consumable."
+    },
+    {
+      "id": "cooked_meat",
+      "name": "Cooked Meat",
+      "category": "consumable",
+      "stackable": true,
+      "max_stack": 20,
+      "sell_value_ec": 8,
+      "icon": "item_cooked_meat",
+      "description": "Heals 15 HP and grants +1 attack for 3 turns on use. v0.6.0 consumable."
+    },
+    {
+      "id": "antidote",
+      "name": "Antidote",
+      "category": "consumable",
+      "stackable": true,
+      "max_stack": 20,
+      "sell_value_ec": 12,
+      "icon": "item_antidote",
+      "description": "Heals 10 HP on use. Will cure status effects when those land in v0.6.0+. v0.6.0 consumable."
     }
   ]
 }
