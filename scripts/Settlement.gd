@@ -111,32 +111,35 @@ func _populate() -> void:
 
 
 ## Pick the subset of PartyNPCManager.available_npcs that "live in"
-## this settlement. For Phase 3 the selection is deterministic by
-## the town's index (so the same settlement shows the same NPCs across
-## runs). Phase 5 will replace this with a real spawn system tied to
-## the world_data.
+## this settlement. v0.7.0: replace the Phase 3 placeholder (pick from
+## a global pool) with a per-settlement procedural spawn. The
+## spawn is deterministic: same hex_key + same biome + same faction +
+## same town_size always produces the same NPCs.
 func _resolve_resident_npcs() -> void:
 	_resident_npc_ids = []
 	var pm: Node = get_node_or_null(PARTY_PATH)
 	if pm == null:
 		return
-	var all_available: Array = pm.available_npcs
-	if all_available.is_empty():
-		return
-	# Pick by town index modulo available count
-	var town_index: int = _get_town_index()
-	# Number of NPCs to show depends on the template size
-	var max_residents: int = 1
+	# Clear any previously-spawned residents for THIS hex so a re-enter
+	# doesn't accumulate duplicates. (Phase 3 test NPCs and procedurally
+	# spawned hex NPCs are left alone — they don't have settlement_resident=true.)
+	var hex: String = str(_town_data.get("hex", ""))
+	pm.clear_settlement_residents(hex)
+	# Spawn biome- AND faction-appropriate residents for this settlement.
+	# The faction is critical: settlements belong to a specific faction,
+	# and the NPC pool should reflect that (Iron Accord towns spawn
+	# Iron-Accord-themed NPCs, Hollow Covenant towns spawn Hollow-themed
+	# NPCs, etc.). This is how the world "balances weights between
+	# settlements to faction ratio" — every faction gets a proportional
+	# share of NPCs proportional to its settlement count.
+	var biome: String = str(_town_data.get("biome", ""))
+	if biome.is_empty():
+		biome = "Ash Wastes"  # fallback if world_data didn't record a biome
+	var faction: String = str(_town_data.get("faction", ""))
 	var size_str: String = str(_town_data.get("size", "medium"))
-	match size_str:
-		"small": max_residents = 1
-		"medium": max_residents = 2
-		"large": max_residents = 3
-		_: max_residents = 2
-	for i in max_residents:
-		var idx: int = (town_index + i) % all_available.size()
-		var npc: Dictionary = all_available[idx]
-		_resident_npc_ids.append(str(npc.get("id", "")))
+	var spawned: Array = pm.spawn_for_settlement(hex, biome, faction, size_str)
+	for n in spawned:
+		_resident_npc_ids.append(str(n.get("id", "")))
 
 
 func _get_town_index() -> int:

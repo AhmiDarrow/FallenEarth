@@ -405,6 +405,10 @@ func _place_towns() -> void:
 			continue  # no valid candidate for this slot
 		# Even percentage of factions: assign faction in round-robin.
 		var faction: String = _faction_names[i % _faction_names.size()]
+		# v0.7.0: pull biome from the picked tile so the settlement can
+		# spawn biome-appropriate procedural NPCs later.
+		var picked_tile: Dictionary = picked.get("tile", {})
+		var biome: String = str(picked_tile.get("name", "Ash Wastes"))
 		var town: Dictionary = {
 			"hex": picked.get("key", ""),
 			"faction": faction,
@@ -414,6 +418,7 @@ func _place_towns() -> void:
 			"pop_cap": int(tpl_data.get("pop_cap", 12)),
 			"buildings": tpl_data.get("buildings", []),
 			"npc_ids": [],  # Phase 5 will populate
+			"biome": biome,  # v0.7.0
 		}
 		_towns_seeded.append(town)
 		placed_hexes.append(picked.get("key", ""))

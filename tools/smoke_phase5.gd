@@ -50,8 +50,9 @@ func _test_party_manager_template_load() -> void:
 	pm.name = "TestPM"
 	root.add_child(pm)
 	await process_frame
-	if pm._templates.size() != 4:
-		_fail("PartyNPCManager: expected 4 templates, got %d" % pm._templates.size())
+	# v0.7.0: 4 universal + 7 biome-specific + 7 faction-specific = 18
+	if pm._templates.size() != 18:
+		_fail("PartyNPCManager: expected 18 templates (4 universal + 7 biome-specific + 7 faction-specific), got %d" % pm._templates.size())
 		return
 	if pm._spawn_rules.get("spawn_chance", 0.0) <= 0.0:
 		_fail("PartyNPCManager: spawn_rules.spawn_chance should be > 0")
@@ -64,7 +65,21 @@ func _test_party_manager_template_load() -> void:
 	if not rarities.has("common"):
 		_fail("PartyNPCManager: expected at least one common template")
 		return
-	_ok("PartyNPCManager: %d templates loaded, %d rarities" % [pm._templates.size(), rarities.size()])
+	# v0.7.0: biome-specific + faction-specific templates exist.
+	var has_biome_specific: bool = false
+	var has_faction_specific: bool = false
+	for t in pm._templates:
+		if t.get("preferred_biomes", null) != null:
+			has_biome_specific = true
+		if t.get("preferred_factions", null) != null:
+			has_faction_specific = true
+	if not has_biome_specific:
+		_fail("PartyNPCManager: v0.7.0 expected at least one biome-specific template")
+		return
+	if not has_faction_specific:
+		_fail("PartyNPCManager: v0.7.0 expected at least one faction-specific template")
+		return
+	_ok("PartyNPCManager: %d templates loaded (%d rarities, biome + faction specific present)" % [pm._templates.size(), rarities.size()])
 
 
 func _test_party_manager_seed_phase3() -> void:

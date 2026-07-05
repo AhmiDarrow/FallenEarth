@@ -1,9 +1,9 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.6.0-complete + cooking-table-polish
-**Last Updated:** 2026-07-05 16:00
+**Version:** 0.7.0-complete
+**Last Updated:** 2026-07-05 17:00
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.6.0 + cooking-table polish COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_1600.md` for craftable recipe + LocalMapGenerator wiring + sprite + item icons. All 16 smoke tests pass; smoke_cooking (22 tests) verified deterministic across 10 runs.
+**Current Phase:** v0.7.0 procedural NPC spawn in settlements COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_1700.md` for biome + faction balanced spawn. All 17 smoke tests pass; smoke_v070 (12 tests) verified deterministic across 5 runs.
 
 ## Summary
 

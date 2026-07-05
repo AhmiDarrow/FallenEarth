@@ -8,34 +8,43 @@
 
 ## TOP PRIORITY — Next session
 
-### P0 — v0.6.0 follow-up polish (DONE)
+### P0 — v0.7.1 polish (small, 1-2 hours total)
 
 | ID | Task | Status |
 |----|------|--------|
-| P0-1 | **`LocalMapGenerator`** — emit `cooking_tables: [{x, y, station_id}]` in `map_data` so a cooking table auto-spawns in the start hex | ✅ DONE (2026-07-05 16:00) |
-| P0-2 | **Generate `cooking_table.png` sprite** via `tools/generate_station_sprites.py` | ✅ DONE (2026-07-05 16:00) |
-| P0-3 | Generate icons for new items (`raw_meat`, `mana_potion`, `cooked_meat`, `antidote`, `cooking_table`) via `tools/generate_item_icons.py` | ✅ DONE (2026-07-05 16:00) |
-| **P0-4 (bonus)** | Make cooking table craftable at L5 (4 withered_branch + 2 iron_ore + 1 teal_crystal) | ✅ DONE (2026-07-05 16:00) |
+| P0-1 | **Wire `spawn_for_settlement` into `SettlementManager`** — verify the procedural spawn runs when the player enters a settlement (currently `_resolve_resident_npcs` is only called when the Settlement scene is built) | ⏳ READY |
+| P0-2 | Add `preferred_race` to `_faction_themes` so e.g. Iron Accord NPCs always spawn as human (not chthon) | ⏳ READY |
+| P0-3 | Add a per-spawn-debug log: `[PartyNPCManager] Settled 5,7 (Neon Bogs/Iron Accord): 3 residents (iron_pact_guard, bogs_dweller, wanderer_common)` | ⏳ READY |
 
-### P1 — v0.7.0 candidates
+### P1 — v0.8.0 candidates
 
 Pick the next milestone from the PLAN's "Not yet done" list:
-- **Real procedural NPC spawn in settlements** (replace 3 hard-coded test NPCs in `PartyNPCManager` with biome-aware procedural generation) **[Recommended]**
-- Full settlement interiors
+- **Full settlement interiors** (rooms, traveling NPCs, mini-quests, visual variety) — most player-facing **[Recommended]**
 - Settlement-to-Riftspire travel
 - Button asset set
+- "Place station" interaction (let the player place a crafted `cooking_table` in a new hex)
 
-### P2 — Optional polish
-
-- **Place-station interaction** — let the player place a crafted `cooking_table` item on the map (similar to base placement). ~1-2 hours.
-
-### P3 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
+### P2 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
 
 (Full list in the plan doc; phases 2 → 8 follow Phase 1, each with own end-of-phase stop/commit/push.)
 
 ---
 
 ## COMPLETED
+
+### v0.7.0 — Procedural NPC spawn in settlements (biome + faction) ✅ (2026-07-05 17:00)
+
+| ID | Task | Notes |
+|----|------|-------|
+| v070-1 | Faction-aware templates | 11 → 18 templates. Added 7 faction-specific: iron_pact_guard, hollow_warden, ash_serpent_raider, veil_warden, neon_choir_techie, bone_circuit_broker, caravan_guard. Each has `preferred_factions: ["<Faction>"]`. |
+| v070-2 | Per-faction themes | New `_faction_themes` section in templates JSON. 10 factions, each with name_prefix + race_pref. Faction theme OVERRIDES biome theme for name/race. |
+| v070-3 | Bi-axial template roll | `_roll_template_for_settlement(biome, faction)` categorizes into match_both (4x), match_faction_only (3x), match_biome_only (2x), universal (1x). Faction matches get a stronger boost than biome matches (per user's "balance to faction ratio" brief). |
+| v070-4 | `spawn_for_settlement` API | Generates 1-3 NPCs per town (small/medium/large). Deterministic via FNV-1a hash of `hex\|biome\|faction`. |
+| v070-5 | `clear_settlement_residents` | Removes only residents for the given hex_key. Preserves Phase 3 test NPCs and hex-spawned NPCs. |
+| v070-6 | `Settlement._resolve_resident_npcs` | Now calls `clear_settlement_residents(hex)` then `spawn_for_settlement(hex, biome, faction, size)`. Replaces the Phase 3 placeholder pool selection. |
+| v070-7 | `WorldGenerator` town data | Town data now includes `biome: <Biome Name>` (pulled from the picked tile's biome). Needed for `_resolve_resident_npcs`. |
+| v070-8 | `smoke_v070.gd` — 12 test groups, all green | Verified deterministic across 5 runs. |
+| v070-9 | Updated `smoke_phase5.gd` for 18 templates | Bumped template count expectation from 4 to 18. |
 
 ### v0.6.0 follow-up polish — craftable cooking table + sprite + wiring ✅ (2026-07-05 16:00)
 

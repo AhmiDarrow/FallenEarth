@@ -52,6 +52,13 @@ var _classes: Array = []
 var _races: Array = []
 var _spawn_rules: Dictionary = {}
 var _faction_names: Array = []
+# v0.7.0: per-biome themes (title, name_prefix, race_pref) loaded
+# from joinable_npc_templates.json's `_biome_themes` section.
+var _biome_themes: Dictionary = {}
+# v0.7.0: per-faction themes (name_prefix, race_pref) loaded from
+# joinable_npc_templates.json's `_faction_themes` section. Used to flavor
+# NPCs spawned in faction-owned settlements.
+var _faction_themes: Dictionary = {}
 
 var available_npcs: Array = []
 var party_members: Array = []
@@ -80,6 +87,9 @@ func _load_data() -> void:
 		if data is Dictionary:
 			_templates = data.get("templates", [])
 			_spawn_rules = data.get("_spawn_rules", {})
+			# v0.7.0: per-biome + per-faction themes
+			_biome_themes = data.get("_biome_themes", {})
+			_faction_themes = data.get("_faction_themes", {})
 	# Name parts
 	if ResourceLoader.exists(NAME_PARTS_PATH):
 		var raw2 = load(NAME_PARTS_PATH)
@@ -283,6 +293,229 @@ func _roll_template() -> Dictionary:
 		if pick <= 0.0:
 			return t
 	return _templates.back()
+
+
+## v0.7.0: roll a template that's compatible with the given biome
+## AND faction. Filters by both:
+##   - `preferred_biomes = null` OR includes the biome
+##   - `preferred_factions = null` OR includes the faction
+##
+## Weighting (v0.7.0 balance):
+##   - match_both (biome AND faction match): 4x weight
+##   - match_faction_only (faction matches, biome doesn't): 3x weight
+##   - match_biome_only (biome matches, faction doesn't): 2x weight
+##   - specific + no match (has a preference but neither matches): 1x
+##   - universal (no preferences at all): 1x
+##
+## Faction matches get a stronger boost than biome matches because
+## "the world needs to balance the weights between settlements to
+## faction ratio" — settlements reflect their owning faction.
+##
+## Returns {} if no template is eligible.
+func _roll_template_for_settlement(biome: String, faction: String) -> Dictionary:
+	if _templates.is_empty():
+		return {}
+	var match_both: Array = []
+	var match_faction_only: Array = []
+	var match_biome_only: Array = []
+	var universal: Array = []
+	for t in _templates:
+		var preferred_b: Variant = t.get("preferred_biomes", null)
+		var preferred_f: Variant = t.get("preferred_factions", null)
+		var biome_ok: bool = (preferred_b == null) or (preferred_b is Array and (preferred_b as Array).has(biome))
+		var faction_ok: bool = (preferred_f == null) or (preferred_f is Array and (preferred_f as Array).has(faction))
+		var has_b_pref: bool = (preferred_b != null)
+		var has_f_pref: bool = (preferred_f != null)
+		if has_b_pref and has_f_pref and biome_ok and faction_ok:
+			match_both.append(t)
+		elif has_f_pref and faction_ok:
+			# faction-specific template, faction matches (biome may or may not)
+			match_faction_only.append(t)
+		elif has_b_pref and biome_ok:
+			# biome-specific template, biome matches (faction may or may not)
+			match_biome_only.append(t)
+		else:
+			# universal (no preferences) OR specific template that doesn't match
+			universal.append(t)
+	# Build the weighted pool with category-based multipliers.
+	# We append each category's entries N times where N is the multiplier.
+	var pool: Array = []
+	pool.append_array(match_both.duplicate(true))
+	pool.append_array(match_both.duplicate(true))
+	pool.append_array(match_both.duplicate(true))
+	pool.append_array(match_both.duplicate(true))  # 4x
+	pool.append_array(match_faction_only.duplicate(true))
+	pool.append_array(match_faction_only.duplicate(true))
+	pool.append_array(match_faction_only.duplicate(true))  # 3x
+	pool.append_array(match_biome_only.duplicate(true))
+	pool.append_array(match_biome_only.duplicate(true))  # 2x
+	pool.append_array(universal)  # 1x
+	if pool.is_empty():
+		# Last resort: any template
+		pool = _templates.duplicate(true)
+	if pool.is_empty():
+		return {}
+	var total: float = 0.0
+	for t in pool:
+		total += float(t.get("weight", 1))
+	if total <= 0.0:
+		return {}
+	var pick: float = randf() * total
+	for t in pool:
+		pick -= float(t.get("weight", 1))
+		if pick <= 0.0:
+			return t
+	return pool.back()
+
+
+## v0.7.0 backward-compat: roll a template that's compatible with the
+## given biome only (no faction filter). Used by the old
+## `spawn_for_hex` (hex visit, no settlement context).
+func _roll_template_for_biome(biome: String) -> Dictionary:
+	return _roll_template_for_settlement(biome, "")
+
+
+## v0.7.0: generate a deterministic hash from a hex_key. Used to seed
+## the settlement spawn RNG so the same settlement always shows the
+## same NPCs across runs.
+func _hash_hex_key(hex_key: String) -> int:
+	# FNV-1a hash (32-bit) — small, fast, no dependencies
+	var h: int = 2166136261
+	for i in hex_key.length():
+		h = (h ^ hex_key.unicode_at(i)) & 0xFFFFFFFF
+		h = (h * 16777619) & 0xFFFFFFFF
+	return h
+
+
+## v0.7.0: spawn biome- AND faction-appropriate NPCs for a
+## settlement. Called by Settlement._resolve_resident_npcs to generate
+## the NPC pool for a given town. The result is deterministic:
+## same hex_key + same biome + same faction + same town_size → same NPCs.
+## The NPCs are appended to `available_npcs` and their ids returned.
+##
+## Parameters:
+##   hex_key:   the hex coordinates, e.g. "5,7"
+##   biome:     the hex's biome name, e.g. "Neon Bogs"
+##   faction:   the settlement's faction, e.g. "Iron Accord" (may be
+##              empty if the town is unaligned)
+##   town_size: "small" / "medium" / "large" (drives NPC count)
+##
+## Returns the list of spawned NPC dicts.
+func spawn_for_settlement(hex_key: String, biome: String, faction: String, town_size: String) -> Array:
+	var max_residents: int = 2
+	match town_size:
+		"small": max_residents = 1
+		"medium": max_residents = 2
+		"large": max_residents = 3
+	# Deterministic seed for the settlement spawn (so the same hex always
+	# shows the same NPCs). We use the global RNG's seed() to make
+	# every randf() / randi() deterministic for the duration of the
+	# generation loop.
+	var seed_val: int = _hash_hex_key(hex_key + "|" + biome + "|" + faction)
+	seed(seed_val)
+	# Read player level for level scaling
+	var prog: Node = get_node_or_null(PROGRESSION_PATH)
+	var player_level: int = int(prog.level) if prog != null else 1
+	# Generate the residents
+	var residents: Array = []
+	for i in max_residents:
+		var tpl: Dictionary = _roll_template_for_settlement(biome, faction)
+		if tpl.is_empty():
+			continue
+		if not _template_eligible(tpl, player_level):
+			continue
+		var npc: Dictionary = _generate_npc_for_settlement(tpl, player_level, biome, faction, hex_key, i)
+		npc["spawn_hex"] = hex_key
+		npc["settlement_resident"] = true
+		npc["settlement_faction"] = faction
+		available_npcs.append(npc)
+		residents.append(npc)
+	return residents
+
+
+## v0.7.0: variant of _generate_npc_from_template that uses both biome
+## AND faction themes. Faction theme takes priority (faction identity
+## is stronger than biome identity for naming/race).
+func _generate_npc_for_settlement(tpl: Dictionary, player_level: int, biome: String, faction: String, hex_key: String, idx: int) -> Dictionary:
+	# All randf() / randi() calls below are deterministic because the
+	# parent (spawn_for_settlement) called seed() with the hex_key hash.
+	var biome_theme: Dictionary = _biome_themes.get(biome, {})
+	var faction_theme: Dictionary = _faction_themes.get(faction, {})
+	# Faction theme takes priority for name_prefix + race_pref.
+	# Biome theme contributes the role title.
+	var role_title: String = str(biome_theme.get("title", tpl.get("title", "wanderer")))
+	var name_prefix: String = str(faction_theme.get("name_prefix", biome_theme.get("name_prefix", "")))
+	var race_pref: String = str(faction_theme.get("race_pref", biome_theme.get("race_pref", "")))
+	var id: String = "npc_settle_%s_%s_%d" % [hex_key.replace(",", "_"), str(tpl.get("id", "npc")).replace(" ", "_"), idx]
+	# Origin: use preference if set, otherwise 70/30 upworld/underworld
+	var origin: String = race_pref if race_pref != "" else ("Upworld" if randf() < 0.7 else "Underworld")
+	var class_data: Dictionary = _pick_class()
+	var race_data: Dictionary = _pick_race(origin)
+	var gender: String = "male" if randf() < 0.5 else "female"
+	var level_lo: int = int(_spawn_rules.get("level_range", [-10, 10])[0])
+	var level_hi: int = int(_spawn_rules.get("level_range", [-10, 10])[1])
+	var npc_level: int = clampi(player_level + randi_range(level_lo, level_hi), 1, 256)
+	# Build a flavor-aware name: prefix + random first + random last
+	var bucket: String = "upworld" if origin == "Upworld" else "underworld"
+	if race_pref == "Independent" or race_pref == "Neutral":
+		bucket = "neutral"  # fall through to neutral name pool
+	var parts: Dictionary = _name_parts.get(bucket, _name_parts.get("neutral", {}))
+	var first: Array = parts.get("first", ["Kira"])
+	var last: Array = parts.get("last", ["Morrow"])
+	var f: String = str(first[randi() % first.size()])
+	var l: String = str(last[randi() % last.size()])
+	var npc_name: String = ("%s " % name_prefix if name_prefix != "" else "") + "%s %s" % [f, l]
+	var tier: int = int(tpl.get("tier", 0))
+	var equipment: Dictionary = _empty_equipment()
+	if EquipmentManager_has() and class_data.has("name"):
+		var em: Node = get_node_or_null(EQUIPMENT_PATH)
+		if em != null:
+			var w: Dictionary = em.get_weapon(str(class_data.get("name", "")), tier)
+			if not w.is_empty():
+				equipment["mainhand"] = str(w.get("id", ""))
+			for slot in ["head", "chest", "legs", "boots"]:
+				var a: Dictionary = em.get_armor(str(class_data.get("name", "")), slot, tier)
+				if not a.is_empty():
+					equipment[slot] = str(a.get("id", ""))
+					break
+	var fr: Dictionary = {}
+	if tpl.get("min_faction_rep", null) != null:
+		fr["any_faction"] = int(tpl.get("min_faction_rep"))
+	var npc := {
+		"id": id,
+		"name": npc_name,
+		"race": str(race_data.get("name", "Human")),
+		"origin": origin,
+		"class": str(class_data.get("name", "Wanderer")),
+		"gender": gender,
+		"level": npc_level,
+		"role": role_title,
+		"sprite_path": _race_sprite(race_data, gender),
+		"faction_rep_requirements": fr,
+		"quest_unlock": tpl.get("requires_quest", null),
+		"template_id": str(tpl.get("id", "")),
+		"equipment": equipment,
+		"rarity": str(tpl.get("rarity", "common")),
+		"tier": tier,
+		"biome": biome,
+		"faction": faction,
+	}
+	return npc
+
+
+## v0.7.0: clear all settlement-resident NPCs (those flagged with
+## `settlement_resident: true`). Called by Settlement._resolve_resident_npcs
+## at the start of a refresh so a re-enter doesn't accumulate duplicates.
+## Pass an empty hex_key to clear ALL settlement residents across all hexes.
+func clear_settlement_residents(hex_key: String = "") -> void:
+	var keep: Array = []
+	for n in available_npcs:
+		var is_resident: bool = bool(n.get("settlement_resident", false))
+		var same_hex: bool = (hex_key == "" or str(n.get("spawn_hex", "")) == hex_key)
+		if is_resident and same_hex:
+			continue
+		keep.append(n)
+	available_npcs = keep
 
 
 func _template_eligible(tpl: Dictionary, player_level: int) -> bool:

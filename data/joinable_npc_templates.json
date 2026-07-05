@@ -1,5 +1,5 @@
 {
-  "_comment": "Phase 5 joinable NPC templates. Each template defines a 'rarity' (common, uncommon, rare, legendary) and an optional weight for the spawn roll. min_player_level is the absolute minimum the player must be at. min_faction_rep is per-faction (null = any faction). requires_quest is an optional mission id that must be in the player's active missions. tier is the armor/weapon tier the NPC starts with. role is one of the roles in npc_name_parts.titles.",
+  "_comment": "Phase 5 + v0.7.0 joinable NPC templates. Each template defines a 'rarity' (common, uncommon, rare, legendary) and an optional weight for the spawn roll. min_player_level is the absolute minimum the player must be at. min_faction_rep is per-faction (null = any faction). requires_quest is an optional mission id that must be in the player's active missions. tier is the armor/weapon tier the NPC starts with. role is one of the roles in npc_name_parts.titles. v0.7.0 added preferred_biomes (null = universal) and a per-biome _biome_themes section for flavor names/titles.",
   "templates": [
     {
       "id": "wanderer_common",
@@ -11,6 +11,7 @@
       "faction_required": null,
       "tier": 0,
       "title": "wanderer",
+      "preferred_biomes": null,
       "description": "A drifter from outside the local area. Easy to recruit early on."
     },
     {
@@ -23,6 +24,7 @@
       "faction_required": "any_specific",
       "tier": 0,
       "title": "mercenary",
+      "preferred_biomes": null,
       "description": "An officer of one of the factions. Better gear, higher requirements."
     },
     {
@@ -35,6 +37,7 @@
       "faction_required": null,
       "tier": 1,
       "title": "shaman",
+      "preferred_biomes": null,
       "description": "Locked behind a quest. Powerful specialist."
     },
     {
@@ -47,7 +50,199 @@
       "faction_required": "any_top_faction",
       "tier": 2,
       "title": "wanderer",
+      "preferred_biomes": null,
       "description": "Legendary NPCs with their own backstories. Open shops at your base if you treat them right."
+    },
+    {
+      "_comment": "v0.7.0: biome-specific templates. preferred_biomes is a list of biome names the template is native to. Templates without it (or with null) are universal.",
+      "id": "wasteland_scavenger",
+      "rarity": "common",
+      "weight": 30,
+      "min_player_level": 1,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "wastelander",
+      "preferred_biomes": ["Ash Wastes", "Scorched Plains", "Glass Dunes"],
+      "description": "A scrappy survivor of the wastes. At home in any dry biome."
+    },
+    {
+      "id": "bogs_dweller",
+      "rarity": "common",
+      "weight": 30,
+      "min_player_level": 1,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "bogs-runner",
+      "preferred_biomes": ["Neon Bogs", "Toxin Marshes"],
+      "description": "A marsh-dweller who knows the bogs like the back of their hand."
+    },
+    {
+      "id": "ironwood_runner",
+      "rarity": "common",
+      "weight": 30,
+      "min_player_level": 1,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "ironwood-runner",
+      "preferred_biomes": ["Ironwood Thicket"],
+      "description": "An agile forager who can navigate the metallic forest."
+    },
+    {
+      "id": "highland_surveyor",
+      "rarity": "common",
+      "weight": 25,
+      "min_player_level": 2,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "storm-chaser",
+      "preferred_biomes": ["Stormspire Highlands"],
+      "description": "A weather-hardened surveyor of the highlands."
+    },
+    {
+      "id": "corpse_collector",
+      "rarity": "common",
+      "weight": 25,
+      "min_player_level": 2,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "corpse-collector",
+      "preferred_biomes": ["Corpse Fields"],
+      "description": "A grim forager who turns the dead into useful resources."
+    },
+    {
+      "id": "city_explorer",
+      "rarity": "common",
+      "weight": 25,
+      "min_player_level": 3,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "city-explorer",
+      "preferred_biomes": ["Dead City Outskirts"],
+      "description": "A scavenger who knows the dead city's secrets."
+    },
+    {
+      "id": "rust_prospector",
+      "rarity": "common",
+      "weight": 20,
+      "min_player_level": 1,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "rust-prospector",
+      "preferred_biomes": ["Rust Canyons"],
+      "description": "A scrapper who finds value in corroded metal."
+    },
+    {
+      "_comment": "v0.7.0 faction-specific templates. preferred_factions restricts the template to settlements owned by one of the listed factions. Templates without preferred_factions (null) are universal across factions.",
+      "id": "iron_pact_guard",
+      "rarity": "uncommon",
+      "weight": 25,
+      "min_player_level": 4,
+      "min_faction_rep": 5,
+      "requires_quest": null,
+      "faction_required": "any_specific",
+      "tier": 0,
+      "title": "pact-guard",
+      "preferred_biomes": null,
+      "preferred_factions": ["Iron Accord"],
+      "description": "A veteran enforcer of the Iron Accord. Patrols the perimeter of Pact settlements."
+    },
+    {
+      "id": "hollow_warden",
+      "rarity": "uncommon",
+      "weight": 25,
+      "min_player_level": 4,
+      "min_faction_rep": 5,
+      "requires_quest": null,
+      "faction_required": "any_specific",
+      "tier": 0,
+      "title": "hollow-warden",
+      "preferred_biomes": null,
+      "preferred_factions": ["Hollow Covenant"],
+      "description": "A ritual-bound guardian of the Hollow Covenant. Wards the boundary between surface and Underearth."
+    },
+    {
+      "id": "ash_serpent_raider",
+      "rarity": "uncommon",
+      "weight": 20,
+      "min_player_level": 3,
+      "min_faction_rep": 0,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "serpent-raider",
+      "preferred_biomes": ["Ash Wastes", "Scorched Plains", "Glass Dunes"],
+      "preferred_factions": ["Ash Serpents"],
+      "description": "A mounted raider of the Ash Serpents. Knows the wasteland routes like the back of their hand."
+    },
+    {
+      "id": "veil_warden",
+      "rarity": "uncommon",
+      "weight": 20,
+      "min_player_level": 4,
+      "min_faction_rep": 5,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "veil-warden",
+      "preferred_biomes": ["Corpse Fields", "Stormspire Highlands"],
+      "preferred_factions": ["Veilwardens"],
+      "description": "A silent guardian of the Veilwardens. Keeps forbidden knowledge sealed."
+    },
+    {
+      "id": "neon_choir_techie",
+      "rarity": "uncommon",
+      "weight": 20,
+      "min_player_level": 5,
+      "min_faction_rep": 5,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "choir-techie",
+      "preferred_biomes": ["Neon Bogs", "Dead City Outskirts"],
+      "preferred_factions": ["Neon Choir"],
+      "description": "A Neon Choir acolyte, half-machine, half-zealot. Speaks in glitchy mantras."
+    },
+    {
+      "id": "bone_circuit_broker",
+      "rarity": "uncommon",
+      "weight": 15,
+      "min_player_level": 6,
+      "min_faction_rep": 5,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "bone-broker",
+      "preferred_biomes": ["Rust Canyons", "Dead City Outskirts"],
+      "preferred_factions": ["Bone Circuit"],
+      "description": "A Bone Circuit broker. Trades in parts you can't find on any legitimate market."
+    },
+    {
+      "id": "caravan_guard",
+      "rarity": "uncommon",
+      "weight": 20,
+      "min_player_level": 3,
+      "min_faction_rep": 0,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "caravan-guard",
+      "preferred_biomes": null,
+      "preferred_factions": ["Last Caravans"],
+      "description": "A Last Caravans guard. Protects the trade routes, armed to the teeth."
     }
   ],
   "_spawn_rules": {
@@ -55,5 +250,31 @@
     "spawn_chance": 0.30,
     "max_per_hex": 1,
     "level_range": [-10, 10]
+  },
+  "_biome_themes": {
+    "_comment": "v0.7.0: per-biome flavor for procedural NPC generation. The 'title' is used as a role prefix; the 'name_prefix' is added before the randomly generated surname for flavor. The 'race_pref' shifts the race origin bias (upworld vs underworld) for this biome.",
+    "Ash Wastes":          {"title": "wastelander",      "name_prefix": "Ash",    "race_pref": "Upworld"},
+    "Rust Canyons":         {"title": "rust-prospector",   "name_prefix": "Rust",   "race_pref": "Upworld"},
+    "Neon Bogs":            {"title": "bogs-runner",      "name_prefix": "Bog",    "race_pref": "Upworld"},
+    "Scorched Plains":      {"title": "plains-runner",    "name_prefix": "Burn",   "race_pref": "Upworld"},
+    "Ironwood Thicket":     {"title": "ironwood-runner",  "name_prefix": "Iron",   "race_pref": "Upworld"},
+    "Glass Dunes":          {"title": "glass-cutter",     "name_prefix": "Glass",  "race_pref": "Upworld"},
+    "Corpse Fields":        {"title": "corpse-collector", "name_prefix": "Bone",   "race_pref": "Underworld"},
+    "Stormspire Highlands": {"title": "storm-chaser",     "name_prefix": "Storm",  "race_pref": "Upworld"},
+    "Toxin Marshes":        {"title": "toxin-brewer",     "name_prefix": "Tox",    "race_pref": "Underworld"},
+    "Dead City Outskirts":  {"title": "city-explorer",    "name_prefix": "City",   "race_pref": "Upworld"}
+  },
+  "_faction_themes": {
+    "_comment": "v0.7.0: per-faction flavor for procedural NPC generation in faction-owned settlements. The 'name_prefix' is added before the randomly generated surname. The 'race_pref' shifts the race origin bias. Faction themes OVERRIDE biome themes for the name_prefix and race_pref (faction identity is stronger than biome identity).",
+    "Iron Accord":      {"name_prefix": "Iron",   "race_pref": "Upworld"},
+    "Hollow Covenant":  {"name_prefix": "Hollow", "race_pref": "Underworld"},
+    "Ash Serpents":     {"name_prefix": "Ash",    "race_pref": "Independent"},
+    "Veilwardens":      {"name_prefix": "Veil",   "race_pref": "Independent"},
+    "Neon Choir":       {"name_prefix": "Neon",   "race_pref": "Independent"},
+    "Dust Parliament":  {"name_prefix": "Dust",   "race_pref": "Independent"},
+    "Bone Circuit":     {"name_prefix": "Bone",   "race_pref": "Independent"},
+    "Black Ledger":     {"name_prefix": "Ledger", "race_pref": "Neutral"},
+    "Last Caravans":    {"name_prefix": "Caravan","race_pref": "Neutral"},
+    "Echo Wardens":     {"name_prefix": "Echo",   "race_pref": "Neutral"}
   }
 }
