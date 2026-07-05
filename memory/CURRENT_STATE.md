@@ -3,7 +3,7 @@
 **Version:** 0.4.0-dev
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 1 of v0.4.0 complete (resource nodes + gathering)
+**Current Phase:** Phase 1b of v0.4.0 complete (hover tooltips)
 
 ## Summary
 
@@ -118,8 +118,40 @@ Splash → MainMenu → WorldGeneration (pick start hex)
 - `tools/boot_probe.gd` — 60 frames, 0 errors
 - `tools/verify_assets.py --phase 1` — all 3 categories ok
 
+### What changed in v0.4.0 Phase 1b
+
+**Goal:** Small Label that follows the mouse after a 1-second dwell, showing the name of whatever is under the cursor on the local map (terrain, resource node, mob, rift, NPC).
+
+### New script
+- `scripts/HoverTooltip.gd` — extends `Control`; tracks `_current_target` + `_hover_start_time`; 1s dwell (`DWELL_MS = 1000`); follows the mouse at `MOUSE_OFFSET = (14, 14)`; outline-styled text (white + 3px black outline) for legibility.
+
+### Modified
+- `scripts/HubWorld.gd` — `_setup_hover_tooltip` instantiates the tooltip and adds it to the HubWorld tree; `_tick_hover_tooltip` runs each frame in `_process`; `_hit_test_at_world(world_pos)` does the actual hit-testing with this priority order: resource node > floor pickup > mob marker > rift marker > NPC marker > terrain label. New helpers: `_terrain_label_at_cell`, `_mob_name_at_cell`, `_resolve_mob_display_name` (reads `data/mobs.json` for the display name), `_npc_name_at_hex`.
+- `validate_scripts.gd` — added `HoverTooltip.gd` to the script list.
+
+### New tooling
+- `tools/smoke_hover_tooltip.gd` — 4 test groups: idle/empty hides label; 1s dwell before show; target change resets dwell; empty target hides visible tooltip.
+
+### Hit-test priority
+1. Resource node (highest priority — shows the node's display name, e.g. "Iron Outcrop")
+2. Floor pickup (shows the item's display name from InventoryManager, e.g. "Stick")
+3. Mob marker (looks up display name in `data/mobs.json`, e.g. "Blight Toad (Lv.3)")
+4. Rift marker ("Rift")
+5. NPC marker (NPC name from `_get_npc_at_hex`)
+6. Mission marker ("Mission")
+7. Terrain label ("Ground" / "Debris" / "Vegetation" / "Blocked") — always falls through here
+
+The player's own cell is excluded (no point showing "Player" all the time).
+
+### Validation
+- `validate_scripts.gd` — All OK
+- `tools/smoke_tile_system.gd` — All checks passed
+- `tools/smoke_resource_nodes.gd` — All 7 groups passed
+- `tools/smoke_hover_tooltip.gd` — All 4 groups passed
+- `tools/boot_probe.gd` — 60 frames, 0 errors
+
 ### Next
-- **Phase 1b: hover tooltips** (1s dwell) per `docs/PLAN_v040_crafting_progression.md`
+- **Phase 2: full Character HUD + hotbar + minimap + inventory screen + mob drops + XP/EC** per `docs/PLAN_v040_crafting_progression.md` §4
 
 **Deleted in v0.3.0 follow-up** (3D material remnants surfaced by F5):
 - `data/sources/materials/material3d_mesh_*.tres.gd` × 9 — broken scripts that did `extends Material3D` (not a real Godot 4 class); produced 9 "Parse Error: Closing } doesn't have an opening counterpart" lines on every boot.

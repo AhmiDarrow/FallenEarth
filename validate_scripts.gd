@@ -29,6 +29,7 @@ const SCRIPTS := [
 	"res://scripts/HarvestNode.gd",
 	"res://scripts/FloorPickup.gd",
 	"res://scripts/InventoryManager.gd",
+	"res://scripts/HoverTooltip.gd",
 	"res://scripts/RiftInstance.gd",
 	"res://scripts/CombatManager.gd",
 	"res://scripts/CombatEncounterBuilder.gd",

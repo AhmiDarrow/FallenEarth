@@ -11,6 +11,7 @@ const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
 const MobVisualScript = preload("res://scripts/MobVisual.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
 const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
+const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -46,6 +47,10 @@ var _gather_yield_preview: Dictionary = {}
 # Currently equipped MainHand tool (Phase 1 placeholder until
 # EquipmentManager lands in Phase 4). Empty dict = no tool.
 var _equipped_tool: Dictionary = {}
+
+# Phase 1b: hover tooltip (1s dwell) — shows the name of what's under
+# the mouse cursor on the local map.
+var _hover_tooltip: Control = null
 var _rift_runner: Node = null
 var _game_time: float = 0.0
 var _rift_check_timer: float = 0.0
@@ -130,6 +135,7 @@ func _ready() -> void:
 	if is_instance_valid(_map_view):
 		_map_view.configure(_local_map)
 	_setup_player_visual()
+	_setup_hover_tooltip()
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_build_local_view()
 	_update_tile_info()
@@ -168,6 +174,9 @@ func _process(delta: float) -> void:
 			if is_instance_valid(node) and node.has_method("_process"):
 				node._process(delta)
 
+	# Phase 1b: hover tooltip — find what's under the mouse and update.
+	_tick_hover_tooltip()
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
@@ -194,6 +203,153 @@ func _unhandled_input(event: InputEvent) -> void:
 		_:
 			return
 	_try_move_local(dir.x, dir.y)
+
+
+# ---------------------------------------------------------------------------
+# Phase 1b: hover tooltip
+# ---------------------------------------------------------------------------
+
+func _setup_hover_tooltip() -> void:
+	# The tooltip is a Control that renders a small Label. It's added to
+	# the HubWorld tree (Control) so it renders on top of the world.
+	_hover_tooltip = HoverTooltipScript.new()
+	_hover_tooltip.name = "HoverTooltip"
+	_hover_tooltip.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	_hover_tooltip.position = Vector2.ZERO
+	_hover_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_hover_tooltip)
+
+
+func _tick_hover_tooltip() -> void:
+	if not is_instance_valid(_hover_tooltip):
+		return
+	if not is_instance_valid(_map_view):
+		return
+	# Convert mouse position (in screen coords) to local coords of the
+	# HubWorld Control. The _map_view sits at world_grid; for the cursor
+	# hit-test we want the position inside the map view's coordinate space.
+	# The world_grid is at (0, 0) within HubWorld (Control), and the
+	# map_view sits at (0, 0) within world_grid. So the mouse position
+	# relative to the map_view equals the local mouse position.
+	var mouse_local: Vector2 = get_local_mouse_position()
+	var target_text: String = _hit_test_at_world(mouse_local)
+	_hover_tooltip.update(mouse_local, target_text)
+
+
+# Hit-test the world at a local position (HubWorld's coordinate space).
+# Returns the display name of the topmost entity at that cell, or "" if
+# nothing notable. Priority: resource node > floor pickup > mob > rift
+# marker > NPC marker > terrain label.
+func _hit_test_at_world(world_pos: Vector2) -> String:
+	if not is_instance_valid(_map_view):
+		return ""
+	var cell_size: int = _map_view.get_cell_size()
+	var cell := Vector2i(
+		int(floor(world_pos.x / cell_size)),
+		int(floor(world_pos.y / cell_size)),
+	)
+	# Skip the player's own cell (no point showing "Player" all the time)
+	if cell == Vector2i(_local_x, _local_y):
+		return ""
+
+	# 1. Resource node at this cell
+	for entry in _map_view.get_resource_nodes_near(cell, 0):
+		var n: Node = entry.get("node")
+		if n != null and is_instance_valid(n):
+			var d: Dictionary = n.node_data
+			return str(d.get("name", d.get("id", "Resource")))
+
+	# 2. Floor pickup
+	var pickup: Node2D = _map_view.get_floor_pickup_at(cell)
+	if pickup != null and is_instance_valid(pickup):
+		var item_id: String = pickup.get_item_id()
+		var inv: Node = get_node_or_null("/root/InventoryManager")
+		if inv != null and inv.has_method("get_item_name"):
+			return String(inv.get_item_name(item_id))
+		return item_id
+
+	# 3. Mobs and rift / NPC markers (search _marker_nodes for this cell)
+	var cell_key := "%d,%d" % [cell.x, cell.y]
+	for kind in ["mob", "rift", "npc", "mission"]:
+		var key: String = "%s|%s" % [kind, cell_key]
+		if _marker_nodes.has(key):
+			match kind:
+				"mob":
+					return _mob_name_at_cell(cell)
+				"rift":
+					return "Rift"
+				"npc":
+					return _npc_name_at_hex()
+				"mission":
+					return "Mission"
+
+	# 4. Terrain label (always present)
+	return _terrain_label_at_cell(cell)
+
+
+func _terrain_label_at_cell(cell: Vector2i) -> String:
+	if not is_instance_valid(_map_view):
+		return ""
+	var t: int = _map_view.get_ground_layer().get_cell_source_id(Vector2i(cell.x, cell.y))
+	# We use the layer's cell atlas coord to read the terrain enum back
+	var atlas: Vector2i = _map_view.get_ground_layer().get_cell_atlas_coords(Vector2i(cell.x, cell.y))
+	var t_id: int = atlas.y
+	if t_id == LocalMapGen.TERRAIN_GROUND:
+		return "Ground"
+	if t_id == LocalMapGen.TERRAIN_DEBRIS:
+		return "Debris"
+	if t_id == LocalMapGen.TERRAIN_VEGETATION:
+		return "Vegetation"
+	if t_id == LocalMapGen.TERRAIN_BLOCKED:
+		return "Blocked"
+	return ""
+
+
+func _mob_name_at_cell(cell: Vector2i) -> String:
+	# Look up the mob data in GameState by cell, return its sprite_id
+	# (placeholder; Phase 3 will look up display names in mobs.json).
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if gs == null:
+		return "Mob"
+	var key: String = gs.mob_key(_player_q, _player_r, cell.x, cell.y)
+	var mob: Dictionary = gs.get_overworld_mob(key)
+	if mob.is_empty():
+		return "Mob"
+	var sprite_id: String = str(mob.get("sprite_id", mob.get("id", "mob")))
+	# Try to load the mob's display name from data/mobs.json
+	return _resolve_mob_display_name(sprite_id) + " (Lv.%d)" % int(mob.get("level", 1))
+
+
+func _resolve_mob_display_name(sprite_id: String) -> String:
+	var path := "res://data/mobs.json"
+	if not ResourceLoader.exists(path):
+		return sprite_id
+	var raw = load(path)
+	if raw == null:
+		return sprite_id
+	var data = raw.data if "data" in raw else raw
+	if not (data is Dictionary):
+		return sprite_id
+	# Search overworld (neutral + aggressive) and rift_only for the sprite_id
+	for section in ["overworld", "rift_only"]:
+		var bucket = data.get(section, {})
+		if bucket is Dictionary:
+			for cat in ["neutral", "aggressive"]:
+				for m in bucket.get(cat, []):
+					if str(m.get("sprite_id", m.get("id", ""))) == sprite_id:
+						return str(m.get("name", sprite_id))
+		elif bucket is Array:
+			for m in bucket:
+				if str(m.get("sprite_id", m.get("id", ""))) == sprite_id:
+					return str(m.get("name", sprite_id))
+	return sprite_id
+
+
+func _npc_name_at_hex() -> String:
+	var npc: Dictionary = _get_npc_at_hex()
+	if npc.is_empty():
+		return "NPC"
+	return str(npc.get("name", "NPC"))
 
 
 func set_character_data(data: Dictionary) -> void:
