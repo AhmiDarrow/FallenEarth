@@ -64,6 +64,11 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 	var biome_name: String = str(biome_tile.get("name", "Ash Wastes"))
 	var terrain := PackedByteArray()
 	terrain.resize(MAP_SIZE * MAP_SIZE)
+	# occupied: PackedByteArray of length MAP_SIZE*MAP_SIZE, 1 = something
+	# already placed here (resource node, floor pickup, mob). Prevents
+	# double-stacking entities.
+	var occupied := PackedByteArray()
+	occupied.resize(MAP_SIZE * MAP_SIZE)
 
 	var elev: float = float(biome_tile.get("elevation", 0.5))
 	var rain: float = float(biome_tile.get("rainfall", 0.5))
@@ -96,6 +101,10 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				continue
 			terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
 
+	# Phase 1: emit resource nodes and floor pickups
+	var resource_nodes: Array = _emit_resource_nodes(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
+	var floor_pickups: Array = _emit_floor_pickups(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
+
 	return {
 		"size": MAP_SIZE,
 		"hex_key": hex_key(q, r),
@@ -110,7 +119,160 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		"mobs": [],
 		"active_rifts": [],
 		"settlement": {"structures": [], "npcs": []},
+		"resource_nodes": resource_nodes,
+		"floor_pickups": floor_pickups,
 	}
+
+
+# Place per-biome resource nodes (trees, formations, ore, crystals, fauna)
+# on walkable cells, avoiding the homestead pocket and edges. Returns a
+# list of {x, y, ...node_data} entries. The node_data is the JSON entry
+# from data/resource_nodes.json, augmented with the placed cell.
+static func _emit_resource_nodes(
+		rng: RandomNumberGenerator,
+		biome_name: String,
+		terrain: PackedByteArray,
+		occupied: PackedByteArray,
+		spawn: Vector2i
+) -> Array:
+	var biome_data: Dictionary = _load_biome_resource_nodes(biome_name)
+	if biome_data.is_empty():
+		return []
+	var out: Array = []
+	# Categories in placement order; ore/crystals are usually rarer so
+	# place them first to reserve walkable cells.
+	var categories := ["crystals", "ore", "formations", "trees", "fauna"]
+	for category in categories:
+		var entries: Array = biome_data.get(category, [])
+		for entry in entries:
+			if entry == null or not (entry is Dictionary):
+				continue
+			var density: float = float(entry.get("density", 0.0))
+			if density <= 0.0:
+				continue
+			var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+			for _i in count:
+				var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn)
+				if pos.x < 0:
+					break
+				var placed: Dictionary = (entry as Dictionary).duplicate(true)
+				placed["x"] = pos.x
+				placed["y"] = pos.y
+				placed["category"] = category
+				out.append(placed)
+	return out
+
+
+# Place sticks and stones on walkable cells outside the spawn pocket.
+static func _emit_floor_pickups(
+		rng: RandomNumberGenerator,
+		biome_name: String,
+		terrain: PackedByteArray,
+		occupied: PackedByteArray,
+		spawn: Vector2i
+) -> Array:
+	var densities: Dictionary = _load_floor_pickup_densities()
+	if densities.is_empty():
+		return []
+	var out: Array = []
+	# Floor pickups share density with whatever the JSON provides, with
+	# a per-cell chance rolled at generation. We pick a deterministic
+	# number of cells to place based on density.
+	for pickup_id in ["stick", "stone"]:
+		var density: float = float(densities.get(pickup_id, 0.0))
+		if density <= 0.0:
+			continue
+		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+		for _i in count:
+			var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn, 8)
+			if pos.x < 0:
+				break
+			occupied[pos.y * MAP_SIZE + pos.x] = 1
+			out.append({
+				"id": pickup_id,
+				"x": pos.x,
+				"y": pos.y,
+				"qty": 1,
+			})
+	return out
+
+
+# Find a random walkable cell that is not yet occupied and is not within
+# `spawn_buffer` cells of the spawn point. Returns Vector2i(-1, -1) if
+# no candidate found after `max_attempts` tries.
+static func _pick_walkable_cell(
+		rng: RandomNumberGenerator,
+		terrain: PackedByteArray,
+		occupied: PackedByteArray,
+		spawn: Vector2i,
+		spawn_buffer: int = 12
+	) -> Vector2i:
+	var max_attempts := 32
+	for _i in max_attempts:
+		var x: int = rng.randi_range(0, MAP_SIZE - 1)
+		var y: int = rng.randi_range(0, MAP_SIZE - 1)
+		if abs(x - spawn.x) < spawn_buffer or abs(y - spawn.y) < spawn_buffer:
+			continue
+		var idx := y * MAP_SIZE + x
+		if int(terrain[idx]) == TERRAIN_BLOCKED:
+			continue
+		if int(occupied[idx]) != 0:
+			continue
+		occupied[idx] = 1
+		return Vector2i(x, y)
+	return Vector2i(-1, -1)
+
+
+# Cached loader for the resource_nodes.json (whole-file; this runs at
+# every map generate, so cache by file modification time).
+static var _rn_cache: Dictionary = {}
+static var _rn_cache_mtime: int = -1
+
+
+static func _load_biome_resource_nodes(biome_name: String) -> Dictionary:
+	var path := "res://data/resource_nodes.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var ftime := FileAccess.get_modified_time(path)
+	if _rn_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Dictionary = {}
+			if raw is Dictionary:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Dictionary:
+					data = d
+			if not data.is_empty():
+				_rn_cache = data.get("biomes", {})
+				_rn_cache_mtime = ftime
+	return _rn_cache.get(biome_name, {})
+
+
+static var _fp_cache: Dictionary = {}
+static var _fp_cache_mtime: int = -1
+
+
+static func _load_floor_pickup_densities() -> Dictionary:
+	var path := "res://data/resource_nodes.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var ftime := FileAccess.get_modified_time(path)
+	if _fp_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Dictionary = {}
+			if raw is Dictionary:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Dictionary:
+					data = d
+			if not data.is_empty():
+				_fp_cache = data.get("floor_pickup_density", {})
+				_fp_cache_mtime = ftime
+	return _fp_cache
 
 
 static func get_terrain(map_data: Dictionary, x: int, y: int) -> int:

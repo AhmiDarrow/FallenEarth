@@ -1,0 +1,534 @@
+{
+  "_comment": "Per-biome resource nodes. Each biome has 1-3 trees, 1-3 formations, 0-3 ore, 0-3 crystals, 0-3 fauna. floor_pickup_density gives the chance per cell that a stick or stone appears (universal across all biomes). The total number of each node type placed on a 512x512 map is computed by LocalMapGenerator using these densities and biome modifiers (no fixed counts; nodes are sampled per cell).",
+  "biomes": {
+    "Ash Wastes": {
+      "trees": [
+        {
+          "id": "ash_scrub",
+          "name": "Ash Scrub",
+          "yield": {"item": "withered_branch", "qty": [1, 3]},
+          "gather_secs": 2.5,
+          "respawn_secs": 180,
+          "density": 0.02,
+          "sprite": "tree_ash_scrub"
+        },
+        {
+          "id": "withered_oak",
+          "name": "Withered Oak",
+          "yield": {"item": "withered_branch", "qty": [2, 4]},
+          "gather_secs": 4.0,
+          "respawn_secs": 240,
+          "density": 0.005,
+          "sprite": "tree_withered_oak"
+        }
+      ],
+      "formations": [
+        {
+          "id": "rust_pipe_cluster",
+          "name": "Rust Pipe Cluster",
+          "yield": {"item": "rusted_scrap", "qty": [1, 2]},
+          "gather_secs": 3.0,
+          "respawn_secs": 240,
+          "density": 0.015,
+          "sprite": "formation_rust_pipe",
+          "passable": true
+        },
+        {
+          "id": "wrecked_vehicle",
+          "name": "Wrecked Vehicle",
+          "yield": {"item": "rusted_scrap", "qty": [2, 4]},
+          "gather_secs": 5.0,
+          "respawn_secs": 360,
+          "density": 0.004,
+          "sprite": "formation_vehicle",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 2]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.012,
+          "sprite": "ore_iron"
+        }
+      ],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "wasteland_lizard",
+          "name": "Wasteland Lizard",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.006,
+          "sprite": "fauna_lizard"
+        }
+      ]
+    },
+    "Rust Canyons": {
+      "trees": [],
+      "formations": [
+        {
+          "id": "rusted_container",
+          "name": "Rusted Container",
+          "yield": {"item": "rusted_scrap", "qty": [2, 4]},
+          "gather_secs": 3.5,
+          "respawn_secs": 300,
+          "density": 0.018,
+          "sprite": "formation_container",
+          "passable": true
+        },
+        {
+          "id": "collapsed_walkway",
+          "name": "Collapsed Walkway",
+          "yield": {"item": "rusted_scrap", "qty": [3, 6]},
+          "gather_secs": 6.0,
+          "respawn_secs": 420,
+          "density": 0.003,
+          "sprite": "formation_walkway",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 2]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.014,
+          "sprite": "ore_iron"
+        },
+        {
+          "id": "copper_outcrop",
+          "name": "Copper Outcrop",
+          "yield": {"item": "copper_ore", "qty": [1, 2]},
+          "gather_secs": 5.0,
+          "respawn_secs": 360,
+          "density": 0.008,
+          "sprite": "ore_copper"
+        }
+      ],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "rust_rat",
+          "name": "Rust Rat",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.008,
+          "sprite": "fauna_rat"
+        }
+      ]
+    },
+    "Neon Bogs": {
+      "trees": [
+        {
+          "id": "neon_kelp",
+          "name": "Neon Kelp",
+          "yield": {"item": "kelp_fibre", "qty": [2, 4]},
+          "gather_secs": 2.5,
+          "respawn_secs": 180,
+          "density": 0.025,
+          "sprite": "tree_neon_kelp"
+        }
+      ],
+      "formations": [
+        {
+          "id": "shallow_pool",
+          "name": "Shallow Pool",
+          "yield": null,
+          "gather_secs": 0,
+          "respawn_secs": 0,
+          "density": 0.012,
+          "sprite": "formation_pool",
+          "passable": false
+        }
+      ],
+      "ore": [],
+      "crystals": [
+        {
+          "id": "teal_geode",
+          "name": "Teal Geode",
+          "yield": {"item": "teal_crystal", "qty": [1, 2]},
+          "gather_secs": 5.0,
+          "respawn_secs": 360,
+          "density": 0.006,
+          "sprite": "crystal_teal"
+        }
+      ],
+      "fauna": [
+        {
+          "id": "bog_crab",
+          "name": "Bog Crab",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.01,
+          "sprite": "fauna_crab"
+        },
+        {
+          "id": "lumen_jelly",
+          "name": "Lumen Jelly",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.004,
+          "sprite": "fauna_jelly"
+        }
+      ]
+    },
+    "Scorched Plains": {
+      "trees": [
+        {
+          "id": "scorched_shrub",
+          "name": "Scorched Shrub",
+          "yield": {"item": "withered_branch", "qty": [1, 2]},
+          "gather_secs": 2.0,
+          "respawn_secs": 180,
+          "density": 0.015,
+          "sprite": "tree_scorched_shrub"
+        }
+      ],
+      "formations": [
+        {
+          "id": "glass_shard_field",
+          "name": "Glass Shard Field",
+          "yield": {"item": "rusted_scrap", "qty": [1, 2]},
+          "gather_secs": 3.0,
+          "respawn_secs": 300,
+          "density": 0.01,
+          "sprite": "formation_glass",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 3]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.01,
+          "sprite": "ore_iron"
+        }
+      ],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "dust_moth",
+          "name": "Dust Moth",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.008,
+          "sprite": "fauna_moth"
+        }
+      ]
+    },
+    "Ironwood Thicket": {
+      "trees": [
+        {
+          "id": "ironwood_spire",
+          "name": "Ironwood Spire",
+          "yield": {"item": "ironwood_bark", "qty": [2, 4]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.018,
+          "sprite": "tree_ironwood"
+        },
+        {
+          "id": "ironwood_cluster",
+          "name": "Ironwood Cluster",
+          "yield": {"item": "ironwood_bark", "qty": [3, 5]},
+          "gather_secs": 5.5,
+          "respawn_secs": 360,
+          "density": 0.006,
+          "sprite": "tree_ironwood_cluster"
+        }
+      ],
+      "formations": [
+        {
+          "id": "metallic_vine",
+          "name": "Metallic Vine",
+          "yield": {"item": "living_metal_sample", "qty": [1, 1]},
+          "gather_secs": 4.0,
+          "respawn_secs": 360,
+          "density": 0.008,
+          "sprite": "formation_vine",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 2]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.01,
+          "sprite": "ore_iron"
+        }
+      ],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "iron_buck",
+          "name": "Iron Buck",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.005,
+          "sprite": "fauna_deer"
+        }
+      ]
+    },
+    "Glass Dunes": {
+      "trees": [
+        {
+          "id": "glass_cactus",
+          "name": "Glass Cactus",
+          "yield": {"item": "withered_branch", "qty": [1, 2]},
+          "gather_secs": 2.5,
+          "respawn_secs": 240,
+          "density": 0.012,
+          "sprite": "tree_glass_cactus"
+        }
+      ],
+      "formations": [
+        {
+          "id": "prismatic_crystal",
+          "name": "Prismatic Crystal Outcrop",
+          "yield": {"item": "rusted_scrap", "qty": [1, 2]},
+          "gather_secs": 3.0,
+          "respawn_secs": 300,
+          "density": 0.014,
+          "sprite": "formation_prism",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 2]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.008,
+          "sprite": "ore_iron"
+        }
+      ],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "glass_serpent",
+          "name": "Glass Serpent",
+          "passive": false,
+          "aggro_range": 4,
+          "density": 0.003,
+          "sprite": "fauna_serpent"
+        }
+      ]
+    },
+    "Corpse Fields": {
+      "trees": [
+        {
+          "id": "dead_tree",
+          "name": "Dead Tree",
+          "yield": {"item": "withered_branch", "qty": [2, 3]},
+          "gather_secs": 3.0,
+          "respawn_secs": 240,
+          "density": 0.01,
+          "sprite": "tree_dead"
+        }
+      ],
+      "formations": [
+        {
+          "id": "bone_pile",
+          "name": "Bone Pile",
+          "yield": {"item": "rusted_scrap", "qty": [1, 2]},
+          "gather_secs": 3.0,
+          "respawn_secs": 300,
+          "density": 0.014,
+          "sprite": "formation_bones",
+          "passable": true
+        }
+      ],
+      "ore": [],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "bone_buzzard",
+          "name": "Bone Buzzard",
+          "passive": false,
+          "aggro_range": 3,
+          "density": 0.005,
+          "sprite": "fauna_bird"
+        }
+      ]
+    },
+    "Stormspire Highlands": {
+      "trees": [
+        {
+          "id": "lightning_pine",
+          "name": "Lightning Pine",
+          "yield": {"item": "ironwood_bark", "qty": [1, 2]},
+          "gather_secs": 3.5,
+          "respawn_secs": 300,
+          "density": 0.01,
+          "sprite": "tree_pine"
+        }
+      ],
+      "formations": [
+        {
+          "id": "storm_capacitor",
+          "name": "Storm Capacitor",
+          "yield": {"item": "rusted_scrap", "qty": [2, 3]},
+          "gather_secs": 4.0,
+          "respawn_secs": 360,
+          "density": 0.01,
+          "sprite": "formation_capacitor",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 2]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.012,
+          "sprite": "ore_iron"
+        },
+        {
+          "id": "starmetal_outcrop",
+          "name": "Starmetal Outcrop",
+          "yield": {"item": "starmetal_ore", "qty": [1, 2]},
+          "gather_secs": 6.0,
+          "respawn_secs": 480,
+          "density": 0.004,
+          "sprite": "ore_starmetal"
+        }
+      ],
+      "crystals": [
+        {
+          "id": "void_shard_node",
+          "name": "Void Shard Cluster",
+          "yield": {"item": "void_shard", "qty": [1, 1]},
+          "gather_secs": 5.5,
+          "respawn_secs": 420,
+          "density": 0.005,
+          "sprite": "crystal_void"
+        }
+      ],
+      "fauna": [
+        {
+          "id": "storm_hawk",
+          "name": "Storm Hawk",
+          "passive": false,
+          "aggro_range": 4,
+          "density": 0.003,
+          "sprite": "fauna_hawk"
+        }
+      ]
+    },
+    "Toxin Marshes": {
+      "trees": [
+        {
+          "id": "toxic_bramble",
+          "name": "Toxic Bramble",
+          "yield": {"item": "withered_branch", "qty": [1, 2]},
+          "gather_secs": 2.5,
+          "respawn_secs": 240,
+          "density": 0.014,
+          "sprite": "tree_bramble"
+        }
+      ],
+      "formations": [
+        {
+          "id": "toxic_pool",
+          "name": "Toxic Pool",
+          "yield": null,
+          "gather_secs": 0,
+          "respawn_secs": 0,
+          "density": 0.015,
+          "sprite": "formation_pool",
+          "passable": false
+        }
+      ],
+      "ore": [],
+      "crystals": [
+        {
+          "id": "ember_geode",
+          "name": "Ember Geode",
+          "yield": {"item": "ember_crystal", "qty": [1, 2]},
+          "gather_secs": 5.5,
+          "respawn_secs": 420,
+          "density": 0.005,
+          "sprite": "crystal_ember"
+        }
+      ],
+      "fauna": [
+        {
+          "id": "marsh_frog",
+          "name": "Marsh Frog",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.01,
+          "sprite": "fauna_frog"
+        }
+      ]
+    },
+    "Dead City Outskirts": {
+      "trees": [],
+      "formations": [
+        {
+          "id": "rubble_pile",
+          "name": "Rubble Pile",
+          "yield": {"item": "rusted_scrap", "qty": [2, 4]},
+          "gather_secs": 3.5,
+          "respawn_secs": 300,
+          "density": 0.02,
+          "sprite": "formation_rubble",
+          "passable": true
+        },
+        {
+          "id": "collapsed_wall",
+          "name": "Collapsed Wall",
+          "yield": {"item": "rusted_scrap", "qty": [3, 5]},
+          "gather_secs": 5.5,
+          "respawn_secs": 420,
+          "density": 0.006,
+          "sprite": "formation_wall",
+          "passable": true
+        }
+      ],
+      "ore": [
+        {
+          "id": "iron_outcrop",
+          "name": "Iron Outcrop",
+          "yield": {"item": "iron_ore", "qty": [1, 2]},
+          "gather_secs": 4.0,
+          "respawn_secs": 300,
+          "density": 0.012,
+          "sprite": "ore_iron"
+        }
+      ],
+      "crystals": [],
+      "fauna": [
+        {
+          "id": "city_rat",
+          "name": "City Rat",
+          "passive": true,
+          "aggro_range": 0,
+          "density": 0.012,
+          "sprite": "fauna_rat"
+        }
+      ]
+    }
+  },
+  "floor_pickup_density": {
+    "_comment": "Per-cell chance that a stick or stone appears on a walkable ground cell. The center homestead pocket (~50 cells radius) and the spawn area (5 cells) suppress floor pickups. The LocalMapGenerator places each pickup once at map generation; pickups don't respawn (player walks over them and they're gone for the rest of the map's life).",
+    "stick": 0.012,
+    "stone": 0.018
+  }
+}

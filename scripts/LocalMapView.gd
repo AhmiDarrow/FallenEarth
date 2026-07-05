@@ -2,20 +2,26 @@
 ##
 ## One scene per HubWorld. configure(map_data) paints all cells of a generated
 ## local map into the TileMapLayer using a biome-specific TileSet built by
-## TileSetService. Marker/mob layers sit on top of the terrain. No sprite
-## batching, no procedural drawing — Godot 4.3 TileMap handles 512x512 (~262k
-## cells) at 60 fps without chunking.
+## TileSetService. Marker/mob/node/floor-pickup layers sit on top of the terrain.
+## No sprite batching, no procedural drawing — Godot 4.3 TileMap handles
+## 512x512 (~262k cells) at 60 fps without chunking.
 class_name LocalMapView
 extends Node2D
 
 const TileSetSvc = preload("res://scripts/TileSetService.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
+const HarvestNodeScript = preload("res://scripts/HarvestNode.gd")
+const FloorPickupScript = preload("res://scripts/FloorPickup.gd")
+const HarvestNodeScene = preload("res://scenes/HarvestNode.tscn")
+const FloorPickupScene = preload("res://scenes/FloorPickup.tscn")
 
 const CELL_SIZE := 24
 
 var ground_layer: TileMapLayer
 var marker_layer: Node2D
 var mob_layer: Node2D
+var node_layer: Node2D
+var pickup_layer: Node2D
 
 var _current_biome: String = ""
 
@@ -24,9 +30,17 @@ func _ready() -> void:
 	ground_layer = get_node_or_null("Ground") as TileMapLayer
 	marker_layer = get_node_or_null("MarkerLayer") as Node2D
 	mob_layer = get_node_or_null("MobLayer") as Node2D
+	node_layer = get_node_or_null("NodeLayer") as Node2D
+	pickup_layer = get_node_or_null("PickupLayer") as Node2D
 	# Mob layer is y-sorted so entities stack correctly with the player.
 	if is_instance_valid(mob_layer):
 		mob_layer.y_sort_enabled = true
+	# Node/pickup layers sit above the ground but below the player visual
+	# so y-sort in MobLayer still layers entities on top.
+	if is_instance_valid(node_layer):
+		node_layer.y_sort_enabled = true
+	if is_instance_valid(pickup_layer):
+		pickup_layer.y_sort_enabled = true
 
 
 func configure(map_data: Dictionary) -> void:
@@ -37,6 +51,8 @@ func configure(map_data: Dictionary) -> void:
 	_clear_ground()
 	_clear_markers()
 	_clear_mobs()
+	_clear_nodes()
+	_clear_pickups()
 
 	var biome_name: String = str(map_data.get("biome", "Ash Wastes"))
 	_current_biome = biome_name
@@ -59,6 +75,91 @@ func configure(map_data: Dictionary) -> void:
 			if t < 0 or t > TileSetSvc.TERRAIN_BLOCKED:
 				t = TileSetSvc.TERRAIN_GROUND
 			ground_layer.set_cell(Vector2i(x, y), 0, TileSetSvc.atlas_coords(t))
+
+	# Spawn resource nodes (trees, formations, ore, crystals, fauna)
+	_populate_resource_nodes(map_data.get("resource_nodes", []))
+	# Spawn floor pickups (sticks, stones)
+	_populate_floor_pickups(map_data.get("floor_pickups", []))
+
+
+func _populate_resource_nodes(nodes: Array) -> void:
+	if not is_instance_valid(node_layer):
+		return
+	for entry in nodes:
+		if not (entry is Dictionary):
+			continue
+		var node: Node2D = HarvestNodeScene.instantiate()
+		node_layer.add_child(node)
+		node.setup((entry as Dictionary).duplicate(true))
+		node.position = cell_to_world(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+
+
+func _populate_floor_pickups(pickups: Array) -> void:
+	if not is_instance_valid(pickup_layer):
+		return
+	for entry in pickups:
+		if not (entry is Dictionary):
+			continue
+		var pickup: Node2D = FloorPickupScene.instantiate()
+		pickup_layer.add_child(pickup)
+		pickup.setup(str(entry.get("id", "")), int(entry.get("qty", 1)))
+		pickup.position = cell_to_world(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+
+
+func get_resource_nodes() -> Array:
+	# Returns the live HarvestNode nodes currently in node_layer.
+	if not is_instance_valid(node_layer):
+		return []
+	var out: Array = []
+	for child in node_layer.get_children():
+		if child is Node2D and child.get_script() == HarvestNodeScript:
+			out.append(child)
+	return out
+
+
+func get_floor_pickups() -> Array:
+	# Returns the live FloorPickup nodes currently in pickup_layer.
+	if not is_instance_valid(pickup_layer):
+		return []
+	var out: Array = []
+	for child in pickup_layer.get_children():
+		if child is Node2D and child.get_script() == FloorPickupScript:
+			out.append(child)
+	return out
+
+
+## Iterate every HarvestNode within `radius` cells of the player's cell.
+## Returns Array of {node: HarvestNode, cell: Vector2i, dist: int}.
+func get_resource_nodes_near(player_cell: Vector2i, radius: int) -> Array:
+	var out: Array = []
+	for child in get_resource_nodes():
+		if not is_instance_valid(child):
+			continue
+		var c: Vector2i = child.get_cell(CELL_SIZE)
+		var d: int = maxi(abs(c.x - player_cell.x), abs(c.y - player_cell.y))
+		if d <= radius:
+			out.append({"node": child, "cell": c, "dist": d})
+	return out
+
+
+## Iterate every FloorPickup within `radius` cells of the player's cell.
+func get_floor_pickups_near(player_cell: Vector2i, radius: int) -> Array:
+	var out: Array = []
+	for child in get_floor_pickups():
+		if not is_instance_valid(child):
+			continue
+		var c: Vector2i = child.get_cell(CELL_SIZE)
+		var d: int = maxi(abs(c.x - player_cell.x), abs(c.y - player_cell.y))
+		if d <= radius:
+			out.append({"node": child, "cell": c, "dist": d})
+	return out
+
+
+## Returns the FloorPickup at a specific cell, or null.
+func get_floor_pickup_at(cell: Vector2i) -> Node2D:
+	for entry in get_floor_pickups_near(cell, 0):
+		return entry["node"]
+	return null
 
 
 func get_cell_size() -> int:
@@ -124,9 +225,29 @@ func clear_mobs() -> void:
 	_clear_mobs()
 
 
+func get_node_layer() -> Node2D:
+	return node_layer
+
+
+func get_pickup_layer() -> Node2D:
+	return pickup_layer
+
+
 func _clear_ground() -> void:
 	if is_instance_valid(ground_layer):
 		ground_layer.clear()
+
+
+func _clear_nodes() -> void:
+	if is_instance_valid(node_layer):
+		for child in node_layer.get_children():
+			child.queue_free()
+
+
+func _clear_pickups() -> void:
+	if is_instance_valid(pickup_layer):
+		for child in pickup_layer.get_children():
+			child.queue_free()
 
 
 func _clear_markers() -> void:

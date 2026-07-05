@@ -3,7 +3,7 @@
 **Version:** 0.4.0-dev
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 0 of v0.4.0 complete (drop rift_scar tile)
+**Current Phase:** Phase 1 of v0.4.0 complete (resource nodes + gathering)
 
 ## Summary
 
@@ -77,8 +77,49 @@ Splash → MainMenu → WorldGeneration (pick start hex)
 - `tools/smoke_tile_system.gd` — All checks passed (10 biome TileSets, MobVisual load, LocalMapView configure with legacy rift_scar=4 normalized to ground, HubWorld instantiate)
 - `tools/boot_probe.gd` — 60 frames, 0 errors
 
+### What changed in v0.4.0 Phase 1
+
+**Goal:** Place 1-3 trees + 1-3 formations + 0-3 ore + 0-3 crystals + 0-3 fauna per biome on the local map, plus sticks and stones as floor pickups. Player presses E to gather. The full minute-1 progression loop: walk → pick up sticks/stones → craft Stone Axe or Stone Pickaxe → chop trees / mine ore.
+
+### New data files
+- `data/items.json` — 14 items: stick, stone, withered_branch, kelp_fibre, ironwood_bark, living_metal_sample, rusted_scrap, iron_ore, copper_ore, starmetal_ore, teal_crystal, void_shard, ember_crystal, bandage
+- `data/resource_nodes.json` — 10 biomes × ~6 node entries; `floor_pickup_density` (stick 0.012, stone 0.018) for universal floor pickups
+- `data/tools.json` — 8 tools: 2 stone tools (T0) + 3 axes (T1-T3) + 3 pickaxes (T1-T3)
+- `data/recipes.json` — 3 recipes: stone_axe, stone_pickaxe, bandage (all station: none, L1)
+
+### New scripts
+- `scripts/HarvestNode.gd` + `scenes/HarvestNode.tscn` — gatherable resource entity; respects tool tier; respawn timer; sprite by name
+- `scripts/FloorPickup.gd` + `scenes/FloorPickup.tscn` — small auto-pickup entity (stick, stone)
+- `scripts/InventoryManager.gd` (autoload) — 30-slot stack-based inventory; `add_item`, `remove_item`, `get_count`, `has_item`; signals `inventory_changed`, `item_added`, `item_full`
+
+### Modified
+- `project.godot` — added `InventoryManager="*res://scripts/InventoryManager.gd"` autoload
+- `scenes/LocalMapView.tscn` — added `NodeLayer` and `PickupLayer` (y-sorted) between Ground and MobLayer
+- `scripts/LocalMapView.gd` — new `node_layer` and `pickup_layer` members; `_populate_resource_nodes` + `_populate_floor_pickups` from `map_data`; `get_resource_nodes_near` / `get_floor_pickups_near` / `get_floor_pickup_at` queries
+- `scripts/LocalMapGenerator.gd` — `_emit_resource_nodes` + `_emit_floor_pickups` place nodes + pickups on walkable cells outside the spawn pocket; cached file-loaders for the JSON
+- `scripts/HubWorld.gd` — `_try_start_gather` (E key, adjacent HarvestNode); `_tick_gather` (timer); `_try_collect_floor_pickup_at` (auto-pickup on walk); `_process` ticks gather timer + HarvestNode respawn; `_equipped_tool` placeholder for Phase 4's EquipmentManager
+- `validate_scripts.gd` — added HarvestNode, FloorPickup, InventoryManager to the script list
+
+### New tool scripts
+- `tools/generate_nodes.py` — 39 unique resource node sprites + 1 generic fallback (procedural PIL)
+- `tools/generate_floor_pickups.py` — 2 sprites (stick, stone)
+- `tools/verify_assets.py` — phase-scoped asset verification; `--phase 1` checks tilesets, resource_nodes, floor_pickups
+- `tools/smoke_resource_nodes.gd` — 7 test groups covering data loads, generator emission, view hosting, gather logic (incl. tool tier), pickup collect, inventory ops, respawn timer
+
+### Phase 1 design notes
+- **No tool gating in Phase 1:** without an EquipmentManager yet, the player has no way to "equip" a tool. The `HarvestNode.try_gather` API supports proper tool checking (stone_pickaxe only mines iron_outcrop, not copper), but `HubWorld` calls it with a `*` wildcard so bare-hands works for testing. Phase 4 (EquipmentManager + hotbar) will make tool equipping real and turn off the `*` fallback.
+- **No respawn for floor pickups:** sticks and stones are single-shot per map. The 262k-cell Ash Wastes map gets ~5k-7k sticks and ~7k-10k stones — plenty to find. To revisit if the user finds the world too empty.
+- **High node density:** total density across all categories is ~10% of walkable cells. Ash Wastes gets ~16k resource nodes. This may feel crowded; Phase 1 is a "make sure the system works" milestone. If F5 looks busy we'll trim densities in a follow-up.
+
+### Validation
+- `validate_scripts.gd` — All scripts and scenes OK
+- `tools/smoke_tile_system.gd` — All checks passed
+- `tools/smoke_resource_nodes.gd` — All 7 groups passed (data loads, generator emits, view hosts, gather logic w/ stone pickaxe, pickup collect, inventory ops, respawn timer)
+- `tools/boot_probe.gd` — 60 frames, 0 errors
+- `tools/verify_assets.py --phase 1` — all 3 categories ok
+
 ### Next
-- **Phase 1: Resource nodes + gathering + tool-tier gating + sticks/stones** (per `docs/PLAN_v040_crafting_progression.md`)
+- **Phase 1b: hover tooltips** (1s dwell) per `docs/PLAN_v040_crafting_progression.md`
 
 **Deleted in v0.3.0 follow-up** (3D material remnants surfaced by F5):
 - `data/sources/materials/material3d_mesh_*.tres.gd` × 9 — broken scripts that did `extends Material3D` (not a real Godot 4 class); produced 9 "Parse Error: Closing } doesn't have an opening counterpart" lines on every boot.

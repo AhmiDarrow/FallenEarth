@@ -1,0 +1,40 @@
+{
+  "_comment": "Crafting recipes. Phase 1 seeds the two stone-tool recipes (L1, no station) so the player has a complete loop from minute 1: pick up sticks/stones off the ground -> craft Stone Axe or Stone Pickaxe -> chop trees / mine ore -> craft better tools. Later phases will add bandage, worktable, armor table, and blacksmith recipes.",
+  "recipes": [
+    {
+      "id": "stone_axe",
+      "name": "Stone Axe",
+      "station": "none",
+      "level_required": 1,
+      "ingredients": [
+        {"item": "stick", "qty": 1},
+        {"item": "stone", "qty": 2}
+      ],
+      "result": {"item": "axe_stone", "qty": 1},
+      "category": "tool"
+    },
+    {
+      "id": "stone_pickaxe",
+      "name": "Stone Pickaxe",
+      "station": "none",
+      "level_required": 1,
+      "ingredients": [
+        {"item": "stick", "qty": 1},
+        {"item": "stone", "qty": 2}
+      ],
+      "result": {"item": "pickaxe_stone", "qty": 1},
+      "category": "tool"
+    },
+    {
+      "id": "bandage",
+      "name": "Bandage",
+      "station": "none",
+      "level_required": 1,
+      "ingredients": [
+        {"item": "withered_branch", "qty": 1}
+      ],
+      "result": {"item": "bandage", "qty": 1},
+      "category": "consumable"
+    }
+  ]
+}

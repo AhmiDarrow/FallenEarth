@@ -1,0 +1,110 @@
+{
+  "_comment": "Tools (pickaxes and axes) and weapons live here. Phase 1 seeds the T0 stone tools (axe_stone, pickaxe_stone) plus the metal tiers. Tools are equippable into MainHand; weapons share MainHand. Hotbar (Phase 2) handles swap. Each tool defines which HarvestNode ids it can harvest and a speed multiplier. Empty harvests list = the tool can't gather anything.",
+  "tools": [
+    {
+      "id": "axe_stone",
+      "type": "axe",
+      "tier": 0,
+      "level_required": 1,
+      "name": "Stone Axe",
+      "sprite": "tool_axe_stone",
+      "harvests": ["ash_scrub", "withered_oak", "neon_kelp", "scorched_shrub", "ironwood_spire", "ironwood_cluster", "glass_cactus", "dead_tree", "lightning_pine", "toxic_bramble"],
+      "speed_mult": 0.7,
+      "stackable": false,
+      "sell_value_ec": 4,
+      "category": "tool"
+    },
+    {
+      "id": "pickaxe_stone",
+      "type": "pickaxe",
+      "tier": 0,
+      "level_required": 1,
+      "name": "Stone Pickaxe",
+      "sprite": "tool_pickaxe_stone",
+      "harvests": ["iron_outcrop"],
+      "speed_mult": 0.7,
+      "stackable": false,
+      "sell_value_ec": 4,
+      "category": "tool"
+    },
+    {
+      "id": "axe_rough",
+      "type": "axe",
+      "tier": 1,
+      "level_required": 1,
+      "name": "Rough Axe",
+      "sprite": "tool_axe_rough",
+      "harvests": ["ash_scrub", "withered_oak", "neon_kelp", "scorched_shrub", "ironwood_spire", "ironwood_cluster", "glass_cactus", "dead_tree", "lightning_pine", "toxic_bramble"],
+      "speed_mult": 1.0,
+      "stackable": false,
+      "sell_value_ec": 25,
+      "category": "tool"
+    },
+    {
+      "id": "pickaxe_iron",
+      "type": "pickaxe",
+      "tier": 1,
+      "level_required": 10,
+      "name": "Iron Pickaxe",
+      "sprite": "tool_pickaxe_iron",
+      "harvests": ["iron_outcrop"],
+      "speed_mult": 1.0,
+      "stackable": false,
+      "sell_value_ec": 35,
+      "category": "tool"
+    },
+    {
+      "id": "axe_reinforced",
+      "type": "axe",
+      "tier": 2,
+      "level_required": 25,
+      "name": "Reinforced Axe",
+      "sprite": "tool_axe_reinforced",
+      "harvests": ["ash_scrub", "withered_oak", "neon_kelp", "scorched_shrub", "ironwood_spire", "ironwood_cluster", "glass_cactus", "dead_tree", "lightning_pine", "toxic_bramble"],
+      "speed_mult": 1.5,
+      "stackable": false,
+      "sell_value_ec": 120,
+      "category": "tool"
+    },
+    {
+      "id": "pickaxe_copper",
+      "type": "pickaxe",
+      "tier": 2,
+      "level_required": 20,
+      "name": "Copper Pickaxe",
+      "sprite": "tool_pickaxe_copper",
+      "harvests": ["iron_outcrop", "copper_outcrop"],
+      "speed_mult": 1.4,
+      "stackable": false,
+      "sell_value_ec": 180,
+      "category": "tool"
+    },
+    {
+      "id": "axe_masterwork",
+      "type": "axe",
+      "tier": 3,
+      "level_required": 75,
+      "name": "Masterwork Axe",
+      "sprite": "tool_axe_masterwork",
+      "harvests": ["ash_scrub", "withered_oak", "neon_kelp", "scorched_shrub", "ironwood_spire", "ironwood_cluster", "glass_cactus", "dead_tree", "lightning_pine", "toxic_bramble"],
+      "speed_mult": 2.0,
+      "bonus_yield": 1,
+      "stackable": false,
+      "sell_value_ec": 600,
+      "category": "tool"
+    },
+    {
+      "id": "pickaxe_starmetal",
+      "type": "pickaxe",
+      "tier": 3,
+      "level_required": 60,
+      "name": "Starmetal Pickaxe",
+      "sprite": "tool_pickaxe_starmetal",
+      "harvests": ["iron_outcrop", "copper_outcrop", "starmetal_outcrop"],
+      "speed_mult": 1.8,
+      "stackable": false,
+      "sell_value_ec": 900,
+      "category": "tool"
+    }
+  ]
+}

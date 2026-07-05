@@ -36,6 +36,12 @@
 |----|------|-------|
 | 18 | Drop rift_scar tile | Removed TERRAIN_RIFT_SCAR from LocalMapGenerator + TileSetService; 4-row atlas; rift_scar.png deleted (10 files); legacy `terrain[i] == 4` normalized to ground in LocalMapView. Committed `883eca5+`. |
 
+### v0.4.0 Phase 1 ✅ (2026-07-05)
+
+| ID | Task | Notes |
+|----|------|-------|
+| 19 | Resource nodes | 4 new data files (items, resource_nodes, tools, recipes); HarvestNode + FloorPickup scenes; InventoryManager autoload; LocalMapGenerator emits nodes + pickups; LocalMapView hosts them in NodeLayer + PickupLayer; HubWorld gather action + auto-pickup; tools/generate_nodes.py (39 sprites), generate_floor_pickups.py (2 sprites), verify_assets.py, smoke_resource_nodes.gd. All 7 test groups green.
+
 ### Phase 7 — Godot 4.3 TileMapLayer system ✅
 
 | ID | Task | Notes |

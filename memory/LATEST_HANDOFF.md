@@ -1,30 +1,28 @@
 ---
-name: v040-phase0-rift-scar-drop
-description: v0.4.0 Phase 0 complete. Rifts are now entities (markers), terrain atlas is 4 rows. Next: Phase 1 resource nodes.
+name: v040-phase1-resource-nodes
+description: v0.4.0 Phase 1 complete. Resource nodes + floor pickups + InventoryManager + gather action. Next: Phase 1b hover tooltips.
 ---
 
-## Current Focus: v0.4.0 Phase 0 complete; Phase 1 next
+## Current Focus: v0.4.0 Phase 1 complete; Phase 1b next
 
-Dropped the rift_scar terrain type. `TERRAIN_RIFT_SCAR` constant removed from `LocalMapGenerator` and `TileSetService`; atlas is now 24×96 (4 rows: ground, debris, vegetation, blocked); 10 `rift_scar.png` files deleted; 40 tiles regenerated; legacy `terrain[i] == 4` is normalized to `TERRAIN_GROUND` in `LocalMapView.configure()` (backward compatible with old saves). v0.3.0 baseline committed at `883eca5` and pushed; Phase 0 follow-up commit pending.
+Resource nodes (trees, formations, ore, crystals, fauna) and floor pickups (sticks, stones) are now on the local map. `InventoryManager` autoload holds the 30-slot stack inventory. `E` key gathers; walking onto a pickup auto-collects. 41 procedural sprites via PIL. All 5 test groups green.
 
 ### Immediate Next Step
 
-F5 visual playthrough to confirm rifts still appear (now as ⚡ markers on the local map) and the new 4-row terrain looks right. Then move to Phase 1 (resource nodes + gathering + tool-tier gating + sticks/stones) per `docs/PLAN_v040_crafting_progression.md` §3 — but **only after explicit "go"** per the per-phase delivery workflow.
+F5 to confirm nodes + pickups look right, then move to Phase 1b (hover tooltips — 1s dwell, Label follows mouse) per `docs/PLAN_v040_crafting_progression.md` §3.1. **Only after explicit "go"** per the per-phase delivery workflow.
 
 ### Relevant Handoffs
 
-- [[v040-phase0-rift-scar-drop]] — this handoff (current focus)
-- [[v030-tilemap-layer-refactor]] — Phase 0 was built on the v0.3.0 TileMapLayer foundation
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0057.md` — full 9-section details
-- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2156.md` — v0.3.0 handoff
+- [[v040-phase1-resource-nodes]] — this handoff (current focus)
+- [[v040-phase0-rift-scar-drop]] — Phase 0 (foundation for Phase 1)
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0200.md` — full 9-section details
 
 ### Context Files
 
-- `docs/PLAN_v040_crafting_progression.md` — canonical design for Phases 1-8
-- `memory/CURRENT_STATE.md` — v0.4.0-dev state
-- `memory/PROJECT_MEMORY.md` — PixelLab pipeline notes (for any future asset generation)
-- `backups/2026-07-05_0056_pre_phase_0/` — pre-Phase 0 snapshot (excluded from git; `.gdignore` marks it for Godot)
+- `docs/PLAN_v040_crafting_progression.md` — canonical design for Phases 2-8
+- `memory/CURRENT_STATE.md` — v0.4.0-dev state, Phase 1 changes documented
+- `backups/2026-07-05_0101_pre_phase_1/` — pre-Phase 1 snapshot
 
 ---
 
-**Awaiting permission to start Phase 1 (resource nodes + gathering + sticks/stones).**
+**Awaiting permission to start Phase 1b (hover tooltips, 1s dwell).**

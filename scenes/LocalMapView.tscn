@@ -7,6 +7,12 @@ script = ExtResource("1_lmv")
 
 [node name="Ground" type="TileMapLayer" parent="."]
 
+[node name="NodeLayer" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="PickupLayer" type="Node2D" parent="."]
+y_sort_enabled = true
+
 [node name="MobLayer" type="Node2D" parent="."]
 y_sort_enabled = true
 

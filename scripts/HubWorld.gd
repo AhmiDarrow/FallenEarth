@@ -10,8 +10,10 @@ const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
 const MobVisualScript = preload("res://scripts/MobVisual.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
+const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
+const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
 
 @onready var char_label: RichTextLabel = $CharInfoBar/CharLabel as RichTextLabel
 @onready var tile_info_label: RichTextLabel = $TileInfoPanel/TileInfoLabel as RichTextLabel
@@ -29,7 +31,21 @@ var _local_y: int = 256
 var _map_view: Node2D = null
 var _marker_layer: Node2D = null
 var _mob_layer: Node2D = null
+var _node_layer: Node2D = null
+var _pickup_layer: Node2D = null
 var _marker_nodes: Dictionary = {}
+
+# Phase 1 gather state. _gathering_node is set when the player presses E
+# adjacent to a HarvestNode; the timer counts down to 0, then the yield
+# is awarded to InventoryManager. _gathering_node is null when idle.
+var _gathering_node: Node2D = null
+var _gather_timer: float = 0.0
+var _gather_total: float = 0.0
+var _gather_yield_preview: Dictionary = {}
+
+# Currently equipped MainHand tool (Phase 1 placeholder until
+# EquipmentManager lands in Phase 4). Empty dict = no tool.
+var _equipped_tool: Dictionary = {}
 var _rift_runner: Node = null
 var _game_time: float = 0.0
 var _rift_check_timer: float = 0.0
@@ -143,11 +159,24 @@ func _process(delta: float) -> void:
 		_tick_rifts()
 		_tick_missions()
 
+	# Phase 1: gather timer ticks down each frame.
+	_tick_gather(delta)
+
+	# Phase 1: HarvestNode respawn timers tick down each frame.
+	if is_instance_valid(_map_view):
+		for node in _map_view.get_resource_nodes():
+			if is_instance_valid(node) and node.has_method("_process"):
+				node._process(delta)
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
 	if get_tree().paused:
+		return
+	# E key (no direction) starts a gather if adjacent
+	if event.keycode == KEY_E and not event.echo:
+		_try_start_gather()
 		return
 	var dir := Vector2i.ZERO
 	match event.keycode:
@@ -182,6 +211,8 @@ func _setup_map_view() -> void:
 
 	_marker_layer = _map_view.get_marker_layer()
 	_mob_layer = _map_view.get_mob_layer()
+	_node_layer = _map_view.get_node_layer()
+	_pickup_layer = _map_view.get_pickup_layer()
 
 
 func _setup_player_visual() -> void:
@@ -359,6 +390,9 @@ func _try_move_local(dx: int, dy: int) -> void:
 		# Return to idle after brief walk frame cycle
 		_reset_to_idle(dir_idx)
 
+	# Phase 1: auto-collect any floor pickup at the new cell.
+	_try_collect_floor_pickup_at(_local_x, _local_y)
+
 	_build_local_view()
 	_update_tile_info()
 	_update_rift_ui()
@@ -368,6 +402,115 @@ func _try_move_local(dx: int, dy: int) -> void:
 
 func _is_cell_walkable(x: int, y: int) -> bool:
 	return LocalMapGen.is_walkable(_local_map, x, y)
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: Floor pickups (sticks, stones)
+# ---------------------------------------------------------------------------
+
+func _try_collect_floor_pickup_at(x: int, y: int) -> void:
+	if not is_instance_valid(_map_view):
+		return
+	var pickup: Node2D = _map_view.get_floor_pickup_at(Vector2i(x, y))
+	if pickup == null:
+		return
+	var item_id: String = pickup.get_item_id()
+	var qty: int = pickup.get_item_qty()
+	if item_id.is_empty() or qty <= 0:
+		return
+	var inv: Node = get_node_or_null("/root/InventoryManager")
+	if inv == null:
+		push_warning("[HubWorld] No InventoryManager; pickup dropped on the floor.")
+		return
+	inv.add_item(item_id, qty)
+	print("[HubWorld] Picked up %d x %s" % [qty, item_id])
+
+
+# ---------------------------------------------------------------------------
+# Phase 1: Resource node gathering (E key)
+# ---------------------------------------------------------------------------
+
+# Currently equipped MainHand tool. Phase 1 placeholder; real tool
+# tracking lands in Phase 4 with EquipmentManager.
+func set_equipped_tool(tool_data: Dictionary) -> void:
+	_equipped_tool = tool_data
+
+
+func get_equipped_tool() -> Dictionary:
+	return _equipped_tool
+
+
+func _try_start_gather() -> void:
+	if is_instance_valid(_gathering_node) and _gathering_node != null:
+		# Already gathering — E is a no-op (or could cancel; we no-op for now)
+		return
+	if not is_instance_valid(_map_view):
+		return
+
+	var player_cell := Vector2i(_local_x, _local_y)
+	# Look for any HarvestNode within GATHER_RANGE_CELLS (adjacent).
+	var candidates: Array = _map_view.get_resource_nodes_near(player_cell, GATHER_RANGE_CELLS)
+	if candidates.is_empty():
+		# Nothing to gather; show a brief message
+		print("[HubWorld] No resource nodes adjacent to gather.")
+		return
+	# Pick the closest one
+	candidates.sort_custom(func(a, b): return a["dist"] < b["dist"])
+	var entry: Dictionary = candidates[0]
+	var node: Node2D = entry["node"]
+
+	# Try to gather.
+	# Phase 1 (no EquipmentManager yet): allow bare-hands gathering with
+	# base speed (1.0). Phase 4 will introduce tool gating via
+	# EquipmentManager — for now, every node is gatherable by anyone.
+	var tool: Dictionary = _equipped_tool
+	if tool.is_empty():
+		tool = {"speed_mult": 1.0, "harvests": ["*"], "name": "(bare hands)"}
+
+	var result: Dictionary = node.try_gather(tool)
+	if not bool(result.get("ok", false)):
+		# Reason codes: "no_tool" / "wrong_tool" / "depleted" / "decoration"
+		var reason: String = str(result.get("reason", ""))
+		print("[HubWorld] Cannot gather %s: %s" % [node.get_node_id(), reason])
+		return
+
+	_gathering_node = node
+	_gather_total = float(result.get("secs", 1.0))
+	_gather_timer = _gather_total
+	_gather_yield_preview = {
+		"yield_item": str(result.get("yield_item", "")),
+		"yield_qty": int(result.get("yield_qty", 0)),
+	}
+	print("[HubWorld] Gathering %s... (%.1fs, will yield %d x %s)" % [
+		node.get_node_id(), _gather_total,
+		int(_gather_yield_preview.get("yield_qty", 0)),
+		str(_gather_yield_preview.get("yield_item", "")),
+	])
+
+
+func _tick_gather(delta: float) -> void:
+	if not is_instance_valid(_gathering_node):
+		return
+	_gather_timer -= delta
+	if _gather_timer > 0.0:
+		return
+	# Award yield and deplete node.
+	var node: Node2D = _gathering_node
+	_gathering_node = null
+	_gather_timer = 0.0
+	if not is_instance_valid(node):
+		return
+	var item_id: String = str(_gather_yield_preview.get("yield_item", ""))
+	var qty: int = int(_gather_yield_preview.get("yield_qty", 0))
+	if item_id.is_empty() or qty <= 0:
+		return
+	var inv: Node = get_node_or_null("/root/InventoryManager")
+	if inv == null:
+		push_warning("[HubWorld] No InventoryManager; gather dropped on the floor.")
+		return
+	inv.add_item(item_id, qty)
+	node.deplete()
+	print("[HubWorld] Gathered %d x %s from %s" % [qty, item_id, node.get_node_id()])
 
 
 func _try_cross_edge(dx: int, dy: int) -> void:
