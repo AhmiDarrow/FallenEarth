@@ -1,0 +1,28 @@
+{
+  "_comment": "Phase 7 base shops. Each NPC archetype (Phase 3) has an associated shop offer. When the player dismisses the NPC to the base and the offer is available, they can pay the cost (EC + items) to open the shop at the base permanently. The shop then sells items related to the archetype's specialty.",
+  "shop_types": [
+    {"id": "weapon_shop",     "name": "Weapon Smith",     "specialty": "weapons"},
+    {"id": "armor_shop",      "name": "Armorsmith",       "specialty": "armor"},
+    {"id": "consumable_shop",  "name": "Apothecary",       "specialty": "consumables"},
+    {"id": "ammo_shop",        "name": "Quartermaster",    "specialty": "ammo"},
+    {"id": "tool_shop",        "name": "Tool Vendor",      "specialty": "tools"},
+    {"id": "rare_shop",        "name": "Curio Merchant",   "specialty": "rare"},
+    {"id": "scavenger_shop",   "name": "Scavenger's Market", "specialty": "scrap"},
+    {"id": "faction_shop",     "name": "Faction Quartermaster", "specialty": "faction"},
+    {"id": "tavern",           "name": "Tavern",           "specialty": "rumors"},
+    {"id": "skill_trainer",    "name": "Trainer",          "specialty": "training"}
+  ],
+  "_comment_npc_archetypes": "These match the Phase 3 placeholder NPC archetypes: scavenger (Mira), medic (Jak), warden (Sira). Plus the Phase 5 procedural archetypes (wanderer, faction_officer, etc).",
+  "npc_offerings": [
+    {"npc_archetype": "scavenger",      "shop_type": "scavenger_shop",   "cost_ec": 200,  "cost_items": [{"item": "withered_branch", "qty": 5}],  "description": "Mira the Scavenger offers to set up a junk shop at your base."},
+    {"npc_archetype": "medic",          "shop_type": "consumable_shop",  "cost_ec": 500,  "cost_items": [{"item": "kelp_fibre", "qty": 6}],          "description": "Jak the Medic offers to set up an apothecary at your base."},
+    {"npc_archetype": "warden",         "shop_type": "armor_shop",       "cost_ec": 1500, "cost_items": [{"item": "iron_ore", "qty": 12}],         "description": "Sira the Warden offers to set up an armorsmith at your base."},
+    {"npc_archetype": "wanderer",       "shop_type": "tavern",           "cost_ec": 300,  "cost_items": [],                              "description": "The Wanderer offers to set up a tavern (rumors, food) at your base."},
+    {"npc_archetype": "faction_officer","shop_type": "faction_shop",     "cost_ec": 1500, "cost_items": [{"item": "ironwood_bark", "qty": 8}],       "description": "The Faction Officer offers to set up a faction quartermaster at your base."},
+    {"npc_archetype": "mercenary",      "shop_type": "weapon_shop",      "cost_ec": 1000, "cost_items": [{"item": "iron_ore", "qty": 10}],         "description": "The Mercenary offers to set up a weapon shop at your base."},
+    {"npc_archetype": "shaman",         "shop_type": "rare_shop",        "cost_ec": 2500, "cost_items": [{"item": "starmetal_ore", "qty": 2}],      "description": "The Shaman offers to set up a curio shop at your base."},
+    {"npc_archetype": "engineer",       "shop_type": "ammo_shop",        "cost_ec": 800,  "cost_items": [{"item": "iron_ore", "qty": 4}],          "description": "The Engineer offers to set up a quartermaster at your base."},
+    {"npc_archetype": "trainer",        "shop_type": "skill_trainer",    "cost_ec": 5000, "cost_items": [{"item": "teal_crystal", "qty": 2}],       "description": "The Trainer offers to set up a training facility at your base."},
+    {"npc_archetype": "trader",         "shop_type": "tool_shop",        "cost_ec": 600,  "cost_items": [{"item": "iron_ore", "qty": 3}],          "description": "The Trader offers to set up a tool vendor at your base."}
+  ]
+}

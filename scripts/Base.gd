@@ -17,6 +17,8 @@ extends Control
 const BASE_PATH := "/root/BaseManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const EQUIP_PATH := "/root/EquipmentManager"
+const BASE_SHOP_PATH := "/root/BaseShopManager"
+const BaseShopUIScript = preload("res://scripts/ui/BaseShopUI.gd")
 
 var _town_data: Dictionary = {}
 var _hub: Node = null
@@ -137,6 +139,23 @@ func _build_ui() -> void:
 	close.custom_minimum_size = Vector2(120, 40)
 	close.pressed.connect(_on_close_pressed)
 	add_child(close)
+	# Shop section (Phase 7)
+	var shop_label := Label.new()
+	shop_label.name = "ShopLabel"
+	shop_label.text = "Base shops (offered by residents):"
+	shop_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.95))
+	shop_label.add_theme_font_size_override("font_size", 14)
+	shop_label.position = Vector2(400, 420)
+	add_child(shop_label)
+	var shop_scroll := ScrollContainer.new()
+	shop_scroll.name = "ShopScroll"
+	shop_scroll.position = Vector2(400, 446)
+	shop_scroll.size = Vector2(360, 200)
+	shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(shop_scroll)
+	var shop_vbox := VBoxContainer.new()
+	shop_vbox.name = "ShopList"
+	shop_scroll.add_child(shop_vbox)
 
 
 func _refresh() -> void:
@@ -212,6 +231,93 @@ func _populate() -> void:
 		$UpgButton.text = "Upgrade" if not bool(check.get("ok", false)) else "Upgrade!"
 		if not bool(check.get("ok", false)):
 			_set_status(str(check.get("reason", "")))
+	# Phase 7: shops
+	_populate_shops(snap.get("residents", []))
+
+
+func _populate_shops(residents: Array) -> void:
+	var shop_vbox: VBoxContainer = get_node_or_null("ShopList")
+	if shop_vbox == null:
+		return
+	for child in shop_vbox.get_children():
+		child.queue_free()
+	var bsm: Node = get_node_or_null(BASE_SHOP_PATH)
+	if bsm == null:
+		var ph := Label.new()
+		ph.text = "(BaseShopManager unavailable)"
+		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		shop_vbox.add_child(ph)
+		return
+	var pm: Node = get_node_or_null(PARTY_PATH)
+	if residents.is_empty():
+		var ph := Label.new()
+		ph.text = "(dismiss party members to send them here, then they may offer a shop)"
+		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		shop_vbox.add_child(ph)
+		return
+	for resident_id in residents:
+		# Look up the NPC's archetype from PartyNPCManager
+		var archetype: String = ""
+		if pm != null and pm.has_method("get_npc"):
+			var npc: Dictionary = pm.get_npc(resident_id)
+			if not npc.is_empty():
+				archetype = str(npc.get("role", ""))
+		if archetype.is_empty():
+			continue  # can't determine the offer
+		var offer: Dictionary = bsm.get_offer(archetype)
+		if offer.is_empty():
+			continue  # no offer for this archetype
+		var row := HBoxContainer.new()
+		row.custom_minimum_size = Vector2(0, 28)
+		shop_vbox.add_child(row)
+		var info := Label.new()
+		var shop_type: String = str(offer.get("shop_type", ""))
+		var open_now: bool = bsm.is_shop_open(shop_type)
+		if open_now:
+			info.text = "• %s (%s) — open!" % [archetype, shop_type]
+		else:
+			info.text = "• %s (%s) — %d EC + items" % [
+				archetype, shop_type, int(offer.get("cost_ec", 0))
+			]
+		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(info)
+		var action_btn := Button.new()
+		if open_now:
+			action_btn.text = "Visit"
+			action_btn.pressed.connect(_on_visit_shop_pressed.bind(shop_type, resident_id))
+		else:
+			action_btn.text = "Open"
+			action_btn.pressed.connect(_on_open_shop_pressed.bind(resident_id, archetype))
+		row.add_child(action_btn)
+
+
+func _on_open_shop_pressed(resident_id: String, archetype: String) -> void:
+	var bsm: Node = get_node_or_null(BASE_SHOP_PATH)
+	if bsm == null:
+		return
+	var check: Dictionary = bsm.can_afford_offer(archetype)
+	if not bool(check.get("ok", false)):
+		_set_status("Can't afford: %s" % str(check.get("reason", "?")))
+		return
+	if bsm.open_shop_for_npc(resident_id, archetype):
+		_set_status("Shop opened by %s" % resident_id)
+		_refresh()
+	else:
+		_set_status("Could not open shop")
+
+
+func _on_visit_shop_pressed(shop_type: String, npc_id: String) -> void:
+	if BaseShopUIScript == null:
+		return
+	var ui: Control = BaseShopUIScript.new()
+	ui.name = "BaseShopUI"
+	ui.setup(shop_type, npc_id)
+	ui.closed.connect(_on_shop_ui_closed)
+	add_child(ui)
+
+
+func _on_shop_ui_closed() -> void:
+	pass
 
 
 func _on_upgrade_pressed() -> void:
