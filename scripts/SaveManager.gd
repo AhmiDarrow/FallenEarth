@@ -1,11 +1,17 @@
 ## SaveManager — Handles autosave, slot management, and corrupt save recovery.
+##
+## Phase 8: aggregate_snapshot / restore_all collect state from every
+## Phase 1-7 manager (InventoryManager, ProgressionManager,
+## PartyNPCManager, EquipmentManager, BaseManager, BaseShopManager)
+## via their get_snapshot / restore_from_snapshot methods. Each
+## manager owns its own data shape; SaveManager just routes.
 extends Node
 
 signal save_completed(slot_id: int)
 signal save_load_failed(slot_id: int, reason: String)
 signal auto_save_triggered()
 
-const VERSION := "0.2.0"
+const VERSION := "0.4.0"
 const SAVE_DIR := "user://saves/"
 const AUTOSAVE_SLOT := 0
 const MAX_SLOTS := 9
@@ -220,6 +226,75 @@ func recover_from_corruption(slot_id: int) -> void:
 		backup_file.close()
 		primary_file.close()
 		push_warning("[SaveManager] Recovered from backup for slot %d" % slot_id)
+
+
+# ---------------------------------------------------------------------------
+# Phase 8: aggregate snapshot / restore
+# ---------------------------------------------------------------------------
+
+## Returns a dict of {manager_name: snapshot} for every Phase 1-7
+## manager that exposes get_snapshot(). Safe to call when managers
+## are not yet instantiated (returns an empty dict in that case).
+func aggregate_snapshot() -> Dictionary:
+	var out: Dictionary = {}
+	for entry in [
+		["inventory", "/root/InventoryManager"],
+		["progression", "/root/ProgressionManager"],
+		["party", "/root/PartyNPCManager"],
+		["equipment", "/root/EquipmentManager"],
+		["base", "/root/BaseManager"],
+		["base_shops", "/root/BaseShopManager"],
+	]:
+		var mgr: Node = get_node_or_null(entry[1])
+		if mgr == null or not mgr.has_method("get_snapshot"):
+			continue
+		out[entry[0]] = mgr.get_snapshot()
+	return out
+
+
+## Restores each manager's state from the dict produced by
+## aggregate_snapshot. Skips managers that aren't present or don't
+## have restore_from_snapshot. Handles per-manager wrapper formats
+## (e.g. InventoryManager wraps its slots in a dict).
+func restore_all(snap: Dictionary) -> void:
+	for entry in [
+		["inventory", "/root/InventoryManager", "slots"],
+		["progression", "/root/ProgressionManager", null],
+		["party", "/root/PartyNPCManager", null],
+		["equipment", "/root/EquipmentManager", null],
+		["base", "/root/BaseManager", null],
+		["base_shops", "/root/BaseShopManager", null],
+	]:
+		if not snap.has(entry[0]):
+			continue
+		var mgr: Node = get_node_or_null(entry[1])
+		if mgr == null or not mgr.has_method("restore_from_snapshot"):
+			continue
+		var data: Variant = snap[entry[0]]
+		# Per-manager wrapper: InventoryManager wraps its slots in a dict
+		if entry[2] != null and data is Dictionary and data.has(entry[2]):
+			data = data[entry[2]]
+		mgr.restore_from_snapshot(data)
+
+
+## Aggregates all manager state and writes it into the given save
+## payload dict (typically the existing `save_data` in autosave).
+## Safe to call before _write_slot.
+func populate_payload_with_managers(save_data: Dictionary) -> void:
+	var snaps: Dictionary = aggregate_snapshot()
+	for k in snaps:
+		save_data[k] = snaps[k]
+
+
+## Pulls manager state out of the loaded payload dict and routes it
+## to each manager's restore_from_snapshot. Safe to call after
+## load_from_slot.
+func apply_managers_from_payload(save_data: Dictionary) -> void:
+	var manager_state: Dictionary = {}
+	for k in ["inventory", "progression", "party", "equipment", "base", "base_shops"]:
+		if save_data.has(k):
+			manager_state[k] = save_data[k]
+	restore_all(manager_state)
 
 
 func _auto_save() -> void:

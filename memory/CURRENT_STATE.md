@@ -3,7 +3,7 @@
 **Version:** 0.4.0-dev
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 7 of v0.4.0 complete (base shops)
+**Current Phase:** Phase 8 of v0.4.0 in progress (save/load integration done; item icons / loot popups / rarity colors still TODO)
 
 ## Summary
 

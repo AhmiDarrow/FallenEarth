@@ -209,6 +209,12 @@ func restore_from_snapshot(snap: Array) -> void:
 	emit_signal("inventory_changed")
 
 
+## Returns the current inventory as a serializable array (used by
+## SaveManager.aggregate_snapshot in Phase 8).
+func get_snapshot() -> Dictionary:
+	return {"slots": get_inventory_snapshot()}
+
+
 func get_used_slots() -> int:
 	return _slots.size()
 

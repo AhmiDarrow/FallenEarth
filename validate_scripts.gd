@@ -43,6 +43,7 @@ const SCRIPTS := [
 	"res://scripts/ui/PartyScreen.gd",
 	"res://scripts/BaseManager.gd",
 	"res://scripts/BaseShopManager.gd",
+	"res://scripts/SaveManager.gd",
 	"res://scripts/Base.gd",
 	"res://scripts/BaseNode.gd",
 	"res://scripts/ui/HUD.gd",
