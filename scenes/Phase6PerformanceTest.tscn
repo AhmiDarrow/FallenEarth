@@ -1,7 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=1 format=3]
 
-[ext_resource type="Script" path="res://scripts/procedural/Entity3DViewport.gd" id="1"]
-[ext_resource type="Script" path="res://scripts/Phase6PerformanceTest.gd" id="2"]
+[ext_resource type="Script" path="res://scripts/Phase6PerformanceTest.gd" id="1"]
 
 [node name="Phase6PerformanceTest" type="Control"]
 layout_mode = 3
@@ -10,25 +9,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("2")
-
-[node name="Entity3DLayer" type="Node" parent="."]
 script = ExtResource("1")
-viewport_width = 1280
-viewport_height = 720
-max_entities = 200
-render_distance = 30.0
-enable_lod = true
-enable_pooling = true
-enable_culling = true
-
-[node name="Entity3DDisplay" type="TextureRect" parent="Entity3DLayer"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="UI" type="VBoxContainer" parent="."]
 layout_mode = 1

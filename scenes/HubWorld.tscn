@@ -1,7 +1,6 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=1 format=3]
 
 [ext_resource type="Script" path="res://scripts/HubWorld.gd" id="1_hb"]
-[ext_resource type="Script" path="res://scripts/procedural/Entity3DViewport.gd" id="2_ev"]
 
 [node name="HubWorld" type="Control"]
 anchors_preset = 15
@@ -20,19 +19,6 @@ grow_vertical = 2
 color = Color(0.03, 0.02, 0.04, 1)
 
 [node name="WorldGrid" type="Node2D" parent="."]
-
-[node name="Entity3DLayer" type="Node" parent="."]
-script = ExtResource("2_ev")
-
-[node name="Entity3DDisplay" type="TextureRect" parent="Entity3DLayer"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-expand_mode = 1
-stretch_mode = 5
 
 [node name="Camera2D" type="Camera2D" parent="WorldGrid"]
 position = Vector2(640, 360)
