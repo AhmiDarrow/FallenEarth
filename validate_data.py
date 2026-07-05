@@ -3,45 +3,59 @@ import json, os
 
 base = r"C:\Users\Administrator\FallenEarth"
 
-with open(f'{base}/data/races.json', encoding='utf-8') as f:
-    try:
-        races = json.load(f)
-        print('[races] VALID JSON ({} entries)'.format(len(races)))
-        if 'upworld' in races and 'underworld' in races:
-            print('  [OK] Has upworld ({}) + underworld ({})'.format(
-                len(races['upworld']), len(races['underworld'])))
-    except json.JSONDecodeError as e:
-        print('[races] INVALID JSON - {}'.format(e))
+DATA_FILES = [
+    "races.json",
+    "biomes.json",
+    "mobs.json",
+    "character_classes.json",
+    "items.json",
+    "tools.json",
+    "weapons.json",
+    "armor.json",
+    "accessories.json",
+    "recipes.json",
+    "loot_tables.json",
+    "dialogue.json",
+    "factions.json",
+    "npc_archetypes.json",
+    "npc_name_parts.json",
+    "joinable_npc_templates.json",
+    "riftspire_layout.json",
+    "settlement_rooms.json",
+    "towns.json",
+    "base.json",
+    "base_shops.json",
+    "dynamic_threat.json",
+    "enemy_archetypes.json",
+    "mob_sprites.json",
+    "appearance.json",
+    "combat_config.json",
+    "rift_config.json",
+]
 
-with open(f'{base}/data/biomes.json') as f:
+errors = []
+for fname in DATA_FILES:
+    path = os.path.join(base, "data", fname)
+    if not os.path.exists(path):
+        errors.append(f"MISSING: {fname}")
+        continue
     try:
-        biomes = json.load(f)
-        print('[biomes] VALID JSON ({} entries)'.format(len(biomes)))
-        if biomes and isinstance(biomes[0], dict):
-            print('  [OK] First biome keys: {}'.format(list(biomes[0].keys())))
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            print(f"[{fname}] VALID JSON (dict, {len(data)} keys)")
+        elif isinstance(data, list):
+            print(f"[{fname}] VALID JSON (list, {len(data)} entries)")
+        else:
+            print(f"[{fname}] VALID JSON ({type(data).__name__})")
     except json.JSONDecodeError as e:
-        print('[biomes] INVALID JSON - {}'.format(e))
-
-with open(f'{base}/data/mobs.json') as f:
-    try:
-        mobs = json.load(f)
-        print('[mobs] VALID JSON')
-        for k, v in mobs.items():
-            if isinstance(v, list):
-                print('  {} array ({} entries)'.format(k, len(v)))
-            elif isinstance(v, dict):
-                print('  {} object ({})'.format(k, list(v.keys())))
-    except json.JSONDecodeError as e:
-        print('[mobs] INVALID JSON - {}'.format(e))
-
-with open(f'{base}/data/character_classes.json') as f:
-    try:
-        classes = json.load(f)
-        print('[classes] VALID JSON ({} entries)'.format(len(classes)))
-        if classes and isinstance(classes[0], dict):
-            print('  [OK] First class keys: {}'.format(list(classes[0].keys())))
-    except json.JSONDecodeError as e:
-        print('[classes] INVALID JSON - {}'.format(e))
+        errors.append(f"INVALID JSON: {fname} — {e}")
+        print(f"[{fname}] INVALID JSON — {e}")
 
 print()
-print('=== VALIDATION COMPLETE ===')
+if errors:
+    print(f"=== {len(errors)} ERROR(S) ===")
+    for e in errors:
+        print(f"  {e}")
+else:
+    print("=== ALL DATA FILES VALID ===")

@@ -22,6 +22,7 @@ const BaseScene = preload("res://scenes/Base.tscn")
 const LootPopupScript = preload("res://scripts/ui/LootPopup.gd")
 const LootPopupScene = preload("res://scenes/ui/LootPopup.tscn")
 const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
+const TransitionScreenScene = preload("res://scenes/TransitionScreen.tscn")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -90,6 +91,7 @@ var _npc_manager: Node = null
 var _mission_manager: Node = null
 var _pause_menu: PauseMenu = null
 var _player_visual: Node2D = null
+var _transition_screen: CanvasLayer = null
 
 
 func _ready() -> void:
@@ -131,6 +133,11 @@ func _ready() -> void:
 
 	_setup_npc_ui()
 	_setup_mission_ui()
+
+	# Phase F: Transition screen for fade effects
+	if TransitionScreenScene != null:
+		_transition_screen = TransitionScreenScene.instantiate()
+		add_child(_transition_screen)
 
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if is_instance_valid(gs):
@@ -285,6 +292,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _adjacent_cooking_table() != null:
 			_open_cooking_table_ui()
 			return
+		# v0.8.0: interact with a settlement building if adjacent
+		var adj_bld: Node2D = _adjacent_building()
+		if adj_bld != null:
+			_interact_building(adj_bld)
+			return
 		# Try to enter a settlement first (handled in the I/E block above)
 		# If we get here, the settlement check above didn't fire (no
 		# adjacent settlement), so try to gather.
@@ -364,6 +376,72 @@ func _adjacent_cooking_table() -> Node2D:
 	return null
 
 
+## v0.8.0: Returns the adjacent SettlementBuilding node, or null.
+## Checks the player's own cell and all 8 neighbors.
+func _adjacent_building() -> Node2D:
+	if not is_instance_valid(_map_view):
+		return null
+	for dx in [-1, 0, 1]:
+		for dy in [-1, 0, 1]:
+			var cell := Vector2i(_local_x + dx, _local_y + dy)
+			var bld: Node2D = _map_view.get_building_at(cell)
+			if bld != null:
+				return bld
+	return null
+
+
+## v0.8.0: Interact with a settlement building. Opens role-specific UI
+## or enters the settlement interior focused on this building.
+func _interact_building(building: Node2D) -> void:
+	if not is_instance_valid(building):
+		return
+	var bld_role: String = building.get_role() if building.has_method("get_role") else ""
+	var bld_id: String = building.get_building_id() if building.has_method("get_building_id") else ""
+	match bld_role:
+		"trader":
+			# Open shop directly
+			var sm: Node = get_node_or_null("/root/SettlementManager")
+			if sm != null:
+				var hex: String = _adjacent_settlement_hex()
+				if not hex.is_empty():
+					sm.enter_settlement(hex, self, bld_id)
+					world_grid.visible = false
+					return
+			# Fallback: open shop UI directly
+			_open_shop_interface()
+		"quest_giver":
+			_open_mission_board()
+		_:
+			# Enter settlement interior focused on this building
+			var hex: String = _adjacent_settlement_hex()
+			if not hex.is_empty():
+				_try_enter_settlement(bld_id)
+			else:
+				print("[HubWorld] Building: %s (%s)" % [bld_id, bld_role])
+
+
+func _open_shop_interface() -> void:
+	if has_node("Shop"):
+		return
+	var ShopScript: GDScript = load("res://scripts/ui/ShopInterface.gd")
+	if ShopScript == null:
+		return
+	var shop: Control = ShopScript.new()
+	shop.name = "Shop"
+	add_child(shop)
+
+
+func _open_mission_board() -> void:
+	if has_node("MissionBoard"):
+		return
+	var MBScript: GDScript = load("res://scripts/ui/MissionBoardInterface.gd")
+	if MBScript == null:
+		return
+	var board: Control = MBScript.new()
+	board.name = "MissionBoard"
+	add_child(board)
+
+
 ## v0.6.0: Open the CookingTableUI as a modal overlay.
 func _open_cooking_table_ui() -> void:
 	if _cooking_table_ui != null and is_instance_valid(_cooking_table_ui):
@@ -388,7 +466,7 @@ func _on_cooking_table_closed() -> void:
 
 ## Enter the settlement adjacent to the player (if any). Riftspire
 ## entry is gated on player level; settlements have no gate.
-func _try_enter_settlement() -> void:
+func _try_enter_settlement(focus_building: String = "") -> void:
 	var hex: String = _adjacent_settlement_hex()
 	if hex.is_empty():
 		return
@@ -404,13 +482,18 @@ func _try_enter_settlement() -> void:
 			print("[HubWorld] Riftspire entry blocked: %s" % reason)
 			_show_settlement_message(reason)
 			return
-	if sm.enter_settlement(hex, self):
+	# Phase F: Fade transition
+	if is_instance_valid(_transition_screen):
+		await _transition_screen.fade_out(0.4)
+	if sm.enter_settlement(hex, self, focus_building):
 		# Hide the world view (the settlement interior covers the full
 		# Control)
 		world_grid.visible = false
 		# Update minimap
 		if is_instance_valid(_hud):
 			_hud.notify_cell_changed()
+	if is_instance_valid(_transition_screen):
+		_transition_screen.fade_in(0.3)
 
 
 ## Show a transient message in the bottom bar (Phase 3 stub: just print).
@@ -444,11 +527,16 @@ func _leave_settlement() -> void:
 	var sm: Node = get_node_or_null("/root/SettlementManager")
 	if sm == null or not sm.is_inside_settlement():
 		return
+	# Phase F: Fade transition
+	if is_instance_valid(_transition_screen):
+		await _transition_screen.fade_out(0.3)
 	sm.leave_settlement()
 	# Restore the world view
 	world_grid.visible = true
 	if is_instance_valid(_hud):
 		_hud.notify_cell_changed()
+	if is_instance_valid(_transition_screen):
+		_transition_screen.fade_in(0.3)
 
 
 # ---------------------------------------------------------------------------
@@ -910,9 +998,10 @@ func _try_move_local(dx: int, dy: int) -> void:
 		_reset_to_idle(dir_idx)
 
 	# Phase 1: auto-collect any floor pickup at the new cell.
-	_try_collect_floor_pickup_at(_local_x, _local_y)
+	var pickup_info: Dictionary = _try_collect_floor_pickup_at(_local_x, _local_y)
 	# Phase 8: spawn a loot popup at the pickup location
-	_spawn_loot_popup("+%d x %s" % [1, "?"], Vector2.ZERO)
+	if not pickup_info.is_empty():
+		_spawn_loot_popup("+%d x %s" % [pickup_info.get("qty", 1), pickup_info.get("item_id", "?")], Vector2.ZERO)
 
 	_build_local_view()
 	_update_tile_info()
@@ -929,22 +1018,23 @@ func _is_cell_walkable(x: int, y: int) -> bool:
 # Phase 1: Floor pickups (sticks, stones)
 # ---------------------------------------------------------------------------
 
-func _try_collect_floor_pickup_at(x: int, y: int) -> void:
+func _try_collect_floor_pickup_at(x: int, y: int) -> Dictionary:
 	if not is_instance_valid(_map_view):
-		return
+		return {}
 	var pickup: Node2D = _map_view.get_floor_pickup_at(Vector2i(x, y))
 	if pickup == null:
-		return
+		return {}
 	var item_id: String = pickup.get_item_id()
 	var qty: int = pickup.get_item_qty()
 	if item_id.is_empty() or qty <= 0:
-		return
+		return {}
 	var inv: Node = get_node_or_null("/root/InventoryManager")
 	if inv == null:
 		push_warning("[HubWorld] No InventoryManager; pickup dropped on the floor.")
-		return
+		return {}
 	inv.add_item(item_id, qty)
 	print("[HubWorld] Picked up %d x %s" % [qty, item_id])
+	return {"item_id": item_id, "qty": qty}
 
 
 # ---------------------------------------------------------------------------
@@ -1241,12 +1331,18 @@ func _on_enter_rift_pressed() -> void:
 		rift["entry_r"] = _player_r
 		rift["entry_local_x"] = _local_x
 		rift["entry_local_y"] = _local_y
+		# Phase F: Fade transition
+		if is_instance_valid(_transition_screen):
+			await _transition_screen.fade_out(0.4)
 		gm.go_to_rift(rift_id, biome, rift)
 
 
 func _on_world_map_pressed() -> void:
 	var gm: GameManager = get_node_or_null("/root/GameManager") as GameManager
 	if is_instance_valid(gm):
+		# Phase F: Fade transition
+		if is_instance_valid(_transition_screen):
+			await _transition_screen.fade_out(0.4)
 		gm.go_to_world_map()
 
 
@@ -1414,6 +1510,11 @@ func _seed_local_mobs() -> void:
 			continue
 		if abs(lx - _local_x) + abs(ly - _local_y) < 12:
 			skipped_near += 1
+			continue
+		# v0.8.0: skip mobs inside the town boundary (clearing + buildings)
+		var town_bnd: Variant = _local_map.get("settlement", {}).get("boundary", null)
+		if town_bnd is Rect2i and town_bnd.has_point(Vector2i(lx, ly)):
+			skipped_blocked += 1
 			continue
 		var key := gs.mob_key(_player_q, _player_r, lx, ly)
 		if not gs.get_overworld_mob(key).is_empty():

@@ -165,6 +165,10 @@ func _save_settings() -> void:
 	else:
 		print("[DisplayManager] Settings saved to %s" % SETTINGS_PATH)
 
+## Public wrapper for _save_settings — call from UI scripts.
+func save_settings() -> void:
+	_save_settings()
+
 func _apply_settings() -> void:
 	# Set monitor
 	if monitor_index >= 0 and monitor_index < _available_monitors.size():
@@ -181,6 +185,10 @@ func _apply_settings() -> void:
 	else:
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	print("[DisplayManager] Settings applied")
+
+## Public wrapper for _apply_settings — call from UI scripts.
+func apply_settings() -> void:
+	_apply_settings()
 
 func get_available_monitors() -> Array[Dictionary]:
 	return _available_monitors

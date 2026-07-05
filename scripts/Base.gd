@@ -350,7 +350,9 @@ func _on_name_button_pressed() -> void:
 
 
 func _on_close_pressed() -> void:
-	if _hub != null and is_instance_valid(_hub) and _hub.has_method("_leave_base"):
+	if _hub != null and is_instance_valid(_hub) and _hub.has_method("leave_base"):
+		_hub.leave_base()
+	elif _hub != null and is_instance_valid(_hub) and _hub.has_method("_leave_base"):
 		_hub._leave_base()
 	else:
 		queue_free()

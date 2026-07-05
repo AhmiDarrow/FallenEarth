@@ -252,29 +252,29 @@
     "level_range": [-10, 10]
   },
   "_biome_themes": {
-    "_comment": "v0.7.0: per-biome flavor for procedural NPC generation. The 'title' is used as a role prefix; the 'name_prefix' is added before the randomly generated surname for flavor. The 'race_pref' shifts the race origin bias (upworld vs underworld) for this biome.",
-    "Ash Wastes":          {"title": "wastelander",      "name_prefix": "Ash",    "race_pref": "Upworld"},
-    "Rust Canyons":         {"title": "rust-prospector",   "name_prefix": "Rust",   "race_pref": "Upworld"},
-    "Neon Bogs":            {"title": "bogs-runner",      "name_prefix": "Bog",    "race_pref": "Upworld"},
-    "Scorched Plains":      {"title": "plains-runner",    "name_prefix": "Burn",   "race_pref": "Upworld"},
-    "Ironwood Thicket":     {"title": "ironwood-runner",  "name_prefix": "Iron",   "race_pref": "Upworld"},
-    "Glass Dunes":          {"title": "glass-cutter",     "name_prefix": "Glass",  "race_pref": "Upworld"},
-    "Corpse Fields":        {"title": "corpse-collector", "name_prefix": "Bone",   "race_pref": "Underworld"},
-    "Stormspire Highlands": {"title": "storm-chaser",     "name_prefix": "Storm",  "race_pref": "Upworld"},
-    "Toxin Marshes":        {"title": "toxin-brewer",     "name_prefix": "Tox",    "race_pref": "Underworld"},
-    "Dead City Outskirts":  {"title": "city-explorer",    "name_prefix": "City",   "race_pref": "Upworld"}
+    "_comment": "v0.7.0: per-biome flavor for procedural NPC generation. The 'title' is used as a role prefix; the 'name_prefix' is added before the randomly generated surname for flavor. The 'origin_pref' shifts the race origin bias (upworld vs underworld) for this biome.",
+    "Ash Wastes":          {"title": "wastelander",      "name_prefix": "Ash",    "origin_pref": "Upworld"},
+    "Rust Canyons":         {"title": "rust-prospector",   "name_prefix": "Rust",   "origin_pref": "Upworld"},
+    "Neon Bogs":            {"title": "bogs-runner",      "name_prefix": "Bog",    "origin_pref": "Upworld"},
+    "Scorched Plains":      {"title": "plains-runner",    "name_prefix": "Burn",   "origin_pref": "Upworld"},
+    "Ironwood Thicket":     {"title": "ironwood-runner",  "name_prefix": "Iron",   "origin_pref": "Upworld"},
+    "Glass Dunes":          {"title": "glass-cutter",     "name_prefix": "Glass",  "origin_pref": "Upworld"},
+    "Corpse Fields":        {"title": "corpse-collector", "name_prefix": "Bone",   "origin_pref": "Underworld"},
+    "Stormspire Highlands": {"title": "storm-chaser",     "name_prefix": "Storm",  "origin_pref": "Upworld"},
+    "Toxin Marshes":        {"title": "toxin-brewer",     "name_prefix": "Tox",    "origin_pref": "Underworld"},
+    "Dead City Outskirts":  {"title": "city-explorer",    "name_prefix": "City",   "origin_pref": "Upworld"}
   },
   "_faction_themes": {
-    "_comment": "v0.7.0: per-faction flavor for procedural NPC generation in faction-owned settlements. The 'name_prefix' is added before the randomly generated surname. The 'race_pref' shifts the race origin bias. Faction themes OVERRIDE biome themes for the name_prefix and race_pref (faction identity is stronger than biome identity).",
-    "Iron Accord":      {"name_prefix": "Iron",   "race_pref": "Upworld"},
-    "Hollow Covenant":  {"name_prefix": "Hollow", "race_pref": "Underworld"},
-    "Ash Serpents":     {"name_prefix": "Ash",    "race_pref": "Independent"},
-    "Veilwardens":      {"name_prefix": "Veil",   "race_pref": "Independent"},
-    "Neon Choir":       {"name_prefix": "Neon",   "race_pref": "Independent"},
-    "Dust Parliament":  {"name_prefix": "Dust",   "race_pref": "Independent"},
-    "Bone Circuit":     {"name_prefix": "Bone",   "race_pref": "Independent"},
-    "Black Ledger":     {"name_prefix": "Ledger", "race_pref": "Neutral"},
-    "Last Caravans":    {"name_prefix": "Caravan","race_pref": "Neutral"},
-    "Echo Wardens":     {"name_prefix": "Echo",   "race_pref": "Neutral"}
+    "_comment": "v0.7.0: per-faction flavor for procedural NPC generation in faction-owned settlements. The 'name_prefix' is added before the randomly generated surname. The 'race_pref' shifts the race origin bias. The 'preferred_race' directly sets the race (human, chthon, vespers, nullborn, etc.). Faction themes OVERRIDE biome themes for the name_prefix and race_pref (faction identity is stronger than biome identity).",
+    "Iron Accord":      {"name_prefix": "Iron",   "origin_pref": "Upworld", "preferred_race": "human"},
+    "Hollow Covenant":  {"name_prefix": "Hollow", "origin_pref": "Underworld", "preferred_race": "chthon"},
+    "Ash Serpents":     {"name_prefix": "Ash",    "origin_pref": "Upworld", "preferred_race": "vesperid"},
+    "Veilwardens":      {"name_prefix": "Veil",   "origin_pref": "Underworld", "preferred_race": "nullborn"},
+    "Neon Choir":       {"name_prefix": "Neon",   "origin_pref": "Underworld", "preferred_race": "vesperid"},
+    "Dust Parliament":  {"name_prefix": "Dust",   "origin_pref": "Upworld", "preferred_race": "human"},
+    "Bone Circuit":     {"name_prefix": "Bone",   "origin_pref": "Underworld", "preferred_race": "vesperid"},
+    "Black Ledger":     {"name_prefix": "Ledger", "origin_pref": "Upworld", "preferred_race": "human"},
+    "Last Caravans":    {"name_prefix": "Caravan","origin_pref": "Upworld", "preferred_race": "human"},
+    "Echo Wardens":     {"name_prefix": "Echo",   "origin_pref": "Underworld", "preferred_race": "nullborn"}
   }
 }

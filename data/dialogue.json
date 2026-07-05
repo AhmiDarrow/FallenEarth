@@ -1,0 +1,370 @@
+{
+  "_comment": "Branching dialogue trees per NPC role. Each role has a 'greeting' entry point. Choices can have requires (conditions) and effects (outcomes).",
+  "dialogues": {
+    "trader": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Merchant",
+        "text": "Welcome to my shop! I've got the finest goods in the wasteland. What can I do for you?",
+        "choices": [
+          { "text": "Show me your wares.", "next": "show_wares" },
+          { "text": "Any rare items in stock?", "next": "rare_items" },
+          { "text": "Just looking around.", "next": "farewell" }
+        ]
+      },
+      "show_wares": {
+        "id": "show_wares",
+        "speaker": "Merchant",
+        "text": "Take a look at what I've got. Everything's priced fairly — I promise.",
+        "action": "open_shop",
+        "choices": []
+      },
+      "rare_items": {
+        "id": "rare_items",
+        "speaker": "Merchant",
+        "text": "Ah, a connoisseur! I do have some special pieces... but they don't come cheap.",
+        "choices": [
+          { "text": "I have the coin. Show me.", "next": "show_wares" },
+          { "text": "Maybe another time.", "next": "farewell" }
+        ]
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Merchant",
+        "text": "Come back anytime! I'll be here.",
+        "choices": []
+      }
+    },
+    "quest_giver": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Quest Giver",
+        "text": "Ah, a traveler! I could use someone with your... skills. Interested in a job?",
+        "choices": [
+          { "text": "What kind of job?", "next": "job_details" },
+          { "text": "I'm busy right now.", "next": "farewell" },
+          { "text": "What's the pay?", "next": "payment" }
+        ]
+      },
+      "job_details": {
+        "id": "job_details",
+        "speaker": "Quest Giver",
+        "text": "There's been trouble with raiders nearby. Clear them out, and I'll make it worth your while.",
+        "choices": [
+          { "text": "I'll take the job.", "next": "accept_quest", "effects": { "reputation": { "dust_parliament": 2 } } },
+          { "text": "Sounds dangerous. No thanks.", "next": "farewell" }
+        ]
+      },
+      "payment": {
+        "id": "payment",
+        "speaker": "Quest Giver",
+        "text": "Depends on the job. But I always pay fair — and there's usually loot involved too.",
+        "choices": [
+          { "text": "Tell me more about the job.", "next": "job_details" },
+          { "text": "I'll pass.", "next": "farewell" }
+        ]
+      },
+      "accept_quest": {
+        "id": "accept_quest",
+        "speaker": "Quest Giver",
+        "text": "Excellent! Check your mission tracker for details. Good luck out there.",
+        "action": "open_mission_board",
+        "choices": []
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Quest Giver",
+        "text": "The offer stands if you change your mind.",
+        "choices": []
+      }
+    },
+    "innkeeper": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Innkeeper",
+        "text": "Welcome to the tavern! Pull up a chair and rest your weary feet.",
+        "choices": [
+          { "text": "Any rumors floating around?", "next": "rumors" },
+          { "text": "I need a place to stay.", "next": "rest" },
+          { "text": "Just passing through.", "next": "farewell" }
+        ]
+      },
+      "rumors": {
+        "id": "rumors",
+        "speaker": "Innkeeper",
+        "text": "Word is, there's been strange activity near the rifts lately. Some say the creatures are getting bolder.",
+        "choices": [
+          { "text": "Tell me more about the rifts.", "next": "rift_rumor" },
+          { "text": "Thanks for the info.", "next": "farewell" }
+        ]
+      },
+      "rift_rumor": {
+        "id": "rift_rumor",
+        "speaker": "Innkeeper",
+        "text": "They say the rifts are opening more frequently. Some folks think it's a sign... others think it's just bad luck.",
+        "effects": { "reputation": { "echo_wardens": 1 } },
+        "choices": [
+          { "text": "Interesting. I'll keep my eyes open.", "next": "farewell" }
+        ]
+      },
+      "rest": {
+        "id": "rest",
+        "speaker": "Innkeeper",
+        "text": "I've got a room available. It's not much, but it's warm and safe. That'll be 10 EC.",
+        "choices": [
+          { "text": "Here's the coin. (Pay 10 EC)", "next": "rest_paid", "requires": { "min_ec": 10 }, "effects": { "remove_ec": 10, "heal_full": true } },
+          { "text": "Too expensive. Maybe later.", "next": "farewell" }
+        ]
+      },
+      "rest_paid": {
+        "id": "rest_paid",
+        "speaker": "Innkeeper",
+        "text": "Room's yours. Rest up — you've earned it.",
+        "choices": []
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Innkeeper",
+        "text": "Come back anytime! The door's always open.",
+        "choices": []
+      }
+    },
+    "crafter": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Crafter",
+        "text": "Need something built or repaired? I'm your person.",
+        "choices": [
+          { "text": "What can you make?", "next": "crafting" },
+          { "text": "Any materials you need?", "next": "materials" },
+          { "text": "Not right now.", "next": "farewell" }
+        ]
+      },
+      "crafting": {
+        "id": "crafting",
+        "speaker": "Crafter",
+        "text": "I can work with most materials — metals, crystals, even that strange void stuff. Bring me what you've got.",
+        "action": "open_shop",
+        "choices": []
+      },
+      "materials": {
+        "id": "materials",
+        "speaker": "Crafter",
+        "text": "Always looking for iron ore and copper. If you've got starmetal, I'll pay top dollar.",
+        "effects": { "reputation": { "iron_accord": 1 } },
+        "choices": [
+          { "text": "I'll keep an eye out.", "next": "farewell" }
+        ]
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Crafter",
+        "text": "See you around. Don't be a stranger.",
+        "choices": []
+      }
+    },
+    "armorer": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Armorer",
+        "text": "Looking for protection? I've got armor that'll keep you alive out there.",
+        "choices": [
+          { "text": "Show me your armor.", "next": "show_armor" },
+          { "text": "Can you upgrade my gear?", "next": "upgrade" },
+          { "text": "I'm good for now.", "next": "farewell" }
+        ]
+      },
+      "show_armor": {
+        "id": "show_armor",
+        "speaker": "Armorer",
+        "text": "Every piece is handcrafted. Built to last — unlike that junk the raiders wear.",
+        "action": "open_shop",
+        "choices": []
+      },
+      "upgrade": {
+        "id": "upgrade",
+        "speaker": "Armorer",
+        "text": "Bring me the right materials and I can improve what you've got. Saves you buying new gear.",
+        "effects": { "reputation": { "iron_accord": 1 } },
+        "choices": [
+          { "text": "I'll bring what I have.", "next": "farewell" }
+        ]
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Armorer",
+        "text": "Stay safe out there. Armor up before you head out.",
+        "choices": []
+      }
+    },
+    "smith": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Smith",
+        "text": "The forge is hot and ready. What do you need?",
+        "choices": [
+          { "text": "I need a weapon.", "next": "weapon" },
+          { "text": "Just checking things out.", "next": "farewell" }
+        ]
+      },
+      "weapon": {
+        "id": "weapon",
+        "speaker": "Smith",
+        "text": "I've got blades, blunts, and a few ranged options. Quality work — not like those rusted scrap pieces.",
+        "action": "open_shop",
+        "choices": []
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Smith",
+        "text": "Come back when you're ready to deal.",
+        "choices": []
+      }
+    },
+    "trainer": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Trainer",
+        "text": "Ready to learn? I can teach you things that'll keep you alive out there.",
+        "choices": [
+          { "text": "What can you teach me?", "next": "training" },
+          { "text": "I already know enough.", "next": "farewell" }
+        ]
+      },
+      "training": {
+        "id": "training",
+        "speaker": "Trainer",
+        "text": "Combat techniques, survival skills, even a bit of rift lore. It all costs time and effort — but it's worth it.",
+        "choices": [
+          { "text": "Sounds good. I'm in.", "next": "accept_training" },
+          { "text": "Maybe later.", "next": "farewell" }
+        ]
+      },
+      "accept_training": {
+        "id": "accept_training",
+        "speaker": "Trainer",
+        "text": "Alright then. Let's see what you've got. We'll start with the basics.",
+        "effects": { "reputation": { "dust_parliament": 2 } },
+        "choices": []
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Trainer",
+        "text": "The offer stands. Come back when you're ready.",
+        "choices": []
+      }
+    },
+    "auctioneer": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Auctioneer",
+        "text": "Welcome to the auction house! Bidding starts at a fair price.",
+        "choices": [
+          { "text": "What's up for auction?", "next": "auction" },
+          { "text": "Just browsing.", "next": "farewell" }
+        ]
+      },
+      "auction": {
+        "id": "auction",
+        "speaker": "Auctioneer",
+        "text": "We've got some rare finds today. Take a look and place your bids.",
+        "action": "open_shop",
+        "choices": []
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Auctioneer",
+        "text": "Happy bidding! Don't spend all your EC in one place.",
+        "choices": []
+      }
+    },
+    "faction_rep": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Faction Representative",
+        "text": "I represent our faction here. If you're looking to make an impression, you've come to the right place.",
+        "choices": [
+          { "text": "Tell me about your faction.", "next": "faction_info" },
+          { "text": "Any work available?", "next": "faction_work" },
+          { "text": "Not interested.", "next": "farewell" }
+        ]
+      },
+      "faction_info": {
+        "id": "faction_info",
+        "speaker": "Faction Representative",
+        "text": "We're a force to be reckoned with. Help us out, and we'll remember your loyalty.",
+        "effects": { "reputation": { "dust_parliament": 1 } },
+        "choices": [
+          { "text": "I'd like to help.", "next": "faction_work" },
+          { "text": "Interesting. I'll think about it.", "next": "farewell" }
+        ]
+      },
+      "faction_work": {
+        "id": "faction_work",
+        "speaker": "Faction Representative",
+        "text": "We've got tasks that need doing. Prove your worth, and you'll earn our trust.",
+        "action": "open_mission_board",
+        "choices": []
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Faction Representative",
+        "text": "Think it over. We're always looking for capable people.",
+        "choices": []
+      }
+    },
+    "talker": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Wanderer",
+        "text": "Hey there, traveler. Nice to see a friendly face around here.",
+        "choices": [
+          { "text": "Any interesting stories?", "next": "stories" },
+          { "text": "How's life treating you?", "next": "life" },
+          { "text": "Take care.", "next": "farewell" }
+        ]
+      },
+      "stories": {
+        "id": "stories",
+        "speaker": "Wanderer",
+        "text": "I've seen things out there in the wastes... things that'd make your hair stand on end. But also beauty — in the strangest places.",
+        "effects": { "reputation": { "echo_wardens": 1 } },
+        "choices": [
+          { "text": "Tell me more.", "next": "more_stories" },
+          { "text": "Sounds intense.", "next": "farewell" }
+        ]
+      },
+      "more_stories": {
+        "id": "more_stories",
+        "speaker": "Wanderer",
+        "text": "Once I found an old-world relic half-buried in the ash. Still worked. Some things from before... they endure.",
+        "choices": [
+          { "text": "Fascinating. Thanks for sharing.", "next": "farewell" }
+        ]
+      },
+      "life": {
+        "id": "life",
+        "speaker": "Wanderer",
+        "text": "Day by day, same as everyone. We survive, we adapt. That's the way of things now.",
+        "choices": [
+          { "text": "Stay safe out there.", "next": "farewell" }
+        ]
+      },
+      "farewell": {
+        "id": "farewell",
+        "speaker": "Wanderer",
+        "text": "Safe travels, friend. Watch your back out there.",
+        "choices": []
+      }
+    },
+    "riftspire_portal": {
+      "greeting": {
+        "id": "greeting",
+        "speaker": "Riftspire Portal",
+        "text": "The portal hums with energy. A destination awaits.",
+        "action": "travel_to_riftspire",
+        "choices": []
+      }
+    }
+  }
+}

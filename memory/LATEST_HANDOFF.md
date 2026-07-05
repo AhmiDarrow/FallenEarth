@@ -1,36 +1,91 @@
 ---
-name: v070-procedural-npc-spawn
-description: v0.7.0 — replace hard-coded test NPCs with biome- AND faction-aware procedural spawn. Settlements reflect their owning faction (Iron Accord towns get Iron-Accord-themed NPCs, Hollow Covenant towns get Hollow-themed NPCs, etc.). 12 smoke_v070 tests green; full 17-script suite all pass.
+name: v090-milestone-complete
+description: v0.9.0 "Settlement Life & Combat Polish" milestone COMPLETE — All 6 phases (A-F) implemented and tested.
 ---
 
-## Current Focus: v0.7.0 procedural NPC spawn COMPLETE
+## Current Focus: v0.9.0 COMPLETE — Ready for v0.10.0 or new milestone
 
-Replaced the Phase 3 hard-coded test NPCs with procedural spawn that respects both the settlement's biome AND its owning faction. Per the user's brief: "settlements belong to a specific faction, the world needs to balance the weights between settlements to faction ratio."
+### Session Summary
 
-**Key design decisions:**
-- Template roll weighting: match_both 4x, match_faction_only 3x, match_biome_only 2x, universal 1x. Faction matches get a stronger boost than biome matches because settlement identity is primarily faction-based.
-- Faction theme overrides biome theme for `name_prefix` and `race_pref`. Biome theme wins for the role title (e.g., "bogs-runner" in Neon Bogs).
-- 18 templates (was 4): 4 universal + 7 biome-specific + 7 faction-specific.
-- `spawn_for_settlement(hex, biome, faction, size)` is deterministic per settlement (FNV-1a hash of `hex|biome|faction`).
-- `clear_settlement_residents(hex)` prevents duplicate accumulation on re-enter.
+Completed v0.9.0 "Settlement Life & Combat Polish" milestone by implementing all 6 phases:
 
-### Immediate Next Step
+**Phase A: NPC Dialogue System**
+- Created `data/dialogue.json` — 11 dialogue trees with conditions, responses, rewards
+- Created `scripts/DialogueManager.gd` — Autoload singleton for dialogue state
+- Created `scripts/DialogueUI.gd` + `scenes/DialogueUI.tscn` — Full dialogue UI with portrait, text, responses
+- Modified `SettlementInterior.gd` — E-key triggers dialogue
 
-v0.7.1 polish (small, 1-2 hours): wire `spawn_for_settlement` into the actual settlement enter flow in `SettlementManager`; add `preferred_race` to faction themes. OR v0.8.0 candidates: full settlement interiors, settlement-to-Riftspire travel, button asset set, "place station" interaction.
+**Phase B: Settlement Ambient Behavior**
+- Created `scripts/NPCWanderer.gd` — State machine (IDLE→WANDER→RETURN) for NPC movement
+- Modified `scripts/RoomView.gd` — Interpolation, mood emojis, proximity detection
+- Modified `scripts/SettlementInterior.gd` — Wanderer tick loop, NPC spawning
 
-### Relevant Handoffs
+**Phase C: Quest Tracker UI**
+- Created `scripts/QuestTracker.gd` — Autoload singleton for active missions
+- Created `scripts/QuestTrackerUI.gd` + `scenes/QuestTrackerUI.tscn` — Collapsible panel, Tab toggle
 
-- [[v070-procedural-npc-spawn]] — this handoff
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1700.md` — full 9-section details
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1600.md` — v0.6.0 follow-up polish
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1500.md` — v0.6.0 cooking table + mob drops
+**Phase D: Combat Feedback**
+- Created `scripts/FloatingDamage.gd` — Animated damage numbers (red=physical, blue=magic, green=heal)
+- Created `scripts/CombatHPBar.gd` — HP bar above tactical units
+- Created `scripts/CombatFeedback.gd` — Parent node spawning effects, kill counter
 
-### Context Files
+**Phase E: Quality of Life**
+- Created `scripts/ui/MinimapOverhaul.gd` — Icon-based minimap (NPC=blue, building=brown, rift=red, resource=green)
+- Modified `scripts/InventoryUI.gd` — Sort button, Loot All button
+- Created `scripts/ui/OptionsMenu.gd` + `scenes/ui/OptionsMenu.tscn` — Volume sliders, fullscreen, resolution
+- Modified `scripts/HubWorld.gd` — Tab/Escape key wiring
 
-- `docs/PLAN_v040_crafting_progression.md` — canonical design
-- `memory/CURRENT_STATE.md` — v0.7.0-complete
-- `docs/NEXT_TASKS.md` — v0.7.1 + v0.8.0 candidates
+**Phase F: Polish Pass**
+- Created `scripts/TransitionScreen.gd` + `scenes/TransitionScreen.tscn` — Fade in/out overlay
+- Created `scripts/LoadingTips.gd` + `data/tips.json` — 18 random gameplay tips
+- Created `scripts/AmbientAudio.gd` — Biome-specific ambient loops (6 biomes)
+- Created `scripts/MusicManager.gd` — Track-based music with crossfade (5 themes)
+- Modified `scripts/HubWorld.gd` — Transitions wired to settlement/rift/world map
 
----
+### v0.9.0 Final Status
 
-**Awaiting your decision: v0.7.1 polish, v0.8.0 candidate, or something else?**
+| Phase | Name | Status |
+|-------|------|--------|
+| A | NPC Dialogue System | ✅ |
+| B | Settlement Ambient Behavior | ✅ |
+| C | Quest Tracker UI | ✅ |
+| D | Combat Feedback | ✅ |
+| E | Quality of Life | ✅ |
+| F | Polish Pass | ✅ |
+
+### New Files (Phase F)
+- `scripts/TransitionScreen.gd` + `scenes/TransitionScreen.tscn` — Fade overlay
+- `scripts/LoadingTips.gd` + `data/tips.json` — 18 gameplay tips
+- `scripts/AmbientAudio.gd` — Biome ambient audio
+- `scripts/MusicManager.gd` — Music crossfade system
+- `tools/smoke_polish.gd` — 7 test groups
+
+### Modified Files (Phase F)
+- `scripts/HubWorld.gd` — Transition screen integration, fade effects on scene changes
+- `project.godot` — Added LoadingTips, AmbientAudio, MusicManager autoloads
+- `validate_scripts.gd` — Added new scripts/scenes
+
+### Verification
+
+```bash
+# Polish smoke test (7 groups)
+& godot --headless --path . -s tools/smoke_polish.gd
+# → All checks passed.
+
+# Full v0.9.0 suite
+& godot --headless --path . -s tools/smoke_dialogue.gd
+& godot --headless --path . -s tools/smoke_ambient.gd
+& godot --headless --path . -s tools/smoke_quest_tracker.gd
+& godot --headless --path . -s tools/smoke_combat_feedback.gd
+& godot --headless --path . -s tools/smoke_qol.gd
+& godot --headless --path . -s tools/smoke_polish.gd
+
+# Regression checks
+& godot --headless --path . -s validate_scripts.gd
+```
+
+### Notes for Next Milestone
+
+- Audio files need to be added to `res://audio/ambient/` and `res://audio/music/` for AmbientAudio and MusicManager to play actual sounds
+- TransitionScreen fade duration can be tuned per transition type
+- LoadingTips can be expanded with more tips as new features are added

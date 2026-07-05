@@ -1,0 +1,275 @@
+{
+  "_comment": "Room definitions for spatial settlement interiors. Grid: 12 wide × 10 tall. # = wall, . = floor, X = exit. Exits connect to other rooms via target_room + target_x/y. Furniture: type (table, barrel, sign, bench, shelf, crate, anvil, forge, rack, podium, dummy), x, y.",
+  "cell_size": 24,
+  "grid_w": 12,
+  "grid_h": 10,
+  "rooms": {
+    "town_square": {
+      "name": "Town Square",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#....**....#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#X........X#",
+        "#..X....X..#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "riftspire_portal", "name": "Riftspire Portal", "role": "riftspire_portal", "x": 5, "y": 5, "race": "ai", "gender": "female", "color": [0.4, 0.1, 0.8] }
+      ],
+      "furniture": [
+        { "type": "bench", "x": 2, "y": 4 },
+        { "type": "bench", "x": 9, "y": 4 },
+        { "type": "sign",  "x": 5, "y": 1, "label": "Welcome" }
+      ],
+      "exits": [
+        { "x": 1,  "y": 7, "target_room": "tavern",      "target_x": 5, "target_y": 1 },
+        { "x": 10, "y": 7, "target_room": "trader",      "target_x": 5, "target_y": 1 },
+        { "x": 3,  "y": 8, "target_room": "worktable",    "target_x": 5, "target_y": 1 },
+        { "x": 8,  "y": 8, "target_room": "armor_table",  "target_x": 5, "target_y": 1 },
+        { "x": 5,  "y": 3, "target_room": "_settlement_exit", "target_x": 0, "target_y": 0 }
+      ],
+      "settlement_exit": { "x": 5, "y": 3, "label": "Exit Settlement" }
+    },
+    "tavern": {
+      "name": "Tavern",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..#....#..#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "innkeeper", "name": "Innkeeper", "role": "innkeeper", "x": 5, "y": 2, "race": "human", "gender": "female", "color": [0.8, 0.6, 0.2] },
+        { "id": "wanderer",  "name": "Wanderer",  "role": "talker",    "x": 8, "y": 5, "race": "chthon", "gender": "male",   "color": [0.5, 0.7, 0.5] }
+      ],
+      "furniture": [
+        { "type": "table", "x": 3, "y": 4 },
+        { "type": "table", "x": 7, "y": 4 },
+        { "type": "barrel", "x": 1, "y": 2 },
+        { "type": "barrel", "x": 10, "y": 2 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 1, "target_y": 7 }
+      ]
+    },
+    "trader": {
+      "name": "Trader Post",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "merchant", "name": "Merchant", "role": "trader", "x": 5, "y": 3, "race": "human", "gender": "male", "color": [0.9, 0.7, 0.2] }
+      ],
+      "furniture": [
+        { "type": "shelf", "x": 1, "y": 2 },
+        { "type": "shelf", "x": 10, "y": 2 },
+        { "type": "crate", "x": 2, "y": 6 },
+        { "type": "crate", "x": 9, "y": 6 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 10, "target_y": 7 }
+      ]
+    },
+    "worktable": {
+      "name": "Worktable",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "crafter", "name": "Crafter", "role": "crafter", "x": 5, "y": 3, "race": "cyborg", "gender": "female", "color": [0.6, 0.5, 0.4] }
+      ],
+      "furniture": [
+        { "type": "table", "x": 3, "y": 4 },
+        { "type": "crate", "x": 9, "y": 2 },
+        { "type": "crate", "x": 9, "y": 6 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 3, "target_y": 8 }
+      ]
+    },
+    "armor_table": {
+      "name": "Armor Table",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "armorer", "name": "Armorer", "role": "armorer", "x": 5, "y": 3, "race": "mutant", "gender": "male", "color": [0.5, 0.5, 0.7] }
+      ],
+      "furniture": [
+        { "type": "rack", "x": 1, "y": 2 },
+        { "type": "rack", "x": 10, "y": 2 },
+        { "type": "table", "x": 3, "y": 5 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 8, "target_y": 8 }
+      ]
+    },
+    "blacksmith": {
+      "name": "Blacksmith",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "smith", "name": "Blacksmith", "role": "smith", "x": 5, "y": 3, "race": "mutant", "gender": "female", "color": [0.4, 0.4, 0.5] }
+      ],
+      "furniture": [
+        { "type": "anvil", "x": 3, "y": 3 },
+        { "type": "forge", "x": 1, "y": 2 },
+        { "type": "rack", "x": 10, "y": 2 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 3, "target_y": 8 }
+      ]
+    },
+    "quest_board": {
+      "name": "Quest Board",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "quest_giver", "name": "Herald", "role": "quest_giver", "x": 5, "y": 2, "race": "vesperid", "gender": "female", "color": [0.3, 0.7, 0.8] }
+      ],
+      "furniture": [
+        { "type": "sign", "x": 5, "y": 1, "label": "Quests" },
+        { "type": "bench", "x": 2, "y": 5 },
+        { "type": "bench", "x": 9, "y": 5 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 8, "target_y": 8 }
+      ]
+    },
+    "faction_hq": {
+      "name": "Faction HQ",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "faction_rep", "name": "Commander", "role": "faction_rep", "x": 5, "y": 3, "race": "human", "gender": "male", "color": [0.7, 0.2, 0.2] }
+      ],
+      "furniture": [
+        { "type": "table", "x": 3, "y": 5 },
+        { "type": "sign", "x": 5, "y": 1, "label": "HQ" }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 10, "target_y": 7 }
+      ]
+    },
+    "auction_house": {
+      "name": "Auction House",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "auctioneer", "name": "Auctioneer", "role": "auctioneer", "x": 5, "y": 3, "race": "cyborg", "gender": "female", "color": [0.6, 0.4, 0.8] }
+      ],
+      "furniture": [
+        { "type": "podium", "x": 5, "y": 2 },
+        { "type": "shelf", "x": 1, "y": 2 },
+        { "type": "shelf", "x": 10, "y": 2 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 10, "target_y": 7 }
+      ]
+    },
+    "arena": {
+      "name": "Arena",
+      "grid": [
+        "############",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#..........#",
+        "#.....X....#",
+        "############"
+      ],
+      "npcs": [
+        { "id": "trainer", "name": "Trainer", "role": "trainer", "x": 5, "y": 3, "race": "revenant", "gender": "male", "color": [0.8, 0.3, 0.3] }
+      ],
+      "furniture": [
+        { "type": "dummy", "x": 2, "y": 3 },
+        { "type": "dummy", "x": 9, "y": 3 },
+        { "type": "rack", "x": 1, "y": 2 }
+      ],
+      "exits": [
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 8, "target_y": 8 }
+      ]
+    }
+  }
+}

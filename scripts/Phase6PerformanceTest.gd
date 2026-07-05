@@ -23,7 +23,10 @@ var _preset_pool: Array[Dictionary] = [
 ]
 
 func _ready() -> void:
-	_viewport = $Entity3DLayer
+	_viewport = get_node_or_null("Entity3DLayer")
+	if _viewport == null:
+		push_warning("[Phase6PerformanceTest] Entity3DLayer node not found — test scene inactive")
+		return
 	_setup_ui()
 	_spawn_batch_entities(10)
 
@@ -46,12 +49,15 @@ func _process(delta: float) -> void:
 				_spawn_batch_entities(_spawn_batch)
 
 func _spawn_batch_entities(count: int) -> void:
+	var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
+	if comp_script == null:
+		push_warning("[Phase6PerformanceTest] EntityVisualComponent.gd not found")
+		return
 	for i in count:
 		var preset_idx := randi() % _preset_pool.size()
 		var data: Dictionary = _preset_pool[preset_idx].duplicate(true)
 		data["entity_id"] = "stress_%d_%d" % [Time.get_ticks_msec(), randi()]
 
-		var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
 		var comp = comp_script.new()
 		comp.setup(data, _viewport)
 

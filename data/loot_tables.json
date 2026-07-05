@@ -67,6 +67,9 @@
   "class_modifiers": {
     "Scavenger": {"scrap_drop_bonus_pct": 20, "consumable_drop_bonus_pct": 15},
     "Technician": {"component_drop_bonus_pct": 25, "rarity_escalation_chance_pct": 10},
-    "Survivor": {"all_rarity_bump_one_level_chance_pct": 12, "health_restore_bonus_pct": 20}
+    "Survivor": {"all_rarity_bump_one_level_chance_pct": 12, "health_restore_bonus_pct": 20},
+    "Striker": {"weapon_drop_bonus_pct": 20, "critical_hit_loot_chance_pct": 10},
+    "Riftbinder": {"rift_material_drop_bonus_pct": 25, "rare_crystal_chance_pct": 15},
+    "Warden": {"armor_drop_bonus_pct": 20, "defensive_component_bonus_pct": 10}
   }
 }

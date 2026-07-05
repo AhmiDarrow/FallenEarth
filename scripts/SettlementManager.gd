@@ -26,7 +26,7 @@ extends Node
 signal entered_settlement(hex_key: String, town_data: Dictionary)
 signal left_settlement(hex_key: String)
 
-const SETTLEMENT_SCENE := "res://scenes/Settlement.tscn"
+const SETTLEMENT_SCENE := "res://scenes/SettlementInterior.tscn"
 
 const WORLD_DATA_PATH := "/root/GameState"
 
@@ -47,7 +47,11 @@ func is_inside_settlement() -> bool:
 ## Enter a settlement. Looks up the town by hex in world_data.towns_seeded,
 ## instantiates the Settlement scene, hides the HubWorld's world, and
 ## shows the interior. Returns true on success.
-func enter_settlement(hex_key: String, hub: Node) -> bool:
+##
+## v0.7.1 polish: trigger the procedural NPC spawn (party.spawn_for_settlement)
+## at enter time so the Settlement scene shows biome+faction-flavored
+## residents from the moment the player walks in.
+func enter_settlement(hex_key: String, hub: Node, focus_building: String = "") -> bool:
 	if is_inside_settlement():
 		push_warning("[SettlementManager] Already inside a settlement; ignore")
 		return false
@@ -64,21 +68,40 @@ func enter_settlement(hex_key: String, hub: Node) -> bool:
 	if town.is_empty():
 		push_warning("[SettlementManager] Hex %s is not a town" % hex_key)
 		return false
-	# Load the interior scene
-	var script: GDScript = load(SETTLEMENT_SCENE) as GDScript
-	if script == null:
+	# v0.7.1 fix: load the scene as a PackedScene (not a GDScript). The
+	# previous `as GDScript` cast was wrong — .tscn files load as
+	# PackedScene. Use PackedScene.instantiate() to get the scene root.
+	var packed: PackedScene = load(SETTLEMENT_SCENE) as PackedScene
+	if packed == null:
 		push_error("[SettlementManager] Missing Settlement scene: %s" % SETTLEMENT_SCENE)
 		return false
 	active_settlement_hex = hex_key
 	active_settlement_data = town
-	interior = script.new()
+	interior = packed.instantiate()
 	interior.name = "Settlement_%s" % hex_key.replace(",", "_")
-	interior.setup(town, hub)
+	interior.setup(town, hub, focus_building)
 	# Find a CanvasLayer in HubWorld to host the interior
 	if hub != null and is_instance_valid(hub):
 		hub.add_child(interior)
+	# v0.7.1 polish: trigger the procedural NPC spawn (party.spawn_for_settlement)
+	# at enter time so the Settlement scene shows biome+faction-flavored
+	# residents from the moment the player walks in.
+	var pm: Node = get_node_or_null("/root/PartyNPCManager")
+	if pm != null and pm.has_method("spawn_for_settlement"):
+		var biome: String = str(town.get("biome", ""))
+		if biome.is_empty():
+			biome = "Ash Wastes"  # fallback
+		var faction: String = str(town.get("faction", ""))
+		var size_str: String = str(town.get("size", "medium"))
+		var spawned: Array = pm.spawn_for_settlement(hex_key, biome, faction, size_str)
+		for n in spawned:
+			print("[SettlementManager] Spawned resident %s in settlement %s" % [
+				n.get("name", "?"), hex_key
+			])
 	emit_signal("entered_settlement", hex_key, town)
-	print("[SettlementManager] Entered settlement %s (%s)" % [hex_key, town.get("name", "?")])
+	print("[SettlementManager] Entered settlement %s (%s, %s, %s)" % [
+		hex_key, town.get("template_name", "?"), town.get("faction", "?"), town.get("biome", "?")
+	])
 	return true
 
 

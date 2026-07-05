@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/SettlementBuilding.gd" id="1_sb"]
+
+[node name="SettlementBuilding" type="Node2D"]
+script = ExtResource("1_sb")

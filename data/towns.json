@@ -1,5 +1,16 @@
 {
-  "_comment": "NPC town templates. Each town occupies one hex; the hex's biome is preserved. Templates specify building roster and NPC count. WorldGenerator places towns at world-gen time: 1 per ~25 hexes, even percentage of each faction, no two adjacent, ≥2 hexes from Riftspire. Phase 3 ships the template schema + WorldGenerator integration; actual NPC spawning for town residents lands in a later phase.",
+  "_comment": "NPC town templates. Each town occupies one hex; the hex's biome is preserved. Templates specify building roster and NPC count. WorldGenerator places towns at world-gen time: 1 per ~25 hexes, even percentage of each faction, no two adjacent, >=2 hexes from Riftspire.",
+  "building_types": {
+    "tavern":        { "w": 3, "h": 3, "role": "innkeeper",    "sprite": "tavern",        "label": "Tavern" },
+    "trader":        { "w": 3, "h": 3, "role": "trader",       "sprite": "trader",        "label": "Trader" },
+    "worktable":     { "w": 2, "h": 2, "role": "crafter",      "sprite": "worktable",     "label": "Worktable" },
+    "armor_table":   { "w": 2, "h": 2, "role": "armorer",      "sprite": "armor_table",   "label": "Armor Table" },
+    "blacksmith":    { "w": 2, "h": 2, "role": "smith",        "sprite": "blacksmith",    "label": "Blacksmith" },
+    "quest_board":   { "w": 1, "h": 1, "role": "quest_giver",  "sprite": "quest_board",   "label": "Quest Board" },
+    "faction_hq":    { "w": 4, "h": 3, "role": "faction_rep",  "sprite": "faction_hq",    "label": "Faction HQ" },
+    "auction_house": { "w": 3, "h": 3, "role": "auctioneer",   "sprite": "auction_house", "label": "Auction House" },
+    "arena":         { "w": 5, "h": 5, "role": "trainer",      "sprite": "arena",         "label": "Arena" }
+  },
   "templates": {
     "small_outpost": {
       "size": "small",

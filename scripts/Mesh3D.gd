@@ -1,6 +1,6 @@
 @tool
 extends Resource
-class_name Mesh3D
+class_name Mesh3DData
 
 var mesh_type: String
 var material: Material3D

@@ -42,7 +42,6 @@ func _process(delta: float) -> void:
 	_time += delta
 	var t: float = clampf(_time / LIFETIME, 0.0, 1.0)
 	# Rise upward
-	position.y = _start_y + global_position.y - position.y
 	global_position.y = _start_y - RISE_PX * t
 	# Fade out
 	modulate.a = 1.0 - t

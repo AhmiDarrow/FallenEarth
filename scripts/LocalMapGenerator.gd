@@ -101,6 +101,16 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				continue
 			terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
 
+	# v0.8.0: check if this hex has a town. If so, generate a procedural
+	# town layout (clearing + buildings + road) before placing other entities.
+	var town_data: Dictionary = _get_town_for_hex(q, r)
+	var settlement_data: Dictionary = {"structures": [], "npcs": [], "town_data": town_data, "boundary": null}
+	if not town_data.is_empty():
+		var structures: Array = _generate_town_layout(rng, town_data, terrain, occupied, Vector2i(cx, cy))
+		settlement_data["structures"] = structures
+		# Compute bounding box encompassing the clearing + all buildings
+		settlement_data["boundary"] = _compute_town_boundary(structures, Vector2i(cx, cy))
+
 	# v0.6.0 follow-up polish: emit one cooking table near the spawn pocket
 	# so the player has access to cooking recipes from minute 1. Mark the
 	# cell occupied before the resource emitters so they don't drop a tree
@@ -112,7 +122,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 			occupied[ct_cell.y * MAP_SIZE + ct_cell.x] = 1
 
 	# Phase 1: emit resource nodes and floor pickups (after cooking table
-	# so the table cell is reserved)
+	# so the table cell is reserved; town buildings are already in occupied[])
 	var resource_nodes: Array = _emit_resource_nodes(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 	var floor_pickups: Array = _emit_floor_pickups(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 
@@ -129,7 +139,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		"explored_pct": 0.0,
 		"mobs": [],
 		"active_rifts": [],
-		"settlement": {"structures": [], "npcs": []},
+		"settlement": settlement_data,
 		"resource_nodes": resource_nodes,
 		"floor_pickups": floor_pickups,
 		"cooking_tables": cooking_tables,
@@ -259,6 +269,234 @@ static func _emit_start_cooking_table(spawn: Vector2i) -> Array:
 		"y": table_pos.y,
 		"station_id": "cooking_table",
 	}]
+
+
+# v0.8.0: Town layout generation ------------------------------------------------
+
+## Cached loader for towns.json (building_types + templates).
+static var _towns_cache: Dictionary = {}
+static var _towns_cache_mtime: int = -1
+
+
+static func _load_towns_config() -> Dictionary:
+	var path := "res://data/towns.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var ftime := FileAccess.get_modified_time(path)
+	if _towns_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Dictionary = {}
+			if raw is Dictionary:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Dictionary:
+					data = d
+			if not data.is_empty():
+				_towns_cache = data
+				_towns_cache_mtime = ftime
+	return _towns_cache
+
+
+## Look up whether (q, r) contains a town. Returns the town dict from
+## world_data.towns_seeded, or {} if not a town hex. Uses a static cache
+## so the lookup is O(1) after the first call per session.
+static var _town_hex_cache: Dictionary = {}
+static var _town_hex_loaded: bool = false
+
+
+static func _get_town_for_hex(q: int, r: int) -> Dictionary:
+	if not _town_hex_loaded:
+		_rebuild_town_hex_cache()
+	var key := hex_key(q, r)
+	return _town_hex_cache.get(key, {})
+
+
+static func _rebuild_town_hex_cache() -> void:
+	_town_hex_cache.clear()
+	# GameState is an autoload — read world_data from it at static-call time.
+	var gs: Node = Engine.get_singleton("GameState") if Engine.has_singleton("GameState") else null
+	if gs == null:
+		# Fallback: try /root/GameState (works at runtime, not in @tool)
+		gs = Node.new()  # can't access /root from static; cache will be empty
+		gs.queue_free()
+		_town_hex_loaded = true
+		return
+	if not gs.has_method("get_world_data"):
+		_town_hex_loaded = true
+		return
+	var wd: Dictionary = gs.call("get_world_data")
+	var towns: Array = wd.get("towns_seeded", [])
+	for t in towns:
+		if t is Dictionary:
+			var hk: String = str(t.get("hex", ""))
+			if not hk.is_empty():
+				_town_hex_cache[hk] = t
+	_town_hex_loaded = true
+
+
+## Generate a procedural town layout: central clearing + ring road +
+## buildings placed around the perimeter. Returns an array of structure
+## dictionaries for LocalMapView to render.
+##
+## Algorithm:
+## 1. Clear a circular clearing (radius ~15) at center to TERRAIN_GROUND
+## 2. Place buildings evenly spaced around the clearing edge
+## 3. Each building footprint is marked TERRAIN_BLOCKED + occupied
+## 4. A 1-cell-wide debris path connects each building entrance to the clearing
+static func _generate_town_layout(
+		rng: RandomNumberGenerator,
+		town_data: Dictionary,
+		terrain: PackedByteArray,
+		occupied: PackedByteArray,
+		spawn: Vector2i
+) -> Array:
+	var config: Dictionary = _load_towns_config()
+	var building_types: Dictionary = config.get("building_types", {})
+	var buildings: Array = town_data.get("buildings", [])
+	if buildings.is_empty() or building_types.is_empty():
+		return []
+
+	var structures: Array = []
+	var cx: int = spawn.x
+	var cy: int = spawn.y
+	var clearing_radius: int = 15
+
+	# Step 1: Clear a circular clearing at center
+	for dy in range(-clearing_radius - 2, clearing_radius + 3):
+		for dx in range(-clearing_radius - 2, clearing_radius + 3):
+			var px: int = cx + dx
+			var py: int = cy + dy
+			if px < 0 or py < 0 or px >= MAP_SIZE or py >= MAP_SIZE:
+				continue
+			if dx * dx + dy * dy <= (clearing_radius + 1) * (clearing_radius + 1):
+				terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
+
+	# Step 2: Place buildings evenly around the clearing
+	var n_buildings: int = buildings.size()
+	var angle_step: float = TAU / float(n_buildings)
+	var place_radius: float = float(clearing_radius + 4)
+
+	for i in n_buildings:
+		var bld_name: String = str(buildings[i])
+		var bld_info: Dictionary = building_types.get(bld_name, {})
+		if bld_info.is_empty():
+			continue
+		var bw: int = int(bld_info.get("w", 2))
+		var bh: int = int(bld_info.get("h", 2))
+		var role: String = str(bld_info.get("role", "vendor"))
+		var sprite: String = str(bld_info.get("sprite", bld_name))
+		var label: String = str(bld_info.get("label", bld_name))
+
+		# Position building center on the ring
+		var angle: float = angle_step * float(i) - PI / 2.0
+		var bx_center: int = cx + int(cos(angle) * place_radius)
+		var by_center: int = cy + int(sin(angle) * place_radius)
+
+		# Convert center to top-left corner
+		var bx: int = bx_center - bw / 2
+		var by: int = by_center - bh / 2
+
+		# Clamp to map bounds (leave 2-cell border)
+		bx = clampi(bx, 2, MAP_SIZE - bw - 2)
+		by = clampi(by, 2, MAP_SIZE - bh - 2)
+
+		# Step 3: Mark building footprint as TERRAIN_BLOCKED + occupied
+		var entrance_x: int = bx + bw / 2
+		var entrance_y: int = by + bh  # entrance is at bottom center
+		for dy2 in bh:
+			for dx2 in bw:
+				var px: int = bx + dx2
+				var py: int = by + dy2
+				if px < 0 or py < 0 or px >= MAP_SIZE or py >= MAP_SIZE:
+					continue
+				var idx: int = py * MAP_SIZE + px
+				terrain[idx] = TERRAIN_BLOCKED
+				occupied[idx] = 1
+
+		# Step 4: Path from building entrance to clearing edge (debris trail)
+		var path_dx: int = 0
+		var path_dy: int = 0
+		if entrance_y < cy:
+			path_dy = 1  # building is above center, path goes south
+		elif entrance_y > cy:
+			path_dy = -1  # building is below center, path goes north
+		if entrance_x < cx:
+			path_dx = 1
+		elif entrance_x > cx:
+			path_dx = -1
+
+		# Walk from entrance toward clearing, placing debris path
+		var px: int = entrance_x
+		var py: int = entrance_y
+		for _step in clearing_radius + bw:
+			if px < 0 or py < 0 or px >= MAP_SIZE or py >= MAP_SIZE:
+				break
+			var idx: int = py * MAP_SIZE + px
+			if terrain[idx] == TERRAIN_BLOCKED:
+				# Reached the clearing or another building — stop
+				break
+			if terrain[idx] != TERRAIN_VEGETATION:
+				terrain[idx] = TERRAIN_DEBRIS
+			# Move toward clearing center
+			var dist_to_center: int = (px - cx) * (px - cx) + (py - cy) * (py - cy)
+			if dist_to_center <= clearing_radius * clearing_radius:
+				break  # reached the clearing
+			# Prefer moving along the dominant axis
+			if abs(entrance_x - cx) >= abs(entrance_y - cy):
+				px += path_dx
+			else:
+				py += path_dy
+
+		# Record the structure for rendering
+		structures.append({
+			"id": bld_name,
+			"role": role,
+			"sprite": sprite,
+			"label": label,
+			"x": bx,
+			"y": by,
+			"w": bw,
+			"h": bh,
+			"entrance_x": entrance_x,
+			"entrance_y": entrance_y,
+		})
+
+	return structures
+
+
+## Compute a Rect2i bounding box encompassing the clearing + all buildings.
+## Used by HubWorld._seed_mobs_for_hex() to exclude mobs from the town area.
+static func _compute_town_boundary(structures: Array, center: Vector2i) -> Rect2i:
+	var clearing_radius: int = 15
+	var min_x: int = center.x - clearing_radius
+	var min_y: int = center.y - clearing_radius
+	var max_x: int = center.x + clearing_radius
+	var max_y: int = center.y + clearing_radius
+
+	for s in structures:
+		if not (s is Dictionary):
+			continue
+		var sx: int = int(s.get("x", 0))
+		var sy: int = int(s.get("y", 0))
+		var sw: int = int(s.get("w", 2))
+		var sh: int = int(s.get("h", 2))
+		min_x = mini(min_x, sx)
+		min_y = mini(min_y, sy)
+		max_x = maxi(max_x, sx + sw)
+		max_y = maxi(max_y, sy + sh)
+
+	# Clamp to map bounds
+	min_x = clampi(min_x, 0, MAP_SIZE - 1)
+	min_y = clampi(min_y, 0, MAP_SIZE - 1)
+	max_x = clampi(max_x, 0, MAP_SIZE - 1)
+	max_y = clampi(max_y, 0, MAP_SIZE - 1)
+
+	return Rect2i(min_x, min_y, max_x - min_x, max_y - min_y)
+
+
+# End v0.8.0 town layout --------------------------------------------------------
 
 
 # Cached loader for the resource_nodes.json (whole-file; this runs at

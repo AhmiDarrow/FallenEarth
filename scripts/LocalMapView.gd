@@ -18,6 +18,7 @@ const HarvestNodeScene = preload("res://scenes/HarvestNode.tscn")
 const FloorPickupScene = preload("res://scenes/FloorPickup.tscn")
 const SettlementNodeScene = preload("res://scenes/SettlementNode.tscn")
 const CookingTableScene = preload("res://scenes/CookingTable.tscn")
+const SettlementBuildingScene = preload("res://scenes/SettlementBuilding.tscn")
 
 const CELL_SIZE := 24
 
@@ -30,6 +31,7 @@ var settlement_layer: Node2D
 var station_layer: Node2D
 
 var _current_biome: String = ""
+var _current_map_data: Dictionary = {}
 
 
 func _ready() -> void:
@@ -39,6 +41,7 @@ func _ready() -> void:
 	node_layer = get_node_or_null("NodeLayer") as Node2D
 	pickup_layer = get_node_or_null("PickupLayer") as Node2D
 	settlement_layer = get_node_or_null("SettlementLayer") as Node2D
+	station_layer = get_node_or_null("StationLayer") as Node2D
 	# Mob layer is y-sorted so entities stack correctly with the player.
 	if is_instance_valid(mob_layer):
 		mob_layer.y_sort_enabled = true
@@ -64,6 +67,9 @@ func configure(map_data: Dictionary) -> void:
 	_clear_mobs()
 	_clear_nodes()
 	_clear_pickups()
+	_clear_buildings()
+
+	_current_map_data = map_data
 
 	var biome_name: String = str(map_data.get("biome", "Ash Wastes"))
 	_current_biome = biome_name
@@ -98,6 +104,8 @@ func configure(map_data: Dictionary) -> void:
 	# GameState. Each town is placed at its hex key (the player walks
 	# adjacent and presses E to enter the interior).
 	_populate_settlements(_get_world_towns())
+	# v0.8.0: spawn building sprites from the procedural town layout
+	_populate_buildings(map_data.get("settlement", {}).get("structures", []))
 
 
 func _get_world_towns() -> Array:
@@ -137,6 +145,31 @@ func get_settlement_at(cell: Vector2i) -> Node2D:
 		var cx: int = int(floor(p.x / CELL_SIZE))
 		var cy: int = int(floor(p.y / CELL_SIZE))
 		if cx == cell.x and cy == cell.y:
+			return child
+	return null
+
+
+## v0.8.0: populate building sprites from the procedural town layout.
+## Each structure dict has {id, role, sprite, label, x, y, w, h, entrance_x, entrance_y}.
+func _populate_buildings(structures: Array) -> void:
+	if not is_instance_valid(settlement_layer):
+		return
+	for entry in structures:
+		if not (entry is Dictionary):
+			continue
+		var node: Node2D = SettlementBuildingScene.instantiate()
+		settlement_layer.add_child(node)
+		node.setup((entry as Dictionary).duplicate(true))
+
+
+## Returns the SettlementBuilding whose footprint contains the given cell, or null.
+func get_building_at(cell: Vector2i) -> Node2D:
+	if not is_instance_valid(settlement_layer):
+		return null
+	for child in settlement_layer.get_children():
+		if not child.has_method("is_cell_inside"):
+			continue
+		if child.is_cell_inside(cell):
 			return child
 	return null
 
@@ -332,6 +365,11 @@ func get_settlement_layer() -> Node2D:
 	return settlement_layer
 
 
+## v0.8.0: Returns the current map_data dictionary (set during configure()).
+func get_map_data() -> Dictionary:
+	return _current_map_data
+
+
 func _clear_ground() -> void:
 	if is_instance_valid(ground_layer):
 		ground_layer.clear()
@@ -353,6 +391,13 @@ func _clear_settlements() -> void:
 	if is_instance_valid(settlement_layer):
 		for child in settlement_layer.get_children():
 			child.queue_free()
+
+
+func _clear_buildings() -> void:
+	if is_instance_valid(settlement_layer):
+		for child in settlement_layer.get_children():
+			if child.has_method("is_cell_inside"):
+				child.queue_free()
 
 
 func _clear_markers() -> void:

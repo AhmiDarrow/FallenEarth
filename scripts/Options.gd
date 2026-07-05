@@ -60,11 +60,11 @@ func _on_vsync_toggled(button_pressed: bool) -> void:
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED)
 	else:
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
-	DisplayManager._save_settings()
+	DisplayManager.save_settings()
 
 func _on_apply() -> void:
-	DisplayManager._apply_settings()
-	DisplayManager._save_settings()
+	DisplayManager.apply_settings()
+	DisplayManager.save_settings()
 
 func _on_back() -> void:
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState

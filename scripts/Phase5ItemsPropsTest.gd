@@ -168,7 +168,10 @@ var _test_presets: Array[Dictionary] = [
 ]
 
 func _ready() -> void:
-	_viewport = $Entity3DLayer
+	_viewport = get_node_or_null("Entity3DLayer")
+	if _viewport == null:
+		push_warning("[Phase5ItemsPropsTest] Entity3DLayer node not found — test scene inactive")
+		return
 	_setup_ui()
 	_spawn_current()
 
@@ -184,6 +187,9 @@ func _spawn_current() -> void:
 		return
 	var preset: Dictionary = _test_presets[_spawn_index]
 	var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
+	if comp_script == null:
+		push_warning("[Phase5ItemsPropsTest] EntityVisualComponent.gd not found")
+		return
 	var comp = comp_script.new()
 	comp.setup(preset["data"], _viewport)
 	comp.set_animation_state("idle")
@@ -204,8 +210,11 @@ func _on_next() -> void:
 
 func _on_spawn_all() -> void:
 	_clear_entities()
-	var offset := 0.0
 	var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
+	if comp_script == null:
+		push_warning("[Phase5ItemsPropsTest] EntityVisualComponent.gd not found")
+		return
+	var offset := 0.0
 	for preset in _test_presets:
 		var comp = comp_script.new()
 		var data: Dictionary = preset["data"].duplicate(true)

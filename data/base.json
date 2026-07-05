@@ -7,7 +7,7 @@
   "capacity_per_upgrade": 5,
   "max_level": 10,
   "settlement_name_unlock_at_residents": 20,
-  "tier_sprite_suffixes": ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x", "_xi"],
+  "tier_sprite_suffixes": ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x"],
   "upgrades": [
     {"level": 1, "name": "Worn Hut",          "level_required": 10, "capacity": 5,  "cost_ec": 0,     "cost_items": [],                                                                              "size_tiles": [4, 4],   "sprite_base": "base_t1",   "description": "A small shelter. Capacity 5 residents."},
     {"level": 2, "name": "Sturdy Cabin",      "level_required": 20, "capacity": 10, "cost_ec": 200,   "cost_items": [{"item": "withered_branch", "qty": 10}],                                            "size_tiles": [6, 6],   "sprite_base": "base_t2",   "description": "Wooden walls. Capacity 10 residents."},

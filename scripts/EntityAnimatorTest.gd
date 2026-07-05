@@ -2,8 +2,8 @@
 ## Demonstrates procedural animation states (Idle, Walk, Combat, Dead) for different entity types.
 extends Control
 
-var _viewport: Entity3DViewport
-var _current_entity: EntityVisualComponent
+var _viewport  # Entity3DViewport (untyped — class not yet implemented)
+var _current_entity  # EntityVisualComponent (untyped — class not yet implemented)
 var _entity_data: Dictionary = {
 	"entity_id": "test_humanoid",
 	"visual": {
@@ -18,7 +18,10 @@ var _entity_data: Dictionary = {
 }
 
 func _ready() -> void:
-	_viewport = $Entity3DLayer as Entity3DViewport
+	_viewport = get_node_or_null("Entity3DLayer")
+	if _viewport == null:
+		push_warning("[EntityAnimatorTest] Entity3DLayer node not found — test scene inactive")
+		return
 	_setup_ui()
 	_spawn_entity("humanoid")
 
@@ -55,7 +58,12 @@ func _spawn_entity(entity_type: String) -> void:
 				"scale_range": [0.8, 1.2]
 			}
 
-	_current_entity = EntityVisualComponent.new()
+	_current_entity = null
+	var comp_script = load("res://scripts/procedural/EntityVisualComponent.gd")
+	if comp_script == null:
+		push_warning("[EntityAnimatorTest] EntityVisualComponent.gd not found")
+		return
+	_current_entity = comp_script.new()
 	_current_entity.setup(data, _viewport)
 	_current_entity.set_animation_state("idle")
 	_update_info()

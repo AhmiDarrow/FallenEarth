@@ -52,10 +52,10 @@ var _classes: Array = []
 var _races: Array = []
 var _spawn_rules: Dictionary = {}
 var _faction_names: Array = []
-# v0.7.0: per-biome themes (title, name_prefix, race_pref) loaded
+# v0.7.0: per-biome themes (title, name_prefix, origin_pref) loaded
 # from joinable_npc_templates.json's `_biome_themes` section.
 var _biome_themes: Dictionary = {}
-# v0.7.0: per-faction themes (name_prefix, race_pref) loaded from
+# v0.7.0: per-faction themes (name_prefix, origin_pref, preferred_race) loaded from
 # joinable_npc_templates.json's `_faction_themes` section. Used to flavor
 # NPCs spawned in faction-owned settlements.
 var _faction_themes: Dictionary = {}
@@ -441,14 +441,15 @@ func _generate_npc_for_settlement(tpl: Dictionary, player_level: int, biome: Str
 	# parent (spawn_for_settlement) called seed() with the hex_key hash.
 	var biome_theme: Dictionary = _biome_themes.get(biome, {})
 	var faction_theme: Dictionary = _faction_themes.get(faction, {})
-	# Faction theme takes priority for name_prefix + race_pref.
+	# Faction theme takes priority for name_prefix + origin_pref.
 	# Biome theme contributes the role title.
 	var role_title: String = str(biome_theme.get("title", tpl.get("title", "wanderer")))
 	var name_prefix: String = str(faction_theme.get("name_prefix", biome_theme.get("name_prefix", "")))
-	var race_pref: String = str(faction_theme.get("race_pref", biome_theme.get("race_pref", "")))
+	var origin_pref: String = str(faction_theme.get("origin_pref", faction_theme.get("race_pref", biome_theme.get("race_pref", ""))))
+	var preferred_race: String = str(faction_theme.get("preferred_race", ""))
 	var id: String = "npc_settle_%s_%s_%d" % [hex_key.replace(",", "_"), str(tpl.get("id", "npc")).replace(" ", "_"), idx]
-	# Origin: use preference if set, otherwise 70/30 upworld/underworld
-	var origin: String = race_pref if race_pref != "" else ("Upworld" if randf() < 0.7 else "Underworld")
+	# Origin: use origin_pref if set, otherwise 70/30 upworld/underworld
+	var origin: String = origin_pref if origin_pref != "" else ("Upworld" if randf() < 0.7 else "Underworld")
 	var class_data: Dictionary = _pick_class()
 	var race_data: Dictionary = _pick_race(origin)
 	var gender: String = "male" if randf() < 0.5 else "female"
@@ -457,8 +458,6 @@ func _generate_npc_for_settlement(tpl: Dictionary, player_level: int, biome: Str
 	var npc_level: int = clampi(player_level + randi_range(level_lo, level_hi), 1, 256)
 	# Build a flavor-aware name: prefix + random first + random last
 	var bucket: String = "upworld" if origin == "Upworld" else "underworld"
-	if race_pref == "Independent" or race_pref == "Neutral":
-		bucket = "neutral"  # fall through to neutral name pool
 	var parts: Dictionary = _name_parts.get(bucket, _name_parts.get("neutral", {}))
 	var first: Array = parts.get("first", ["Kira"])
 	var last: Array = parts.get("last", ["Morrow"])

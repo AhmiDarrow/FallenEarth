@@ -1,22 +1,19 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.7.0-complete
-**Last Updated:** 2026-07-05 17:00
+**Version:** 0.9.0
+**Last Updated:** 2026-07-05 23:45
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.7.0 procedural NPC spawn in settlements COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_1700.md` for biome + faction balanced spawn. All 17 smoke tests pass; smoke_v070 (12 tests) verified deterministic across 5 runs.
+**Current Phase:** v0.9.0 ALL PHASES COMPLETE (A-F). Milestone done.
 
 ## Summary
 
-The entire local-map tile pipeline has been rewritten on Godot 4.3's
-`TileMapLayer` + `TileSet` + `TileSetAtlasSource` API. All old wang-tile code
-and the sprite-chunk renderer are gone, along with the procedural
-`_make_circle_texture` marker draw. Fifty new terrain tiles (10 biomes × 5
-terrain types) were generated via PixelLab and now render as a native
-TileMapLayer at 24×24 px cells.
-
-`MobVisual` is rewritten to render the 64×64 mob sprite at native size (no
-scale-down hack) parented to a y-sorted `MobLayer`, so mob visibility is no
-longer dependent on a half-size trick.
+v0.9.0 "Settlement Life & Combat Polish" milestone is complete. All 6 phases (A-F) implemented:
+- **Phase A:** NPC Dialogue System — 11 dialogue trees, DialogueManager autoload, DialogueUI
+- **Phase B:** Settlement Ambient Behavior — NPCWanderer state machine, room rendering improvements
+- **Phase C:** Quest Tracker UI — QuestTracker autoload, collapsible Tab-toggled panel
+- **Phase D:** Combat Feedback — FloatingDamage numbers, CombatHPBar, kill counter
+- **Phase E:** Quality of Life — MinimapOverhaul icons, Sort/Loot All buttons, OptionsMenu
+- **Phase F:** Polish Pass — TransitionScreen fade effects, AmbientAudio biome loops, MusicManager crossfade, LoadingTips (18 tips)
 
 ## Playable Flow (intended — unchanged)
 
@@ -41,11 +38,120 @@ Splash → MainMenu → WorldGeneration (pick start hex)
 | Rifts (local coords) | ✅ | `RiftRunner.gd`, `RiftInstance.gd` |
 | Tactical combat (FFT) | ✅ | `TacticalCombat.gd`, `CombatManager.gd` |
 | Missions (local mobs) | ✅ | `MissionManager.gd` |
-| Save/load (world layer) | ✅ | `GameState.gd`, `SaveManager.gd` |
+| Save/load (all managers) | ✅ NEW v0.8.0 Phase H | `GameState.gd`, `SaveManager.gd` — aggregates + restores inventory, progression, party, equipment, base, base_shops |
 | Display options | ✅ | `DisplayManager.gd`, `Options.gd`, `scenes/ui/Options.tscn` |
 | Hand-drawn tiles | ✅ NEW v0.3.0 | `assets/tilesets/{biome}/{terrain}.png` — 50 files via PixelLab |
 | Mob sprites (visible) | ✅ v0.2.0 round 2 | `assets/mobs/{id}.png` — 27 mobs |
-| Settlement building | ⏳ | Not started — `hex_state.settlement` stub in generator |
+| Settlement buildings on map | ✅ NEW v0.8.0 | `SettlementBuilding.gd` + `assets/sprites/buildings/` — 9 building types, procedural layout |
+| Spatial settlement interiors | ✅ NEW v0.8.0 | `SettlementInterior.gd` + `RoomView.gd` + `data/settlement_rooms.json` — room system, WASD, NPC visuals, E-key |
+| Settlement interior visuals | ✅ NEW v0.8.0 Phase C | NPC character sprites (AtlasTexture), biome floor textures, faction wall accents |
+
+## What changed in v0.8.0 Phase A
+
+**Goal:** Procedural town layout on local map. When a hex contains a town, buildings, roads, and a clearing are placed on the 512×512 tile map.
+
+### New files
+- `scripts/SettlementBuilding.gd` + `scenes/SettlementBuilding.tscn` — building entity on local map
+- `tools/generate_building_sprites.py` — procedural PIL generator for 9 building sprites
+- `tools/smoke_settlement.gd` — 10-group smoke test
+- `assets/sprites/buildings/*.png` — 9 building sprites (tavern, trader, worktable, armor_table, blacksmith, quest_board, faction_hq, auction_house, arena)
+
+### Modified
+- `data/towns.json` — added `building_types` section (9 entries with w/h/role/sprite/label)
+- `scripts/LocalMapGenerator.gd` — town layout generator: clearing (radius 15), ring road, building placement, path drawing, boundary computation. `generate()` now populates `map_data["settlement"]` with structures + boundary
+- `scripts/LocalMapView.gd` — `_populate_buildings()`, `get_building_at()`, `get_map_data()`, `_clear_buildings()`. Fixed `station_layer` bug (was never assigned)
+- `scripts/HubWorld.gd` — mob boundary check in `_seed_local_mobs()`, `_adjacent_building()`, `_interact_building()`, `_open_shop_interface()`, `_open_mission_board()`
+
+### Algorithm
+1. Clear circular clearing (radius 15) at map center
+2. Place buildings evenly spaced on ring road (radius ~19)
+3. Mark footprints as TERRAIN_BLOCKED + occupied
+4. Draw debris paths from entrances to clearing
+5. Compute Rect2i boundary for mob exclusion
+
+### Validation
+- `tools/smoke_settlement.gd` — 10/10 pass
+- `validate_scripts.gd` — All scripts and scenes OK
+- `tools/smoke_tile_system.gd` — All checks pass (no regression)
+
+## What changed in v0.8.0 Phase B
+
+**Goal:** Replace text-list settlement interior with spatial room system. Player walks between connected rooms, sees NPCs as visual entities, interacts via E-key.
+
+### New files
+- `data/settlement_rooms.json` — 10 room definitions (town_square + 9 building interiors). Each: 12×10 grid (#=wall, .=floor, X=exit), NPC placements, exit connections.
+- `scripts/RoomView.gd` — Room renderer: ColorRect per cell, NPC visuals (colored dot + name label), collision queries (is_wall, is_exit, get_npc_at, get_exit_near, is_settlement_exit_near).
+- `scripts/SettlementInterior.gd` — Main controller: WASD movement (0.12s cooldown), E-key dispatch (exit→switch room, NPC→interact, settlement exit→leave), room transitions, NPC interactions by role (trader→Shop, quest_giver→MissionBoard, others→greeting dialog).
+- `scenes/SettlementInterior.tscn` — Scene container.
+- `tools/smoke_interior.gd` — 10-group smoke test.
+
+### Modified
+- `scripts/SettlementManager.gd` — `SETTLEMENT_SCENE` changed to `SettlementInterior.tscn`. `enter_settlement()` accepts `focus_building` param, passes to `interior.setup()`.
+- `scripts/HubWorld.gd` — `_interact_building()` passes `bld_id` to `sm.enter_settlement()` and `_try_enter_settlement()`.
+- `validate_scripts.gd` — Added SettlementInterior.tscn, SettlementInterior.gd, RoomView.gd.
+
+### Design
+- Room size: 12×10 cells at 24px/cell (288×240 pixels)
+- Color-coded tiles: wall=#1a1a2e, floor=#2a2a3e, exit=#2a5a3e
+- NPCs: colored dots with name labels (future: character sprites)
+- Grid-based collision (no physics)
+- Room transitions instant (old RoomView freed, new created)
+- E-key priority: room exit > settlement exit > NPC interaction
+- Backward compatible: old Settlement.gd exists but no longer loaded
+
+### Validation
+- `tools/smoke_interior.gd` — 10/10 pass
+- `tools/smoke_settlement.gd` — 10/10 pass (no regression)
+- `tools/smoke_tile_system.gd` — 4/4 pass (no regression)
+- `validate_scripts.gd` — All scripts and scenes OK
+
+## What changed in v0.8.0 Phase C
+
+**Goal:** Add visual variety to settlement interiors — NPC character sprites, biome floor textures, faction-themed wall accents.
+
+### Modified
+- `scripts/RoomView.gd` — NPC colored dots replaced with character sprite frames (AtlasTexture extracts south-facing 16x16 from 128x128 spritesheets). Biome ground tiles render as floor texture (Sprite2D). 11 faction wall accent colors applied to top/bottom wall rows.
+- `scripts/SettlementInterior.gd` — Extracts `biome` and `faction` from town_data, passes to RoomView.setup().
+- `data/settlement_rooms.json` — Added `race` field to all 10 NPC entries for sprite selection.
+- `tools/smoke_interior.gd` — Added 4 Phase C test groups (race fields, sprite loading, biome textures, faction accents). Total: 14 groups.
+
+### Design
+- Character sprites: 128x128 sheet, 8 directions, 16x16 per frame. South = row 0, col 0. Scaled 1.4x for 24px cells.
+- Biome floors: 24x24 ground tiles from `assets/tilesets/{biome}/ground.png`. TEXTURE_FILTER_NEAREST for crisp pixel art.
+- Faction accents: top/bottom wall rows use faction color, side walls stay dark. Subtle differentiation.
+- Fallback: if sprite/biome missing, falls back to colored dot / solid color (backward compatible).
+
+### Validation
+- `tools/smoke_interior.gd` — 14/14 pass (10 Phase B + 4 Phase C)
+- `tools/smoke_settlement.gd` — 10/10 pass (no regression)
+- `tools/smoke_tile_system.gd` — All pass (no regression)
+- `validate_scripts.gd` — All scripts and scenes OK
+
+## What changed in v0.8.0 Phase H
+
+**Goal:** Wire BaseManager + BaseShopManager into GameState save/load so base state persists across sessions.
+
+### Modified
+- `scripts/GameState.gd` `save_game()` — Added `sm.populate_payload_with_managers(data)` call to include manager snapshots (inventory, progression, party, equipment, base, base_shops) in the save payload.
+- `scripts/GameState.gd` `load_game()` — Added `sm.apply_managers_from_payload(data)` call to restore manager state from the save payload on load.
+- `tools/smoke_phase8.gd` — Added `_test_base_manager_round_trip()` test group: places base, sets level/residents/name, opens shop, snapshots, clears, restores, verifies all state preserved.
+
+### Validation
+- `tools/smoke_phase8.gd` — 5/5 pass (aggregate_snapshot, restore_all, round-trip, populate+apply, BaseManager round-trip)
+- `validate_scripts.gd` — All scripts and scenes OK
+
+## What changed in v0.7.1 P0 polish
+
+**Goal:** Fix faction theme data for correct NPC race spawning in settlements.
+
+### Modified
+- `data/joinable_npc_templates.json` — Fixed `preferred_race: "vespers"` → `"vesperid"` (5 factions). Renamed `race_pref` → `origin_pref` (clearer). Fixed invalid origins "Independent"/"Neutral" → proper "Upworld"/"Underworld".
+- `scripts/PartyNPCManager.gd` — Renamed `race_pref` variable to `origin_pref`. Added `preferred_race` variable. Removed dead "Independent"/"Neutral" check. Updated comments.
+
+### Validation
+- `tools/smoke_interior.gd` — 14/14 pass
+- `tools/smoke_v070.gd` — 12/12 pass
+- `validate_scripts.gd` — All OK
 
 ## What changed in v0.4.0 Phase 0
 

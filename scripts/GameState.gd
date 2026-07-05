@@ -310,6 +310,9 @@ func save_game(slot_id: int, character_data: Dictionary = {}) -> bool:
 		data["missions"] = _mission_save.duplicate(true)
 	data["version"] = "0.2.0"
 
+	# Phase 8: include manager snapshots (inventory, progression, party, equipment, base, base_shops)
+	sm.populate_payload_with_managers(data)
+
 	var slot_name := "Slot%d" % slot_id
 	var success: bool = sm.save_to_game_file(data, slot_id, slot_name)
 	if success:
@@ -415,6 +418,9 @@ func load_game(slot_id: int) -> bool:
 			int(_mission_save.get("counter", 0))
 		)
 	sync_party_companions()
+
+	# Phase 8: restore manager state (inventory, progression, party, equipment, base, base_shops)
+	sm.apply_managers_from_payload(data)
 
 	game_loaded.emit(slot_id, data)
 	last_save_slot_updated.emit(slot_id)

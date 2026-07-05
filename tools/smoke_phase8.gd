@@ -27,6 +27,7 @@ func _initialize() -> void:
 	await _test_save_manager_restore_all()
 	await _test_save_manager_round_trip()
 	await _test_save_manager_populate_and_apply_payload()
+	await _test_base_manager_round_trip()
 
 	if failures.is_empty():
 		print("[smoke-p8] All checks passed. (failures.size=%d)" % failures.size())
@@ -171,3 +172,55 @@ func _test_save_manager_populate_and_apply_payload() -> void:
 		_fail("SaveManager.apply_managers_from_payload: level should be 5, got %d" % int(prog.level))
 		return
 	_ok("SaveManager.populate + apply round-trip works")
+
+
+func _test_base_manager_round_trip() -> void:
+	print("[smoke-p8] test: BaseManager + BaseShopManager round-trip")
+	var bm: Node = root.get_node_or_null("/root/BaseManager")
+	var bsm: Node = root.get_node_or_null("/root/BaseShopManager")
+	if bm == null or bsm == null:
+		_fail("BaseManager or BaseShopManager autoload not available")
+		return
+	# Clear state
+	bm.placement = {}
+	bm.level = 0
+	bm.residents = []
+	bm.settlement_name = ""
+	bsm.open_shops = []
+	# Set state
+	bm.place("0,0", 256, 256)
+	bm.level = 3
+	bm.residents = ["npc_a", "npc_b"]
+	bm.settlement_name = "TestFort"
+	bsm.open_shops = [{"shop_type": "weapon_shop", "npc_id": "npc_a", "archetype": "scavenger", "opened_at": 12345}]
+	# Snapshot
+	var save: Node = SaveMgrScript.new()
+	save.name = "TestSave5"
+	root.add_child(save)
+	await process_frame
+	var snap: Dictionary = save.aggregate_snapshot()
+	# Clear
+	bm.placement = {}
+	bm.level = 0
+	bm.residents = []
+	bm.settlement_name = ""
+	bsm.open_shops = []
+	# Restore
+	save.restore_all(snap)
+	# Verify
+	if bm.level != 3:
+		_fail("BaseManager round-trip: level should be 3, got %d" % bm.level)
+		return
+	if bm.residents.size() != 2:
+		_fail("BaseManager round-trip: residents should be 2, got %d" % bm.residents.size())
+		return
+	if bm.settlement_name != "TestFort":
+		_fail("BaseManager round-trip: settlement_name should be 'TestFort', got '%s'" % bm.settlement_name)
+		return
+	if bsm.open_shops.size() != 1:
+		_fail("BaseShopManager round-trip: open_shops should be 1, got %d" % bsm.open_shops.size())
+		return
+	if str(bsm.open_shops[0].get("shop_type", "")) != "weapon_shop":
+		_fail("BaseShopManager round-trip: shop_type should be 'weapon_shop'")
+		return
+	_ok("BaseManager + BaseShopManager round-trip preserved")
