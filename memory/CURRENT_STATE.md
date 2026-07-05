@@ -1,9 +1,9 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.4.0-dev
+**Version:** 0.5.0-dev (v0.4.0 complete + v0.5.0 partial)
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 8 of v0.4.0 complete (save/load + item icons + loot popups + rarity colors)
+**Current Phase:** v0.5.0 (HP/MP combat wiring partial) — see `docs/PLAN_v040_crafting_progression.md` "Quick context for the next agent" section for v0.5.0 status and outstanding issues.
 
 ## Summary
 

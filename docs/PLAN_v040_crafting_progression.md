@@ -1,8 +1,97 @@
-# PLAN v0.4.0 — Crafting, Gathering, Equipment, Economy
+# PLAN v0.4.0 — Crafting, Gathering, Equipment, Economy (and v0.5.0 polish)
 
-**Status:** Draft for review · **Date:** 2026-07-04 · **Owner:** Remedy
-**Supersedes:** nothing (this is the next major phase)
+**Status:** v0.4.0 COMPLETE (all 8 phases shipped, committed to master).
+v0.5.0 STARTED — partial HP/MP combat wiring landed (commit 708e9e8).
+**Owner:** Remedy
 **Builds on:** v0.3.0 TileMapLayer system (50 terrain tiles, 27 mob sprites)
+**Current branch:** `master` (always push to master — the next agent pulls from `master`)
+
+## Quick context for the next agent (v0.5.0 resume)
+
+- v0.4.0 + v0.5.0 partial work is committed to `master`. Pull before starting.
+- The plan below describes v0.4.0 (largely done) and what was added in v0.5.0 (partially done).
+- Read `docs/PLAN_v040_crafting_progression.md` (this file) for the canonical v0.4.0 design + v0.5.0 status section.
+- Read `memory/CURRENT_STATE.md` for the live v0.4.0 state (10 systems shipped, what's next).
+- Read `memory/LATEST_HANDOFF.md` for the most recent commit context.
+- Read `memory/SESSION_NOTES/HANDOFF_2026-07-05_0500.md` (v0.4.0 Phase 8 final) and the most recent `HANDOFF_2026-07-05_XXXX.md` for v0.5.0 context.
+- All 9 existing smoke files still pass under v0.4.0 + v0.5.0 partial:
+  - `tools/smoke_tile_system.gd` (smoke tile)
+  - `tools/smoke_resource_nodes.gd` (smoke-p1)
+  - `tools/smoke_hover_tooltip.gd` (smoke-tt)
+  - `tools/smoke_phase2.gd` (smoke-p2 — full Character HUD)
+  - `tools/smoke_phase3.gd` (smoke-p3 — CharacterMenu, Party, Crafting, 2 info panels, 3 station UIs)
+  - `tools/smoke_phase3b.gd` (smoke-p3b — settlements, shops, mission board)
+  - `tools/smoke_phase4.gd` (smoke-p4 — Equipment, weapons, armor, accessories, stats)
+  - `tools/smoke_phase5.gd` (smoke-p5 — procedural NPC spawn + invite)
+  - `tools/smoke_phase6.gd` (smoke-p6 — base building)
+  - `tools/smoke_phase7.gd` (smoke-p7 — base shops)
+  - `tools/smoke_phase8.gd` (smoke-p8 — save/load + item icons + loot popups + rarity colors)
+  - `tools/smoke_v050.gd` (smoke-v050 — HP/MP combat wiring; 4/6 pass; 1 outstanding bug)
+- `tools/boot_probe.gd` — 60-frame smoke that boots MainMenu; all pass.
+
+## v0.5.0 status (start of next session)
+
+### Done in v0.5.0
+- `CombatManager.gd`: `extends RefCounted` → `extends Node` (so it can call `get_node_or_null` on autoloads)
+- `CombatManager._spawn_player`: pulls max_hp / mp_max / attack / armor from `EquipmentManager` when the autoload is present; falls back to stat-only when not
+- `CombatManager.use_item(item_id)`: heals 30 HP on `bandage`, consumes one from InventoryManager, marks unit as acted. Returns `{ok, message, heal, remaining_hp, max_hp}`
+- `TacticalCombat._combat`: type changed from RefCounted → Node to match the new CombatManager
+- `tools/smoke_v050.gd` (6 test groups)
+
+### Outstanding v0.5.0 issues
+1. **EquipmentManager autoload `_weapons_data` gets cleared mid-test.** Symptom: `em.get_weapon("Scavenger", 0)` returns `{}` partway through `smoke_v050.gd`. The autoload initializes with 6 weapons at startup, so the clear happens during test execution. **Suspects:** `restore_from_snapshot` in `EquipmentManager.gd` (line 90: `_equipment_state.clear()` — but that only clears `_equipment_state`, not `_weapons_data`). The autoload data is a class-level dict, so something is either calling `restore_from_snapshot` with a payload that doesn't include weapons OR there's a re-init happening. **First thing to check in the next session.** The fact that `smoke_v050.gd`'s tests 1, 5, 6 pass but tests 2, 3, 4 fail with "empty" suggests the autoload's data is fresh and gets cleared somewhere between test 1 and test 2. Check `restore_from_snapshot` callers in `CombatManager`, `HubWorld`, `GameState` autosave flow.
+2. **CombatManager.use_item only handles `bandage`.** Other consumables (stamina potions, etc.) need follow-up.
+
+### Not yet done in v0.5.0+
+- **Real procedural NPC spawn in settlements** (Phase 5 ships generic spawn; settlements need specific NPCs at specific cells with specific archetypes)
+- **Full settlement interiors** (rooms, traveling NPCs, mini-quests, visual variety)
+- **Settlement-to-Riftspire travel** (the user opens the Riftspire capital, then travels back)
+- **Button asset set** (procedural pixel-art buttons + pixel font applied via `gui/theme/custom` in `project.godot`; partially drafted in Phase 3 but not generated yet)
+- **Real combat damage wiring** — the `use_item` path works, but the existing `_resolve_attack` (Phase 8) and HP/MP caps (Phase 4) need to be merged with the EquipmentManager stats
+
+### Files to know
+- `scripts/CombatManager.gd` — autoload-style manager for FFT combat (was `extends RefCounted`, now `extends Node`)
+- `scripts/EquipmentManager.gd` — autoload for inventory + per-tier equipment
+- `scripts/InventoryManager.gd` — autoload for inventory (had `get_rarity_color` added in Phase 8 polish)
+- `data/weapons.json`, `data/armor.json`, `data/base_shops.json` — phase data files
+- `assets/sprites/items/` — 14 procedural item icons (Phase 8 polish)
+- `assets/sprites/equipment/` — 468 procedural per-tier equipment sprites
+- `assets/sprites/base/` — 10 procedural base sprites
+
+### Test runner pattern
+All smoke tests follow the same pattern:
+```
+& godot --headless --path . -s tools/smoke_X.gd
+```
+Each test:
+- `await`s each test function (running them sequentially)
+- `prints` "ok ..." on success, "FAIL ..." on failure
+- prints "All checks passed. (failures.size=N)" at the end
+- exits 0 on full pass, 1 on any failure
+
+Run the full v0.4.0 + v0.5.0 suite before committing:
+```bash
+& godot --headless --path . -s validate_scripts.gd
+& godot --headless --path . -s tools/smoke_tile_system.gd
+& godot --headless --path . -s tools/smoke_resource_nodes.gd
+& godot --headless --path . -s tools/smoke_hover_tooltip.gd
+& godot --headless --path . -s tools/smoke_phase2.gd
+& godot --headless --path . -s tools/smoke_phase3.gd
+& godot --headless --path . -s tools/smoke_phase3b.gd
+& godot --headless --path . -s tools/smoke_phase4.gd
+& godot --headless --path . -s tools/smoke_phase5.gd
+& godot --headless --path . -s tools/smoke_phase6.gd
+& godot --headless --path . -s tools/smoke_phase7.gd
+& godot --headless --path . -s tools/smoke_phase8.gd
+& godot --headless --path . -s tools/smoke_v050.gd
+& godot --headless --path . -s tools/boot_probe.gd
+```
+
+### v0.4.0 plan (largely done — see the rest of this file)
+
+The rest of this file is the original v0.4.0 design + v0.5.0 additions. Read sections by topic; most are done.
+
+### v0.4.0 (and v0.5.0) additions (this revision):
 
 **v0.4.0 additions (this revision):**
 - **Tools share MainHand with weapons** — single equip slot, swap via hotbar (no separate Tool slot)
