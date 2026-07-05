@@ -1,37 +1,40 @@
 # NEXT_TASKS — Fallen Earth
 
-**Version:** 0.3.0 · **Updated:** 2026-07-04 · **Phase:** 7 (TileMapLayer system)
+**Version:** 0.4.0-dev · **Updated:** 2026-07-05 · **Phase:** 0 done, Phase 1 next
 
-*Aligns with `docs/VERSION.md`, `CHANGELOG.md`, and `memory/CURRENT_STATE.md`.*
-
----
-
-## TOP PRIORITY — Next Session
-
-### P0 — Visual verification
-
-| ID | Task | Status |
-|----|------|--------|
-| 13 | **F5 playthrough** — New Game → World Gen → pick hex → Character Create → local map. Confirm tiles render via TileMapLayer, mobs visible at 64×64, rift ⚡ / NPC ★ / mission ! markers show as ColorRect+Label. Log any visual issues. | ⏳ READY |
-
-### P1 — Tile polish
-
-| ID | Task | Status |
-|----|------|--------|
-| 14 | **Tile visual QA** — Open each biome in F5, confirm `ground / debris / vegetation / blocked / rift_scar` look distinct. Replace any tile that's too dark / too similar to neighbours (re-run `tools/generate_tiles.py --biome <x> --force`). | ⏳ PENDING |
-| 15 | **Marker polish** — `LocalMapView.add_marker` uses a hard-coded 18×18 ColorRect; size per kind (rift 22, npc 18, mission 16) is the next pass. | ⏳ PENDING |
-| 16 | **Mob y-sort** — `MobLayer.y_sort_enabled` is on, but mobs at identical y overlap. Add small jitter to spawn positions if the visual stutter is noticeable. | ⏳ PENDING |
-
-### P2 — Quality of life
-
-| ID | Task | Status |
-|----|------|--------|
-| 17 | **Autosave during exploration** — Periodic `GameState.save_game(0)` from `HubWorld` (every 2 min or on hex cross). | ⏳ PENDING |
-| 18 | **MainMenu load UI** — Display slot list with character name / region / play time. | ⏳ PENDING |
+*Aligns with `docs/PLAN_v040_crafting_progression.md`, `docs/HANDOFF_PROTOCOL.md`, and `memory/CURRENT_STATE.md`.*
 
 ---
 
-## COMPLETED (v0.3.0 — do not re-implement)
+## TOP PRIORITY — Next session
+
+### P0 — Phase 1 (resource nodes + gathering)
+
+| ID | Task | Status |
+|----|------|--------|
+| 19 | **Resource nodes** — `data/resource_nodes.json` (10 biomes × ~6 nodes + floor_pickup_density), `HarvestNode` scene + script, `FloorPickup` scene + script. Update `LocalMapGenerator` to place nodes + pickups on the map. Update `LocalMapView` to host a `NodeLayer` for them. Tools: `generate_nodes.py` (~50 sprites), `generate_floor_pickups.py` (2 sprites). | ⏳ READY |
+| 20 | **Tool-tier gating** — wire `HarvestNode.gather()` to check equipped MainHand tool's `harvests` list. Add `pickaxe_stone` and `axe_stone` to `data/tools.json` (T0 entry tools, 1 stick + 2 stones recipe). | ⏳ READY |
+| 21 | **Player gather action** — HubWorld detects E-press when adjacent to a HarvestNode, starts a timer, awards yield. Tool check: wrong tool → "Equip a higher-tier pickaxe/axe". | ⏳ READY |
+
+### P1 — Phase 1b (hover tooltips)
+
+| ID | Task | Status |
+|----|------|--------|
+| 22 | **Hover tooltips** — `HoverTooltip.gd` (1s dwell) shows name of what's under mouse cursor: terrain label, node name, mob name, NPC name, rift marker, station. Smoke test + asset check at end. | ⏳ PENDING (after Phase 1) |
+
+### P2 — Phases 2-8 per `docs/PLAN_v040_crafting_progression.md`
+
+(Full list in the plan doc; phases 2 → 8 follow Phase 1, each with own end-of-phase stop/commit/push.)
+
+---
+
+## COMPLETED
+
+### v0.4.0 Phase 0 ✅ (2026-07-05)
+
+| ID | Task | Notes |
+|----|------|-------|
+| 18 | Drop rift_scar tile | Removed TERRAIN_RIFT_SCAR from LocalMapGenerator + TileSetService; 4-row atlas; rift_scar.png deleted (10 files); legacy `terrain[i] == 4` normalized to ground in LocalMapView. Committed `883eca5+`. |
 
 ### Phase 7 — Godot 4.3 TileMapLayer system ✅
 

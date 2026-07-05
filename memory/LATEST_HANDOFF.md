@@ -1,36 +1,30 @@
 ---
-name: v030-tilemap-layer-refactor
-description: v0.3.0 — Godot 4.3 TileMapLayer + 50 fresh tiles. Smoke tests green. F5 visual verify next.
+name: v040-phase0-rift-scar-drop
+description: v0.4.0 Phase 0 complete. Rifts are now entities (markers), terrain atlas is 4 rows. Next: Phase 1 resource nodes.
 ---
 
-## Current Focus: v0.3.0 Godot 4.3 TileMapLayer Refactor
+## Current Focus: v0.4.0 Phase 0 complete; Phase 1 next
 
-All old wang-tile code and the chunked sprite renderer are deleted. The new
-`TileSetService` builds a native `TileSet` per biome; `LocalMapView` paints
-the 512×512 map with `TileMapLayer`. 50 fresh terrain tiles (10 biomes × 5
-terrain types) were generated via PixelLab and imported. Mobs render at
-native 64×64 (no more scale-down hack). Compile + smoke + boot-probe all
-pass with 0 errors.
+Dropped the rift_scar terrain type. `TERRAIN_RIFT_SCAR` constant removed from `LocalMapGenerator` and `TileSetService`; atlas is now 24×96 (4 rows: ground, debris, vegetation, blocked); 10 `rift_scar.png` files deleted; 40 tiles regenerated; legacy `terrain[i] == 4` is normalized to `TERRAIN_GROUND` in `LocalMapView.configure()` (backward compatible with old saves). v0.3.0 baseline committed at `883eca5` and pushed; Phase 0 follow-up commit pending.
 
 ### Immediate Next Step
 
-F5 visual playthrough: New Game → World Gen → pick hex → Character →
-HubWorld. Watch Godot Output for `[HubWorld] Mob seed:` and confirm mobs
-are visible at full size with the new tile terrain. Then walk into each
-biome and re-run `tools/generate_tiles.py --biome <dir> --force` for any
-tile that doesn't read clearly.
+F5 visual playthrough to confirm rifts still appear (now as ⚡ markers on the local map) and the new 4-row terrain looks right. Then move to Phase 1 (resource nodes + gathering + tool-tier gating + sticks/stones) per `docs/PLAN_v040_crafting_progression.md` §3 — but **only after explicit "go"** per the per-phase delivery workflow.
 
 ### Relevant Handoffs
 
-- [[v030-tilemap-layer-refactor]] — this handoff (current focus)
-- [[hubworld-mob-combat-fix]] — Round 1/2 mob visibility fix (now superseded by v0.3.0)
+- [[v040-phase0-rift-scar-drop]] — this handoff (current focus)
+- [[v030-tilemap-layer-refactor]] — Phase 0 was built on the v0.3.0 TileMapLayer foundation
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0057.md` — full 9-section details
+- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2156.md` — v0.3.0 handoff
 
 ### Context Files
 
-- `docs/NEXT_TASKS.md` — v0.3.0 P0 is F5 visual playthrough
-- `memory/PROJECT_MEMORY.md` — PixelLab pipeline notes (endpoints are now /v2)
-- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2156.md` — full 9-section details
+- `docs/PLAN_v040_crafting_progression.md` — canonical design for Phases 1-8
+- `memory/CURRENT_STATE.md` — v0.4.0-dev state
+- `memory/PROJECT_MEMORY.md` — PixelLab pipeline notes (for any future asset generation)
+- `backups/2026-07-05_0056_pre_phase_0/` — pre-Phase 0 snapshot (excluded from git; `.gdignore` marks it for Godot)
 
 ---
 
-Proceed with F5 verification, then per-biome tile QA, then `docs/NEXT_TASKS.md` P1 items.
+**Awaiting permission to start Phase 1 (resource nodes + gathering + sticks/stones).**

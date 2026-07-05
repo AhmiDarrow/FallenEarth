@@ -8,7 +8,11 @@ const TERRAIN_GROUND := 0
 const TERRAIN_DEBRIS := 1
 const TERRAIN_VEGETATION := 2
 const TERRAIN_BLOCKED := 3
-const TERRAIN_RIFT_SCAR := 4
+
+## TERRAIN_RIFT_SCAR was removed in v0.4.0 Phase 0. Rifts are now entities
+## spawned at coordinates (see RiftRunner) and rendered as markers on the
+## local map, not as terrain. Any legacy save with terrain[i] == 4 is
+## treated as TERRAIN_GROUND by LocalMapView.configure().
 
 const EDGE_NORTH := 0
 const EDGE_SOUTH := 1
@@ -78,8 +82,6 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				terrain[idx] = TERRAIN_VEGETATION
 			elif n < 0.32:
 				terrain[idx] = TERRAIN_DEBRIS
-			elif n < 0.34 + rift_chance * 0.06:
-				terrain[idx] = TERRAIN_RIFT_SCAR
 			else:
 				terrain[idx] = TERRAIN_GROUND
 
@@ -140,8 +142,6 @@ static func get_terrain_movement_cost(terrain_type: int) -> int:
 			return 2
 		TERRAIN_BLOCKED:
 			return -1
-		TERRAIN_RIFT_SCAR:
-			return 3
 		_:
 			return 1
 
@@ -171,19 +171,8 @@ static func edge_from_delta(dx: int, dy: int) -> int:
 	return -1
 
 
-static func terrain_color(terrain_type: int) -> Color:
-	match terrain_type:
-		TERRAIN_DEBRIS:
-			return Color(0.45, 0.38, 0.32)
-		TERRAIN_VEGETATION:
-			return Color(0.28, 0.48, 0.30)
-		TERRAIN_BLOCKED:
-			return Color(0.22, 0.20, 0.24)
-		TERRAIN_RIFT_SCAR:
-			return Color(0.55, 0.25, 0.65)
-		_:
-			return Color(0.38, 0.34, 0.30)
-
+# terrain_color was removed in v0.4.0 Phase 0 — it was dead code from the
+# old sprite renderer. The new TileSetService reads tile colors from PNG files.
 
 static func terrain_label(terrain_type: int) -> String:
 	match terrain_type:
@@ -193,7 +182,5 @@ static func terrain_label(terrain_type: int) -> String:
 			return "vegetation"
 		TERRAIN_BLOCKED:
 			return "blocked"
-		TERRAIN_RIFT_SCAR:
-			return "rift_scar"
 		_:
 			return "ground"

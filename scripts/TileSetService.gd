@@ -1,10 +1,13 @@
 ## TileSetService — Builds native Godot 4.3 TileSet resources for local map rendering.
 ##
 ## One TileSet per biome. Each TileSet has a single TileSetAtlasSource whose atlas is
-## a vertical strip of 5 terrain tiles (ground / debris / vegetation / blocked / rift_scar),
+## a vertical strip of 4 terrain tiles (ground / debris / vegetation / blocked),
 ## each 24x24 px. The blocked tile carries a full-cell collision polygon so the player
 ## can't walk through it. No procedural drawing — all visuals come from
 ## res://assets/tilesets/{biome_dir}/{terrain}.png.
+##
+## As of v0.4.0 Phase 0, rift_scar is no longer a terrain type — rifts are entities
+## spawned by RiftRunner and rendered as markers on the local map.
 class_name TileSetService
 extends RefCounted
 
@@ -13,9 +16,11 @@ const TERRAIN_GROUND := 0
 const TERRAIN_DEBRIS := 1
 const TERRAIN_VEGETATION := 2
 const TERRAIN_BLOCKED := 3
-const TERRAIN_RIFT_SCAR := 4
 
-const TERRAIN_NAMES := ["ground", "debris", "vegetation", "blocked", "rift_scar"]
+## Historical value 4 (TERRAIN_RIFT_SCAR) was removed. Legacy map_data with
+## terrain[i] == 4 is normalized to TERRAIN_GROUND by LocalMapView.
+
+const TERRAIN_NAMES := ["ground", "debris", "vegetation", "blocked"]
 
 const BIOME_DIR := {
 	"Ash Wastes": "ash_wastes",
@@ -36,7 +41,7 @@ static func biome_to_dir(biome_name: String) -> String:
 
 
 ## Returns a fresh TileSet for the given biome, or null if the biome folder
-## or any required tile is missing. Atlas: 24x120 px (1 column, 5 rows).
+## or any required tile is missing. Atlas: 24x96 px (1 column, 4 rows).
 static func create_for_biome(biome_name: String) -> TileSet:
 	var dir_name := biome_to_dir(biome_name)
 	if dir_name.is_empty():
@@ -80,7 +85,6 @@ static func create_for_biome(biome_name: String) -> TileSet:
 	source.create_tile(Vector2i(0, 1))  # debris
 	source.create_tile(Vector2i(0, 2))  # vegetation
 	source.create_tile(Vector2i(0, 3))  # blocked — collision below
-	source.create_tile(Vector2i(0, 4))  # rift_scar
 
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(CELL_SIZE, CELL_SIZE)

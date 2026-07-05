@@ -1,9 +1,9 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.3.0  
-**Last Updated:** 2026-07-04  
-**Active Agent:** Remedy (Hermes)  
-**Current Phase:** Phase 7 complete (Godot 4.3 TileMapLayer system)
+**Version:** 0.4.0-dev
+**Last Updated:** 2026-07-05
+**Active Agent:** Remedy (Hermes)
+**Current Phase:** Phase 0 of v0.4.0 complete (drop rift_scar tile)
 
 ## Summary
 
@@ -47,7 +47,38 @@ Splash → MainMenu → WorldGeneration (pick start hex)
 | Mob sprites (visible) | ✅ v0.2.0 round 2 | `assets/mobs/{id}.png` — 27 mobs |
 | Settlement building | ⏳ | Not started — `hex_state.settlement` stub in generator |
 
-## What changed in v0.3.0
+## What changed in v0.4.0 Phase 0
+
+**Goal:** Remove the orange "rift scars" from the terrain. Rifts are now entities (spawned by `RiftRunner`), shown as ⚡ markers on the local map. The terrain atlas goes from 5 rows to 4.
+
+### Removed
+- `TERRAIN_RIFT_SCAR` constant from `LocalMapGenerator.gd` and `TileSetService.gd`
+- `rift_scar` row from `TileSetService.TERRAIN_NAMES` and the `TileSetAtlasSource` (atlas is now 24×96, was 24×120)
+- `TERRAIN_RIFT_SCAR` match arms in `LocalMapGenerator.get_terrain_movement_cost`, `terrain_color` (dead code, fully removed), and `terrain_label`
+- `rift_scar` emission branch in `LocalMapGenerator.generate` — the probability budget that was 0.34–0.40 now falls into the ground `else` branch
+- Dead code: `LocalMapGenerator.terrain_color` (entire function removed; was unused after the sprite-renderer removal in v0.3.0)
+- All `assets/tilesets/*/rift_scar.png` files (10 total)
+
+### Backward compatibility
+- Any legacy `map_data` with `terrain[i] == 4` (the old rift_scar value) is **normalized to `TERRAIN_GROUND`** by `LocalMapView.configure()`. Smoke test verifies this.
+- The historical value 4 is documented in `TileSetService` and `LocalMapGenerator` as a comment so future maintainers understand why the normalization exists.
+
+### Updated
+- `scripts/TileSetService.gd` — 4 rows in atlas, 4 tile creates
+- `scripts/LocalMapGenerator.gd` — no rift emission, no rift_scar match arms
+- `scripts/LocalMapView.gd` — normalizes out-of-range terrain values
+- `tools/generate_tiles.py` — `RENDERERS` no longer has rift_scar; `total_expected` computed dynamically from `len(RENDERERS)`
+- `tools/smoke_tile_system.gd` — explicitly tests legacy rift_scar=4 normalization
+- `backups/.gdignore` — keeps the backups folder out of Godot's class registry (prevents duplicate `class_name` errors from the older scripts that lived in pre-v0.3.0 backups)
+- `.gitignore` — excludes `backups/` from version control
+
+### Validation
+- `validate_scripts.gd` — All scripts and scenes OK
+- `tools/smoke_tile_system.gd` — All checks passed (10 biome TileSets, MobVisual load, LocalMapView configure with legacy rift_scar=4 normalized to ground, HubWorld instantiate)
+- `tools/boot_probe.gd` — 60 frames, 0 errors
+
+### Next
+- **Phase 1: Resource nodes + gathering + tool-tier gating + sticks/stones** (per `docs/PLAN_v040_crafting_progression.md`)
 
 **Deleted in v0.3.0 follow-up** (3D material remnants surfaced by F5):
 - `data/sources/materials/material3d_mesh_*.tres.gd` × 9 — broken scripts that did `extends Material3D` (not a real Godot 4 class); produced 9 "Parse Error: Closing } doesn't have an opening counterpart" lines on every boot.

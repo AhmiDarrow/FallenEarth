@@ -55,6 +55,9 @@ func configure(map_data: Dictionary) -> void:
 	for y in size:
 		for x in size:
 			var t := int(terrain[y * size + x])
+			# Normalize legacy rift_scar=4 cells to ground (v0.4.0 Phase 0).
+			if t < 0 or t > TileSetSvc.TERRAIN_BLOCKED:
+				t = TileSetSvc.TERRAIN_GROUND
 			ground_layer.set_cell(Vector2i(x, y), 0, TileSetSvc.atlas_coords(t))
 
 

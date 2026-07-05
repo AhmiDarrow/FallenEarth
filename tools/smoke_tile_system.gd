@@ -59,20 +59,29 @@ func _test_local_map_view() -> void:
 	# _ready resolves the @-nodes; wait one frame before configuring.
 	await process_frame
 
-	# Build a tiny 4x4 map_data
+	# Build a tiny 4x4 map_data. terrain[4] deliberately holds the legacy
+	# rift_scar value (4) to verify that LocalMapView normalizes it to
+	# TERRAIN_GROUND as documented in v0.4.0 Phase 0.
 	var terrain := PackedByteArray()
 	terrain.resize(16)
 	terrain[0] = LocalMapGen.TERRAIN_GROUND
 	terrain[1] = LocalMapGen.TERRAIN_DEBRIS
 	terrain[2] = LocalMapGen.TERRAIN_VEGETATION
 	terrain[3] = LocalMapGen.TERRAIN_BLOCKED
-	terrain[4] = LocalMapGen.TERRAIN_RIFT_SCAR
+	terrain[4] = 4  # legacy rift_scar — should normalize to ground
 	var map_data := {
 		"size": 4,
 		"biome": "Ash Wastes",
 		"terrain": terrain,
 	}
 	view.configure(map_data)
+	# Verify the legacy rift_scar cell (4,0) renders the same as a ground cell
+	# — its atlas coord should be Vector2i(0, 0), not Vector2i(0, 4).
+	var ground2: TileMapLayer = view.get_ground_layer()
+	var legacy_atlas: Vector2i = ground2.get_cell_atlas_coords(Vector2i(4, 0))
+	if legacy_atlas != Vector2i(0, TileSetSvc.TERRAIN_GROUND):
+		_fail("LocalMapView: legacy rift_scar (terrain=4) at (4,0) did not normalize to ground; got %s" % legacy_atlas)
+		return
 	var ground: TileMapLayer = view.get_ground_layer()
 	if ground.tile_set == null:
 		_fail("LocalMapView: ground TileMapLayer has no TileSet")

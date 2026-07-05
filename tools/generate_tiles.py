@@ -28,11 +28,14 @@ GDFILE = TILESET_DIR / ".gdignore"
 
 CELL = 24
 
-# Per-biome palette: (ground, debris, vegetation, rock, rift_accent, ground_alt).
+# Per-biome palette: (ground, debris, vegetation, rock, ground_alt).
 # rock is the color of boulder/rock overlays in the BLOCKED tile, drawn on
 # top of the ground base so blocked cells look like rocks embedded in the
-# ground rather than a separate dark slab. rift_accent is the bright crack
-# color for rift_scar (warm orange-amber, like a glowing earth crack).
+# ground rather than a separate dark slab.
+#
+# As of v0.4.0 Phase 0, the rift_accent field is unused (rifts are no longer
+# a terrain type). The 5-tuple is kept for backward compat with the palette
+# function signature; the 5th element is ignored by the renderers.
 PALETTES = {
     "ash_wastes":          ((148, 130, 108), (110, 96, 80),  (104, 122, 78), (96, 84, 72),  (220, 140, 80),  (158, 140, 118)),
     "rust_canyons":        ((148, 96, 72),   (118, 78, 60),  (98, 100, 68),  (108, 70, 52), (220, 130, 80),  (138, 86, 64)),
@@ -212,7 +215,6 @@ RENDERERS = {
     "debris":     lambda pal: _fill_debris(pal),
     "vegetation": lambda pal: _fill_vegetation(pal),
     "blocked":    lambda pal: _fill_blocked(pal),
-    "rift_scar":  lambda pal: _fill_rift_scar(pal),
 }
 
 
@@ -270,7 +272,8 @@ def main() -> int:
                     total_ok += 1
                 elif r.startswith("skip"):
                     total_skip += 1
-        print(f"Done. ok={total_ok} skip={total_skip} of {len(biomes) * 5}")
+        total_expected = len(biomes) * len(RENDERERS)
+        print(f"Done. ok={total_ok} skip={total_skip} of {total_expected}")
         return 0
     finally:
         remove_gdignore()
