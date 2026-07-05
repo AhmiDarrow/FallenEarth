@@ -40,6 +40,8 @@ const SCRIPTS := [
 	"res://scripts/HoverTooltip.gd",
 	"res://scripts/ui/EquipmentScreen.gd",
 	"res://scripts/ui/StatsScreen.gd",
+	"data/joinable_npc_templates.json",
+	"res://scripts/ui/PartyScreen.gd",
 	"res://scripts/ui/HUD.gd",
 	"res://scripts/ui/Hotbar.gd",
 	"res://scripts/ui/Minimap.gd",

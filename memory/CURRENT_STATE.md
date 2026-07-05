@@ -3,7 +3,7 @@
 **Version:** 0.4.0-dev
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 4 of v0.4.0 complete (Equipment + weapons + armor + accessories + stats)
+**Current Phase:** Phase 5 of v0.4.0 complete (procedural NPC spawn + invite conditions)
 
 ## Summary
 

@@ -143,6 +143,21 @@ func _ready() -> void:
 		_local_map = gs.ensure_hex_state(_player_q, _player_r)
 		gs.set_local_position(_local_x, _local_y)
 
+		# Phase 5: procedural joinable-NPC spawn on entering a new hex
+		var party_mgr: Node = get_node_or_null("/root/PartyNPCManager")
+		if party_mgr != null and party_mgr.has_method("spawn_for_hex"):
+			# Skip spawn if this hex was already populated (e.g. from
+			# a save, or for a hex the player has visited before).
+			# Phase 5 simplification: only spawn if the hex has no
+			# joinable NPCs already.
+			var has_spawn: bool = false
+			for n in party_mgr.available_npcs:
+				if str(n.get("spawn_hex", "")) == str(_player_q) + "," + str(_player_r):
+					has_spawn = true
+					break
+			if not has_spawn:
+				party_mgr.spawn_for_hex("%d,%d" % [_player_q, _player_r], "")
+
 		var start: Dictionary = gs.get_start_tile()
 		if not start.is_empty():
 			_append_start_info(start)

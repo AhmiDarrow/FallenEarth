@@ -1,0 +1,59 @@
+{
+  "_comment": "Phase 5 joinable NPC templates. Each template defines a 'rarity' (common, uncommon, rare, legendary) and an optional weight for the spawn roll. min_player_level is the absolute minimum the player must be at. min_faction_rep is per-faction (null = any faction). requires_quest is an optional mission id that must be in the player's active missions. tier is the armor/weapon tier the NPC starts with. role is one of the roles in npc_name_parts.titles.",
+  "templates": [
+    {
+      "id": "wanderer_common",
+      "rarity": "common",
+      "weight": 50,
+      "min_player_level": 1,
+      "min_faction_rep": null,
+      "requires_quest": null,
+      "faction_required": null,
+      "tier": 0,
+      "title": "wanderer",
+      "description": "A drifter from outside the local area. Easy to recruit early on."
+    },
+    {
+      "id": "faction_officer",
+      "rarity": "uncommon",
+      "weight": 25,
+      "min_player_level": 5,
+      "min_faction_rep": 10,
+      "requires_quest": null,
+      "faction_required": "any_specific",
+      "tier": 0,
+      "title": "mercenary",
+      "description": "An officer of one of the factions. Better gear, higher requirements."
+    },
+    {
+      "id": "quest_unlock_vip",
+      "rarity": "rare",
+      "weight": 10,
+      "min_player_level": 10,
+      "min_faction_rep": null,
+      "requires_quest": "any_late_quest",
+      "faction_required": null,
+      "tier": 1,
+      "title": "shaman",
+      "description": "Locked behind a quest. Powerful specialist."
+    },
+    {
+      "id": "legendary_loner",
+      "rarity": "legendary",
+      "weight": 1,
+      "min_player_level": 25,
+      "min_faction_rep": 50,
+      "requires_quest": "any_late_quest",
+      "faction_required": "any_top_faction",
+      "tier": 2,
+      "title": "wanderer",
+      "description": "Legendary NPCs with their own backstories. Open shops at your base if you treat them right."
+    }
+  ],
+  "_spawn_rules": {
+    "_comment": "Per-hex-visit spawn rules. Most hexes have no joinable NPCs (the spawn rate is low).",
+    "spawn_chance": 0.30,
+    "max_per_hex": 1,
+    "level_range": [-10, 10]
+  }
+}
