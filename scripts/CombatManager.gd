@@ -1,7 +1,7 @@
 ## CombatManager — Final Fantasy Tactics-style tactical combat engine.
 ## CT (Charge Time) turn order, Move/Jump range, tile height, facing, back/side attacks.
 class_name CombatManager
-extends RefCounted
+extends Node
 
 const TEAM_PLAYER := "player"
 const TEAM_ENEMY := "enemy"
@@ -246,6 +246,33 @@ func wait_action() -> Dictionary:
 	return {"ok": true, "message": "Wait."}
 
 
+## Phase 8: Use an item from the player's inventory in combat.
+## Phase 8 ships 'bandage' which heals 30 HP. Returns the action
+## result dict. Consumes one bandage from InventoryManager.
+func use_item(item_id: String) -> Dictionary:
+	if battle_phase != BattlePhase.ACTIVE or not is_player_active():
+		return {"ok": false, "message": "Cannot use items."}
+	if item_id != "bandage":
+		return {"ok": false, "message": "Cannot use %s in combat." % item_id}
+	var inv: Node = get_node_or_null("/root/InventoryManager")
+	if inv == null:
+		return {"ok": false, "message": "InventoryManager unavailable."}
+	if not inv.has_item("bandage", 1):
+		return {"ok": false, "message": "No bandages left."}
+	var unit: Dictionary = _get_unit_ref(active_unit_id)
+	var cur_hp: int = int(unit.get("hp", 0))
+	var max_hp: int = int(unit.get("max_hp", 1))
+	var heal: int = 30
+	unit["hp"] = mini(max_hp, cur_hp + heal)
+	inv.remove_item("bandage", 1)
+	_add_log("%s uses a bandage (+%d HP, now %d/%d)." % [
+		unit.get("name", "?"), heal, int(unit["hp"]), max_hp
+	])
+	unit["has_acted"] = true
+	_finish_active_turn()
+	return {"ok": true, "message": "Healed %d HP." % heal, "heal": heal, "remaining_hp": int(unit["hp"]), "max_hp": max_hp}
+
+
 func finish_turn() -> Dictionary:
 	if battle_phase != BattlePhase.ACTIVE or not is_player_active():
 		return {"ok": false, "message": "Cannot end turn."}
@@ -335,6 +362,24 @@ func _spawn_player(start_pos: Vector2i) -> void:
 	var armor_bonus: int = int(cc.get("armor_bonus", 0))
 	var abilities: Array = cc.get("abilities", []) as Array
 	var player_class: String = str(_character_snapshot.get("class", ""))
+
+	# Phase 4 (EquipmentManager) and Phase 8 (HP/MP) integration: if
+	# the autoloads exist, use the equipment-aware max HP/MP and
+	# current Attack / Defense (gear bonuses + base stats). Fall back
+	# to the stat-only calculation if the autoloads aren't present.
+	var em: Node = get_node_or_null("/root/EquipmentManager")
+	var pm: Node = get_node_or_null("/root/ProgressionManager")
+	if em != null and pm != null and em.has_method("get_max_hp"):
+		var player_level: int = int(pm.level)
+		var mods: Dictionary = em.get_stat_mods("player")
+		max_hp = em.get_max_hp("", player_level, mods)
+		mp_max = em.get_max_mp("", player_level, mods)
+		attack_bonus += em.get_attack("player") - maxi(4, str_val / 2 + 2)
+		armor_bonus += em.get_defense("player") - (con_val / 3 + dex_val / 5)
+		# Clamp to non-negative (don't let the equipment deltas make
+		# attack/armor go below zero)
+		attack_bonus = maxi(0, attack_bonus)
+		armor_bonus = maxi(0, armor_bonus)
 
 	_units.append({
 		"id": "player",

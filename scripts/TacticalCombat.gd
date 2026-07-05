@@ -7,7 +7,7 @@ const DungeonGen = preload("res://scripts/RiftDungeonGenerator.gd")
 const ClassProg = preload("res://scripts/ClassProgression.gd")
 
 var _encounter: Dictionary = {}
-var _combat: RefCounted = null
+var _combat: Node = null
 var _grid_size: int = 7
 var _grid_cells: Array[Button] = []
 
