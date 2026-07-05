@@ -83,7 +83,7 @@ func _refresh() -> void:
 		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
 		_list_vbox.add_child(ph)
 		return
-	var recipes: Array = cm.unlocked_recipes if cm.has_method("unlocked_recipes") else []
+	var recipes: Array = cm.unlocked_recipes() if cm.has_method("unlocked_recipes") else []
 	if recipes.is_empty():
 		var ph := Label.new()
 		ph.text = "(no recipes unlocked — level up to see more)"
