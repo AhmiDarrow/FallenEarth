@@ -32,6 +32,7 @@ CATEGORY_HUE = {
 	"crystal":     0.62,  # blue-violet
 	"component":   0.55,  # cyan-blue
 	"placeable":   0.32,  # green
+	"station":     0.08,  # warm brown (furniture / workshop)
 	"tool":        0.45,  # steel
 	"scrap":       0.07,  # rust
 	"raw_material":0.10,  # brown
@@ -109,6 +110,18 @@ def _draw_icon(draw, item: dict) -> None:
 	elif category == "placeable":
 		# House silhouette
 		draw.polygon([(4, 16), (12, 6), (CELL - 4, 16), (CELL - 4, CELL - 4), (4, CELL - 4)], fill=fill, outline=outline)
+	elif category == "station":
+		# Worktable / crafting station: rectangle with a pot/burner on top
+		# Table top
+		draw.rectangle([4, 14, CELL - 5, CELL - 6], fill=fill, outline=outline)
+		# Legs
+		draw.rectangle([5, CELL - 6, 8, CELL - 4], fill=dark)
+		draw.rectangle([CELL - 9, CELL - 6, CELL - 6, CELL - 4], fill=dark)
+		# Pot / burner on top
+		draw.ellipse([9, 6, CELL - 10, 14], fill=dark, outline=outline)
+		# Steam wisp
+		draw.line([(11, 4), (11, 6)], fill=outline, width=1)
+		draw.line([(CELL - 12, 4), (CELL - 12, 6)], fill=outline, width=1)
 	elif category == "tool":
 		# Wrench / hammer
 		draw.rectangle([10, 4, 14, CELL - 4], fill=fill, outline=outline)

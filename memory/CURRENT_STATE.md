@@ -1,9 +1,9 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.6.0-complete + cooking-table
-**Last Updated:** 2026-07-05 15:00
+**Version:** 0.6.0-complete + cooking-table-polish
+**Last Updated:** 2026-07-05 16:00
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.6.0 + cooking-table follow-up COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_1500.md` for cooking table + mob drops + recipes. All 16 smoke tests pass; smoke_cooking verified deterministic across 10 runs.
+**Current Phase:** v0.6.0 + cooking-table polish COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_1600.md` for craftable recipe + LocalMapGenerator wiring + sprite + item icons. All 16 smoke tests pass; smoke_cooking (22 tests) verified deterministic across 10 runs.
 
 ## Summary
 

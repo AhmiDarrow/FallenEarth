@@ -180,6 +180,16 @@
       "sell_value_ec": 12,
       "icon": "item_antidote",
       "description": "Heals 10 HP on use. Will cure status effects when those land in v0.6.0+. v0.6.0 consumable."
+    },
+    {
+      "id": "cooking_table",
+      "name": "Cooking Table",
+      "category": "station",
+      "stackable": false,
+      "max_stack": 1,
+      "sell_value_ec": 50,
+      "icon": "item_cooking_table",
+      "description": "A portable cooking table. Place on the local map to cook raw_meat, brew mana potions, and mix antidotes. Recipe unlocked at L5."
     }
   ]
 }

@@ -101,7 +101,18 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				continue
 			terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
 
-	# Phase 1: emit resource nodes and floor pickups
+	# v0.6.0 follow-up polish: emit one cooking table near the spawn pocket
+	# so the player has access to cooking recipes from minute 1. Mark the
+	# cell occupied before the resource emitters so they don't drop a tree
+	# on top of the table.
+	var cooking_tables: Array = _emit_start_cooking_table(Vector2i(cx, cy))
+	for ct in cooking_tables:
+		var ct_cell: Vector2i = Vector2i(int(ct.get("x", 0)), int(ct.get("y", 0)))
+		if ct_cell.x >= 0 and ct_cell.y >= 0 and ct_cell.x < MAP_SIZE and ct_cell.y < MAP_SIZE:
+			occupied[ct_cell.y * MAP_SIZE + ct_cell.x] = 1
+
+	# Phase 1: emit resource nodes and floor pickups (after cooking table
+	# so the table cell is reserved)
 	var resource_nodes: Array = _emit_resource_nodes(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 	var floor_pickups: Array = _emit_floor_pickups(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 
@@ -121,6 +132,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		"settlement": {"structures": [], "npcs": []},
 		"resource_nodes": resource_nodes,
 		"floor_pickups": floor_pickups,
+		"cooking_tables": cooking_tables,
 	}
 
 
@@ -221,6 +233,32 @@ static func _pick_walkable_cell(
 		occupied[idx] = 1
 		return Vector2i(x, y)
 	return Vector2i(-1, -1)
+
+
+## v0.6.0 follow-up polish: emit a single cooking table near the spawn
+## pocket. Placed at a fixed offset from the spawn (8 tiles east, 8 tiles
+## south) so it's always discoverable regardless of biome. Returns
+## `[{x, y, station_id}]` for LocalMapView to consume.
+##
+## The placement is deterministic — same spawn position, same table
+## position — so reloads of the same hex don't move the table.
+static func _emit_start_cooking_table(spawn: Vector2i) -> Array:
+	var table_pos: Vector2i = Vector2i(spawn.x + 8, spawn.y + 8)
+	# Clamp to map bounds (in case spawn is near the edge — should never
+	# happen since the spawn is at MAP_SIZE/2, but defensive).
+	if table_pos.x < 0:
+		table_pos.x = 0
+	if table_pos.y < 0:
+		table_pos.y = 0
+	if table_pos.x >= MAP_SIZE:
+		table_pos.x = MAP_SIZE - 1
+	if table_pos.y >= MAP_SIZE:
+		table_pos.y = MAP_SIZE - 1
+	return [{
+		"x": table_pos.x,
+		"y": table_pos.y,
+		"station_id": "cooking_table",
+	}]
 
 
 # Cached loader for the resource_nodes.json (whole-file; this runs at

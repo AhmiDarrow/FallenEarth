@@ -70,6 +70,19 @@
       ],
       "result": {"item": "antidote", "qty": 1},
       "category": "consumable"
+    },
+    {
+      "id": "cooking_table",
+      "name": "Cooking Table",
+      "station": "none",
+      "level_required": 5,
+      "ingredients": [
+        {"item": "withered_branch", "qty": 4},
+        {"item": "iron_ore", "qty": 2},
+        {"item": "teal_crystal", "qty": 1}
+      ],
+      "result": {"item": "cooking_table", "qty": 1},
+      "category": "station"
     }
   ]
 }

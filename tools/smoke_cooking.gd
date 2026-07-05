@@ -17,6 +17,12 @@ extends SceneTree
 ##  13. items.json contains raw_meat
 ##  14. mobs.json contains drops for at least 4 mobs
 ##  15. LootRoller roll is deterministic with seeded RNG
+##  16. cooking_table recipe unlocks at L5 (station: none)
+##  17. cooking_table recipe produces a cooking_table item
+##  18. LocalMapGenerator emits one cooking table near the spawn
+##  19. cooking_table.png sprite exists in assets/sprites/stations/
+##  20. items.json contains cooking_table entry
+##  21. item icons generated for raw_meat, mana_potion, cooked_meat, antidote, cooking_table
 
 const LootRoller = preload("res://scripts/LootRoller.gd")
 const CookingTableScript = preload("res://scripts/CookingTable.gd")
@@ -57,6 +63,12 @@ func _initialize() -> void:
 	await _test_items_json_has_raw_meat()
 	await _test_mobs_json_has_drops()
 	await _test_loot_roller_deterministic_with_seed()
+	await _test_cooking_table_recipe_unlocks_at_l5()
+	await _test_cooking_table_recipe_produces_cooking_table()
+	await _test_local_map_generator_emits_cooking_table()
+	await _test_cooking_table_sprite_exists()
+	await _test_items_json_has_cooking_table()
+	await _test_item_icons_generated_for_new_items()
 
 	if failures.is_empty():
 		print("[smoke-cooking] All checks passed. (failures.size=%d)" % failures.size())
@@ -467,3 +479,171 @@ func _test_loot_roller_deterministic_with_seed() -> void:
 			_fail("LootRoller roll not deterministic: qty differs at index %d" % i)
 			return
 	_ok("LootRoller roll is deterministic with seeded RNG")
+
+
+## cooking_table recipe unlocks at L5 (station: none, so it's in the
+## inventory tab from L5).
+func _test_cooking_table_recipe_unlocks_at_l5() -> void:
+	print("[smoke-cooking] test: cooking_table recipe unlocks at L5")
+	var cm: Node = root.get_node_or_null("CraftingManager")
+	if cm == null:
+		_fail("CraftingManager autoload not available")
+		return
+	var r: Dictionary = cm.get_recipe("cooking_table")
+	if r.is_empty():
+		_fail("cooking_table recipe missing from CraftingManager")
+		return
+	if int(r.get("level_required", 0)) != 5:
+		_fail("cooking_table recipe should require L5, got L%d" % int(r.get("level_required", 0)))
+		return
+	# At L4, cooking_table should not be in the inventory tab list
+	cm.refresh_unlocked(4)
+	var unlocked_at_4: Array = cm.unlocked_recipes()
+	if unlocked_at_4.has("cooking_table"):
+		_fail("cooking_table should NOT be unlocked at L4")
+		return
+	# At L5, cooking_table should be in the inventory tab list
+	cm.refresh_unlocked(5)
+	var unlocked_at_5: Array = cm.unlocked_recipes()
+	if not unlocked_at_5.has("cooking_table"):
+		_fail("cooking_table should be unlocked at L5 (got: %s)" % str(unlocked_at_5))
+		return
+	_ok("cooking_table recipe unlocks at L5 (L4 hidden, L5 visible in inventory tab)")
+
+
+## cooking_table recipe produces a cooking_table item when crafted.
+func _test_cooking_table_recipe_produces_cooking_table() -> void:
+	print("[smoke-cooking] test: craft(cooking_table) produces a cooking_table item")
+	var cm: Node = root.get_node_or_null("CraftingManager")
+	var inv: Node = root.get_node_or_null("InventoryManager")
+	if cm == null or inv == null:
+		_fail("CraftingManager or InventoryManager autoload not available")
+		return
+	# Clear and set up: ingredients for cooking_table
+	# Recipe: 4 withered_branch + 2 iron_ore + 1 teal_crystal → 1 cooking_table
+	for item in ["withered_branch", "iron_ore", "teal_crystal", "cooking_table"]:
+		while inv.has_item(item, 1):
+			inv.remove_item(item, 1)
+	inv.add_item("withered_branch", 5)
+	inv.add_item("iron_ore", 3)
+	inv.add_item("teal_crystal", 2)
+	# Craft at L5
+	cm.refresh_unlocked(5)
+	if not cm.can_craft("cooking_table", inv):
+		_fail("can_craft(cooking_table) at L5 with ingredients should be true")
+		return
+	var ok: bool = cm.craft("cooking_table", inv)
+	if not ok:
+		_fail("craft(cooking_table) at L5 should succeed")
+		return
+	# Check ingredients consumed
+	if int(inv.get_count("withered_branch")) != 1:
+		_fail("craft(cooking_table) should leave 1 withered_branch, got %d" % int(inv.get_count("withered_branch")))
+		return
+	if int(inv.get_count("iron_ore")) != 1:
+		_fail("craft(cooking_table) should leave 1 iron_ore, got %d" % int(inv.get_count("iron_ore")))
+		return
+	if int(inv.get_count("teal_crystal")) != 1:
+		_fail("craft(cooking_table) should leave 1 teal_crystal, got %d" % int(inv.get_count("teal_crystal")))
+		return
+	# Check result added (cooking_table is not stackable, qty check is >= 1)
+	if int(inv.get_count("cooking_table")) < 1:
+		_fail("craft(cooking_table) should add 1 cooking_table, got %d" % int(inv.get_count("cooking_table")))
+		return
+	_ok("craft(cooking_table) consumes 4 withered_branch + 2 iron_ore + 1 teal_crystal → 1 cooking_table")
+
+
+## LocalMapGenerator emits a cooking table near the spawn pocket.
+func _test_local_map_generator_emits_cooking_table() -> void:
+	print("[smoke-cooking] test: LocalMapGenerator emits a cooking table")
+	var LocalMapGen = load("res://scripts/LocalMapGenerator.gd")
+	if LocalMapGen == null:
+		_fail("LocalMapGenerator script failed to load")
+		return
+	# Use a simple biome_tile dict
+	var biome_tile := {
+		"name": "Ash Wastes",
+		"rift_chance": 0.3,
+	}
+	var map_data: Dictionary = LocalMapGen.generate("test_seed_cooking", 5, 7, biome_tile)
+	var tables: Array = map_data.get("cooking_tables", [])
+	if tables.size() != 1:
+		_fail("LocalMapGenerator should emit exactly 1 cooking_table, got %d" % tables.size())
+		return
+	var t: Dictionary = tables[0]
+	# Should be 8 tiles east + 8 south of the spawn pocket
+	var spawn: Vector2i = map_data.get("spawn", Vector2i.ZERO)
+	var expected: Vector2i = Vector2i(spawn.x + 8, spawn.y + 8)
+	if int(t.get("x", -1)) != expected.x or int(t.get("y", -1)) != expected.y:
+		_fail("cooking_table should be at (%d, %d), got (%d, %d)" % [expected.x, expected.y, int(t.get("x", -1)), int(t.get("y", -1))])
+		return
+	if str(t.get("station_id", "")) != "cooking_table":
+		_fail("cooking_table entry should have station_id 'cooking_table', got '%s'" % str(t.get("station_id", "")))
+		return
+	_ok("LocalMapGenerator emits 1 cooking_table at spawn+8,+8 (station_id: cooking_table)")
+
+
+## cooking_table.png sprite exists in assets/sprites/stations/.
+## Use FileAccess.file_exists (filesystem-level) rather than
+## ResourceLoader.exists (resource cache), since newly-generated PNGs
+## may not be in Godot's cache until next editor reimport.
+func _test_cooking_table_sprite_exists() -> void:
+	print("[smoke-cooking] test: cooking_table.png sprite exists")
+	var fs_path := "res://assets/sprites/stations/cooking_table.png"
+	if not FileAccess.file_exists(fs_path):
+		_fail("cooking_table.png sprite missing at %s (run tools/generate_station_sprites.py)" % fs_path)
+		return
+	_ok("cooking_table.png sprite exists at %s" % fs_path)
+
+
+## Item icons generated for the 4 new v0.6.0 items + cooking_table.
+## Use FileAccess.file_exists (filesystem-level) since the icon
+## generator writes PNGs to disk but Godot's resource cache may not
+## include them until the next reimport.
+func _test_item_icons_generated_for_new_items() -> void:
+	print("[smoke-cooking] test: item icons generated for new v0.6.0 items + cooking_table")
+	var expected := ["raw_meat", "mana_potion", "cooked_meat", "antidote", "cooking_table"]
+	var missing: Array = []
+	for item_id in expected:
+		var path := "res://assets/sprites/items/%s.png" % item_id
+		if not FileAccess.file_exists(path):
+			missing.append(path)
+	if missing.size() > 0:
+		_fail("missing item icons: %s (run tools/generate_item_icons.py)" % str(missing))
+		return
+	_ok("item icons generated for %d new items (raw_meat, mana_potion, cooked_meat, antidote, cooking_table)" % expected.size())
+
+
+## items.json contains cooking_table entry.
+func _test_items_json_has_cooking_table() -> void:
+	print("[smoke-cooking] test: data/items.json contains cooking_table")
+	if not ResourceLoader.exists("res://data/items.json"):
+		_fail("data/items.json missing")
+		return
+	var raw = load("res://data/items.json")
+	if raw == null:
+		_fail("data/items.json failed to load")
+		return
+	var data = raw.data if "data" in raw else raw
+	if not (data is Dictionary) or not data.has("items"):
+		_fail("data/items.json missing 'items' array")
+		return
+	var found: bool = false
+	for it in data.items:
+		if it is Dictionary and str(it.get("id", "")) == "cooking_table":
+			found = true
+			if str(it.get("category", "")) != "station":
+				_fail("cooking_table should be category 'station', got '%s'" % str(it.get("category", "")))
+				return
+			if int(it.get("max_stack", 0)) != 1:
+				_fail("cooking_table should be max_stack 1, got %d" % int(it.get("max_stack", 0)))
+				return
+	if not found:
+		_fail("data/items.json missing cooking_table entry")
+		return
+	_ok("data/items.json contains cooking_table (category: station, max_stack: 1)")
+
+
+## Item icons generated for the 4 new v0.6.0 items + cooking_table.
+## (Duplicate stub removed — see the FileAccess-based version above
+## in _test_item_icons_generated_for_new_items.)

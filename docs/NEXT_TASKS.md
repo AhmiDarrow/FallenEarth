@@ -8,13 +8,14 @@
 
 ## TOP PRIORITY — Next session
 
-### P0 — v0.6.0 follow-up polish (small, 1-2 hours total)
+### P0 — v0.6.0 follow-up polish (DONE)
 
 | ID | Task | Status |
 |----|------|--------|
-| P0-1 | **`LocalMapGenerator`** — emit `cooking_tables: [{x, y, station_id}]` in `map_data` so a cooking table auto-spawns in the start hex (~30 min) | ⏳ READY |
-| P0-2 | **Generate `cooking_table.png` sprite** via `tools/generate_station_sprites.py` (~1 hour PIL) | ⏳ READY |
-| P0-3 | Generate icons for new items (`raw_meat`, `mana_potion`, `cooked_meat`, `antidote`) via `tools/generate_item_icons.py` | ⏳ READY |
+| P0-1 | **`LocalMapGenerator`** — emit `cooking_tables: [{x, y, station_id}]` in `map_data` so a cooking table auto-spawns in the start hex | ✅ DONE (2026-07-05 16:00) |
+| P0-2 | **Generate `cooking_table.png` sprite** via `tools/generate_station_sprites.py` | ✅ DONE (2026-07-05 16:00) |
+| P0-3 | Generate icons for new items (`raw_meat`, `mana_potion`, `cooked_meat`, `antidote`, `cooking_table`) via `tools/generate_item_icons.py` | ✅ DONE (2026-07-05 16:00) |
+| **P0-4 (bonus)** | Make cooking table craftable at L5 (4 withered_branch + 2 iron_ore + 1 teal_crystal) | ✅ DONE (2026-07-05 16:00) |
 
 ### P1 — v0.7.0 candidates
 
@@ -24,13 +25,28 @@ Pick the next milestone from the PLAN's "Not yet done" list:
 - Settlement-to-Riftspire travel
 - Button asset set
 
-### P2 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
+### P2 — Optional polish
+
+- **Place-station interaction** — let the player place a crafted `cooking_table` item on the map (similar to base placement). ~1-2 hours.
+
+### P3 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
 
 (Full list in the plan doc; phases 2 → 8 follow Phase 1, each with own end-of-phase stop/commit/push.)
 
 ---
 
 ## COMPLETED
+
+### v0.6.0 follow-up polish — craftable cooking table + sprite + wiring ✅ (2026-07-05 16:00)
+
+| ID | Task | Notes |
+|----|------|-------|
+| v060fp-1 | `cooking_table` item | `data/items.json` — new item, `category: "station"`, `stackable: false`, `max_stack: 1`, sell 50 EC |
+| v060fp-2 | `cooking_table` recipe (L5) | `data/recipes.json` — `station: "none"` (chicken-and-egg: you craft the table BEFORE you have one). Ingredients: 4 withered_branch + 2 iron_ore + 1 teal_crystal. |
+| v060fp-3 | LocalMapGenerator wiring | `_emit_start_cooking_table(spawn)` emits 1 table at spawn + 8, +8. Marked `occupied` BEFORE resource/floor-pickup emitters so a tree can't drop on it. |
+| v060fp-4 | `cooking_table.png` sprite | `assets/sprites/stations/cooking_table.png` (24×24) via new `tools/generate_station_sprites.py`. Table + cauldron + flame + steam wisps. |
+| v060fp-5 | Item icons for 5 new items | `tools/generate_item_icons.py` learned the `station` category. 5 new icons generated. |
+| v060fp-6 | 7 new tests | smoke_cooking now 22 tests. Use `FileAccess.file_exists` (not `ResourceLoader.exists`) for newly-generated PNGs. |
 
 ### v0.6.0 follow-up — cooking table + mob drops + recipes ✅ (2026-07-05 15:00)
 
