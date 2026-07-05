@@ -1,39 +1,50 @@
-## MobVisual — Sprite rendering for mobs/enemies.
-## Loads sprite from assets/mobs/{mob_id}.png
-
+## MobVisual — Sprite renderer for mobs/enemies.
+##
+## Renders the 64x64 PixelLab sprite at native size (no scale-down). Mobs sit
+## at the cell center of their (local_x, local_y) so the y-sort in the parent
+## MobLayer stacks them correctly with the player and each other. Pixel-art
+## nearest filter keeps the edges crisp. If a sprite is missing, this node
+## stays empty and logs once — no procedural draw fallback, callers should
+## surface their own marker if they want one.
+class_name MobVisual
 extends Node2D
 
-var _sprite_node: Sprite2D = null
+const SPRITE_DIR := "res://assets/mobs/"
+
+var _sprite: Sprite2D = null
 var _mob_id: String = ""
-
-
-func _ready() -> void:
-	pass
 
 
 func set_mob_sprite(mob_id: String) -> void:
 	_mob_id = mob_id.to_lower()
-	
-	# Remove old sprite
-	if _sprite_node != null:
-		_sprite_node.queue_free()
-		_sprite_node = null
-	
-	# Try to load sprite
-	var sprite_path: String = "res://assets/mobs/%s.png" % _mob_id
-	if ResourceLoader.exists(sprite_path):
-		var tex: Texture2D = load(sprite_path) as Texture2D
-		if tex != null:
-			_sprite_node = Sprite2D.new()
-			_sprite_node.texture = tex
-			_sprite_node.centered = true
-			_sprite_node.scale = Vector2(0.5, 0.5)  # Scale 64px to 32px
-			add_child(_sprite_node)
-			print("[MobVisual] Loaded sprite: %s" % sprite_path)
-			return
-	
-	print("[MobVisual] WARNING: No sprite found for %s" % _mob_id)
+	_replace_sprite()
 
 
-func _process(delta: float) -> void:
-	pass
+func get_mob_id() -> String:
+	return _mob_id
+
+
+func _replace_sprite() -> void:
+	if _sprite != null:
+		_sprite.queue_free()
+		_sprite = null
+
+	if _mob_id.is_empty():
+		return
+
+	var path := "%s%s.png" % [SPRITE_DIR, _mob_id]
+	if not ResourceLoader.exists(path):
+		push_warning("[MobVisual] No sprite for '%s' (looked in %s)" % [_mob_id, path])
+		return
+
+	var tex: Texture2D = load(path) as Texture2D
+	if tex == null:
+		push_warning("[MobVisual] Load returned null for: %s" % path)
+		return
+
+	_sprite = Sprite2D.new()
+	_sprite.texture = tex
+	_sprite.centered = true
+	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	add_child(_sprite)
+	print("[MobVisual] Loaded sprite: %s (%dx%d)" % [path, tex.get_width(), tex.get_height()])

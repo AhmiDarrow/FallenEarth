@@ -1,0 +1,14 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/LocalMapView.gd" id="1_lmv"]
+
+[node name="LocalMapView" type="Node2D"]
+script = ExtResource("1_lmv")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+
+[node name="MobLayer" type="Node2D" parent="."]
+y_sort_enabled = true
+
+[node name="MarkerLayer" type="Node2D" parent="."]
+z_index = 100

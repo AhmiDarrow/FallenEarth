@@ -7,6 +7,8 @@ signal back_to_menu_requested()
 
 const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
+const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
+const MobVisualScript = preload("res://scripts/MobVisual.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
@@ -24,8 +26,9 @@ var _player_q: int = 0
 var _player_r: int = 0
 var _local_x: int = 256
 var _local_y: int = 256
-var _map_renderer: LocalMapRenderer = null
+var _map_view: Node2D = null
 var _marker_layer: Node2D = null
+var _mob_layer: Node2D = null
 var _marker_nodes: Dictionary = {}
 var _rift_runner: Node = null
 var _game_time: float = 0.0
@@ -107,9 +110,9 @@ func _ready() -> void:
 		if not start.is_empty():
 			_append_start_info(start)
 
-	_setup_map_renderer()
-	if is_instance_valid(_map_renderer):
-		_map_renderer.configure(_local_map)
+	_setup_map_view()
+	if is_instance_valid(_map_view):
+		_map_view.configure(_local_map)
 	_setup_player_visual()
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_build_local_view()
@@ -168,21 +171,17 @@ func set_character_data(data: Dictionary) -> void:
 	_update_char_info(data)
 
 
-func _setup_map_renderer() -> void:
-	if is_instance_valid(_map_renderer):
-		_map_renderer.queue_free()
-	_map_renderer = LocalMapRenderer.new()
-	_map_renderer.name = "LocalMapRenderer"
-	world_grid.add_child(_map_renderer)
+func _setup_map_view() -> void:
+	if is_instance_valid(_map_view):
+		_map_view.queue_free()
+	_map_view = LocalMapViewScene.instantiate()
+	_map_view.name = "LocalMapView"
+	world_grid.add_child(_map_view)
 	if world_grid.get_child_count() > 0:
-		world_grid.move_child(_map_renderer, 0)
+		world_grid.move_child(_map_view, 0)
 
-	if is_instance_valid(_marker_layer):
-		_marker_layer.queue_free()
-	_marker_layer = Node2D.new()
-	_marker_layer.name = "MarkerLayer"
-	_marker_layer.z_index = 50
-	world_grid.add_child(_marker_layer)
+	_marker_layer = _map_view.get_marker_layer()
+	_mob_layer = _map_view.get_mob_layer()
 
 
 func _setup_player_visual() -> void:
@@ -201,18 +200,16 @@ func _setup_player_visual() -> void:
 	var gender: String = str(char_data.get("gender", "male"))
 	_player_visual.call("set_base_sprite", race, gender)
 	_player_visual.position = Vector2(
-		_local_x * _map_renderer.get_cell_size() + _map_renderer.get_cell_size() * 0.5,
-		_local_y * _map_renderer.get_cell_size() + _map_renderer.get_cell_size() * 0.5
+		_local_x * _map_view.get_cell_size() + _map_view.get_cell_size() * 0.5,
+		_local_y * _map_view.get_cell_size() + _map_view.get_cell_size() * 0.5
 	)
 	_player_visual.z_index = 10
 	print("[HubWorld] Player visual set: race=%s gender=%s" % [race, gender])
 
 
 func _build_local_view() -> void:
-	if is_instance_valid(_map_renderer):
-		_map_renderer.set_player_cell(_local_x, _local_y)
 	if is_instance_valid(_player_visual):
-		var cell_size: int = _map_renderer.get_cell_size() if is_instance_valid(_map_renderer) else 24
+		var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
 		_player_visual.position = Vector2(
 			_local_x * cell_size + cell_size * 0.5,
 			_local_y * cell_size + cell_size * 0.5
@@ -226,7 +223,7 @@ func _refresh_markers() -> void:
 		for child in _marker_layer.get_children():
 			child.queue_free()
 	_marker_nodes.clear()
-	var cell_size: int = _map_renderer.get_cell_size() if is_instance_valid(_map_renderer) else 24
+	var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
 
 	# Player visual is handled by _player_visual node — skip circle marker
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
@@ -296,76 +293,30 @@ func _reset_to_idle(dir_idx: int) -> void:
 
 
 func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 24) -> void:
-	var sz := Vector2(14, 14)
-	match kind:
-		"player":
-			sz = Vector2(20, 20)
-		"mob":
-			sz = Vector2(18, 18)
-		"npc":
-			sz = Vector2(16, 16)
-		"rift":
-			sz = Vector2(14, 14)
-
-	var tex := _make_circle_texture(color, sz)
-	var spr := Sprite2D.new()
-	spr.texture = tex
-	spr.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	spr.z_index = 100
-
-	if kind == "player":
-		var glow := Sprite2D.new()
-		glow.texture = _make_circle_texture(Color(color.r, color.g, color.b, 0.3), sz * 1.6)
-		glow.position = spr.position
-		glow.z_index = 99
-		if is_instance_valid(_marker_layer):
-			_marker_layer.add_child(glow)
-
-	if is_instance_valid(_marker_layer):
-		_marker_layer.add_child(spr)
-	_marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = spr
+	if not is_instance_valid(_map_view):
+		return
+	var node: Node2D = _map_view.call("add_marker", Vector2i(x, y), color, symbol, kind) as Node2D
+	if node != null:
+		_marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = node
 
 
 func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24) -> void:
-	var mob_visual := load("res://scripts/MobVisual.gd")
-	if not mob_visual:
-		# Fallback to marker
-		_add_marker(x, y, Color(0.95, 0.35, 0.35), "✕", "mob", cell_size)
+	if sprite_id.is_empty():
 		return
-	
-	var mob_node: Node2D = mob_visual.new()
+	var mob_node: Node2D = MobVisualScript.new()
 	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	mob_node.z_index = 100
-	mob_node.call("set_mob_sprite", sprite_id)
-	
-	if is_instance_valid(_marker_layer):
-		_marker_layer.add_child(mob_node)
+	mob_node.z_index = 50
+	mob_node.set_mob_sprite(sprite_id)
+	if is_instance_valid(_mob_layer):
+		_mob_layer.add_child(mob_node)
+	elif is_instance_valid(_map_view):
+		_map_view.get_mob_layer().add_child(mob_node)
 	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
 
 
-func _make_circle_texture(color: Color, size: Vector2) -> Texture2D:
-	var radius: float = min(size.x, size.y) * 0.5
-	var diameter := int(radius * 2.0)
-	var img := Image.create(diameter, diameter, false, Image.FORMAT_RGBA8)
-	var center := Vector2(radius, radius)
-	var r2: float = radius * radius
-	for py in diameter:
-		for px in diameter:
-			var dx := float(px) + 0.5 - center.x
-			var dy := float(py) + 0.5 - center.y
-			var dist2 := dx * dx + dy * dy
-			if dist2 <= r2:
-				var t: float = 1.0 - sqrt(dist2) / radius
-				var c := color.lerp(Color(color.r, color.g, color.b, 1.0), t * 0.4)
-				img.set_pixel(px, py, c)
-			else:
-				img.set_pixel(px, py, Color(0, 0, 0, 0))
-	return ImageTexture.create_from_image(img)
-
-
 func _update_camera() -> void:
-	if is_instance_valid(camera) and is_instance_valid(_map_renderer):
-		var cell_size: int = _map_renderer.get_cell_size()
+	if is_instance_valid(camera) and is_instance_valid(_map_view):
+		var cell_size: int = _map_view.get_cell_size()
 		camera.position = Vector2(
 			_local_x * cell_size + cell_size * 0.5,
 			_local_y * cell_size + cell_size * 0.5,
@@ -416,8 +367,6 @@ func _try_move_local(dx: int, dy: int) -> void:
 
 
 func _is_cell_walkable(x: int, y: int) -> bool:
-	if is_instance_valid(_map_renderer):
-		return _map_renderer.is_cell_walkable(x, y)
 	return LocalMapGen.is_walkable(_local_map, x, y)
 
 

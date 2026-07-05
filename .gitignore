@@ -36,6 +36,9 @@ nul.*
 .hermes/tests/
 *.log
 
+# Local backups (created by backup-memory skill)
+backups/
+
 # IDE / OS
 .idea/
 .vscode/

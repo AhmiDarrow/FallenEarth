@@ -1,6 +1,6 @@
 # NEXT_TASKS — Fallen Earth
 
-**Version:** 0.2.0 · **Updated:** 2026-07-01 · **Phase:** 6 in progress
+**Version:** 0.3.0 · **Updated:** 2026-07-04 · **Phase:** 7 (TileMapLayer system)
 
 *Aligns with `docs/VERSION.md`, `CHANGELOG.md`, and `memory/CURRENT_STATE.md`.*
 
@@ -8,78 +8,74 @@
 
 ## TOP PRIORITY — Next Session
 
-### P0 — Manual verification
+### P0 — Visual verification
 
 | ID | Task | Status |
 |----|------|--------|
-| 7 | **F5 playthrough** — New Game → World Gen → pick hex → Character Create → local map (WASD) → World Map travel → enter rift → dungeon → close → return to entry local pos. Log Godot Output errors. | ⏳ READY |
+| 13 | **F5 playthrough** — New Game → World Gen → pick hex → Character Create → local map. Confirm tiles render via TileMapLayer, mobs visible at 64×64, rift ⚡ / NPC ★ / mission ! markers show as ColorRect+Label. Log any visual issues. | ⏳ READY |
 
-### P1 — Phase 6 coding (assets parallel)
+### P1 — Tile polish
 
 | ID | Task | Status |
 |----|------|--------|
-| 9 | **Settlement building** — Build mode on local map; place structures at `(local_x, local_y)`; persist in `hex_state.settlement`; toggle via key/button. | ⏳ PENDING |
-| 10 | **Tile overlay hook** — When asset agent delivers PNGs, overlay `TileSetBuilder` / `WorldGenerator.get_tile_visual()` in `LocalMapRenderer` (replace ColorRect cells). | ⏳ BLOCKED on assets |
-| 11 | **World map polish** — Pan/zoom on `WorldMapScreen`; discovered % per hex; optional faction territory tint. | ⏳ PENDING |
+| 14 | **Tile visual QA** — Open each biome in F5, confirm `ground / debris / vegetation / blocked / rift_scar` look distinct. Replace any tile that's too dark / too similar to neighbours (re-run `tools/generate_tiles.py --biome <x> --force`). | ⏳ PENDING |
+| 15 | **Marker polish** — `LocalMapView.add_marker` uses a hard-coded 18×18 ColorRect; size per kind (rift 22, npc 18, mission 16) is the next pass. | ⏳ PENDING |
+| 16 | **Mob y-sort** — `MobLayer.y_sort_enabled` is on, but mobs at identical y overlap. Add small jitter to spawn positions if the visual stutter is noticeable. | ⏳ PENDING |
 
 ### P2 — Quality of life
 
 | ID | Task | Status |
 |----|------|--------|
-| 12 | **Autosave during exploration** — Periodic `GameState.save_game(0)` from `HubWorld` (e.g. every 2 min or on hex cross). | ⏳ PENDING |
-| 13 | **MainMenu load UI** — Display slot list with character name / region / play time. | ⏳ PENDING |
+| 17 | **Autosave during exploration** — Periodic `GameState.save_game(0)` from `HubWorld` (every 2 min or on hex cross). | ⏳ PENDING |
+| 18 | **MainMenu load UI** — Display slot list with character name / region / play time. | ⏳ PENDING |
 
 ---
 
-## COMPLETED (v0.2.0 — do not re-implement)
+## COMPLETED (v0.3.0 — do not re-implement)
 
-### Phase 4 — World gen + two-layer maps ✅
-
-| ID | Task | Notes |
-|----|------|-------|
-| 1 | Hex sphere world generation | `WorldGenerator.gd` — axial hex, climate biomes |
-| 2 | Starting grid selection | `WorldGeneration.tscn` — RimWorld-style site browse |
-| 3 | Game flow reorder | Menu → WorldGen → CharacterSelect → HubWorld |
-| 4 | Two-layer world | `WorldMapScreen` (strategic) + `HubWorld` (512×512 local) + edge travel |
-
-### Phase 5 — Rifts ✅
+### Phase 7 — Godot 4.3 TileMapLayer system ✅
 
 | ID | Task | Notes |
 |----|------|-------|
-| 5 | Rift spawning at local coords | `RiftRunner` — `local_x/y`, world map ⚡ markers |
-| 6 | Dungeon + close + return | `RiftInstance` — restore `entry_local_x/y`; save `rift_state` |
-| 8 | Chunk streaming | `LocalMapRenderer.gd` — 32×32 cell chunks |
+| 19 | Removed old draw tile system | Deleted `LocalMapRenderer.gd`, `BiomeTilesetManager.gd`, `TileSetBuilder.gd`, `TileSetFactory.gd`, `TileTest.tscn/.gd`, `BiomeTilesets` autoload, `assets/tilesets/*` |
+| 20 | New `TileSetService` | Godot 4.3 TileSet + TileSetAtlasSource, 5 terrains per biome, blocked tile has full-cell collision polygon. |
+| 21 | New `LocalMapView` scene | `TileMapLayer` for ground, y-sorted `MobLayer` for entities, `MarkerLayer` for rift/NPC/mission. |
+| 22 | New tile assets | 50 PNGs (10 biomes × 5 terrains) via `tools/generate_tiles.py` + PixelLab pixflux. |
+| 23 | `MobVisual` rewrite | No scale-down hack. 64×64 sprite at native size, NEAREST filter, parented to y-sorted `MobLayer`. |
+| 24 | `HubWorld` migration | Uses `LocalMapView`; removed `_make_circle_texture` procedural draw entirely. |
+| 25 | Smoke test | `tools/smoke_tile_system.gd` exercises TileSetService (10 biomes), LocalMapView, MobVisual, HubWorld scene. |
+| 26 | Boot probe | `tools/boot_probe.gd` runs MainMenu 60 frames headless with zero runtime errors. |
 
-### Also shipped in 0.2.0 ✅
+### Phase 4 — World gen + two-layer maps ✅ (v0.2.0)
 
-- FFT tactical combat (`CombatManager`, `TacticalCombat`)
-- Six classes + Lv.1–256 progression
-- Procedural NPCs + recruitment (`NPCManager`)
-- Procedural missions (`MissionManager`) with local mob placement
-- Save/load: `hex_states`, `discovered_hexes`, `overworld_mobs`, missions, NPCs
+### Phase 5 — Rifts ✅ (v0.2.0)
+
+### Phase 6 — Combat / NPCs / missions ✅ (v0.2.0)
 
 ---
 
-## TECH DEBT (resolved — reference only)
+## TECH DEBT (reference only)
 
 - ~~Remove `nul` junk files~~ ✅
 - ~~Add `.gitignore`~~ ✅
-- ~~Save/load shape unification~~ ✅ (v0.2.0)
+- ~~Save/load shape unification~~ ✅
 - ~~GDScript strict-type compile cascade~~ ✅
+- ~~Old wang-tile draw system~~ ✅ (v0.3.0)
+- ~~Procedural `_make_circle_texture` markers~~ ✅ (v0.3.0 — replaced with ColorRect+Label)
 
 ---
 
 ## Asset work (PixelLab API — in progress)
 
-- [x] Human male base sprite (128px) + 8 rotations + 32 walk frames → `assets/characters/`
+- [x] Human male base sprite + 8 rotations + walk frames
 - [ ] Remaining 23 race×gender combos (same pipeline)
-- [ ] Mob sprites (10 types)
-- [ ] Idle animation frames (8 dirs × 4 frames per character)
+- [x] 10 mob sprites (regenerated round 2 — visible silhouette)
+- [x] 50 terrain tiles (10 biomes × 5 types) — **NEW v0.3.0**
+- [ ] Idle animation frames
 - [ ] Attack animation frames
-- Integration point: `LocalMapRenderer` overlay + `CharacterVisual`
 - **API key & pipeline documented in `memory/PROJECT_MEMORY.md`**
 
 ---
 
-*Milestone: v0.2.0 shipped (code). Next: F5 verify → settlement → tile overlay.*
+*Milestone: v0.3.0 shipped (Godot 4.3 TileMapLayer). Next: F5 visual verify → tile QA per biome.*
 *Reminder: end sessions with `prepare-handoff`; update `CHANGELOG.md` on release.*

@@ -1,36 +1,36 @@
 ---
-name: hubworld-mob-combat-fix
-description: Fixed scene parse error + flat mob sprites so HubWorld mobs are visible and combat triggers
+name: v030-tilemap-layer-refactor
+description: v0.3.0 — Godot 4.3 TileMapLayer + 50 fresh tiles. Smoke tests green. F5 visual verify next.
 ---
 
-## Current Focus: HubWorld Mob Visibility & Combat Fix (Round 2)
+## Current Focus: v0.3.0 Godot 4.3 TileMapLayer Refactor
 
-Round 1 fixed the scene parse error blocking the seeder. Round 2 fixed the
-mob PNGs themselves — they were flat 1-color blobs because
-`generate_mob_sprites.py` drew the outline, body, head, and legs in the
-same color. Regenerated all 27 with a 2px dark outline + visible body parts
-(eye, mandibles, leg separation, etc.) per archetype. Script also auto-fills
-missing sprite entries from `data/mobs.json`.
+All old wang-tile code and the chunked sprite renderer are deleted. The new
+`TileSetService` builds a native `TileSet` per biome; `LocalMapView` paints
+the 512×512 map with `TileMapLayer`. 50 fresh terrain tiles (10 biomes × 5
+terrain types) were generated via PixelLab and imported. Mobs render at
+native 64×64 (no more scale-down hack). Compile + smoke + boot-probe all
+pass with 0 errors.
 
 ### Immediate Next Step
 
-F5 playthrough: New Game → World Gen → pick start hex → Character → HubWorld.
-Mobs should now read as silhouettes with dark borders against the terrain.
-Watch Godot Output for `[HubWorld] Mob seed: ...` and `[MobVisual] Loaded
-sprite: ...` lines.
+F5 visual playthrough: New Game → World Gen → pick hex → Character →
+HubWorld. Watch Godot Output for `[HubWorld] Mob seed:` and confirm mobs
+are visible at full size with the new tile terrain. Then walk into each
+biome and re-run `tools/generate_tiles.py --biome <dir> --force` for any
+tile that doesn't read clearly.
 
 ### Relevant Handoffs
 
-- [[hubworld-mob-combat-fix]] — this handoff (current focus)
-- [[stardew-sprite-pipeline-handoff]] — display options (still relevant)
-- [[latter-handoff]] — procedural drawing milestone (mostly obsolete post-fix)
+- [[v030-tilemap-layer-refactor]] — this handoff (current focus)
+- [[hubworld-mob-combat-fix]] — Round 1/2 mob visibility fix (now superseded by v0.3.0)
 
 ### Context Files
 
-- `docs/NEXT_TASKS.md` — project task queue (P0 F5 playthrough is now the active test)
-- `memory/PROJECT_MEMORY.md` — display conventions unchanged
-- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2034.md` — full 9-section details on both fix rounds
+- `docs/NEXT_TASKS.md` — v0.3.0 P0 is F5 visual playthrough
+- `memory/PROJECT_MEMORY.md` — PixelLab pipeline notes (endpoints are now /v2)
+- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2156.md` — full 9-section details
 
 ---
 
-Proceed with F5 verification, then continue with `docs/NEXT_TASKS.md` P1 items.
+Proceed with F5 verification, then per-biome tile QA, then `docs/NEXT_TASKS.md` P1 items.
