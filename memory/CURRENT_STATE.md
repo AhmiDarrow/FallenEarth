@@ -1,9 +1,9 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.5.0-complete
-**Last Updated:** 2026-07-05 05:30
+**Version:** 0.5.0-complete + v0.4.0-polish-complete
+**Last Updated:** 2026-07-05 13:00
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.5.0 COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` for the v0.5.0 fix details and pre-existing v0.4.0 polish issues surfaced during testing.
+**Current Phase:** v0.5.0 + v0.4.0 polish COMPLETE — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_1300.md` for the polish fix details. All 14 smoke tests pass; smoke_phase5 verified deterministic across 10 runs.
 
 ## Summary
 

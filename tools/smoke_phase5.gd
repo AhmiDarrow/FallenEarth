@@ -129,19 +129,23 @@ func _test_party_manager_spawn_for_hex() -> void:
 	pm.name = "TestPM4"
 	root.add_child(pm)
 	await process_frame
+	# spawn_for_hex uses the global RNG (randf). Seed it so the test
+	# is deterministic — the original loop relied on 30% spawn chance ×
+	# 10 attempts (~97% success) which still flaked ~3% of the time.
+	# With a fixed seed, the test verifies the same code path on every
+	# CI run.
+	seed(12345)
 	# spawn_for_hex returns the spawned NPC (or empty list)
-	# Multiple calls — at least one should produce a non-empty result
-	# (we have 30% chance, so 10 calls give ~95% chance).
 	var any_spawn: bool = false
 	var spawned_id: String = ""
-	for i in 10:
+	for i in 100:
 		var result: Array = pm.spawn_for_hex("5,7", "Neon Bogs")
 		if not result.is_empty():
 			any_spawn = true
 			spawned_id = str(result[0].get("id", ""))
 			break
 	if not any_spawn:
-		_fail("PartyNPCManager: 10 spawn_for_hex calls produced no NPC (RNG or template eligibility issue)")
+		_fail("PartyNPCManager: 100 spawn_for_hex calls produced no NPC (RNG or template eligibility issue)")
 		return
 	# Verify the spawned NPC has the right shape
 	var npc: Dictionary = pm.get_npc(spawned_id)
@@ -191,25 +195,28 @@ func _test_party_manager_can_invite_level_gate() -> void:
 
 func _test_party_manager_can_invite_faction_gate() -> void:
 	print("[smoke-p5] test: PartyNPCManager.can_invite faction gate")
-	var prog: Node = ProgMgrScript.new()
-	prog.name = "TestProg7"
-	root.add_child(prog)
-	await process_frame
+	# Use the autoload ProgressionManager directly — can_invite reads
+	# from /root/ProgressionManager, not from a local test instance.
+	var prog: Node = root.get_node_or_null("ProgressionManager")
+	if prog == null:
+		_fail("PartyNPCManager: ProgressionManager autoload not available")
+		return
 	prog.level = 100  # level always passes
 	# Set up a GS with some faction rep
 	var gs: Node = _get_or_make_gamestate()
 	# Clear then set rep
-	gs._faction_rep = {"Iron Accord": 5, "Stormcrows": 50}
-	gs.faction_rep_changed = Callable()
+	gs._faction_rep = {"Iron Accord": 5, "Stormcrows": 5}
 	var pm: Node = PartyMgrScript.new()
 	pm.name = "TestPM6"
 	root.add_child(pm)
 	await process_frame
 	# Inject a template-based NPC. Bypass spawn_for_hex so we control
 	# the template. Manually create an NPC entry with a template_id.
+	# Use faction_officer (min_faction_rep=10, no quest requirement) so
+	# the test isolates the faction rep gate.
 	pm.available_npcs.append({
-		"id": "npc_test_legendary",
-		"name": "Test Legendary",
+		"id": "npc_test_officer",
+		"name": "Test Officer",
 		"class": "Scavenger",
 		"gender": "male",
 		"level": 100,
@@ -217,26 +224,28 @@ func _test_party_manager_can_invite_faction_gate() -> void:
 		"race": "Human",
 		"origin": "Upworld",
 		"equipment": {},
-		"template_id": "legendary_loner",
+		"template_id": "faction_officer",
 	})
-	# Faction rep is 5, legendary_loner requires 50. Should fail.
-	if pm.can_invite("npc_test_legendary"):
-		_fail("PartyNPCManager: can_invite should fail when faction rep is below the requirement (5 < 50)")
+	# Faction rep is 5, faction_officer requires 10. Should fail.
+	if pm.can_invite("npc_test_officer"):
+		_fail("PartyNPCManager: can_invite should fail when faction rep is below the requirement (5 < 10)")
 		return
 	# Bump rep
 	gs._faction_rep = {"Iron Accord": 100, "Stormcrows": 100}
-	if not pm.can_invite("npc_test_legendary"):
-		_fail("PartyNPCManager: can_invite should succeed when faction rep meets the requirement (100 >= 50)")
+	if not pm.can_invite("npc_test_officer"):
+		_fail("PartyNPCManager: can_invite should succeed when faction rep meets the requirement (100 >= 10)")
 		return
 	_ok("PartyNPCManager: faction rep gate works (5 fail, 100 pass)")
 
 
 func _test_party_manager_get_invite_requirements_text() -> void:
 	print("[smoke-p5] test: PartyNPCManager.get_invite_requirements_text")
-	var prog: Node = ProgMgrScript.new()
-	prog.name = "TestProg8"
-	root.add_child(prog)
-	await process_frame
+	# Use the autoload ProgressionManager directly (previous tests may
+	# have left it at a non-L1 level; the requirements-text test wants L1).
+	var prog: Node = root.get_node_or_null("ProgressionManager")
+	if prog == null:
+		_fail("PartyNPCManager: ProgressionManager autoload not available")
+		return
 	prog.level = 1
 	var gs: Node = _get_or_make_gamestate()
 	gs._faction_rep = {}

@@ -1,36 +1,31 @@
 ---
-name: v050-hpmp-combat-wiring
-description: v0.5.0 HP/MP combat wiring COMPLETE. Both outstanding v0.5.0 issues fixed; all 6 smoke_v050 tests green.
+name: v040-pre-existing-polish
+description: All 4 pre-existing v0.4.0 polish issues FIXED. Full v0.4.0 + v0.5.0 test suite is green and deterministic (smoke_phase5 verified 10/10 runs).
 ---
 
-## Current Focus: v0.5.0 HP/MP combat wiring COMPLETE
+## Current Focus: Pre-existing v0.4.0 polish COMPLETE
 
-v0.5.0 is now fully shipped. The two outstanding issues from the PLAN are both fixed and all 6 `smoke_v050` tests pass. The fixes were entirely in the test harness (`tools/smoke_v050.gd`); production code (CombatManager.use_item, EquipmentManager.get_max_hp/attack) was already correct.
+All 4 polish issues from `HANDOFF_2026-07-05_0530.md` are fixed. Plus one bonus production bug (`_faction_rep_for` early-return on empty `_faction_names`) that surfaced when the RNG fix exposed a downstream test bug. Full 14-script test suite is green; smoke_phase5 is now deterministic.
 
-**Key insight:** Autoload `_ready` is deferred to the next idle frame, so any smoke test that calls `root.get_node_or_null("/root/SomeAutoload")` and immediately reads data sees an empty dict. Fix is `await process_frame` at the start of `_initialize`. **This pattern should be in every smoke test that depends on autoload data.**
+**Key insight chain (Remedy's favorite bug story):** Seeding the RNG → faction rep test started failing consistently → traced to wrong ProgressionManager instance in test → noticed the test was using a local `TestProg7` instead of the autoload → also noticed `_faction_rep_for` had a `_faction_names.is_empty()` early-return that silently broke the function for new players. Two bugs in one investigation.
 
 ### Immediate Next Step
 
-The pre-existing v0.4.0 issues surfaced by the test suite (not introduced by v0.5.0) are the next priority:
-1. `MissionManager.gd:214` — `GameState.mob_key` reference (autoload treated as class; parser flags but runtime works).
-2. `smoke_phase5.gd:203` — `gs.faction_rep_changed = Callable()` (can't assign to signal).
-3. `smoke_phase5` — `spawn_for_hex` is RNG-flaky.
-4. `smoke_tile_system` — LocalMapView legacy rift_scar normalization logs an ERROR but reports "ok".
-
-After those are cleaned up, plan v0.6.0 (see PLAN's "Not yet done in v0.5.0+" list).
+Plan v0.6.0. Recommended: **real combat damage wiring + more consumables** (builds directly on v0.5.0). Alternative candidates: procedural NPC spawn in settlements, settlement interiors, settlement-to-Riftspire travel, button asset set.
 
 ### Relevant Handoffs
 
-- [[v050-hpmp-combat-wiring]] — this handoff (v0.5.0 complete)
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` — full 9-section details
+- [[v040-pre-existing-polish]] — this handoff
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_1300.md` — full 9-section details
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0530.md` — v0.5.0 final (fixes for 2 outstanding v0.5.0 issues)
 - `memory/SESSION_NOTES/HANDOFF_2026-07-05_0500.md` — v0.4.0 Phase 3 follow-up
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0400.md` — v0.4.0 Phase 3 first half
 
 ### Context Files
 
-- `docs/PLAN_v040_crafting_progression.md` — canonical design (mark v0.5.0 issues section as resolved)
-- `memory/CURRENT_STATE.md` — v0.5.0-dev state
+- `docs/PLAN_v040_crafting_progression.md` — canonical design
+- `memory/CURRENT_STATE.md` — full state
+- `docs/NEXT_TASKS.md` — v0.6.0 candidate list
 
 ---
 
-**Awaiting your decision: fix the 4 pre-existing v0.4.0 polish issues, or plan v0.6.0?**
+**Awaiting your decision: which v0.6.0 candidate to pursue first?**

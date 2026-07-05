@@ -8,33 +8,36 @@
 
 ## TOP PRIORITY — Next session
 
-### P0 — Pre-existing v0.4.0 polish (not blocking, but flagged in last handoff)
+### P0 — v0.6.0 candidate selection
 
-| ID | Task | Status |
-|----|------|--------|
-| P0-1 | **`MissionManager.gd:214`** — `GameState.mob_key(...)` reference uses autoload name as a class. GDScript parser flags "Identifier not found: GameState" but runtime works. Fix: use `get_node("/root/GameState").mob_key(...)` or add a `class_name` to GameState. | ⏳ READY |
-| P0-2 | **`smoke_phase5.gd:203`** — `gs.faction_rep_changed = Callable()` tries to assign to a signal. Signals can't be reassigned. Delete the line. | ⏳ READY |
-| P0-3 | **`smoke_phase5.gd` `spawn_for_hex` test** — RNG-flaky (sometimes produces no NPC in 10 calls). Make deterministic: seed RNG, or iterate until success with a max-attempts cap (e.g. 100). | ⏳ READY |
-| P0-4 | **`smoke_tile_system.gd` rift_scar normalization** — ERROR is logged but test reports "ok" on the next line. Trace the LocalMapView code path; the normalization check is partially broken. | ⏳ READY |
-
-### P1 — v0.6.0 planning
+All 4 pre-existing v0.4.0 polish issues from `HANDOFF_2026-07-05_0530.md` are FIXED (see COMPLETED below). Plus a bonus production bug found during the fix: `_faction_rep_for` had a stale `_faction_names.is_empty()` early-return that broke faction rep checks for new players. Removed in `HANDOFF_2026-07-05_1300.md`.
 
 Pick the next milestone from the PLAN's "Not yet done in v0.5.0+" list:
+- **Real combat damage wiring** (merge `_resolve_attack` with EquipmentManager stats; expand `use_item` to support stamina potions, etc.) **[Recommended]** — most player-facing, builds directly on v0.5.0.
 - **Real procedural NPC spawn in settlements** (replace the 3 hard-coded test NPCs in PartyNPCManager with biome-aware procedural generation)
 - **Full settlement interiors** (rooms, traveling NPCs, mini-quests, visual variety)
 - **Settlement-to-Riftspire travel** (Riftspire entry from the World Map, return path)
 - **Button asset set** (procedural pixel-art buttons + pixel font; partially drafted in Phase 3 but not generated yet)
-- **Real combat damage wiring** (merge `_resolve_attack` with EquipmentManager stats; expand `use_item` to support stamina potions, etc.)
 
-**Recommended: real combat damage wiring + more consumables.** It's the most player-facing and builds directly on v0.5.0.
-
-### P2 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
+### P1 — Phases 9+ per `docs/PLAN_v040_crafting_progression.md`
 
 (Full list in the plan doc; phases 2 → 8 follow Phase 1, each with own end-of-phase stop/commit/push.)
 
 ---
 
 ## COMPLETED
+
+### v0.4.0 pre-existing polish ✅ (2026-07-05 13:00)
+
+| ID | Task | Notes |
+|----|------|-------|
+| P0-1 | `MissionManager.gd:214` `GameState.mob_key` parser warning | 3 call sites changed from `GameState.mob_key(...)` (static) to `gs.mob_key(...)` (instance). `GameState.gd` has no `class_name`, so static calls fail to parse. |
+| P0-2 | `smoke_phase5.gd:203` assigning to signal | Deleted `gs.faction_rep_changed = Callable()`. Signals can't be reassigned. |
+| P0-3 | `smoke_phase5` `spawn_for_hex` RNG flakiness | Added `seed(12345)`, bumped max attempts to 100. Verified deterministic across 10 runs. |
+| P0-4 | `smoke_tile_system` rift_scar normalization | Test was querying `Vector2i(4, 0)` (out of bounds in a 4×4 map) — changed to `Vector2i(0, 1)` where `terrain[4]` actually lives. |
+| **Bonus** | `_faction_rep_for` production bug | Removed stale `_faction_names.is_empty()` early-return that silently broke rep checks for new players. Found via the chain: RNG seed → faction rep test fail → wrong ProgressionManager → also noticed the production bug. |
+| **Bonus** | `smoke_phase5` faction rep test | Use autoload ProgressionManager (production reads from autoload, not local instance). Changed template from `legendary_loner` (50 rep + quest) to `faction_officer` (10 rep, no quest) to isolate the rep gate. |
+| **Bonus** | `smoke_phase5` `get_invite_requirements_text` | Use autoload ProgressionManager; reset to L1 (previous test had set it to 100). |
 
 ### v0.5.0 — HP/MP combat wiring ✅ (2026-07-05 05:30)
 

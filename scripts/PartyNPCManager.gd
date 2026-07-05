@@ -309,8 +309,6 @@ func _faction_rep_for(faction_id: Variant) -> int:
 	# If faction_required is "any_specific" or "any_top_faction",
 	# use the highest faction rep the player has. Otherwise use 0
 	# (template without a specific faction check).
-	if _faction_names.is_empty():
-		return 0
 	var gs: Node = get_node_or_null(FACTION_PATH)
 	if gs == null:
 		return 0

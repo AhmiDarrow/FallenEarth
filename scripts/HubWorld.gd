@@ -1367,7 +1367,7 @@ func _seed_local_mobs() -> void:
 		if abs(lx - _local_x) + abs(ly - _local_y) < 12:
 			skipped_near += 1
 			continue
-		var key := GameState.mob_key(_player_q, _player_r, lx, ly)
+		var key := gs.mob_key(_player_q, _player_r, lx, ly)
 		if not gs.get_overworld_mob(key).is_empty():
 			skipped_duplicate += 1
 			continue

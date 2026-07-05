@@ -211,7 +211,12 @@ func build_mission_encounter(mission_id: String, character_data: Dictionary) -> 
 	if lx >= 0 and ly >= 0:
 		var parts: PackedStringArray = hex_key.split(",")
 		if parts.size() >= 2:
-			tile_key = GameState.mob_key(int(parts[0]), int(parts[1]), lx, ly)
+			# mob_key is a static func on GameState; call it via the
+			# autoload instance (which is registered as a global) so
+			# the parser doesn't need a class_name on GameState.
+			var gs: Node = get_node_or_null("/root/GameState")
+			if gs != null:
+				tile_key = gs.mob_key(int(parts[0]), int(parts[1]), lx, ly)
 
 	var encounter: Dictionary = EncounterBuilder.build_mission(
 		character_data, mob, tile_key, biome, mission
@@ -411,7 +416,7 @@ func _cleanup_mission_world_state(mission: Dictionary) -> void:
 	var lx: int = int(obj.get("target_local_x", -1))
 	var ly: int = int(obj.get("target_local_y", -1))
 	if lx >= 0 and ly >= 0:
-		var mob_key: String = GameState.mob_key(q, r, lx, ly)
+		var mob_key: String = gs.mob_key(q, r, lx, ly)
 		var mob: Dictionary = gs.get_overworld_mob(mob_key)
 		if str(mob.get("mission_id", "")) == str(mission.get("mission_id", "")):
 			gs.remove_overworld_mob(mob_key)
