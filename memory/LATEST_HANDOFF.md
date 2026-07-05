@@ -1,24 +1,23 @@
 ---
 name: hubworld-mob-combat-fix
-description: Fixed scene parse error that broke HubWorld mob spawning and combat
+description: Fixed scene parse error + flat mob sprites so HubWorld mobs are visible and combat triggers
 ---
 
-## Current Focus: HubWorld Mob Visibility & Combat Fix
+## Current Focus: HubWorld Mob Visibility & Combat Fix (Round 2)
 
-Fixed scene parse error in `HubWorld.tscn` (and 3 test scenes) that was caused
-by a stale `[ext_resource]` to `res://scripts/procedural/Entity3DViewport.gd`
-— a file that was deleted from the working tree but still referenced in
-scenes. Removed the broken ext_resource and the now-orphaned
-`Entity3DLayer` / `Entity3DDisplay` nodes from all 4 affected scenes.
-Added diagnostic `print` in `_seed_local_mobs()` so future F5 runs surface
-biome / danger / seeded / skipped counts.
+Round 1 fixed the scene parse error blocking the seeder. Round 2 fixed the
+mob PNGs themselves — they were flat 1-color blobs because
+`generate_mob_sprites.py` drew the outline, body, head, and legs in the
+same color. Regenerated all 27 with a 2px dark outline + visible body parts
+(eye, mandibles, leg separation, etc.) per archetype. Script also auto-fills
+missing sprite entries from `data/mobs.json`.
 
 ### Immediate Next Step
 
 F5 playthrough: New Game → World Gen → pick start hex → Character → HubWorld.
-Verify mobs render as PNG sprites (27 mobs in `assets/mobs/`) and that
-walking into a mob cell triggers tactical combat. Watch for the new
-`[HubWorld] Mob seed: biome=...` line in Godot Output.
+Mobs should now read as silhouettes with dark borders against the terrain.
+Watch Godot Output for `[HubWorld] Mob seed: ...` and `[MobVisual] Loaded
+sprite: ...` lines.
 
 ### Relevant Handoffs
 
@@ -30,7 +29,7 @@ walking into a mob cell triggers tactical combat. Watch for the new
 
 - `docs/NEXT_TASKS.md` — project task queue (P0 F5 playthrough is now the active test)
 - `memory/PROJECT_MEMORY.md` — display conventions unchanged
-- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2034.md` — full 9-section details on this fix
+- `memory/SESSION_NOTES/HANDOFF_2026-07-04_2034.md` — full 9-section details on both fix rounds
 
 ---
 
