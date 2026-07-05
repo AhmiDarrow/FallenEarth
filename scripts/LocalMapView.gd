@@ -12,8 +12,10 @@ const TileSetSvc = preload("res://scripts/TileSetService.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const HarvestNodeScript = preload("res://scripts/HarvestNode.gd")
 const FloorPickupScript = preload("res://scripts/FloorPickup.gd")
+const SettlementNodeScript = preload("res://scripts/SettlementNode.gd")
 const HarvestNodeScene = preload("res://scenes/HarvestNode.tscn")
 const FloorPickupScene = preload("res://scenes/FloorPickup.tscn")
+const SettlementNodeScene = preload("res://scenes/SettlementNode.tscn")
 
 const CELL_SIZE := 24
 
@@ -22,6 +24,7 @@ var marker_layer: Node2D
 var mob_layer: Node2D
 var node_layer: Node2D
 var pickup_layer: Node2D
+var settlement_layer: Node2D
 
 var _current_biome: String = ""
 
@@ -32,6 +35,7 @@ func _ready() -> void:
 	mob_layer = get_node_or_null("MobLayer") as Node2D
 	node_layer = get_node_or_null("NodeLayer") as Node2D
 	pickup_layer = get_node_or_null("PickupLayer") as Node2D
+	settlement_layer = get_node_or_null("SettlementLayer") as Node2D
 	# Mob layer is y-sorted so entities stack correctly with the player.
 	if is_instance_valid(mob_layer):
 		mob_layer.y_sort_enabled = true
@@ -41,6 +45,8 @@ func _ready() -> void:
 		node_layer.y_sort_enabled = true
 	if is_instance_valid(pickup_layer):
 		pickup_layer.y_sort_enabled = true
+	if is_instance_valid(settlement_layer):
+		settlement_layer.y_sort_enabled = true
 
 
 func configure(map_data: Dictionary) -> void:
@@ -80,6 +86,52 @@ func configure(map_data: Dictionary) -> void:
 	_populate_resource_nodes(map_data.get("resource_nodes", []))
 	# Spawn floor pickups (sticks, stones)
 	_populate_floor_pickups(map_data.get("floor_pickups", []))
+	# Spawn settlement structures (Phase 3: NPC towns). The settlement
+	# data comes from world_data.towns_seeded; we look that up via
+	# GameState. Each town is placed at its hex key (the player walks
+	# adjacent and presses E to enter the interior).
+	_populate_settlements(_get_world_towns())
+
+
+func _get_world_towns() -> Array:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not gs.has_world():
+		return []
+	var wd: Dictionary = gs.get_world_data()
+	return wd.get("towns_seeded", [])
+
+
+func _populate_settlements(towns: Array) -> void:
+	if not is_instance_valid(settlement_layer):
+		return
+	for entry in towns:
+		if not (entry is Dictionary):
+			continue
+		var node: Node2D = SettlementNodeScene.instantiate()
+		settlement_layer.add_child(node)
+		node.setup((entry as Dictionary).duplicate(true))
+		# Set the cell from the hex key
+		var hex_str: String = str(entry.get("hex", ""))
+		var parts: PackedStringArray = hex_str.split(",")
+		if parts.size() == 2:
+			node.position = cell_to_world(Vector2i(int(parts[0]), int(parts[1])))
+			# Tag the node with the hex key for hit-test lookup
+			node.set_meta("hex", hex_str)
+
+
+## Returns the SettlementNode at the given cell, or null.
+func get_settlement_at(cell: Vector2i) -> Node2D:
+	if not is_instance_valid(settlement_layer):
+		return null
+	for child in settlement_layer.get_children():
+		if child.get_script() != SettlementNodeScript:
+			continue
+		var p: Vector2 = child.global_position
+		var cx: int = int(floor(p.x / CELL_SIZE))
+		var cy: int = int(floor(p.y / CELL_SIZE))
+		if cx == cell.x and cy == cell.y:
+			return child
+	return null
 
 
 func _populate_resource_nodes(nodes: Array) -> void:
@@ -233,6 +285,10 @@ func get_pickup_layer() -> Node2D:
 	return pickup_layer
 
 
+func get_settlement_layer() -> Node2D:
+	return settlement_layer
+
+
 func _clear_ground() -> void:
 	if is_instance_valid(ground_layer):
 		ground_layer.clear()
@@ -247,6 +303,12 @@ func _clear_nodes() -> void:
 func _clear_pickups() -> void:
 	if is_instance_valid(pickup_layer):
 		for child in pickup_layer.get_children():
+			child.queue_free()
+
+
+func _clear_settlements() -> void:
+	if is_instance_valid(settlement_layer):
+		for child in settlement_layer.get_children():
 			child.queue_free()
 
 

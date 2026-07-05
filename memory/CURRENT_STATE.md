@@ -3,7 +3,7 @@
 **Version:** 0.4.0-dev
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 3 of v0.4.0 in progress (character menu tabs + party + crafting shipped; world-gen town placement and Riftspire gating still TODO)
+**Current Phase:** Phase 3 of v0.4.0 complete (settlements + towns + shops + mission givers + character menu + party + crafting)
 
 ## Summary
 

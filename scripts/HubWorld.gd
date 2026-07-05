@@ -16,6 +16,7 @@ const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
 const LootRollerScript = preload("res://scripts/LootRoller.gd")
 const HUDScript = preload("res://scripts/ui/HUD.gd")
 const CharacterMenuScript = preload("res://scripts/ui/CharacterMenu.gd")
+const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -104,6 +105,13 @@ func _ready() -> void:
 	_mission_manager = get_node_or_null("/root/MissionManager")
 	_world_gen = WorldGenerator.new()
 	add_child(_world_gen)
+
+	# Wire SettlementManager's left_settlement to HubWorld's
+	# _leave_settlement so when the Settlement interior calls
+	# leave_settlement(), the world view comes back.
+	var settlement_mgr: Node = get_node_or_null("/root/SettlementManager")
+	if settlement_mgr != null and not settlement_mgr.is_connected("left_settlement", _leave_settlement):
+		settlement_mgr.connect("left_settlement", _leave_settlement)
 
 	_setup_npc_ui()
 	_setup_mission_ui()
@@ -228,6 +236,14 @@ func _unhandled_input(event: InputEvent) -> void:
 			pass
 	# E key (no direction) starts a gather if adjacent
 	if event.keycode == KEY_E and not event.echo:
+		# If we're already inside a settlement, leave it
+		var sm_inner: Node = get_node_or_null("/root/SettlementManager")
+		if sm_inner != null and sm_inner.is_inside_settlement():
+			_leave_settlement()
+			return
+		# Try to enter a settlement first (handled in the I/E block above)
+		# If we get here, the settlement check above didn't fire (no
+		# adjacent settlement), so try to gather.
 		_try_start_gather()
 		return
 	var dir := Vector2i.ZERO
@@ -258,6 +274,78 @@ func _has_adjacent_harvest_node() -> bool:
 		Vector2i(_local_x, _local_y), GATHER_RANGE_CELLS
 	)
 	return not nodes.is_empty()
+
+
+# ---------------------------------------------------------------------------
+# Phase 3: settlement entry / exit
+# ---------------------------------------------------------------------------
+
+## Returns the settlement hex adjacent to the player, or "" if none.
+## Used by the E key (gather → entry) and the world marker.
+func _adjacent_settlement_hex() -> String:
+	if not is_instance_valid(_map_view):
+		return ""
+	var sm: Node = get_node_or_null("/root/SettlementManager")
+	if sm != null and sm.is_inside_settlement():
+		return ""
+	# Walk adjacent cells looking for a SettlementNode
+	for dx in [-1, 0, 1]:
+		for dy in [-1, 0, 1]:
+			if dx == 0 and dy == 0:
+				continue
+			var cell := Vector2i(_local_x + dx, _local_y + dy)
+			# The settlement node may be on the cell the player is on too
+			var s_node: Node2D = _map_view.get_settlement_at(cell)
+			if s_node != null:
+				return s_node.get_cell(24) if s_node.has_method("get_cell") else str(s_node.get_meta("hex", ""))
+	return ""
+
+
+## Enter the settlement adjacent to the player (if any). Riftspire
+## entry is gated on player level; settlements have no gate.
+func _try_enter_settlement() -> void:
+	var hex: String = _adjacent_settlement_hex()
+	if hex.is_empty():
+		return
+	var sm: Node = get_node_or_null("/root/SettlementManager")
+	if sm == null:
+		return
+	# Riftspire is special — gated on level
+	if sm.is_riftspire(hex):
+		var prog: Node = get_node_or_null("/root/ProgressionManager")
+		var level: int = int(prog.level) if prog != null else 1
+		if not sm.can_enter_riftspire(level):
+			var reason: String = sm.riftspire_block_reason(level)
+			print("[HubWorld] Riftspire entry blocked: %s" % reason)
+			_show_settlement_message(reason)
+			return
+	if sm.enter_settlement(hex, self):
+		# Hide the world view (the settlement interior covers the full
+		# Control)
+		world_grid.visible = false
+		# Update minimap
+		if is_instance_valid(_hud):
+			_hud.notify_cell_changed()
+
+
+## Show a transient message in the bottom bar (Phase 3 stub: just print).
+func _show_settlement_message(msg: String) -> void:
+	# In Phase 8 we'd add a proper toast. For now, surface via the
+	# tile info label or print.
+	print("[HubWorld] %s" % msg)
+
+
+## Leave the active settlement (called by Settlement interior's
+## "Leave" button or Esc/E).
+func _leave_settlement() -> void:
+	var sm: Node = get_node_or_null("/root/SettlementManager")
+	if sm == null or not sm.is_inside_settlement():
+		return
+	sm.leave_settlement()
+	# Restore the world view
+	world_grid.visible = true
+	if is_instance_valid(_hud):
+		_hud.notify_cell_changed()
 
 
 # ---------------------------------------------------------------------------

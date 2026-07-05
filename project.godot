@@ -33,6 +33,8 @@ InventoryManager="*res://scripts/InventoryManager.gd"
 ProgressionManager="*res://scripts/ProgressionManager.gd"
 PartyNPCManager="*res://scripts/PartyNPCManager.gd"
 CraftingManager="*res://scripts/CraftingManager.gd"
+TownManager="*res://scripts/TownManager.gd"
+SettlementManager="*res://scripts/SettlementManager.gd"
 
 [display]
 
