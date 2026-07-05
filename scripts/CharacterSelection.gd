@@ -484,7 +484,7 @@ func _on_character_created_and_ready(race_key: String, class_key: String, origin
 
 
 func auto_save_character(char_data: Dictionary) -> bool:
-	var sm: SaveManager = SaveManager
+	var sm: Node = get_node_or_null("/root/SaveManager")
 	if not is_instance_valid(sm):
 		push_error("[CharacterSelection] Cannot auto-save — SaveManager autoload not found.")
 		return false

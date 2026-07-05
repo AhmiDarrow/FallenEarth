@@ -30,6 +30,7 @@ GraphicsManager="res://scripts/GraphicsManager.gd"
 NPCManager="*res://scripts/NPCManager.gd"
 MissionManager="*res://scripts/MissionManager.gd"
 InventoryManager="*res://scripts/InventoryManager.gd"
+ProgressionManager="*res://scripts/ProgressionManager.gd"
 
 [display]
 

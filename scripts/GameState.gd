@@ -52,13 +52,14 @@ func _ready() -> void:
 	print("[GameState] Initialized.")
 
 	# Start autosave timer on SaveManager autoload
-	var sm: SaveManager = get_node_or_null("/root/SaveManager")
+	var sm: Node = get_node_or_null("/root/SaveManager")
 	if is_instance_valid(sm):
 		sm.start_autosave_timer()
 		sm.auto_save_triggered.connect(_on_autosave_tick)
 
 func _on_autosave_tick() -> void:
-	if not is_instance_valid(SaveManager):
+	var sm: Node = get_node_or_null("/root/SaveManager")
+	if not is_instance_valid(sm):
 		return
 	if _character_data.is_empty():
 		return
@@ -68,7 +69,7 @@ func _on_autosave_tick() -> void:
 		var s: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
 		s.erase("terrain")
 		hex_out[key] = s
-	SaveManager.full_autosave(
+	sm.full_autosave(
 		_character_data.duplicate(true),
 		_appearance_data.duplicate(true) if _appearance_data else {},
 		_equipment_data.duplicate(true) if _equipment_data else {},
@@ -274,7 +275,7 @@ func set_equipment_data(equipment: Dictionary) -> void:
 # ===================================================================
 
 func save_game(slot_id: int, character_data: Dictionary = {}) -> bool:
-	var sm: SaveManager = SaveManager
+	var sm: Node = get_node_or_null("/root/SaveManager")
 	if not is_instance_valid(sm):
 		push_error("[GameState] SaveManager autoload not found.")
 		return false
@@ -320,7 +321,7 @@ func save_game(slot_id: int, character_data: Dictionary = {}) -> bool:
 
 
 func load_game(slot_id: int) -> bool:
-	var sm: SaveManager = SaveManager
+	var sm: Node = get_node_or_null("/root/SaveManager")
 	if not is_instance_valid(sm):
 		push_error("[GameState] SaveManager autoload not found.")
 		return false
@@ -427,7 +428,8 @@ func auto_save() -> bool:
 
 ## Internal callback from SaveManager.auto_save_triggered.
 func _autosave_tick_handler() -> void:
-	if not is_instance_valid(SaveManager):
+	var sm: Node = get_node_or_null("/root/SaveManager")
+	if not is_instance_valid(sm):
 		return
 	if _character_data.is_empty():
 		return
@@ -437,7 +439,7 @@ func _autosave_tick_handler() -> void:
 		var s: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
 		s.erase("terrain")
 		hex_out[key] = s
-	SaveManager.full_autosave(
+	sm.full_autosave(
 		_character_data.duplicate(true),
 		_appearance_data.duplicate(true) if _appearance_data else {},
 		_equipment_data.duplicate(true) if _equipment_data else {},

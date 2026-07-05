@@ -48,6 +48,12 @@
 |----|------|-------|
 | 22 | Hover tooltips (1s dwell) | `scripts/HoverTooltip.gd` (Control with Label, 1s dwell, follows mouse at 14,14 offset). HubWorld `_hit_test_at_world` with priority: resource node > pickup > mob > rift > NPC > mission > terrain. 4 new tests in `tools/smoke_hover_tooltip.gd`. All green. |
 
+### v0.4.0 Phase 2 ✅ (2026-07-05)
+
+| ID | Task | Notes |
+|----|------|-------|
+| 23 | Full Character HUD | 2 new autoloads (ProgressionManager, LootRoller). 4 new UI scripts (HUD, Hotbar, Minimap, InventoryScreen). HubWorld wires HUD + hides old CharInfoBar; resolves hotbar tool for gather. 6 new tests in `smoke_phase2.gd`. Fixed pre-existing `SaveManager` type-annotation bug in GameState/CharacterSelection. All green. |
+
 ### Phase 7 — Godot 4.3 TileMapLayer system ✅
 
 | ID | Task | Notes |

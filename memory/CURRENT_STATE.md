@@ -3,7 +3,7 @@
 **Version:** 0.4.0-dev
 **Last Updated:** 2026-07-05
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** Phase 1b of v0.4.0 complete (hover tooltips)
+**Current Phase:** Phase 2 of v0.4.0 complete (full HUD + hotbar + minimap + progression)
 
 ## Summary
 

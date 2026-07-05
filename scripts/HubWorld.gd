@@ -11,7 +11,10 @@ const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
 const MobVisualScript = preload("res://scripts/MobVisual.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
 const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
+const ProgressionMgrScript = preload("res://scripts/ProgressionManager.gd")
 const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
+const LootRollerScript = preload("res://scripts/LootRoller.gd")
+const HUDScript = preload("res://scripts/ui/HUD.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -51,6 +54,10 @@ var _equipped_tool: Dictionary = {}
 # Phase 1b: hover tooltip (1s dwell) — shows the name of what's under
 # the mouse cursor on the local map.
 var _hover_tooltip: Control = null
+
+# Phase 2: full in-game HUD (top bar, HP/MP/XP bars, minimap, hotbar).
+var _hud: Control = null
+var _hud_minimap_tick: float = 0.0
 var _rift_runner: Node = null
 var _game_time: float = 0.0
 var _rift_check_timer: float = 0.0
@@ -136,6 +143,7 @@ func _ready() -> void:
 		_map_view.configure(_local_map)
 	_setup_player_visual()
 	_setup_hover_tooltip()
+	_setup_hud()
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_build_local_view()
 	_update_tile_info()
@@ -177,6 +185,13 @@ func _process(delta: float) -> void:
 	# Phase 1b: hover tooltip — find what's under the mouse and update.
 	_tick_hover_tooltip()
 
+	# Phase 2: refresh HUD minimap periodically (cheap; once per second)
+	_hud_minimap_tick += delta
+	if _hud_minimap_tick >= 1.0 and is_instance_valid(_hud):
+		_hud_minimap_tick = 0.0
+		if _hud.has_method("notify_cell_changed"):
+			_hud.notify_cell_changed()
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
@@ -203,6 +218,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		_:
 			return
 	_try_move_local(dir.x, dir.y)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2: full Character HUD
+# ---------------------------------------------------------------------------
+
+func _setup_hud() -> void:
+	_hud = HUDScript.new()
+	_hud.name = "HUD"
+	add_child(_hud)
+	# The new HUD has its own top bar / HP/MP/XP / minimap / hotbar. Hide
+	# the old CharInfoBar so we don't show the same info twice.
+	if has_node("CharInfoBar"):
+		var old_bar := get_node("CharInfoBar") as CanvasItem
+		if old_bar != null:
+			old_bar.visible = false
 
 
 # ---------------------------------------------------------------------------
@@ -593,7 +624,35 @@ func set_equipped_tool(tool_data: Dictionary) -> void:
 
 
 func get_equipped_tool() -> Dictionary:
-	return _equipped_tool
+	return _resolve_hotbar_tool()
+
+
+## Read the hotbar's currently selected item_id, look it up in
+## data/tools.json, and return the tool's data dict. Returns empty
+## dict if no item is selected or the item isn't a known tool.
+func _resolve_hotbar_tool() -> Dictionary:
+	if not is_instance_valid(_hud):
+		return _equipped_tool
+	var hb: Hotbar = _hud.get_hotbar() if _hud.has_method("get_hotbar") else null
+	if hb == null or not is_instance_valid(hb):
+		return _equipped_tool
+	var item_id: String = str(hb.get_slot(hb.get_selected_index()))
+	if item_id.is_empty():
+		return {}
+	# Look up the tool definition in data/tools.json
+	var path := "res://data/tools.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var raw = load(path)
+	if raw == null:
+		return {}
+	var data = raw.data if "data" in raw else raw
+	if not (data is Dictionary):
+		return {}
+	for t in data.get("tools", []):
+		if str(t.get("id", "")) == item_id:
+			return t
+	return {}
 
 
 func _try_start_gather() -> void:
@@ -615,11 +674,12 @@ func _try_start_gather() -> void:
 	var entry: Dictionary = candidates[0]
 	var node: Node2D = entry["node"]
 
-	# Try to gather.
-	# Phase 1 (no EquipmentManager yet): allow bare-hands gathering with
-	# base speed (1.0). Phase 4 will introduce tool gating via
-	# EquipmentManager — for now, every node is gatherable by anyone.
-	var tool: Dictionary = _equipped_tool
+	# Try to gather. Pull the equipped tool from the hotbar if any.
+	# Phase 1 (no EquipmentManager): the hotbar's selected slot holds an
+	# item_id; we look it up in data/tools.json for the actual tool data.
+	# If no tool is in the hotbar (or it's not a known tool), fall back
+	# to bare hands (Phase 1 permissiveness — Phase 4 will gate this).
+	var tool: Dictionary = _resolve_hotbar_tool()
 	if tool.is_empty():
 		tool = {"speed_mult": 1.0, "harvests": ["*"], "name": "(bare hands)"}
 
