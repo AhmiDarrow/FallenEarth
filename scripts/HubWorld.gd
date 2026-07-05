@@ -19,6 +19,8 @@ const CharacterMenuScript = preload("res://scripts/ui/CharacterMenu.gd")
 const BaseMgrScript = preload("res://scripts/BaseManager.gd")
 const BaseNodeScene = preload("res://scenes/BaseNode.tscn")
 const BaseScene = preload("res://scenes/Base.tscn")
+const LootPopupScript = preload("res://scripts/ui/LootPopup.gd")
+const LootPopupScene = preload("res://scenes/ui/LootPopup.tscn")
 const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
@@ -368,6 +370,24 @@ func _show_settlement_message(msg: String) -> void:
 	# In Phase 8 we'd add a proper toast. For now, surface via the
 	# tile info label or print.
 	print("[HubWorld] %s" % msg)
+
+
+# Phase 8: spawn a floating loot popup at the given world position
+# (typically the pickup / gather cell). The popup rises and fades
+# over ~1.5 seconds.
+func _spawn_loot_popup(text: String, world_pos: Vector2) -> void:
+	if LootPopupScript == null:
+		return
+	var popup: Control = LootPopupScene.instantiate()
+	popup.text = text
+	# Position at the player's current cell in world space
+	var px: float = float(_local_x) * 24.0 + 12.0
+	var py: float = float(_local_y) * 24.0 + 12.0
+	if world_pos == Vector2.ZERO:
+		popup.global_position = Vector2(px - 30, py - 12)
+	else:
+		popup.global_position = world_pos
+	add_child(popup)
 
 
 ## Leave the active settlement (called by Settlement interior's
@@ -843,6 +863,8 @@ func _try_move_local(dx: int, dy: int) -> void:
 
 	# Phase 1: auto-collect any floor pickup at the new cell.
 	_try_collect_floor_pickup_at(_local_x, _local_y)
+	# Phase 8: spawn a loot popup at the pickup location
+	_spawn_loot_popup("+%d x %s" % [1, "?"], Vector2.ZERO)
 
 	_build_local_view()
 	_update_tile_info()
