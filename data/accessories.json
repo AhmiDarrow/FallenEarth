@@ -1,0 +1,95 @@
+{
+  "_comment": "Phase 4 accessories. 10 hand-authored items, each filling either acc1 or acc2 slot. Effects are arbitrary stat_mods or special fields; the EquipmentManager just sums the stat_mods.",
+  "accessories": [
+    {
+      "id": "luck_charm",
+      "name": "Luck Charm",
+      "slot": "acc1",
+      "level_required": 1,
+      "stat_mods": {},
+      "special": {"loot_bonus_pct": 5},
+      "description": "Slightly increases drop chance from mobs."
+    },
+    {
+      "id": "scavenger_ring",
+      "name": "Scavenger's Ring",
+      "slot": "acc1",
+      "level_required": 5,
+      "stat_mods": {},
+      "special": {"gather_speed_pct": 10},
+      "description": "Gather 10% faster from resource nodes."
+    },
+    {
+      "id": "wanderer_boots",
+      "name": "Wanderer's Boots",
+      "slot": "acc2",
+      "level_required": 1,
+      "stat_mods": {},
+      "special": {"move_speed_bonus": 1},
+      "description": "+1 movement range on the local map."
+    },
+    {
+      "id": "iron_grip",
+      "name": "Iron Grip",
+      "slot": "acc1",
+      "level_required": 5,
+      "stat_mods": {"str": 2},
+      "special": {},
+      "description": "+2 Strength."
+    },
+    {
+      "id": "mindstone",
+      "name": "Mindstone",
+      "slot": "acc1",
+      "level_required": 5,
+      "stat_mods": {"int": 2},
+      "special": {},
+      "description": "+2 Intelligence."
+    },
+    {
+      "id": "warden_charm",
+      "name": "Warden's Charm",
+      "slot": "acc1",
+      "level_required": 10,
+      "stat_mods": {"con": 2},
+      "special": {"hp_max_add": 15},
+      "description": "+2 Constitution, +15 max HP."
+    },
+    {
+      "id": "rift_compass",
+      "name": "Rift Compass",
+      "slot": "acc2",
+      "level_required": 20,
+      "stat_mods": {},
+      "special": {"reveal_rift_range": 8},
+      "description": "Highlights rifts within 8 hexes on the world map."
+    },
+    {
+      "id": "hunters_mark",
+      "name": "Hunter's Mark",
+      "slot": "acc2",
+      "level_required": 15,
+      "stat_mods": {},
+      "special": {"crit_bonus_pct": 3},
+      "description": "+3% critical hit chance."
+    },
+    {
+      "id": "timepiece",
+      "name": "Timepiece",
+      "slot": "acc2",
+      "level_required": 25,
+      "stat_mods": {},
+      "special": {"cooldown_reduce_pct": 10},
+      "description": "Ability cooldowns tick 10% faster."
+    },
+    {
+      "id": "echo_charm",
+      "name": "Echo Charm",
+      "slot": "acc2",
+      "level_required": 30,
+      "stat_mods": {},
+      "special": {"double_loot_pct": 5},
+      "description": "5% chance for double drops from mobs."
+    }
+  ]
+}

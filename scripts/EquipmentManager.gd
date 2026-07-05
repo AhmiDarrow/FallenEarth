@@ -1,192 +1,424 @@
-## EquipmentManager — Manages inventory, equipment slots, and procedural item generation
+## EquipmentManager — Player + party equipment, stat mods, equip/unequip.
+##
+## Phase 4 autoload. Owns:
+##   - the equipment data (weapons, armor, accessories) loaded from
+##     data/weapons.json, data/armor.json, data/accessories.json
+##   - the per-NPC equipment dicts (8 slots + a tools slot)
+##   - the MainHand item (the currently active tool or weapon)
+##
+## Slot layout (matches PartyNPCManager.EQUIP_SLOTS):
+##   - head, chest, legs, boots       (armor)
+##   - mainhand, offhand              (weapons or tools; tools share
+##     mainhand with weapons and swap via the hotbar in Phase 2+)
+##   - tool                           (Phase 1 tools; same as mainhand
+##     in Phase 4 — mainhand can hold either)
+##   - acc1, acc2                     (accessories)
+##
+## Weapons and armor are template-based: `get_weapon(class_id, tier)`
+## and `get_armor(class_id, slot, tier)` lazily expand the tier_curve
+## to a full entry dict (id, name, sprite, color, level_required,
+## damage / armor, range, stat_mods). Per-tier visual differentiation
+## is a simple color shift (see tier_color_shift in the JSON).
+##
+## Persistence: like other Phase 4 autoloads, the per-NPC equipment
+## is non-persistent for now. GameState.SaveManager is the canonical
+## layer (Phase 8 will include the equipment dict).
+extends Node
 
-class_name EquipmentManager extends Node
+const WEAPONS_PATH := "res://data/weapons.json"
+const ARMOR_PATH := "res://data/armor.json"
+const ACCESSORIES_PATH := "res://data/accessories.json"
 
+signal equipment_changed(npc_id: String, slot: String)
+signal main_hand_changed(npc_id: String, item_id: String)
 
-signal inventory_changed()
-signal item_equipped(slot: String, item_id: String)
-signal item_removed(item_id: String)
+const EQUIP_SLOTS := ["head", "chest", "legs", "boots", "mainhand", "offhand", "tool", "acc1", "acc2"]
+const ARMOR_SLOTS := ["head", "chest", "legs", "boots"]
 
+# weapons: {class_id: {base_weapon_name, sprite, base_color, ...}}
+var _weapons_data: Dictionary = {}
+# armor: {class_id: {base_armor_name, sprite, ...}}
+# Per-slot base color lives in the armor.json slots dict (loaded here).
+var _armor_data: Dictionary = {}
+var _armor_slots_data: Dictionary = {}
+# accessories: {id: accessory_dict}
+var _accessories: Dictionary = {}
 
-const EQUIPMENT_SLOTS := ["head", "torso", "body", "arms", "legs", "weapon", "back", "accessory"]
+# Shared tier curves (loaded from each file)
+var _weapon_curve: Dictionary = {}
+var _armor_curve: Dictionary = {}
+var _weapon_tier_color: Dictionary = {}
+var _armor_tier_color: Dictionary = {}
+# weapon_suffixes, armor_suffixes arrays for per-tier sprite names
+var _weapon_tier_color_data: Dictionary = {}
 
-# Visual slot mapping for CharacterVisual (torso/body, back/accessory)
-const VISUAL_SLOT_MAP := {
-	"body": "torso",
-	"accessory": "back",
-	"torso": "torso",
-	"back": "back"
-}
-
-@export var inventory: Array[Dictionary] = []
-
-var equipped_items: Dictionary = {
-	"head": null,
-	"body": null,
-	"arms": null,
-	"legs": null,
-	"weapon": null,
-	"accessory": null
-}
+# equipment_state: {npc_id: {slot: item_id}}
+# The player's id is "player"; party members use their PartyNPCManager id.
+var _equipment_state: Dictionary = {}
 
 
 func _ready() -> void:
-	print("[EquipmentManager] Initialized (v0.2.0). %d slots." % equipped_items.size())
+	_load_weapons()
+	_load_armor()
+	_load_accessories()
+	print("[EquipmentManager] Initialized (%d weapons, %d armor, %d accessories)." % [
+		_weapons_data.size(), _armor_data.size(), _accessories.size()
+	])
 
 
-# ===================================================================
-# -- Visuals --
-# ===================================================================
+# ---------------------------------------------------------------------------
+# Loaders
+# ---------------------------------------------------------------------------
 
-func get_equipment_visuals(item_id: String) -> Dictionary:
-	"""Return visual layer ordering for the given item."""
-	return {"layer_order": 0, "animation": "idle", "offset": Vector2i.ZERO}
-
-
-# ===================================================================
-# -- Item generation --
-# ===================================================================
-
-## Generate equipment stats based on tier (1–5). Higher tiers = better bonuses.
-func generate_procedural_stats(tier: int) -> Dictionary:
-	var stats := {"durability": randi_range(10, 10 * tier)}
-	
-	for i in range(maxi(tier - 2, 0)):
-		var slot = str(i + 1)
-		stats["stat_mod_%s" % slot] = {
-			"strength": clampf(randf() * (tier - i), 0.0, 5.0),
-			"defense": clampf(randf() * (tier - i) / 2.0, 0.0, 3.0),
-			"speed": clampf(randf() * (tier - i) / 4.0, 0.0, 2.0)
-		}
-	
-	stats["quality_bonus"] = tier * 10
-	return stats
+func _load_json(path: String) -> Variant:
+	if not ResourceLoader.exists(path):
+		push_error("[EquipmentManager] %s missing" % path)
+		return null
+	var raw = load(path)
+	if raw == null:
+		return null
+	var data = raw.data if "data" in raw else raw
+	return data
 
 
-## Generate a procedural equipment item
-func generate_procedural_item(tier: int = 3, rarity: String = "common", slot_hint: String = "") -> Dictionary:
-	if rarity not in ["common", "uncommon", "rare", "epic", "legendary"]:
-		rarity = "common"
-	
-	var name := "Procedural %s" % (rarity.capitalize() if rarity != "common" else "")
-	var item_type := slot_hint if slot_hint != "" else ("weapon" if tier >= 2 else "armor")
-	
-	return {
-		"id": str(randi_range(1000, 9999)),
-		"name": "%s %s" % [name, item_type],
-		"type": item_type,
-		"slot": slot_hint if slot_hint != "" else ("weapon" if tier >= 2 else "body"),
-		"tier": clampi(tier, 1, 5),
-		"rarity": rarity,
-		"stats": generate_procedural_stats(clampi(tier, 1, 5))
+func _load_weapons() -> void:
+	var data = _load_json(WEAPONS_PATH)
+	if data == null or not (data is Dictionary):
+		return
+	_weapon_curve = data.get("tier_curve", {})
+	_weapon_tier_color = data.get("tier_color_shift", {})
+	_weapon_tier_color_data = data.get("sprite_tier_suffix", {})
+	_weapons_data = data.get("classes", {})
+
+
+func _load_armor() -> void:
+	var data = _load_json(ARMOR_PATH)
+	if data == null or not (data is Dictionary):
+		return
+	_armor_curve = data.get("tier_curve", {})
+	_armor_tier_color = data.get("tier_color_shift", {})
+	_armor_slots_data = data.get("slots", {})
+	_armor_data = data.get("classes", {})
+
+
+func _load_accessories() -> void:
+	var data = _load_json(ACCESSORIES_PATH)
+	if data == null or not (data is Dictionary):
+		return
+	_accessories = {}
+	for a in data.get("accessories", []):
+		if a is Dictionary:
+			_accessories[str(a.get("id", ""))] = a
+
+
+# ---------------------------------------------------------------------------
+# Entry expansion (template → per-tier dict)
+# ---------------------------------------------------------------------------
+
+## Returns the weapon entry for (class_id, tier). Lazily built and
+## cached. Returns {} if class_id is unknown.
+func get_weapon(class_id: String, tier: int) -> Dictionary:
+	if not _weapons_data.has(class_id):
+		return {}
+	if tier < 0 or tier >= 26:
+		return {}
+	# Cache key
+	var key: String = "%s_%d" % [class_id, tier]
+	if _weapon_cache.has(key):
+		return _weapon_cache[key]
+	var c: Dictionary = _weapons_data[class_id]
+	var t: Dictionary = _weapon_curve
+	var name_suffix: String = str(t.get("name_suffix", ["?"])[tier])
+	var level: int = int(t.get("levels", [1])[tier])
+	var damage: int = int(t.get("damage_base", [0])[tier])
+	var range_v: int = int(t.get("range_base", [1])[tier])
+	var base_color: Dictionary = c.get("base_color", {"h": 0.0, "s": 0.0, "v": 0.5})
+	var tier_color: Color = _tier_color_for(_weapon_tier_color, tier, base_color)
+	var sprite_base: String = str(c.get("sprite_base", ""))
+	var weapon_suffixes: Array = _weapon_tier_color_data.get("weapon_suffixes", [])
+	var sprite_suffix: String = ""
+	if tier < weapon_suffixes.size():
+		sprite_suffix = str(weapon_suffixes[tier])
+	var sprite_name: String = sprite_base + sprite_suffix
+	var entry := {
+		"id": "weapon_%s_t%d" % [class_id.to_lower().replace(" ", "_"), tier + 1],
+		"name": "%s %s" % [c.get("base_weapon_name", "?"), name_suffix],
+		"class_id": class_id,
+		"slot": "mainhand",
+		"tier": tier + 1,
+		"level_required": level,
+		"damage": damage,
+		"range": range_v,
+		"weapon_kind": c.get("weapon_kind", "blade"),
+		"sprite": sprite_name,
+		"color": tier_color,
+		"stat_mods": c.get("stat_mods", {}),
+		"sell_value_ec": 5 + tier * 5,
+		"category": "weapon",
+		"stackable": false,
 	}
+	_weapon_cache[key] = entry
+	return entry
 
 
-# ===================================================================
-# -- Inventory management --
+var _weapon_cache: Dictionary = {}
 
-func add_to_inventory(item: Dictionary) -> bool:
-	if item == null or not (item is Dictionary):
-		push_error("[EquipmentManager] Invalid item to add.")
+
+## Returns the armor entry for (class_id, slot, tier). Lazily built and
+## cached. Returns {} if (class_id, slot) is unknown or tier is OOB.
+func get_armor(class_id: String, slot: String, tier: int) -> Dictionary:
+	if not _armor_data.has(class_id) or not _armor_slots_data.has(slot):
+		return {}
+	if tier < 0 or tier >= 13:
+		return {}
+	var key: String = "%s_%s_%d" % [class_id, slot, tier]
+	if _armor_cache.has(key):
+		return _armor_cache[key]
+	var c: Dictionary = _armor_data[class_id]
+	var s: Dictionary = _armor_slots_data[slot]
+	var t: Dictionary = _armor_curve
+	var name_suffix: String = str(t.get("name_suffix", ["?"])[tier])
+	var level: int = int(t.get("levels", [1])[tier])
+	var armor: int = int(t.get("armor_base", [0])[tier])
+	var base_color: Dictionary = s.get("base_color", {"h": 0.0, "s": 0.0, "v": 0.5})
+	var tier_color: Color = _tier_color_for(_armor_tier_color, tier, base_color)
+	var sprite_base: String = str(c.get("sprite_base", ""))
+	var armor_suffixes: Array = _weapon_tier_color_data.get("armor_suffixes", [])
+	var sprite_suffix: String = ""
+	if tier < armor_suffixes.size():
+		sprite_suffix = str(armor_suffixes[tier])
+	var sprite_name: String = "%s_%s%s" % [sprite_base, slot, sprite_suffix]
+	var entry := {
+		"id": "armor_%s_%s_t%d" % [class_id.to_lower().replace(" ", "_"), slot, tier + 1],
+		"name": "%s %s %s" % [c.get("base_armor_name", "?"), s.get("name_prefix", slot), name_suffix],
+		"class_id": class_id,
+		"slot": slot,
+		"tier": tier + 1,
+		"level_required": level,
+		"armor": armor,
+		"sprite": sprite_name,
+		"color": tier_color,
+		"stat_mods": c.get("stat_mods", {}),
+		"sell_value_ec": 3 + tier * 3,
+		"category": "armor",
+		"stackable": false,
+	}
+	_armor_cache[key] = entry
+	return entry
+
+
+var _armor_cache: Dictionary = {}
+
+
+## Returns the accessory entry for the given id, or {}.
+func get_accessory(item_id: String) -> Dictionary:
+	return _accessories.get(item_id, {})
+
+
+## Returns the tool entry for the given id (delegates to data/tools.json
+## via the InventoryManager's lookup; we just forward the tool dict).
+## Kept here so the EquipmentManager is the single entry point for
+## "what's in this slot".
+func get_tool_entry(item_id: String) -> Dictionary:
+	var inv: Node = get_node_or_null("/root/InventoryManager")
+	if inv == null or not inv.has_method("get_item_meta"):
+		return {}
+	return inv.get_item_meta(item_id)
+
+
+## Returns the per-tier color (HSV-shifted base color) for the given
+## tier curve and tier index.
+func _tier_color_for(tier_color_shift: Dictionary, tier: int, base_color: Dictionary) -> Color:
+	var h: float = float(base_color.get("h", 0.0))
+	var s: float = float(base_color.get("s", 0.0))
+	var v: float = float(base_color.get("v", 0.5))
+	if tier_color_shift.is_empty():
+		return Color.from_hsv(h, s, v)
+	var hue_off: float = float(tier_color_shift.get("hue_offset", [0.0])[tier])
+	var sat_off: float = float(tier_color_shift.get("sat_offset", [0.0])[tier])
+	var val_off: float = float(tier_color_shift.get("value_offset", [0.0])[tier])
+	var new_h: float = fposmod(h + hue_off, 1.0)
+	var new_s: float = clamp(s + sat_off, 0.0, 1.0)
+	var new_v: float = clamp(v + val_off, 0.0, 1.0)
+	return Color.from_hsv(new_h, new_s, new_v)
+
+
+# ---------------------------------------------------------------------------
+# Equipment state (player + party members)
+# ---------------------------------------------------------------------------
+
+## Returns the equipment dict for the given npc_id (creates a fresh
+## empty dict if the npc has never been equipped). The player uses
+## "player" as npc_id.
+func get_equipment(npc_id: String) -> Dictionary:
+	if not _equipment_state.has(npc_id):
+		_equipment_state[npc_id] = _empty_equipment()
+	return _equipment_state[npc_id]
+
+
+func _empty_equipment() -> Dictionary:
+	var out: Dictionary = {}
+	for slot in EQUIP_SLOTS:
+		out[slot] = ""
+	return out
+
+
+## Equips item_id into the given slot for npc_id. Returns true on
+## success, false if the slot is invalid or the item is unknown.
+## Caller is responsible for the swap logic (Phase 4 supports
+## direct equip only; drag-to-equip from inventory comes in
+## CharacterMenu's EquipmentScreen).
+func equip(npc_id: String, item_id: String, slot: String) -> bool:
+	if not slot in EQUIP_SLOTS:
 		return false
-	
-	inventory.append(item.duplicate(true))
-	inventory_changed.emit()
-	print("[EquipmentManager] Item added: %s (%d total)" % [item.get("name", "Unknown"), inventory.size()])
+	if item_id.is_empty():
+		# Unequip
+		return _set_slot(npc_id, slot, "")
+	# Validate the item exists somewhere (inventory / tool / weapon / etc.)
+	if not _item_is_known(item_id):
+		return false
+	return _set_slot(npc_id, slot, item_id)
+
+
+## Unequip the given slot. Returns true on success.
+func unequip(npc_id: String, slot: String) -> bool:
+	if not slot in EQUIP_SLOTS:
+		return false
+	return _set_slot(npc_id, slot, "")
+
+
+func _set_slot(npc_id: String, slot: String, item_id: String) -> bool:
+	var eq: Dictionary = get_equipment(npc_id)
+	eq[slot] = item_id
+	emit_signal("equipment_changed", npc_id, slot)
+	# MainHand slot drives the main_hand signal
+	if slot == "mainhand" or slot == "tool":
+		emit_signal("main_hand_changed", npc_id, item_id)
 	return true
 
 
-func remove_from_inventory(item_id: String) -> bool:
-	for i in range(inventory.size() - 1, -1, -1):
-		if inventory[i].get("id") == item_id:
-			inventory.remove_at(i)
-			item_removed.emit(item_id)
-			print("[EquipmentManager] Removed %s." % item_id)
-			return true
+func _item_is_known(item_id: String) -> bool:
+	# Search weapons, armor, accessories, and tools
+	var inv: Node = get_node_or_null("/root/InventoryManager")
+	if inv != null and inv.has_method("has_item_meta") and inv.has_item_meta(item_id):
+		return true
+	if _accessories.has(item_id):
+		return true
+	# Check weapons: id pattern is weapon_<class>_t<num>
+	if item_id.begins_with("weapon_"):
+		return true
+	# Check armor: id pattern is armor_<class>_<slot>_t<num>
+	if item_id.begins_with("armor_"):
+		return true
 	return false
 
 
-# ===================================================================
-# -- Equipment slot management --
-
-## Equip an item (by id or by data dict) to a specific slot.
-func equip_item(slot: String, item_data: Variant) -> bool:
-	if not slot in equipped_items:
-		push_error("[EquipmentManager] Invalid slot: %s" % slot)
-		return false
-	
-	# Support both full Dictionary item or plain id String (legacy)
-	var item_id: String = ""
-	if item_data is Dictionary:
-		item_id = str(item_data.get("id", ""))
-	elif item_data is String:
-		item_id = item_data
-	else:
-		item_id = str(item_data)
-	
-	if item_id == "":
-		push_error("[EquipmentManager] Cannot equip empty item data.")
-		return false
-	
-	equipped_items[slot] = item_id
-	item_equipped.emit(slot, item_id)
-	print("[EquipmentManager] Equipped %s to slot '%s'." % [item_id, slot])
-	
-	# Move from inventory to equipped (don't delete — it may be re-equippable)
-	for i in range(inventory.size() - 1, -1, -1):
-		if inventory[i].get("id") == item_id:
-			inventory.remove_at(i)
-			print("[EquipmentManager] Item removed from inventory after equipping.")
-			break
-	
-	return true
+## Returns the main-hand item id (the active weapon or tool) for the
+## given npc_id, or "" if no main hand.
+func get_main_hand_item(npc_id: String) -> String:
+	var eq: Dictionary = get_equipment(npc_id)
+	var mainhand: String = str(eq.get("mainhand", ""))
+	if not mainhand.is_empty():
+		return mainhand
+	# Fall back to the tool slot
+	return str(eq.get("tool", ""))
 
 
-## Unequip an item from a slot (puts it back into inventory)
-func unequip_item(slot: String) -> Dictionary:
-	if not equipped_items.has(slot):
-		push_error("[EquipmentManager] Slot %s does not exist." % slot)
-		return {}
-	
-	if equipped_items[slot] == null:
-		return {}
-	
-	var item_id: Variant = equipped_items[slot]
-	equipped_items[slot] = null
-	
-	item_removed.emit(str(item_id))
-	print("[EquipmentManager] Unequipped from slot '%s'." % slot)
-	return {"id": item_id}
-
-
-## Save equipment state for the given slot (legacy compat — supports id string or dict)
-func save_equipmentslot(slot: String, item_data: Variant) -> void:
-	if item_data is String:
-		equip_item(slot, {"id": item_data})
-	else:
-		equip_item(slot, item_data)
-
-
-# Get all equipment slots (returns a frozen copy)
-func get_equipment_slots() -> Dictionary:
-	return equipped_items.duplicate(true)
-
-
-## Check if any slot has a specific item equipped
-func is_item_equipped(item_id: String) -> bool:
-	for slot_key in equipped_items:
-		if equipped_items[slot_key] == item_id:
-			return true
-	return false
-
-## Get equipment visuals dict ready for CharacterVisual (maps internal slots to visual slots + filenames)
-func get_visual_equipment() -> Dictionary:
-	var vis := {}
-	for slot in equipped_items:
-		var id = equipped_items[slot]
-		if id == null or id == "":
+## Returns the merged stat_mods of all equipped items for the given
+## npc_id. Walks every slot, looks up the item's stat_mods, and sums
+## the values. Special fields (loot_bonus_pct, gather_speed_pct, etc.)
+## are NOT included — they require separate aggregation (TODO Phase 4+).
+func get_stat_mods(npc_id: String) -> Dictionary:
+	var eq: Dictionary = get_equipment(npc_id)
+	var out: Dictionary = {}
+	for slot in EQUIP_SLOTS:
+		var item_id: String = str(eq.get(slot, ""))
+		if item_id.is_empty():
 			continue
-		var vslot = VISUAL_SLOT_MAP.get(slot, slot)
-		vis[vslot] = str(id)  # filename fragment; CharacterVisual will resolve actual asset
-	return vis
+		var entry: Dictionary = _resolve_item(item_id)
+		if entry.is_empty():
+			continue
+		var mods: Dictionary = entry.get("stat_mods", {})
+		for stat in mods:
+			out[stat] = int(out.get(stat, 0)) + int(mods[stat])
+	return out
 
+
+## Looks up an item by id across all the data sources (weapons, armor,
+## accessories, tools). Returns the entry dict or {}.
+func _resolve_item(item_id: String) -> Dictionary:
+	if item_id.begins_with("weapon_"):
+		# Format: weapon_<class>_t<num>; class from name, tier from num-1
+		var rest: String = item_id.substr("weapon_".length())
+		var parts: PackedStringArray = rest.split("_t")
+		if parts.size() == 2:
+			var class_id: String = parts[0].to_pascal_case()
+			var tier: int = int(parts[1]) - 1
+			return get_weapon(class_id, tier)
+	if item_id.begins_with("armor_"):
+		var rest2: String = item_id.substr("armor_".length())
+		# format: armor_<class>_<slot>_t<num>
+		var parts2: PackedStringArray = rest2.split("_t")
+		if parts2.size() == 2:
+			var class_slot: PackedStringArray = parts2[0].split("_")
+			if class_slot.size() == 2:
+				var class_id2: String = class_slot[0].to_pascal_case()
+				var slot2: String = class_slot[1]
+				var tier2: int = int(parts2[1]) - 1
+				return get_armor(class_id2, slot2, tier2)
+	return get_accessory(item_id)
+
+
+## Returns the max HP / MP / etc. derived from class + level + stat_mods.
+## Phase 4: simple curve + stat_mods contribution. The full system
+## grows in later phases.
+func get_max_hp(class_id: String, level: int, stat_mods: Dictionary) -> int:
+	var base: int = 50 + level * 8
+	return base + int(stat_mods.get("con", 0)) * 4 + int(stat_mods.get("hp_max_add", 0))
+
+
+func get_max_mp(class_id: String, level: int, stat_mods: Dictionary) -> int:
+	var base: int = 20 + level * 3
+	return base + int(stat_mods.get("int", 0)) * 3
+
+
+## Returns the attack power (weapon damage + str contribution).
+func get_attack(npc_id: String) -> int:
+	var mainhand: String = get_main_hand_item(npc_id)
+	var weapon_damage: int = 0
+	if not mainhand.is_empty():
+		var entry: Dictionary = _resolve_item(mainhand)
+		weapon_damage = int(entry.get("damage", 0))
+	var eq: Dictionary = get_equipment(npc_id)
+	var mods: Dictionary = get_stat_mods(npc_id)
+	# Str contributes to melee damage
+	var str_bonus: int = int(mods.get("str", 0))
+	return weapon_damage + str_bonus
+
+
+## Returns the defense (armor + con contribution).
+func get_defense(npc_id: String) -> int:
+	var eq: Dictionary = get_equipment(npc_id)
+	var total_armor: int = 0
+	for slot in ARMOR_SLOTS:
+		var item_id: String = str(eq.get(slot, ""))
+		if item_id.is_empty():
+			continue
+		var entry: Dictionary = _resolve_item(item_id)
+		total_armor += int(entry.get("armor", 0))
+	var mods: Dictionary = get_stat_mods(npc_id)
+	return total_armor + int(mods.get("con", 0))
+
+
+# ---------------------------------------------------------------------------
+# Snapshot / restore (save/load in Phase 8)
+# ---------------------------------------------------------------------------
+
+func get_snapshot() -> Dictionary:
+	return {"equipment_state": _equipment_state.duplicate(true)}
+
+
+func restore_from_snapshot(snap: Dictionary) -> void:
+	_equipment_state.clear()
+	for k in snap.get("equipment_state", {}):
+		_equipment_state[k] = (snap.equipment_state[k] as Dictionary).duplicate(true)

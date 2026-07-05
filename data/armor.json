@@ -1,0 +1,30 @@
+{
+  "_comment": "Phase 4 armor. 6 classes x 4 slots x 13 tiers = 312 entries are generated from the tier_curve + per-class per-slot metadata. EquipmentManager lazily expands per-tier entries on demand. Per-tier visual differentiation is a color shift (see tier_color_shift), not a unique sprite per tier.",
+  "tier_curve": {
+    "_comment": "Tier index 0..12 corresponds to player levels [1, 10, 25, 45, 65, 90, 120, 150, 180, 210, 240, 250, 256].",
+    "levels":     [1,  10, 25, 45, 65, 90, 120, 150, 180, 210, 240, 250, 256],
+    "armor_base": [2,  5,  9, 13, 18, 25,  35,  45,  60,  75,  90, 110, 150],
+    "name_suffix":["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII"]
+  },
+  "tier_color_shift": {
+    "_comment": "Same scheme as weapons. Higher tiers are darker and more saturated.",
+    "hue_offset":   [0.00, -0.03, -0.05, -0.07, -0.09, -0.11, -0.13, -0.15, -0.17, -0.19, -0.21, -0.23, -0.25],
+    "value_offset": [0.00,  0.04,  0.07,  0.10,  0.12,  0.15,  0.18,  0.20,  0.22,  0.24,  0.26,  0.28,  0.30],
+    "sat_offset":   [0.00,  0.04,  0.07,  0.10,  0.12,  0.14,  0.16,  0.18,  0.20,  0.22,  0.24,  0.26,  0.28]
+  },
+  "slots": {
+    "_comment": "Slot order matches EquipmentManager.EQUIP_SLOTS armor portion.",
+    "head":  {"name_prefix": "Helmet",    "base_color": {"h": 0.55, "s": 0.2, "v": 0.35}, "stat_mods": {"con": 0}},
+    "chest": {"name_prefix": "Chestplate", "base_color": {"h": 0.10, "s": 0.3, "v": 0.40}, "stat_mods": {"con": 0}},
+    "legs":  {"name_prefix": "Leggings",  "base_color": {"h": 0.32, "s": 0.25,"v": 0.30}, "stat_mods": {"con": 0}},
+    "boots": {"name_prefix": "Boots",      "base_color": {"h": 0.0,  "s": 0.2, "v": 0.30}, "stat_mods": {"con": 0}}
+  },
+  "classes": {
+    "Scavenger":   {"base_armor_name": "Scrap",        "sprite_base": "armor_scavenger"},
+    "Technician":  {"base_armor_name": "Tactical",     "sprite_base": "armor_technician"},
+    "Survivor":    {"base_armor_name": "Survivor",     "sprite_base": "armor_survivor"},
+    "Striker":     {"base_armor_name": "Heavy",        "sprite_base": "armor_striker"},
+    "Riftbinder":  {"base_armor_name": "Riftweave",    "sprite_base": "armor_riftbinder"},
+    "Warden":      {"base_armor_name": "Bulwark",      "sprite_base": "armor_warden"}
+  }
+}

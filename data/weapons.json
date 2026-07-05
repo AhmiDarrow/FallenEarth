@@ -1,0 +1,65 @@
+{
+  "_comment": "Phase 4 weapons. Uses a template-based approach: 6 classes x 26 tiers = 156 entries are generated from the tier_curve + per-class metadata. EquipmentManager loads this and lazily expands to per-tier entries on demand. Per-class stat mods are applied to the base curve. Per-tier visual differentiation is a simple color shift (see tier_color_shift), not a unique sprite per tier — so the data file is small and sprite generation is procedural.",
+  "tier_curve": {
+    "_comment": "Tier index 0..25 corresponds to player levels [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 248, 250, 252, 254, 255, 256].",
+    "levels": [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 248, 250, 252, 254, 255, 256],
+    "damage_base":  [3, 5, 7, 9, 11, 14, 17, 20, 23, 26, 30, 35, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 300],
+    "range_base":   [1, 1, 1, 1, 1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2],
+    "name_suffix":  ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI"]
+  },
+  "tier_color_shift": {
+    "_comment": "Each weapon tier tints the base color by a hue + value offset. Phase 4 only stores the offsets; the EquipmentManager (or the player visual) applies them to the base color. Tier 0 = no shift. Higher tiers = darker / more saturated.",
+    "hue_offset":   [0.00, -0.02, -0.04, -0.06, -0.08, -0.10, -0.12, -0.14, -0.16, -0.18, -0.20, -0.22, -0.24, -0.26, -0.28, -0.30, -0.32, -0.34, -0.36, -0.38, -0.40, -0.42, -0.44, -0.46, -0.48, -0.50],
+    "value_offset": [0.00,  0.05,  0.08,  0.10,  0.12,  0.14,  0.16,  0.18,  0.20,  0.22,  0.24,  0.26,  0.28,  0.30,  0.32,  0.34,  0.36,  0.38,  0.40,  0.42,  0.44,  0.46,  0.48,  0.50,  0.52,  0.55],
+    "sat_offset":   [0.00,  0.05,  0.10,  0.12,  0.14,  0.16,  0.18,  0.20,  0.22,  0.24,  0.26,  0.28,  0.30,  0.32,  0.34,  0.36,  0.38,  0.40,  0.42,  0.44,  0.46,  0.48,  0.50,  0.52,  0.55,  0.58]
+  },
+  "classes": {
+    "Scavenger": {
+      "weapon_kind": "blade",
+      "base_weapon_name": "Scrap Shiv",
+      "base_color": {"h": 0.08, "s": 0.4, "v": 0.55},
+      "sprite_base": "weapon_scavenger",
+      "stat_mods": {"str": 1}
+    },
+    "Technician": {
+      "weapon_kind": "pistol",
+      "base_weapon_name": "Spark Pistol",
+      "base_color": {"h": 0.55, "s": 0.5, "v": 0.6},
+      "sprite_base": "weapon_technician",
+      "stat_mods": {"int": 1}
+    },
+    "Survivor": {
+      "weapon_kind": "rifle",
+      "base_weapon_name": "Survival Rifle",
+      "base_color": {"h": 0.32, "s": 0.45, "v": 0.5},
+      "sprite_base": "weapon_survivor",
+      "stat_mods": {"con": 1}
+    },
+    "Striker": {
+      "weapon_kind": "heavy_blade",
+      "base_weapon_name": "Heavy Blade",
+      "base_color": {"h": 0.02, "s": 0.6, "v": 0.5},
+      "sprite_base": "weapon_striker",
+      "stat_mods": {"str": 2}
+    },
+    "Riftbinder": {
+      "weapon_kind": "focus",
+      "base_weapon_name": "Rift Focus",
+      "base_color": {"h": 0.75, "s": 0.55, "v": 0.65},
+      "sprite_base": "weapon_riftbinder",
+      "stat_mods": {"int": 2, "wis": 1}
+    },
+    "Warden": {
+      "weapon_kind": "shield_hammer",
+      "base_weapon_name": "Bulwark",
+      "base_color": {"h": 0.13, "s": 0.35, "v": 0.45},
+      "sprite_base": "weapon_warden",
+      "stat_mods": {"str": 1, "con": 1}
+    }
+  },
+  "sprite_tier_suffix": {
+    "_comment": "Per-tier sprite name = sprite_base + suffix[tier]. So tier 0 = 'weapon_scavenger', tier 25 = 'weapon_scavenger_xxvi'. Each tier has its own visual. Phase 4 ships procedural sprite generation (tools/generate_equipment_sprites.py) that produces these from a base shape with a tier color shift.",
+    "weapon_suffixes": ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x", "_xi", "_xii", "_xiii", "_xiv", "_xv", "_xvi", "_xvii", "_xviii", "_xix", "_xx", "_xxi", "_xxii", "_xxiii", "_xxiv", "_xxv", "_xxvi"],
+    "armor_suffixes":  ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x", "_xi", "_xii", "_xiii"]
+  }
+}
