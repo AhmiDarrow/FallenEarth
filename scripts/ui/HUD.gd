@@ -17,11 +17,8 @@ const TOP_BAR_H := 56.0
 const BAR_H := 12.0
 const HOTBAR_H := 80.0
 
-signal inventory_requested
-signal equipment_requested
-signal crafting_requested
-signal stats_requested
-signal menu_closed
+signal menu_requested  # emitted when the user clicks "≡ Menu"
+signal character_menu_closed
 
 var _name_label: Label
 var _class_label: Label
@@ -33,7 +30,7 @@ var _xp_bar: ProgressBar
 var _menu_button: Button
 var _minimap: Minimap
 var _hotbar: Hotbar
-var _inventory_screen: InventoryScreen = null
+var _character_menu: Control = null
 
 # Character display data (synced from GameState on _ready + on level_up)
 var _display_name: String = "Recruit"
@@ -253,19 +250,37 @@ func _on_inventory_changed() -> void:
 
 
 func _on_menu_pressed() -> void:
-	# Open the inventory screen as a quick default menu
-	if _inventory_screen != null and is_instance_valid(_inventory_screen):
-		return  # already open
-	_inventory_screen = preload("res://scripts/ui/InventoryScreen.gd").new()
-	_inventory_screen.name = "InventoryScreen"
-	_inventory_screen.closed.connect(_on_inventory_closed)
-	add_child(_inventory_screen)
-	emit_signal("inventory_requested")
+	emit_signal("menu_requested")
+	open_character_menu()
 
 
-func _on_inventory_closed() -> void:
-	_inventory_screen = null
-	emit_signal("menu_closed")
+## Open the CharacterMenu (tabbed shell). Called by HubWorld when the
+## "≡ Menu" button is clicked or when a character-screen hotkey fires
+## (I/E/C/P/S). Idempotent: a second open of the same tab closes
+## the menu.
+func open_character_menu(initial_tab: String = "inventory") -> void:
+	if _character_menu != null and is_instance_valid(_character_menu):
+		# Already open. Toggle off if the same tab is requested.
+		if _character_menu.has_method("get_active_tab") and _character_menu.get_active_tab() == initial_tab:
+			_character_menu.close_menu()
+			return
+		# Otherwise switch to the new tab.
+		_character_menu.select_tab(initial_tab)
+		return
+	var script: GDScript = load("res://scripts/ui/CharacterMenu.gd")
+	if script == null:
+		push_error("[HUD] CharacterMenu.gd not found")
+		return
+	_character_menu = script.new()
+	_character_menu.name = "CharacterMenu"
+	_character_menu.closed.connect(_on_character_menu_closed)
+	add_child(_character_menu)
+	_character_menu.select_tab(initial_tab)
+
+
+func _on_character_menu_closed() -> void:
+	_character_menu = null
+	emit_signal("character_menu_closed")
 
 
 # ---------------------------------------------------------------------------

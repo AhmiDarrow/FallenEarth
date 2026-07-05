@@ -1,0 +1,31 @@
+{
+  "_comment": "Hand-authored static local map for the Riftspire capital hex. Same 512x512 grid as a normal hex, but with pre-placed buildings, NPC markers, station markers, and a 'no aggro' flag. The map is loaded when the player enters the Riftspire hex (L50 gate in HubWorld). For Phase 3 the layout is a minimal hand-drawn placeholder; full Riftspire authoring is a follow-up.",
+  "size": 512,
+  "spawn_cell": [256, 256],
+  "terrain_layout": "all_ground",
+  "no_aggro_mobs": true,
+  "stations": [
+    {"id": "worktable",     "name": "Worktable",     "x": 200, "y": 256, "sprite": "station_worktable"},
+    {"id": "armor_table",   "name": "Armor Table",   "x": 256, "y": 256, "sprite": "station_armor_table"},
+    {"id": "blacksmith",    "name": "Blacksmith",    "x": 312, "y": 256, "sprite": "station_blacksmith"},
+    {"id": "auction_house",  "name": "Auction House", "x": 256, "y": 200, "sprite": "station_auction"},
+    {"id": "skill_trainer", "name": "Skill Trainer", "x": 256, "y": 312, "sprite": "station_trainer"}
+  ],
+  "faction_hqs": [
+    {"id": "hq_iron_pact",    "faction": "Iron Pact",    "x": 180, "y": 200, "name": "Iron Pact HQ"},
+    {"id": "hq_stormcrows",   "faction": "Stormcrows",   "x": 180, "y": 312, "name": "Stormcrows HQ"},
+    {"id": "hq_cinder_watch", "faction": "Cinder Watch", "x": 332, "y": 200, "name": "Cinder Watch HQ"},
+    {"id": "hq_vale_wardens", "faction": "Vale Wardens", "x": 332, "y": 312, "name": "Vale Wardens HQ"}
+  ],
+  "npcs": [
+    {"id": "riftspire_innkeeper",   "name": "Vey the Innkeeper",    "role": "tavern",       "x": 220, "y": 240},
+    {"id": "riftspire_trader",      "name": "Brom the Trader",      "role": "trader",       "x": 270, "y": 270},
+    {"id": "riftspire_trainer",     "name": "Maera the Trainer",    "role": "skill_trainer","x": 256, "y": 312},
+    {"id": "riftspire_auctioneer",  "name": "Urik the Auctioneer",  "role": "auction",      "x": 256, "y": 200},
+    {"id": "riftspire_iron_rep",    "name": "Captain Halrik",       "role": "faction_rep", "x": 180, "y": 200, "faction": "Iron Pact"},
+    {"id": "riftspire_storm_rep",   "name": "Sky-Marshal Vael",     "role": "faction_rep", "x": 180, "y": 312, "faction": "Stormcrows"},
+    {"id": "riftspire_cinder_rep",  "name": "Warden Tessik",        "role": "faction_rep", "x": 332, "y": 200, "faction": "Cinder Watch"},
+    {"id": "riftspire_vale_rep",    "name": "Warden Eilan",         "role": "faction_rep", "x": 332, "y": 312, "faction": "Vale Wardens"}
+  ],
+  "portal_anchor": {"x": 256, "y": 256, "kind": "riftspire_entrance", "description": "Player's hubworld exit point. Press E to return to the surrounding hex."}
+}

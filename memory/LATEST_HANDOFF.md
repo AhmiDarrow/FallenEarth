@@ -1,28 +1,28 @@
 ---
-name: v040-phase2-hud-hotbar-minimap
-description: v0.4.0 Phase 2 complete. Full HUD + hotbar + minimap + ProgressionManager + LootRoller. 6 test groups green. Next: Phase 3 crafting + towns + Riftspire.
+name: v040-phase3-character-menu
+description: v0.4.0 Phase 3 in progress. CharacterMenu tabs + Party + Crafting + keyboard hotkeys shipped. World-gen towns + Riftspire gating deferred.
 ---
 
-## Current Focus: v0.4.0 Phase 2 complete; Phase 3 next
+## Current Focus: v0.4.0 Phase 3 in progress (CharacterMenu + Party + Crafting shipped); world-gen + Riftspire deferred
 
-`ProgressionManager` (XP/level/EC autoload) and `LootRoller` (mob drops + XP/EC) are in. The new `HUD.gd` composes top bar + HP/MP/XP bars + Minimap + Hotbar; the old `CharInfoBar` is hidden. The 10-slot Hotbar uses keys 1-0 and HubWorld resolves the selected slot through `data/tools.json` for the gather action. All 6 test groups green.
+`CharacterMenu` is a tabbed Control with Inventory / Equipment / Crafting / Party / Stats tabs. `I` `E` `C` `P` `S` open each tab; `Tab`/`Shift+Tab` cycle; `Esc` closes. `PartyScreen` lists party + "Add from available" for `PartyNPCManager` (3 test NPCs seeded). `CraftingManager` autoload handles recipes. All 8 Phase 3 tests green.
 
 ### Immediate Next Step
 
-F5 to confirm the HUD looks right, then move to Phase 3 (crafting inventory tab + 3 stations + NPC towns + Riftspire capital hex) per `docs/PLAN_v040_crafting_progression.md` §5. **Only after explicit "go"** per the per-phase delivery workflow.
+Either (a) do the Phase 3 follow-up (town placement, Riftspire gating, 3 station UIs) before moving to Phase 4, or (b) skip the follow-up and start Phase 4 (Equipment + weapons + armor + accessories + stats). The deferred work doesn't block Phase 4; Phase 4 is independent.
 
 ### Relevant Handoffs
 
-- [[v040-phase2-hud-hotbar-minimap]] — this handoff (current focus)
-- [[v040-phase1b-hover-tooltips]] — Phase 1b (predecessor)
-- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0300.md` — full 9-section details
+- [[v040-phase3-character-menu]] — this handoff (current focus)
+- [[v040-phase2-hud-hotbar-minimap]] — Phase 2 handoff
+- `memory/SESSION_NOTES/HANDOFF_2026-07-05_0400.md` — full 9-section details
 
 ### Context Files
 
-- `docs/PLAN_v040_crafting_progression.md` — canonical design for Phases 3-8
-- `memory/CURRENT_STATE.md` — v0.4.0-dev state, Phase 2 changes documented
-- `backups/2026-07-05_0240_pre_phase_2/` — pre-Phase 2 snapshot
+- `docs/PLAN_v040_crafting_progression.md` — canonical design
+- `memory/CURRENT_STATE.md` — v0.4.0-dev state, Phase 3 changes documented
+- `backups/2026-07-05_0340_pre_phase_3/` — pre-Phase 3 snapshot
 
 ---
 
-**Awaiting permission to start Phase 3 (crafting + towns + Riftspire).**
+**Awaiting your decision: continue Phase 3 follow-up (towns + Riftspire), or start Phase 4 (Equipment + weapons + armor + accessories)?**

@@ -1,0 +1,26 @@
+{
+  "_comment": "NPC town templates. Each town occupies one hex; the hex's biome is preserved. Templates specify building roster and NPC count. WorldGenerator places towns at world-gen time: 1 per ~25 hexes, even percentage of each faction, no two adjacent, ≥2 hexes from Riftspire. Phase 3 ships the template schema + WorldGenerator integration; actual NPC spawning for town residents lands in a later phase.",
+  "templates": {
+    "small_outpost": {
+      "size": "small",
+      "pop_cap": 12,
+      "buildings": ["tavern", "trader", "worktable"],
+      "npc_count": 6,
+      "description": "A handful of hardened locals around a single trader post. Good for low-level players."
+    },
+    "medium_settlement": {
+      "size": "medium",
+      "pop_cap": 30,
+      "buildings": ["tavern", "trader", "worktable", "armor_table", "blacksmith", "quest_board"],
+      "npc_count": 15,
+      "description": "Walled compound with the full set of crafting stations. The default town size."
+    },
+    "large_hub": {
+      "size": "large",
+      "pop_cap": 60,
+      "buildings": ["tavern", "trader", "worktable", "armor_table", "blacksmith", "quest_board", "faction_hq", "auction_house", "arena"],
+      "npc_count": 30,
+      "description": "Sprawling fortified city. One per faction per world."
+    }
+  }
+}

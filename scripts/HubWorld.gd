@@ -15,6 +15,7 @@ const ProgressionMgrScript = preload("res://scripts/ProgressionManager.gd")
 const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
 const LootRollerScript = preload("res://scripts/LootRoller.gd")
 const HUDScript = preload("res://scripts/ui/HUD.gd")
+const CharacterMenuScript = preload("res://scripts/ui/CharacterMenu.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -198,6 +199,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if get_tree().paused:
 		return
+	# Character-menu hotkeys (work anywhere; CharacterMenu has its own
+	# _unhandled_key_input for Tab cycle and Esc close)
+	match event.keycode:
+		KEY_I:
+			open_character_tab("inventory")
+			return
+		KEY_E:
+			# E is also the gather key. We disambiguate: with no adjacent
+			# HarvestNode, treat as open-Equipment-tab.
+			if not _has_adjacent_harvest_node():
+				open_character_tab("equipment")
+				return
+		KEY_C:
+			open_character_tab("crafting")
+			return
+		KEY_P:
+			open_character_tab("party")
+			return
+		KEY_S:
+			# S is also the down-move key. With nothing on the line below
+			# (or with character menu focus), open Stats tab. We just
+			# always open it; if a movement is wanted, hold Shift to
+			# guarantee movement. (Tweak as needed in F5.)
+			open_character_tab("stats")
+			return
+		_:
+			pass
 	# E key (no direction) starts a gather if adjacent
 	if event.keycode == KEY_E and not event.echo:
 		_try_start_gather()
@@ -220,6 +248,18 @@ func _unhandled_input(event: InputEvent) -> void:
 	_try_move_local(dir.x, dir.y)
 
 
+## True if there's a HarvestNode adjacent to the player that the
+## current tool can gather. Used to disambiguate the E key (gather vs
+## open Equipment tab).
+func _has_adjacent_harvest_node() -> bool:
+	if not is_instance_valid(_map_view):
+		return false
+	var nodes: Array = _map_view.get_resource_nodes_near(
+		Vector2i(_local_x, _local_y), GATHER_RANGE_CELLS
+	)
+	return not nodes.is_empty()
+
+
 # ---------------------------------------------------------------------------
 # Phase 2: full Character HUD
 # ---------------------------------------------------------------------------
@@ -227,6 +267,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _setup_hud() -> void:
 	_hud = HUDScript.new()
 	_hud.name = "HUD"
+	_hud.menu_requested.connect(_open_character_menu)
 	add_child(_hud)
 	# The new HUD has its own top bar / HP/MP/XP / minimap / hotbar. Hide
 	# the old CharInfoBar so we don't show the same info twice.
@@ -234,6 +275,22 @@ func _setup_hud() -> void:
 		var old_bar := get_node("CharInfoBar") as CanvasItem
 		if old_bar != null:
 			old_bar.visible = false
+
+
+## Called by the HUD's menu button. Opens the CharacterMenu (tabbed
+## shell) with the Inventory tab as default.
+func _open_character_menu() -> void:
+	if _hud == null or not is_instance_valid(_hud):
+		return
+	_hud.open_character_menu("inventory")
+
+
+## Open the CharacterMenu to a specific tab. Called by keyboard
+## hotkeys (I/E/C/P/S).
+func open_character_tab(tab_id: String) -> void:
+	if _hud == null or not is_instance_valid(_hud):
+		return
+	_hud.open_character_menu(tab_id)
 
 
 # ---------------------------------------------------------------------------

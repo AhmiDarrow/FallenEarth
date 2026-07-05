@@ -31,6 +31,8 @@ NPCManager="*res://scripts/NPCManager.gd"
 MissionManager="*res://scripts/MissionManager.gd"
 InventoryManager="*res://scripts/InventoryManager.gd"
 ProgressionManager="*res://scripts/ProgressionManager.gd"
+PartyNPCManager="*res://scripts/PartyNPCManager.gd"
+CraftingManager="*res://scripts/CraftingManager.gd"
 
 [display]
 

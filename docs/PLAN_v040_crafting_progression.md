@@ -333,10 +333,21 @@ Components:
 - For v0.4.0, place one of each near the start hex in every world (so player has access after L5/L10).
 
 ### New screens
-- `InventoryScreen` (Phase 2) — adds a "Craft" tab showing recipes available without a station
+- `scenes/ui/CharacterMenu.tscn` (Phase 3 expansion) — tabbed shell hosting **all** character screens:
+  - Tab: **Inventory** (existing `InventoryScreen.gd`)
+  - Tab: **Equipment** (Phase 4 — placeholder in Phase 3)
+  - Tab: **Crafting** (Phase 3 new)
+  - Tab: **Party** (Phase 3 new — see Party section below)
+  - Tab: **Stats** (Phase 4 — placeholder in Phase 3)
+  - Keyboard: `I` `E` `C` `P` `S` to open each tab; `Tab` / `Shift+Tab` to cycle; `Esc` to close.
 - `scenes/ui/WorktableUI.tscn` — list of unlocked worktable recipes, ingredient check, craft button
 - `scenes/ui/ArmorTableUI.tscn` — same shape, armor recipes
 - `scenes/ui/BlacksmithUI.tscn` — same shape, weapon recipes
+
+### Party screen (new — see Character menu section)
+- One of the CharacterMenu tabs.
+- `scripts/ui/PartyScreen.gd` + `scenes/ui/PartyScreen.tscn`.
+- Manages: invite from available_npcs, dismiss to base, view per-member equipment (read-only in Phase 3).
 
 ### Recipe unlock
 - A recipe is "visible" if `level >= level_required`. No discovery mechanic — you see them all once eligible. (Keeps it simple; can add discovery later.)
@@ -881,7 +892,7 @@ Templates that define possible invite conditions and per-archetype behavior:
 - `scripts/ui/WorktableUI.gd`, `ArmorTableUI.gd`, `BlacksmithUI.gd`
 - `scripts/ui/BaseManagerUI.gd` — base level, capacity, residents, upgrade button, shop list
 - `scripts/ui/BaseShopUI.gd` — vendor interface per shop_type
-- `scripts/ui/PartyInviteUI.gd` — invite dialog with requirement checks
+- `scripts/ui/PartyInviteUI.gd` — invite dialog with requirement checks (real flow lands in Phase 5; Phase 3 ships a placeholder)
 - `scripts/ui/CharacterSelectInfo.gd` — TWO info panels (race + class)
 - `tools/generate_nodes.py` — ~50 resource node sprites
 - `tools/generate_floor_pickups.py` — 2 sprites (stick, stone)
@@ -1024,6 +1035,8 @@ Awaiting permission to start Phase N+1.
 - **Race lore length:** 150 words per race × 8 races = 1200 words. Confirm length.
 - **Two info panels:** separate race panel and class panel on the character creation screen, side by side. Confirm layout.
 - **Party joinable NPC spawn rate:** 25% chance per hex visit, 1-2 NPCs. Confirm (or want more/less frequent)?
+- **CharacterMenu hotkeys:** `I` `E` `C` `P` `S` for tabs + `Tab`/`Shift+Tab` cycle + `Esc` close. Confirm (or want WASD or different binding)?
+- **Party tab in Phase 3 (placeholder) or wait for Phase 5 (real):** Phase 3 ships the tab UI with a hard-coded `available_npcs` list of 2-3 test NPCs. Phase 5 replaces with procedural generation. Confirm or want a different placeholder?
 - **NPC level scaling:** within ±10 levels of player. Confirm (or want a fixed level range like 5-15)?
 - **Party member combat:** joinable NPCs participate in FFT combat as party members. Confirm (or do they stay out of combat)?
 - **Base placement:** at L10, the player clicks a cell on the local map to place the first hut. Cell must be at least 50 tiles from any map edge. Confirm.
