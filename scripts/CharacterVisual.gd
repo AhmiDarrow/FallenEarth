@@ -1,10 +1,8 @@
-# CharacterVisual.gd — Sprite rendering with procedural fallback.
+# CharacterVisual.gd — Sprite rendering for characters.
 # Loads sprite sheets from assets/characters/{race}_{gender}/
 # Single base image OR full spritesheet supported.
 
 extends Node2D
-
-const GraphicsManager = preload("res://scripts/GraphicsManager.gd")
 
 const FRAME_WIDTH: int = 64
 const FRAME_HEIGHT: int = 64
@@ -20,7 +18,6 @@ var current_frame: int = 0
 
 var _sprite_sheet: Texture2D = null
 var _frame_textures: Dictionary = {}
-var _use_procedural_graphics: bool = false
 var _sprite_node: Sprite2D = null
 
 var _anim_timer: float = 0.0
@@ -33,8 +30,6 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
-	if _use_procedural_graphics:
-		return
 	_anim_timer += delta
 	if _anim_timer >= _anim_speed:
 		_anim_timer -= _anim_speed
@@ -50,7 +45,6 @@ func set_base_sprite(race: String, gender: String) -> void:
 	current_gender = gender.to_lower()
 	_frame_textures.clear()
 	_sprite_sheet = null
-	_use_procedural_graphics = true
 
 	# Remove old sprite node
 	if _sprite_node != null:
@@ -65,7 +59,6 @@ func set_base_sprite(race: String, gender: String) -> void:
 		_sprite_sheet = load(sheet_path) as Texture2D
 		if _sprite_sheet != null:
 			_build_frame_atlases()
-			_use_procedural_graphics = false
 			print("[CharacterVisual] Loaded sprite sheet: ", sheet_path)
 			queue_redraw()
 			return
@@ -81,12 +74,10 @@ func set_base_sprite(race: String, gender: String) -> void:
 			_sprite_node.texture = base_tex
 			_sprite_node.centered = true
 			add_child(_sprite_node)
-			_use_procedural_graphics = false
 			print("[CharacterVisual] Loaded base sprite via Sprite2D: ", base_path)
 			return
 
-	print("[CharacterVisual] No sprites found — using procedural fallback for %s_%s" % [current_race, current_gender])
-	queue_redraw()
+	print("[CharacterVisual] WARNING: No sprites found for %s_%s" % [current_race, current_gender])
 
 
 func _update_sprite_node() -> void:
@@ -127,9 +118,6 @@ func play_animation(anim_name: String, direction: int = 0, frame: int = 0) -> vo
 
 
 func _draw() -> void:
-	if _use_procedural_graphics:
-		_draw_procedural()
-		return
 	if _sprite_sheet == null:
 		return
 
@@ -141,18 +129,6 @@ func _draw() -> void:
 	else:
 		var color: Color = _race_color()
 		draw_rect(Rect2(Vector2(-32, -32), Vector2(64, 64)), color)
-
-
-func _draw_procedural() -> void:
-	var palette: Dictionary = GraphicsManager.get_palette_for_biome("gloom")
-	var pos: Vector2 = position
-	var x: float = pos.x
-	var y: float = pos.y
-	GraphicsManager.draw_character_base(x, y, 0.0, palette)
-	GraphicsManager.draw_equipment_layer(x, y, palette)
-	var eye_pos: Vector2 = Vector2(x + 6, y - 38)
-	draw_circle(eye_pos, 2.5, palette.get("player_eyes", Color.WHITE))
-	GraphicsManager.advance_frame()
 
 
 func update_equipment(equip: Dictionary = {}) -> void:

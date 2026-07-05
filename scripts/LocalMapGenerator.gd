@@ -122,7 +122,28 @@ static func get_terrain(map_data: Dictionary, x: int, y: int) -> int:
 
 
 static func is_walkable(map_data: Dictionary, x: int, y: int) -> bool:
-	return get_terrain(map_data, x, y) != TERRAIN_BLOCKED
+	return get_movement_cost(map_data, x, y) >= 0
+
+
+static func get_movement_cost(map_data: Dictionary, x: int, y: int) -> int:
+	var terrain: int = get_terrain(map_data, x, y)
+	return get_terrain_movement_cost(terrain)
+
+
+static func get_terrain_movement_cost(terrain_type: int) -> int:
+	match terrain_type:
+		TERRAIN_GROUND:
+			return 1
+		TERRAIN_DEBRIS:
+			return 2
+		TERRAIN_VEGETATION:
+			return 2
+		TERRAIN_BLOCKED:
+			return -1
+		TERRAIN_RIFT_SCAR:
+			return 3
+		_:
+			return 1
 
 
 static func get_neighbor_hex(q: int, r: int, edge: int) -> Vector2i:

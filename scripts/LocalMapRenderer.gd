@@ -1,23 +1,27 @@
-## LocalMapRenderer — Chunked viewport renderer for 512×512 local maps.
-## Loads/unloads 64×64 cell chunks around the player; reuses CanvasTexture nodes.
+## LocalMapRenderer — Chunked sprite renderer for 512×512 local maps.
+## Uses Sprite2D nodes with proper tile alignment (no gaps).
 class_name LocalMapRenderer
 extends Node2D
 
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
-const ProceduralTile = preload("res://scripts/procedural/ProceduralTile.gd")
+const BiomeTilesetMgr = preload("res://scripts/BiomeTilesetManager.gd")
 
 const CELL_SIZE := 24
 const CHUNK_CELLS := 32
 const VIEW_RADIUS := 18
 
 var _map_data: Dictionary = {}
-var _loaded_chunks: Dictionary = {}  # "cx,cy" -> { cells: Dictionary }
+var _loaded_chunks: Dictionary = {}
 var _player_cell := Vector2i.ZERO
+var _biome_name: String = ""
+var _tile_textures: Dictionary = {}
 
 
 func configure(map_data: Dictionary) -> void:
 	_map_data = map_data.duplicate(true)
+	_biome_name = str(_map_data.get("biome", "Ash Wastes"))
 	_clear_all_chunks()
+	_load_tile_textures()
 
 
 func set_player_cell(x: int, y: int) -> void:
@@ -27,6 +31,44 @@ func set_player_cell(x: int, y: int) -> void:
 
 func get_cell_size() -> int:
 	return CELL_SIZE
+
+
+func is_cell_walkable(x: int, y: int) -> bool:
+	return LocalMapGen.get_movement_cost(_map_data, x, y) >= 0
+
+
+func _load_tile_textures() -> void:
+	var biome_dir: String = BiomeTilesetMgr.BIOME_DIR_MAP.get(_biome_name, "")
+	if biome_dir.is_empty():
+		print("[LocalMapRenderer] No biome dir for: %s" % _biome_name)
+		return
+
+	var base_path := "res://assets/tilesets/%s" % biome_dir
+
+	var ground_path := "%s/ground.png" % base_path
+	var ground_tex := load(ground_path) as Texture2D
+	if ground_tex:
+		_tile_textures[LocalMapGen.TERRAIN_GROUND] = ground_tex
+	else:
+		print("[LocalMapRenderer] FAILED to load ground tile: %s" % ground_path)
+
+	var debris_tex := load("%s/debris.png" % base_path) as Texture2D
+	if debris_tex:
+		_tile_textures[LocalMapGen.TERRAIN_DEBRIS] = debris_tex
+
+	var vegetation_tex := load("%s/vegetation.png" % base_path) as Texture2D
+	if vegetation_tex:
+		_tile_textures[LocalMapGen.TERRAIN_VEGETATION] = vegetation_tex
+
+	var blocked_tex := load("%s/blocked.png" % base_path) as Texture2D
+	if blocked_tex:
+		_tile_textures[LocalMapGen.TERRAIN_BLOCKED] = blocked_tex
+
+	var rift_tex := load("%s/rift.png" % base_path) as Texture2D
+	if rift_tex:
+		_tile_textures[LocalMapGen.TERRAIN_RIFT_SCAR] = rift_tex
+
+	print("[LocalMapRenderer] Loaded %d tile textures for %s" % [_tile_textures.size(), _biome_name])
 
 
 func _clear_all_chunks() -> void:
@@ -70,13 +112,11 @@ func _load_chunk(cx: int, cy: int) -> void:
 	chunk_root.position = Vector2(cx * CHUNK_CELLS * CELL_SIZE, cy * CHUNK_CELLS * CELL_SIZE)
 	add_child(chunk_root)
 
-	var biome_name: String = str(_map_data.get("biome", "Ash Wastes"))
-	var btm: BiomeTilesetManager = get_node_or_null("/root/BiomeTilesets") as BiomeTilesetManager
-	var has_ts: bool = is_instance_valid(btm) and btm.has_tileset(biome_name)
-
 	var cells: Dictionary = {}
 	var start_x := cx * CHUNK_CELLS
 	var start_y := cy * CHUNK_CELLS
+	var sprite_count := 0
+
 	for dy in CHUNK_CELLS:
 		for dx in CHUNK_CELLS:
 			var x := start_x + dx
@@ -84,45 +124,22 @@ func _load_chunk(cx: int, cy: int) -> void:
 			var terrain: int = LocalMapGen.get_terrain(_map_data, x, y)
 			var local_key := LocalMapGen.local_key(x, y)
 
-			# Build tile data with correct biome + terrain type
-			var tile_data := {
-				"biome": biome_name,
-				"terrain_type": terrain,
-			}
-
-			# Ground cells: use Wang tile sprite if available
-			if has_ts and terrain == LocalMapGen.TERRAIN_GROUND:
-				var wang_id: int = _compute_wang_id(x, y, terrain)
-				var tex: Texture2D = btm.get_tile(biome_name, wang_id)
-				if tex:
-					var spr := Sprite2D.new()
-					spr.texture = tex
-					spr.centered = false
-					spr.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
-					spr.scale = Vector2(float(CELL_SIZE - 1) / tex.get_width(), float(CELL_SIZE - 1) / tex.get_height())
-					spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-					chunk_root.add_child(spr)
-					cells[local_key] = spr
-					continue
-
-			# Non-ground or fallback: procedural tile with correct biome/terrain
-			var pt: ProceduralTile = ProceduralTile.new()
-			pt.size = Vector2(CELL_SIZE - 1, CELL_SIZE - 1)
-			pt.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
-			pt.setup_for(tile_data)
-			pt.name = "Tile_%d" % terrain
-			chunk_root.add_child(pt)
-			cells[local_key] = pt
+			var tex: Texture2D = _tile_textures.get(terrain, null)
+			if tex:
+				var spr := Sprite2D.new()
+				spr.texture = tex
+				spr.centered = false
+				spr.position = Vector2(dx * CELL_SIZE, dy * CELL_SIZE)
+				# Scale to ensure tiles fill cell exactly (no gaps)
+				var scale_x := float(CELL_SIZE) / float(tex.get_width())
+				var scale_y := float(CELL_SIZE) / float(tex.get_height())
+				spr.scale = Vector2(scale_x, scale_y)
+				spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+				chunk_root.add_child(spr)
+				cells[local_key] = spr
+				sprite_count += 1
 
 	_loaded_chunks[ck] = {"root": chunk_root, "cells": cells}
-
-
-func _compute_wang_id(x: int, y: int, terrain: int) -> int:
-	var n: int = LocalMapGen.get_terrain(_map_data, x, y - 1)
-	var e: int = LocalMapGen.get_terrain(_map_data, x + 1, y)
-	var s: int = LocalMapGen.get_terrain(_map_data, x, y + 1)
-	var w: int = LocalMapGen.get_terrain(_map_data, x - 1, y)
-	return BiomeTilesetManager.compute_wang_id(terrain, n, e, s, w)
 
 
 func _unload_chunk(ck: String) -> void:

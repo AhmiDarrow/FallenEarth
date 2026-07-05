@@ -255,7 +255,9 @@ func _refresh_markers() -> void:
 			continue
 		var mx := int(local_parts[0])
 		var my := int(local_parts[1])
-		_add_marker(mx, my, Color(0.95, 0.35, 0.35), "✕", "mob", cell_size)
+		var mob_data: Dictionary = all_mobs[mob_key] as Dictionary
+		var sprite_id: String = str(mob_data.get("sprite_id", mob_data.get("type", "")))
+		_add_mob_sprite(mx, my, sprite_id, cell_size)
 		mob_count += 1
 
 	if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
@@ -324,6 +326,23 @@ func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cel
 	_marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = spr
 
 
+func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24) -> void:
+	var mob_visual := load("res://scripts/MobVisual.gd")
+	if not mob_visual:
+		# Fallback to marker
+		_add_marker(x, y, Color(0.95, 0.35, 0.35), "✕", "mob", cell_size)
+		return
+	
+	var mob_node: Node2D = mob_visual.new()
+	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+	mob_node.z_index = 100
+	mob_node.call("set_mob_sprite", sprite_id)
+	
+	if is_instance_valid(_marker_layer):
+		_marker_layer.add_child(mob_node)
+	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
+
+
 func _make_circle_texture(color: Color, size: Vector2) -> Texture2D:
 	var radius: float = min(size.x, size.y) * 0.5
 	var diameter := int(radius * 2.0)
@@ -362,7 +381,7 @@ func _try_move_local(dx: int, dy: int) -> void:
 		_try_cross_edge(dx, dy)
 		return
 
-	if not LocalMapGen.is_walkable(_local_map, nx, ny):
+	if not _is_cell_walkable(nx, ny):
 		return
 
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
@@ -394,6 +413,12 @@ func _try_move_local(dx: int, dy: int) -> void:
 	_update_rift_ui()
 	_update_npc_ui()
 	_update_mission_ui()
+
+
+func _is_cell_walkable(x: int, y: int) -> bool:
+	if is_instance_valid(_map_renderer):
+		return _map_renderer.is_cell_walkable(x, y)
+	return LocalMapGen.is_walkable(_local_map, x, y)
 
 
 func _try_cross_edge(dx: int, dy: int) -> void:
@@ -734,16 +759,23 @@ func _seed_local_mobs() -> void:
 	var danger: float = float(tile.get("rift_chance", 0.25))
 	var count := rng.randi_range(2, 5 + int(danger * 4))
 	var seeded := 0
+	var skipped_blocked := 0
+	var skipped_near := 0
+	var skipped_duplicate := 0
+	var skipped_no_enemy := 0
 
 	for i in count:
 		var lx := rng.randi_range(20, LocalMapGen.MAP_SIZE - 20)
 		var ly := rng.randi_range(20, LocalMapGen.MAP_SIZE - 20)
-		if not LocalMapGen.is_walkable(_local_map, lx, ly):
+		if LocalMapGen.get_movement_cost(_local_map, lx, ly) < 0:
+			skipped_blocked += 1
 			continue
 		if abs(lx - _local_x) + abs(ly - _local_y) < 12:
+			skipped_near += 1
 			continue
 		var key := GameState.mob_key(_player_q, _player_r, lx, ly)
 		if not gs.get_overworld_mob(key).is_empty():
+			skipped_duplicate += 1
 			continue
 
 		# Generate enemy via EncounterBuilder (independent of NPC system)
@@ -753,10 +785,16 @@ func _seed_local_mobs() -> void:
 			"%d,%d" % [_player_q, _player_r], difficulty, "upworld", biome
 		)
 		if enemy.is_empty():
+			skipped_no_enemy += 1
 			continue
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
 		seeded += 1
+
+	print("[HubWorld] Mob seed: biome=%s danger=%.2f attempts=%d seeded=%d (blocked=%d near=%d dup=%d no_enemy=%d) at q,r=%d,%d" % [
+		biome, danger, count, seeded, skipped_blocked, skipped_near, skipped_duplicate, skipped_no_enemy,
+		_player_q, _player_r
+	])
 
 
 func _start_local_combat(lx: int, ly: int, mob: Dictionary, mission: Dictionary = {}) -> void:
