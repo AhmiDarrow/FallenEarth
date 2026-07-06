@@ -138,20 +138,22 @@ func _build_children() -> void:
 
 	# v0.10.1 polish: white-bordered name plate above the unit's
 	# sprite (replaces the legacy outline-stroked Label). Sized for
-	# the bumped 40px cells.
+	# the bumped 40px cells. Sits ~22px above the cell top.
 	_name_plate = UnitNamePlateScript.new()
 	_name_plate.name = "NamePlate"
-	_name_plate.position = Vector2(-40, -34)
+	_name_plate.position = Vector2(-48, -54)
 	_name_plate.z_index = 14
 	_name_plate.visible = true
 	add_child(_name_plate)
 
 	# v0.10.1 polish: down-pointing selection arrow above the unit.
 	# Hidden by default; shown only when this unit is active.
-	# Sits between the name plate and the unit's sprite.
+	# v0.10.2: positioned ABOVE the name plate so the arrow is
+	# the topmost visual indicator (the most visible "this unit
+	# is active" cue).
 	_selection_arrow = UnitSelectionArrowScript.new()
 	_selection_arrow.name = "SelectionArrow"
-	_selection_arrow.position = Vector2(0, -24)
+	_selection_arrow.position = Vector2(0, -78)
 	_selection_arrow.z_index = 15
 	_selection_arrow.visible = false
 	add_child(_selection_arrow)
@@ -268,13 +270,18 @@ func _refresh_name_plate() -> void:
 	if _name_plate == null:
 		return
 	_name_plate.set_unit_info(display_name if not display_name.is_empty() else _unit_display_name(), team, is_boss)
-	_name_plate.snap_to_cell(0, 0, CELL_SIZE)  # unit-local; we re-anchor in snap_to_grid below
+	# Name plate sits above the cell. WIDTH=96, so center it on the
+	# 40px cell by offsetting -48px.
+	_name_plate.position = Vector2(-48, -54)
 
 
 func _refresh_selection_arrow() -> void:
 	if _selection_arrow == null:
 		return
-	_selection_arrow.snap_to_cell(0, 0, CELL_SIZE)
+	# Selection arrow sits ABOVE the name plate (at y=-78). The
+	# arrow is centered on the cell horizontally (it's a 28×24
+	# Node2D with the polygon centered on its origin).
+	_selection_arrow.position = Vector2(0, -78)
 
 
 func _refresh_status() -> void:
@@ -312,12 +319,11 @@ func set_grid_pos(grid_pos: Vector2i) -> void:
 	position = Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)
 	# The name plate and selection arrow are anchored to the unit's
 	# local cell; their positions don't change when the unit moves
-	# because they're children of the unit. Snap them to (0,0)-cell
-	# so they re-center after any manual movement.
+	# because they're children of the unit.
 	if _name_plate != null:
-		_name_plate.snap_to_cell(0, 0, CELL_SIZE)
+		_name_plate.position = Vector2(-48, -54)
 	if _selection_arrow != null:
-		_selection_arrow.snap_to_cell(0, 0, CELL_SIZE)
+		_selection_arrow.position = Vector2(0, -78)
 
 
 func play_attack_swing() -> void:

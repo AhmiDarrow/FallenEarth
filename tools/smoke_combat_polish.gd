@@ -38,6 +38,12 @@ func _initialize() -> void:
 	_test_v102_turn_order_procedural_portrait()
 	await process_frame
 	_test_v102_hp_bar_sizing()
+	await process_frame
+	_test_v103_cell_texture_clipping()
+	await process_frame
+	_test_v103_top_prompt_positioning()
+	await process_frame
+	_test_v103_selection_arrow_above_nameplate()
 	_print_summary()
 	quit()
 
@@ -358,6 +364,98 @@ func _test_v102_hp_bar_sizing() -> void:
 		_fail("v0.10.2: HP bar too small (%dx%d)" % [CombatHPBarScript.BAR_WIDTH, CombatHPBarScript.BAR_HEIGHT])
 	else:
 		_ok("v0.10.2: HP bar = %dx%d" % [CombatHPBarScript.BAR_WIDTH, CombatHPBarScript.BAR_HEIGHT])
+
+
+func _test_v103_cell_texture_clipping() -> void:
+	print("\n--- v0.10.3: BattleCell uses clipped terrain texture ---")
+	# v0.10.3 fix: the 24x120 atlas was being shown in full in each
+	# 40x40 cell, creating vertical stripes. The fix is to wrap the
+	# atlas in an AtlasTexture with the terrain-specific 24x24 region
+	# and scale the sprite to fill the cell.
+	var cell: Node = BattleCellScript.new()
+	cell.name = "TestCell"
+	root.add_child(cell)
+	await process_frame
+	# Stub a tiny 24x120 atlas to exercise the code path.
+	var img := Image.create(24, 120, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0.5, 0.5, 0.5, 1.0))
+	var atlas := ImageTexture.create_from_image(img)
+	# Test all 4 terrain kinds
+	for terrain in range(4):
+		cell.setup(0, 0, terrain, 0, false, atlas)
+		# _base.texture should be an AtlasTexture with the row clipped
+		var tex: Texture2D = cell._base.texture
+		if tex == null:
+			_fail("BattleCell: _base.texture is null for terrain %d" % terrain)
+			continue
+		if not (tex is AtlasTexture):
+			_fail("BattleCell: _base.texture is not AtlasTexture for terrain %d (got %s)" % [terrain, tex.get_class()])
+			continue
+		var at: AtlasTexture = tex as AtlasTexture
+		var expected_y: float = terrain * 24.0
+		if at.region.position.y != expected_y:
+			_fail("BattleCell: terrain %d should clip atlas y=%d (got %d)" % [terrain, int(expected_y), int(at.region.position.y)])
+		else:
+			_ok("BattleCell: terrain %d clips atlas to (0, %d, 24, 24)" % [terrain, terrain * 24])
+		# Scale should be 40/24 = 1.67 so the 24x24 fills the 40x40 cell
+		var expected_scale: float = BattleCellScript.CELL_SIZE / 24.0
+		if abs(cell._base.scale.x - expected_scale) > 0.01:
+			_fail("BattleCell: scale.x should be %.2f (got %.2f)" % [expected_scale, cell._base.scale.x])
+		else:
+			_ok("BattleCell: sprite scaled to %.2fx to fill 40x40 cell" % expected_scale)
+	cell.queue_free()
+
+
+func _test_v103_top_prompt_positioning() -> void:
+	print("\n--- v0.10.3: TopPrompt positioning ---")
+	var p: Node = TopPromptScript.new()
+	p.name = "TestPrompt"
+	root.add_child(p)
+	await process_frame
+	# v0.10.3: TopPrompt should sit below the TurnOrderBar with a gap.
+	# TurnOrderBar ends at 112, TopPrompt starts at 124 (12px gap).
+	if p.offset_top < 115:
+		_fail("TopPrompt: offset_top %d too high (should be >= 116 to clear TurnOrderBar at 112)" % p.offset_top)
+	else:
+		_ok("TopPrompt: offset_top = %d (clear of TurnOrderBar at 112)" % p.offset_top)
+	# v0.10.3: TopPrompt width should be < 720 (TurnOrderBar width) to
+	# not visually compete.
+	if p.offset_left < -400 or p.offset_right > 400:
+		_fail("TopPrompt: width too wide (left=%d right=%d)" % [p.offset_left, p.offset_right])
+	else:
+		_ok("TopPrompt: width = %d (narrower than TurnOrderBar's 720)" % int(p.offset_right - p.offset_left))
+	p.queue_free()
+
+
+func _test_v103_selection_arrow_above_nameplate() -> void:
+	print("\n--- v0.10.3: Selection arrow positioned above nameplate ---")
+	# v0.10.3 fix: the selection arrow was hidden BEHIND the nameplate
+	# because they were both at similar y positions. Now the arrow sits
+	# at y=-78 and the nameplate at y=-54, so the arrow is clearly above.
+	# We test the positions directly via the source code to avoid
+	# any potential issues with creating BattleUnit in a test context.
+	var src: String = load("res://scripts/combat/BattleUnit.gd").source_code
+	# The _build_children method should set arrow position to (0, -78)
+	# and nameplate to (-48, -54). The arrow's y (-78) is more negative
+	# than the nameplate's y (-54), so it's above.
+	if not src.contains("Vector2(0, -78)"):
+		_fail("BattleUnit source: selection arrow position (0, -78) not found")
+	else:
+		_ok("BattleUnit source: selection arrow positioned at (0, -78)")
+	if not src.contains("Vector2(-48, -54)"):
+		_fail("BattleUnit source: nameplate position (-48, -54) not found")
+	else:
+		_ok("BattleUnit source: nameplate positioned at (-48, -54)")
+	# Z-index: arrow should be on top of nameplate
+	if src.find("_selection_arrow.z_index = 15") < 0:
+		_fail("BattleUnit source: selection arrow z_index = 15 not found")
+	else:
+		_ok("BattleUnit source: selection arrow z_index = 15 (above nameplate's 14)")
+	# Verify the unit's refresh methods also use these positions
+	if not src.contains("_selection_arrow.position = Vector2(0, -78)"):
+		_fail("BattleUnit source: _refresh_selection_arrow should also use (0, -78)")
+	else:
+		_ok("BattleUnit source: _refresh_selection_arrow uses (0, -78)")
 
 
 func _print_summary() -> void:

@@ -109,11 +109,23 @@ func setup(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Textur
 	is_blocked = blocked
 	position = Vector2(x * CELL_SIZE, y * CELL_SIZE)
 	if base_tex != null:
-		_base.texture = base_tex
+		# base_tex is the FULL 24×120 atlas (5 terrain rows stacked).
+		# We need to extract just the terrain-specific 24×24 row
+		# via AtlasTexture, then scale the sprite so the 24×24
+		# portion fills the 40×40 cell. Without this, the cell
+		# shows all 5 rows of the atlas stacked, which looks like
+		# vertical stripes (the issue v0.10.2 surfaced).
+		var clipped := AtlasTexture.new()
+		clipped.atlas = base_tex
+		var row: int = clampi(terrain, 0, 4)
+		clipped.region = Rect2(0, row * 24, 24, 24)
+		_base.texture = clipped
+		_base.scale = Vector2(CELL_SIZE / 24.0, CELL_SIZE / 24.0)
 		_base.modulate = Color.WHITE
 	else:
 		_base.texture = null
 		_base.modulate = _default_color(terrain)
+		_base.scale = Vector2.ONE
 	if height > 0:
 		_height_label.text = str(height)
 		_height_label.visible = true

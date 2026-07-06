@@ -9,8 +9,10 @@ const DEFAULT_BG := Color(0.05, 0.05, 0.10, 0.92)
 const COLOR_BORDER := Color(0.40, 0.55, 0.75, 1.0)
 const COLOR_TEXT := Color(1.0, 0.97, 0.92)
 const COLOR_DIM := Color(0.85, 0.85, 0.95)
-const WIDTH := 460
-const HEIGHT := 56
+# v0.10.2 polish: narrower (360) so it doesn't visually compete
+# with the TurnOrderBar (which is 720px wide just above).
+const WIDTH := 360
+const HEIGHT := 48
 
 var _label: Label
 var _sub: Label
@@ -20,11 +22,16 @@ var _current_text: String = ""
 
 
 func _ready() -> void:
+	# v0.10.2 polish: pushed down to 124 so there's a clear 12px
+	# gap below the TurnOrderBar (which ends at 112). The
+	# TurnOrderBar is 720px wide; the prompt is only 360 so the
+	# two read as a single column of stacked banners, not one
+	# stretched panel.
 	set_anchors_preset(Control.PRESET_TOP_WIDE)
-	offset_top = 110
+	offset_top = 124
 	offset_left = -WIDTH * 0.5
 	offset_right = WIDTH * 0.5
-	offset_bottom = 110 + HEIGHT
+	offset_bottom = 124 + HEIGHT
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_children()
 	visible = false
