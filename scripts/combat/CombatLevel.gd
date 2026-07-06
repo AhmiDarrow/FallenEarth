@@ -142,18 +142,16 @@ func _ready() -> void:
 	_update_top_prompt()
 
 
-## v0.11.0: Read the actual viewport size. Prefers
-## DisplayManager.resolution_width/_height (the player-selected
-## resolution in the game settings), falls back to the
-## viewport rect, then to a hardcoded 1280x720.
+## v0.11.0: Read the canvas viewport size for layout purposes.
+## With canvas_items stretch mode, the canvas is always the
+## project's viewport (1280x720) regardless of window size.
+## get_viewport_rect().size returns the canvas dimensions —
+## exactly what we need for positioning nodes. Falls back to
+## the project default if the viewport isn't ready yet.
 func _read_viewport_size() -> Vector2i:
-	var dm: Node = get_node_or_null("/root/DisplayManager")
-	if dm != null:
-		var w: int = int(dm.get("resolution_width"))
-		var h: int = int(dm.get("resolution_height"))
-		if w > 0 and h > 0:
-			return Vector2i(w, h)
-	# get_viewport_rect() returns a Rect2 whose .size is a Vector2.
+	# get_viewport_rect() returns the canvas coordinate space,
+	# which is what Node2D positions use. This is always the
+	# project viewport size (1280x720) with canvas_items mode.
 	var vp_size: Vector2 = get_viewport_rect().size
 	if vp_size.x > 0 and vp_size.y > 0:
 		return Vector2i(int(vp_size.x), int(vp_size.y))
