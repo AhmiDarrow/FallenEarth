@@ -140,7 +140,7 @@ func _test_battle_unit_loads_sprite() -> void:
 		"pos": Vector2i(2, 3),
 		"sprite_id": "ash_crawler",
 	}
-	unit.setup_from_data(data, 24)
+	unit.setup_from_data(data, 56)
 	if unit.unit_id != "test_mob":
 		_fail("BattleUnit: unit_id not set")
 	else:

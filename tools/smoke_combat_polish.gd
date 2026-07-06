@@ -93,7 +93,7 @@ func _test_unit_selection_arrow() -> void:
 	else:
 		_ok("UnitSelectionArrow: hidden after set_active(false)")
 	# Snap to a cell
-	arr.snap_to_cell(3, 4, 24)
+	arr.snap_to_cell(3, 4, 56)
 	if arr.position.x <= 0.0 or arr.position.y <= 0.0:
 		_fail("UnitSelectionArrow: snap_to_cell did not move arrow")
 	else:
@@ -174,7 +174,7 @@ func _test_unit_name_plate() -> void:
 	else:
 		_ok("UnitNamePlate: boss label set to 'Rift Maw'")
 	# Snap to a cell
-	n.snap_to_cell(2, 3, 24)
+	n.snap_to_cell(2, 3, 56)
 	if n.position.x <= 0.0 or n.position.y <= 0.0:
 		_fail("UnitNamePlate: snap_to_cell did not move plate")
 	else:
@@ -250,7 +250,7 @@ func _test_battle_unit_owns_name_plate_and_arrow() -> void:
 		"id": "hero", "team": "player", "hp": 80, "max_hp": 80, "ct": 45, "facing": 0,
 		"pos": Vector2i(2, 3), "race": "human", "gender": "male", "name": "TestHero",
 	}
-	unit.setup_from_data(data, 24)
+	unit.setup_from_data(data, 56)
 	if unit._name_plate == null:
 		_fail("BattleUnit: _name_plate not built")
 	else:
@@ -310,14 +310,14 @@ func _test_v102_cell_sizing() -> void:
 	var grid_cs: int = BattleGridViewScript.CELL_SIZE
 	var cell_cs: int = BattleCellScript.CELL_SIZE
 	var unit_cs: int = BattleUnitScript.CELL_SIZE
-	if not (grid_cs == 40 and cell_cs == 40 and unit_cs == 40):
-		_fail("v0.10.2 cell sizing mismatch: grid=%d cell=%d unit=%d (expect 40)" % [grid_cs, cell_cs, unit_cs])
+	if not (grid_cs == 56 and cell_cs == 56 and unit_cs == 56):
+		_fail("v0.10.2 cell sizing mismatch: grid=%d cell=%d unit=%d (expect 56)" % [grid_cs, cell_cs, unit_cs])
 	else:
-		_ok("v0.10.2: grid/cell/unit CELL_SIZE all = 40")
+		_ok("v0.10.2: grid/cell/unit CELL_SIZE all = 56")
 	# 7x7 grid at 40px = 280px wide — should be ~22% of a 1280px viewport.
-	var grid_px: int = 7 * 40
-	if grid_px < 240:
-		_fail("v0.10.2: 7x7 grid is %dpx wide (expect >= 240)" % grid_px)
+	var grid_px: int = 7 * 56
+	if grid_px < 300:
+		_fail("v0.10.2: 7x7 grid is %dpx wide (expect >= 300)" % grid_px)
 	else:
 		_ok("v0.10.2: 7x7 grid = %dpx wide (~%d%% of 1280px viewport)" % [grid_px, int(grid_px * 100 / 1280)])
 	# BattleCell border should be chunky (3px) for the FFT-style frame.
@@ -403,12 +403,12 @@ func _test_v103_cell_texture_clipping() -> void:
 			_fail("BattleCell: terrain %d should clip atlas y=%d (got %d)" % [terrain, int(expected_y), int(at.region.position.y)])
 		else:
 			_ok("BattleCell: terrain %d clips atlas to (0, %d, 24, 24)" % [terrain, terrain * 24])
-		# Scale should be 40/24 = 1.67 so the 24x24 fills the 40x40 cell
-		var expected_scale: float = BattleCellScript.CELL_SIZE / 24.0
-		if abs(cell._base.scale.x - expected_scale) > 0.01:
-			_fail("BattleCell: scale.x should be %.2f (got %.2f)" % [expected_scale, cell._base.scale.x])
-		else:
-			_ok("BattleCell: sprite scaled to %.2fx to fill 40x40 cell" % expected_scale)
+	# Scale should be 56/33.94 = 1.65 so the 24x24 fills the 56px diamond
+	var expected_scale: float = BattleCellScript.CELL_SIZE / 33.94
+	if abs(cell._base.scale.x - expected_scale) > 0.01:
+		_fail("BattleCell: scale.x should be %.2f (got %.2f)" % [expected_scale, cell._base.scale.x])
+	else:
+		_ok("BattleCell: sprite scaled to %.2fx to fill 56px diamond" % expected_scale)
 	cell.queue_free()
 
 

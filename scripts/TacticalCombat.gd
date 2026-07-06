@@ -214,15 +214,23 @@ func _process(_delta: float) -> void:
 		_reticle.set_kind("attack")
 	else:
 		_reticle.set_kind("skill")
-	# Convert mouse position to grid-local coords and snap to cell center.
+	# Convert mouse position to grid-local coords and snap to the
+	# nearest isometric cell center. The grid is centered at vp_center
+	# and the cell centers are at (grid * iso transform).
 	var mouse_screen: Vector2 = get_viewport().get_mouse_position()
-	var grid_center: Vector2 = Vector2(640, 360)
-	var half_grid: float = float(_grid_size) * BattleGridViewScript.CELL_SIZE * 0.5
-	var grid_tl: Vector2 = grid_center - Vector2(half_grid, half_grid)
-	var local: Vector2 = mouse_screen - grid_tl
-	var cell_x: int = clampi(int(floor(local.x / BattleGridViewScript.CELL_SIZE)), 0, _grid_size - 1)
-	var cell_y: int = clampi(int(floor(local.y / BattleGridViewScript.CELL_SIZE)), 0, _grid_size - 1)
-	var snap: Vector2 = grid_tl + Vector2(cell_x * BattleGridViewScript.CELL_SIZE, cell_y * BattleGridViewScript.CELL_SIZE)
+	var vp_center: Vector2 = get_viewport_rect().size * 0.5
+	# Find the closest cell by iterating (7x7 is small enough for this).
+	var best_dist: float = 1e9
+	var snap: Vector2 = vp_center
+	for x in range(_grid_size):
+		for y in range(_grid_size):
+			if _grid != null and _grid.has_method("cell_to_iso"):
+				var iso: Vector2 = _grid.cell_to_iso(x, y)
+				var world: Vector2 = vp_center + iso
+				var dist: float = mouse_screen.distance_squared_to(world)
+				if dist < best_dist:
+					best_dist = dist
+					snap = world
 	_reticle.position = snap
 	_reticle.visible = true
 

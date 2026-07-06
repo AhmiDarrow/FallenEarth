@@ -26,10 +26,16 @@ const HEIGHT_COLOR := Color(0.20, 0.18, 0.30, 0.85)
 const BLOCKED_TINT := Color(0.15, 0.10, 0.08, 0.85)
 const COLOR_BLOCKED_X := Color(0.85, 0.20, 0.20, 0.90)
 
-const CELL_SIZE := 40
+const CELL_SIZE := 56
 # Border thickness for the FFT-style edge frame. Chunky enough to
 # read as a "highlighted tile" without obscuring the ground.
 const BORDER_THICKNESS := 3
+# v0.10.5: the ground tile is 24x24 native. When rotated 45°, its
+# diagonal (tip-to-tip) is 24 * sqrt(2) ≈ 34 px. We scale by
+# CELL_SIZE/DIAMOND_DIAG so the diamond fills the cell footprint.
+const TILE_NATIVE := 24.0
+const DIAMOND_DIAG := 33.94  # TILE_NATIVE * sqrt(2)
+const DIAMOND_SCALE := CELL_SIZE / DIAMOND_DIAG  # ~1.65 at 56
 
 var grid_x: int = 0
 var grid_y: int = 0
@@ -85,16 +91,11 @@ func _build_children() -> void:
 	_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_highlight.z_index = 3
 	add_child(_highlight)
-	# 4-edge border overlay (FFT style). Default hidden; shown for
-	# move/attack/skill so the cell reads as a "target tile" with the
-	# ground still visible inside. We use ColorRects for each edge
-	# to keep the implementation minimal — no extra control nodes.
+	# v0.10.5: diamond border built as a Polygon2D.
 	_highlight_border = _build_border()
 	_highlight_border.visible = false
 	add_child(_highlight_border)
-	# v0.10.4: red X overlay for blocked cells (drawn over the
-	# dark ground texture so the player reads "impassable" at
-	# a glance). Built from two crossed ColorRects.
+	# v0.10.4: red X overlay for blocked cells.
 	_blocked_x = _build_blocked_x()
 	_blocked_x.visible = false
 	add_child(_blocked_x)
@@ -114,28 +115,36 @@ func _build_children() -> void:
 
 
 func setup(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Texture2D) -> void:
+	setup_iso(x, y, terrain, h, blocked, base_tex, Vector2(x * CELL_SIZE, y * CELL_SIZE), CELL_SIZE)
+
+
+## v0.10.5: isometric variant. The cell is positioned at `iso_pos`
+## (the output of BattleGridView.cell_to_iso) and the base sprite is
+## rotated 45° to form a diamond. cell_size is the tip-to-tip size
+## of the diamond (typically BattleGridView.CELL_SIZE).
+func setup_iso(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Texture2D, iso_pos: Vector2, cell_size: int) -> void:
 	grid_x = x
 	grid_y = y
 	terrain_kind = terrain
 	height = h
 	is_blocked = blocked
-	position = Vector2(x * CELL_SIZE, y * CELL_SIZE)
+	position = iso_pos
 	if base_tex != null:
-		# base_tex is the FULL 24×120 atlas (5 terrain rows stacked).
-		# We need to extract just the terrain-specific 24×24 row
-		# via AtlasTexture, then scale the sprite so the 24×24
-		# portion fills the 40×40 cell. Without this, the cell
-		# shows all 5 rows of the atlas stacked, which looks like
-		# vertical stripes (the issue v0.10.2 surfaced).
+		# v0.10.5: extract the 24x24 terrain row via AtlasTexture,
+		# then set the sprite rotation to 45° and apply the diamond
+		# scale so the tile forms a clean diamond at the cell size.
 		var clipped := AtlasTexture.new()
 		clipped.atlas = base_tex
 		var row: int = clampi(terrain, 0, 4)
-		clipped.region = Rect2(0, row * 24, 24, 24)
+		clipped.region = Rect2(0, row * TILE_NATIVE, TILE_NATIVE, TILE_NATIVE)
 		_base.texture = clipped
-		_base.scale = Vector2(CELL_SIZE / 24.0, CELL_SIZE / 24.0)
+		_base.rotation = PI / 4.0  # 45° for diamond
+		var scl: float = float(cell_size) / DIAMOND_DIAG
+		_base.scale = Vector2(scl, scl)
 		_base.modulate = Color.WHITE
 	else:
 		_base.texture = null
+		_base.rotation = PI / 4.0
 		_base.modulate = _default_color(terrain)
 		_base.scale = Vector2.ONE
 	if height > 0:
@@ -183,47 +192,39 @@ func set_highlight(kind: int) -> void:
 			_highlight_border.visible = false
 
 
-## Build a 4-edge border control sized to the cell. Each edge is a
-## chunky ColorRect; the edges are recolored by `_set_border_color`
-## when the highlight changes. This gives the FFT-style
-## "outlined tile" look.
+## Build a 4-edge diamond border via Polygon2D. The border uses
+## a hollow diamond (four strips at the edge) so the highlight
+## reads as a "target tile outline" not a solid fill.
 func _build_border() -> Control:
-	var border := Control.new()
-	border.name = "HighlightBorder"
-	border.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	border.size = Vector2(CELL_SIZE, CELL_SIZE)
-	border.position = Vector2.ZERO
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	border.z_index = 4
-	var t := ColorRect.new()
-	t.name = "Top"
-	t.color = COLOR_MOVE
-	t.size = Vector2(CELL_SIZE, BORDER_THICKNESS)
-	t.position = Vector2(0, 0)
-	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	border.add_child(t)
-	var b := ColorRect.new()
-	b.name = "Bottom"
-	b.color = COLOR_MOVE
-	b.size = Vector2(CELL_SIZE, BORDER_THICKNESS)
-	b.position = Vector2(0, CELL_SIZE - BORDER_THICKNESS)
-	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	border.add_child(b)
-	var l := ColorRect.new()
-	l.name = "Left"
-	l.color = COLOR_MOVE
-	l.size = Vector2(BORDER_THICKNESS, CELL_SIZE)
-	l.position = Vector2(0, 0)
-	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	border.add_child(l)
-	var r := ColorRect.new()
-	r.name = "Right"
-	r.color = COLOR_MOVE
-	r.size = Vector2(BORDER_THICKNESS, CELL_SIZE)
-	r.position = Vector2(CELL_SIZE - BORDER_THICKNESS, 0)
-	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	border.add_child(r)
-	return border
+	var wrap := Control.new()
+	wrap.name = "HighlightBorder"
+	wrap.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	wrap.size = Vector2(CELL_SIZE, CELL_SIZE)
+	wrap.position = Vector2.ZERO
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.z_index = 4
+	# Top edge
+	var t := _mk_edge_rect(Vector2(CELL_SIZE * 0.5 - CELL_SIZE * 0.4, 0), Vector2(CELL_SIZE * 0.8, BORDER_THICKNESS))
+	wrap.add_child(t)
+	# Bottom edge
+	var b := _mk_edge_rect(Vector2(CELL_SIZE * 0.5 - CELL_SIZE * 0.4, CELL_SIZE - BORDER_THICKNESS), Vector2(CELL_SIZE * 0.8, BORDER_THICKNESS))
+	wrap.add_child(b)
+	# Left edge
+	var l := _mk_edge_rect(Vector2(0, CELL_SIZE * 0.5 - CELL_SIZE * 0.4), Vector2(BORDER_THICKNESS, CELL_SIZE * 0.8))
+	wrap.add_child(l)
+	# Right edge
+	var r := _mk_edge_rect(Vector2(CELL_SIZE - BORDER_THICKNESS, CELL_SIZE * 0.5 - CELL_SIZE * 0.4), Vector2(BORDER_THICKNESS, CELL_SIZE * 0.8))
+	wrap.add_child(r)
+	return wrap
+
+
+func _mk_edge_rect(pos: Vector2, sz: Vector2) -> ColorRect:
+	var cr := ColorRect.new()
+	cr.color = COLOR_MOVE
+	cr.size = sz
+	cr.position = pos
+	cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return cr
 
 
 func _set_border_color(c: Color) -> void:

@@ -16,12 +16,10 @@
 ## dedicated per-biome background art.
 class_name BattleBackground extends Node2D
 
-# v0.10.2 polish: bumped to 40px to match BattleGridView.CELL_SIZE.
-# The bg ground tile is repeated across the whole viewport, so this
-# only affects the local "no-decors-in-grid-rect" math, not the
-# actual bg tile size (which comes from the biome's ground.png
-# 24x24 asset and is STRETCH_TILE'd).
-const TILE_SIZE := 40
+# v0.10.5 polish: bumped to 56px to match BattleGridView.CELL_SIZE
+# for the grid-rect math in _scatter_decor. The bg ground tile
+# itself is still 24x24 (STRETCH_TILE covers the viewport regardless).
+const TILE_SIZE := 56
 const PADDING := 64
 const MOTE_COUNT := 18
 # Number of decor props scattered around the grid. Higher than the

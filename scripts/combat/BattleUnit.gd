@@ -10,8 +10,8 @@
 ## UnitSelectionArrow is shown when this is the active unit.
 class_name BattleUnit extends Node2D
 
-# v0.10.2 polish: match the bumped grid CELL_SIZE (was 24).
-const CELL_SIZE := 40
+# v0.10.5 polish: match the isometric grid CELL_SIZE (was 40).
+const CELL_SIZE := 56
 const SPRITE_FOLDER := "res://assets/mobs/"
 const CHAR_FOLDER := "res://assets/characters/"
 
@@ -170,7 +170,10 @@ func setup_from_data(unit: Dictionary, cell_size: int) -> void:
 	is_alive = current_hp > 0
 	display_name = str(unit.get("name", _unit_display_name()))
 	_grid_pos = unit.get("pos", Vector2i.ZERO)
-	position = Vector2(_grid_pos.x * cell_size, _grid_pos.y * cell_size)
+	# v0.10.5: isometric positioning (same transform as the grid).
+	var iso_x: float = float(_grid_pos.x - _grid_pos.y) * cell_size * 0.5
+	var iso_y: float = float(_grid_pos.x + _grid_pos.y) * cell_size * 0.25
+	position = Vector2(iso_x, iso_y)
 	_load_sprite(unit)
 	_apply_team_palette()
 	_refresh_hp()
@@ -198,12 +201,14 @@ func _load_sprite(unit: Dictionary) -> void:
 		path = SPRITE_FOLDER + sprite_id + ".png"
 	if ResourceLoader.exists(path):
 		_sprite.texture = load(path)
-		# Scale sprite to fit the cell. Most mob sprites are 64x64
-		# natives. Cap so giant bosses don't blow out the cell.
-		_sprite.scale = Vector2.ONE * 0.5
+		# v0.10.5: scale mob sprites to fill the 56px diamond cells.
+		# Mob sprites are 64x64 native. At 0.7x they're ~45x45,
+		# roughly half the diamond diagonal. Placeholder is 20x20
+		# native, scaled to ~30x30.
+		_sprite.scale = Vector2.ONE * 0.7
 	else:
 		_sprite.texture = _make_placeholder_texture()
-		_sprite.scale = Vector2.ONE * 0.7
+		_sprite.scale = Vector2.ONE * 1.2
 
 
 func _character_race_dir(race: String) -> String:
@@ -302,7 +307,9 @@ func _unit_display_name() -> String:
 
 func move_to(grid_pos: Vector2i, animate: bool = true) -> void:
 	_grid_pos = grid_pos
-	var target := Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)
+	var iso_x: float = float(grid_pos.x - grid_pos.y) * CELL_SIZE * 0.5
+	var iso_y: float = float(grid_pos.x + grid_pos.y) * CELL_SIZE * 0.25
+	var target := Vector2(iso_x, iso_y)
 	if not animate:
 		position = target
 		return
@@ -316,10 +323,9 @@ func move_to(grid_pos: Vector2i, animate: bool = true) -> void:
 
 func set_grid_pos(grid_pos: Vector2i) -> void:
 	_grid_pos = grid_pos
-	position = Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)
-	# The name plate and selection arrow are anchored to the unit's
-	# local cell; their positions don't change when the unit moves
-	# because they're children of the unit.
+	var iso_x: float = float(grid_pos.x - grid_pos.y) * CELL_SIZE * 0.5
+	var iso_y: float = float(grid_pos.x + grid_pos.y) * CELL_SIZE * 0.25
+	position = Vector2(iso_x, iso_y)
 	if _name_plate != null:
 		_name_plate.position = Vector2(-48, -54)
 	if _selection_arrow != null:
@@ -330,7 +336,9 @@ func play_attack_swing() -> void:
 	if _swing_tween != null and _swing_tween.is_valid():
 		_swing_tween.kill()
 	var forward := _facing_offset() * 6.0
-	var start_pos := Vector2(_grid_pos.x * CELL_SIZE, _grid_pos.y * CELL_SIZE)
+	var iso_x: float = float(_grid_pos.x - _grid_pos.y) * CELL_SIZE * 0.5
+	var iso_y: float = float(_grid_pos.x + _grid_pos.y) * CELL_SIZE * 0.25
+	var start_pos := Vector2(iso_x, iso_y)
 	_swing_tween = create_tween()
 	_swing_tween.tween_property(self, "position", start_pos + forward, SWING_DURATION * 0.5).set_trans(Tween.TRANS_SINE)
 	_swing_tween.tween_property(self, "position", start_pos, SWING_DURATION * 0.5).set_trans(Tween.TRANS_SINE)
