@@ -46,8 +46,8 @@ func _build_collision() -> void:
 	capsule.radius = 0.3
 	_collision.shape = capsule
 	_collision.transform = Transform3D(Basis.IDENTITY, Vector3(0, 0.75, 0))
-	_collision.collision_layer = 2
-	_collision.collision_mask = 0
+	collision_layer = 2
+	collision_mask = 0
 	add_child(_collision)
 
 
