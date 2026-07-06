@@ -1,5 +1,9 @@
 ## FloorPickup — Tiny auto-pickup entity (sticks, stones, etc.).
 ##
+## v0.9.1c: Visual sprite is rendered by MultiMeshResourceVisual in
+## LocalMapView, not by this node. The node carries data + interaction
+## (item_id, qty, collect()) but has no CanvasItem children.
+##
 ## When the player walks onto the pickup's cell, the item is added to
 ## their inventory and the node is queue_free()'d. Pickups don't respawn
 ## (single-shot per map generation; player walks over them once).
@@ -11,37 +15,24 @@ const INVENTORY_PATH := "/root/InventoryManager"
 @export var item_id: String = ""
 @export var item_qty: int = 1
 
-var _sprite: Sprite2D
+# v0.9.1c: removed _sprite. Visual comes from MultiMeshResourceVisual.
 var _collected: bool = false
 
 
 func _ready() -> void:
-	_sprite = get_node_or_null("Sprite") as Sprite2D
-	if _sprite == null:
-		_sprite = Sprite2D.new()
-		_sprite.name = "Sprite"
-		_sprite.centered = true
-		add_child(_sprite)
-	_refresh_sprite()
+	# v0.9.1c: no per-node Sprite2D.
+	pass
 
 
 func setup(p_item_id: String, p_qty: int) -> void:
 	item_id = p_item_id
 	item_qty = p_qty
-	_refresh_sprite()
+	# v0.9.1c: no sprite setup.
 
 
 func _refresh_sprite() -> void:
-	if _sprite == null:
-		return
-	if item_id.is_empty():
-		return
-	var path := "res://assets/sprites/floor_pickups/%s.png" % item_id
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex != null:
-			_sprite.texture = tex
-			_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# v0.9.1c: no-op.
+	pass
 
 
 func get_item_id() -> String:
@@ -60,6 +51,10 @@ func collect() -> int:
 	if item_id.is_empty():
 		return 0
 	_collected = true
+	# v0.9.1c: don't queue_free yet — HubWorld hides the visual via
+	# LocalMapView.hide_pickup(cell) first, then queue_frees after a
+	# brief delay (or just immediately, since the visual is already
+	# hidden). We keep the queue_free to clear scene tree state.
 	queue_free()
 	return item_qty
 
@@ -67,5 +62,5 @@ func collect() -> int:
 func get_cell(cell_size: int = 24) -> Vector2i:
 	return Vector2i(
 		int(floor(global_position.x / cell_size)),
-		int(floor(global_position.y / cell_size)),
+		int(floor(global_position.y / cell_size))
 	)

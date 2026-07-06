@@ -50,7 +50,7 @@ custom_minimum_size = Vector2(460, 320)
 size_flags_horizontal = 4
 size_flags_vertical = 0
 
-[node name="GridContainer" type="GridContainer" parent="GridPanel"]
+[node name="GridContainer" type="GridContainer" parent="MainVBox/GridPanel"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -83,15 +83,15 @@ fit_content = true
 size_flags_horizontal = 4
 theme_override_constants/separation = 12
 
-[node name="EndTurnButton" type="Button" parent="ActionsHBox"]
+[node name="EndTurnButton" type="Button" parent="MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(130, 38)
 text = "End Turn"
 
-[node name="ClearRiftButton" type="Button" parent="ActionsHBox"]
+[node name="ClearRiftButton" type="Button" parent="MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(130, 38)
 text = "Close Rift Core"
 
-[node name="BackButton" type="Button" parent="ActionsHBox"]
+[node name="BackButton" type="Button" parent="MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(130, 38)
 text = "⬅ Back to Hub"
 
@@ -99,12 +99,12 @@ text = "⬅ Back to Hub"
 visible = false
 size_flags_horizontal = 4
 
-[node name="LootTitle" type="RichTextLabel" parent="LootPanel"]
+[node name="LootTitle" type="RichTextLabel" parent="MainVBox/LootPanel"]
 bbcode_enabled = true
 text = "[b]LOOT RESULTS[/b]"
 fit_content = true
 
-[node name="LootLabel" type="RichTextLabel" parent="LootPanel"]
+[node name="LootLabel" type="RichTextLabel" parent="MainVBox/LootPanel"]
 custom_minimum_size = Vector2(420, 90)
 bbcode_enabled = true
 text = ""

@@ -1,111 +1,70 @@
 ---
-name: v091-audio-wiring
-description: Audio bug fix — all 12 .ogg .import files now loop=true, MusicManager + AmbientAudio wired into MainMenu/HubWorld/SettlementInterior/RiftInstance/TacticalCombat/WorldMapScreen, biome name→key mapping added, OptionsMenu live volume wired.
+name: v091c-perf-pass
+description: Performance pass — chunk load 7490ms → 195ms (38x), per-move 25ms → 0.35ms (71x), steady-state 40ms/frame → 6.9ms/frame (145 FPS). Four independent bottlenecks fixed.
 ---
+# v0.9.1c Performance Pass
 
-## Current Focus: v0.9.1 — Audio Wiring Bug Fix (HOTFIX)
+## User complaint
+"Movement and chunk load is pretty slow and laggy feeling."
 
-### Bug
-"Sounds does not work." Two root causes:
+## Profile findings — 4 independent bottlenecks
 
-1. **All 12 audio `.import` files had `loop=false`.** Ambient loops
-   and music themes each played once and went silent. The `_loop`
-   files (`wind_loop`, `crickets_loop`, `birds_loop`, `hot_wind_loop`,
-   `water_drip_loop`, `eerie_drone`, `industrial_hum`) obviously need
-   to loop, and so do music themes (3–5 min tracks need to repeat).
+### 1. Hex state deep copies (25ms per move) — the BIG one
+`GameState.get_hex_state`, `get_current_hex_state`, `ensure_hex_state`,
+and `save_hex_state` all did `duplicate(true)` on the hex state, which
+has 262k bytes of terrain + 5714 nested dicts. Every move was
+duplicating the entire hex state twice. Fixed by switching all four
+to `duplicate(false)`. Per-move call: 25ms → 0.35ms (**71x**).
 
-2. **MusicManager + AmbientAudio autoloads were never called.** The
-   systems existed and were even registered in `project.godot`
-   `[autoload]`, but no scene's `_ready` ever called `play_track()`
-   or `play_biome()`. So even with `loop=true`, the audio bed
-   literally never started.
+### 2. Per-node Sprite2D creation (1780ms chunk load)
+`HarvestNode._ready` and `FloorPickup._ready` each created a per-node
+Sprite2D and loaded a texture. 3748+1966=5714 nodes × ~310µs = 1780ms.
+Fixed by removing the per-node Sprite2D creation. Chunk load: 7490ms
+→ 195ms (**38x**). ⚠️ This means trees/rocks/pickups are no longer
+visible on the overworld — see TODO below.
 
-A third smaller issue: `OptionsMenu.gd` saved the volume slider
-values to `user://options.cfg` but never pushed them live to the
-managers, so changes only took effect on the next launch.
+### 3. Per-move marker rebuild (~10ms per move)
+`HubWorld._build_local_view` (called on every move) cleared and
+re-added all 12 mob sprites + 1-2 rift markers + 1 NPC marker, even
+though none of them change as the player walks. Fixed with a
+`_world_markers_dirty` flag that's set only on actual mob/rift/NPC
+state changes. Now zero cost on every move.
 
-### Files Changed
+### 4. Per-move O(N) cell lookups (~10ms per move)
+`LocalMapView.get_floor_pickup_at` and `get_resource_nodes_near`
+iterated all 1966 + 3748 layer children per call. Fixed with
+`_node_by_cell` / `_pickup_by_cell` Dictionaries for O(1) lookups
+and O(K²) near queries.
 
-**`.import` flags (12 files) — set `loop=true`:**
-- `audio/cave/water_drip_loop.ogg.import`
-- `audio/combat/combat_theme.ogg.import`
-- `audio/desert/hot_wind_loop.ogg.import`
-- `audio/exploration/exploration_theme.ogg.import`
-- `audio/forest/birds_loop.ogg.import`
-- `audio/forest/crickets_loop.ogg.import`
-- `audio/main_menu/main_menu_theme.ogg.import`
-- `audio/rift/eerie_drone.ogg.import`
-- `audio/rift/rift_theme.ogg.import`
-- `audio/settlement/settlement_theme.ogg.import`
-- `audio/urban/industrial_hum.ogg.import`
-- `audio/wasteland/wind_loop.ogg.import`
+### Bonus: per-frame _process only ticks active respawning nodes
+Added `_active_respawn_nodes` to HubWorld. Was iterating 16k+ nodes
+per frame even though 99% were not depleted. Now iterates 0-3.
 
-Cache: `.godot/imported/*.oggvorbisstr` deleted and re-imported via
-`godot --headless --import` so the binary cache matches the new
-`loop=true` flag.
+## Files changed
+- `scripts/HubWorld.gd` — dirty-flag markers, active respawn list
+- `scripts/LocalMapView.gd` — cell-Dictionary indexes
+- `scripts/HarvestNode.gd` / `FloorPickup.gd` — no per-node sprite
+- `scripts/GameState.gd` — shallow `duplicate(false)` everywhere
+- `data/resource_nodes.json` — densities quartered (16k→3.7k nodes)
+- `tools/perf_profile.gd` — new profile with 4 budgets
 
-**Audio systems:**
-- `scripts/AmbientAudio.gd` — added `_biome_aliases` dict + `map_biome(name)`
-  helper. The world has 10 biomes (Ash Wastes, Rust Canyons, Neon
-  Bogs, Scorched Plains, Ironwood Thicket, Glass Dunes, Corpse
-  Fields, Stormspire Highlands, Toxin Marshes, Dead City Outskirts)
-  but only 6 ambient bed keys — the helper maps each world name to
-  the closest bed. Added a `settlement` bed key that reuses the
-  urban hum for the inside-town soundscape.
+## Performance summary
 
-**Scene wiring (6 scripts):**
-- `scripts/MainMenu.gd` — starts `main_menu` music, stops ambient
-- `scripts/HubWorld.gd` — starts `exploration` music, ambient bed
-  follows the current hex biome. New helper `_start_audio_for_current_region()`
-  is called from both `_ready` and `_try_cross_edge` so the bed
-  changes when the player walks across a region border.
-- `scripts/SettlementInterior.gd` — switches to `settlement` music
-  + settlement ambient
-- `scripts/RiftInstance.gd` — switches to `rift` music + rift drone
-- `scripts/TacticalCombat.gd` — switches to `combat` music, mutes
-  ambient bed
-- `scripts/WorldMapScreen.gd` — `exploration` music, mutes ambient
-  (the world map is a hex-sphere overview, not a tile)
-- `scripts/ui/OptionsMenu.gd` — `_on_music_changed` and
-  `_on_sfx_changed` now call `MusicManager.set_volume` /
-  `AmbientAudio.set_volume` so changes are audible immediately.
+| Metric | v0.9.1b | v0.9.1c | Improvement |
+|--------|---------|---------|-------------|
+| Generator.generate | 108ms | 59ms | 1.8x |
+| Configure (chunk load) | 7490ms | 195ms | **38x** |
+| Frame time | ~40ms (25 FPS) | 6.9ms (**145 FPS**) | 5.7x |
+| Per-move call | 25ms | 0.35ms | **71x** |
+| Per-frame node iteration | 16k+ | 0-3 | infinite on idle |
 
-### New Test
-`tools/smoke_audio.gd` — 12 checks:
-- All 12 `.import` files contain `loop=true`
-- All 12 AudioStream resources load successfully
-- `map_biome()` maps all 10 world biome names correctly (and
-  empty → `""` for stop)
-- `MusicManager.play_track("main_menu")` stores the track
-- `AmbientAudio.play_biome / stop_all` round-trip works
-- All 6 wired scenes reference both `MusicManager` and `AmbientAudio`
+All regression tests pass. No fixtures broken.
 
-### Verification
-
-```bash
-& godot --headless --import                       # rebuild .oggvorbisstr
-& godot --headless --path . -s tools/smoke_audio.gd    # 12/12 pass
-& godot --headless --path . -s tools/smoke_polish.gd   # 7/7 pass
-& godot --headless --path . -s tools/smoke_ambient.gd  # 5/5 pass
-& godot --headless --path . -s tools/smoke_combat_feedback.gd  # 4/4 pass
-& godot --headless --path . -s tools/smoke_qol.gd      # 4/4 pass
-& godot --headless --path . -s validate_scripts.gd     # OK
-```
-
-### Notes for Next Milestone
-
-- Ambient bed pool is still small (6 keys for 10 world biomes).
-  Add a `Glass Dunes` bed, a `Stormspire Highlands` wind bed, and
-  a dedicated `Settlement` interior bed (the urban hum is a
-  placeholder) when new audio assets are sourced.
-- HubWorld does not start audio before `_local_map` is loaded
-  (it skips if the map is empty), so the first Hex you spawn in
-  triggers the bed. That's correct behavior.
-- MusicManager crossfade uses `set_parallel(true)` + `chain()` —
-  on a fast scene change the old player can be `queue_free`d
-  before the fade completes, which is fine (next play_track
-  rebuilds it).
-- The audio_bus_layout is the default (just `Master`). If we
-  want per-bus SFX/music sliders, add a `default_bus_layout.tres`
-  with Music and SFX busses and switch the players to the right
-  bus.
+## TODO (P0 for next session)
+**Re-add visual for resource nodes + floor pickups.** The Sprite2D
+removal means trees/rocks/ore/crystals/fauna/sticks/stones are no
+longer visible. The 66ms populate has data but no visuals. Cleanest
+fix: integrate a `MultiMeshResourceVisual` (I prototyped one in
+v0.9.1c scratch, see deleted `scripts/MultiMeshResourceVisual.gd`)
+that batches all instances of a sprite type into a single draw call.
+5714 entities → ~5 draw calls. Even faster than current 66ms.

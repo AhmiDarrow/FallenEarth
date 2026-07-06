@@ -1,12 +1,17 @@
 ## HarvestNode — Gatherable resource entity on the local map.
 ##
-## Holds the JSON entry from data/resource_nodes.json for a single node,
-## renders its sprite, and exposes a try_gather() method that respects
-## the player's equipped tool tier. Yields are awarded to the inventory
-## via InventoryManager (added in Phase 1 alongside this node).
+## Holds the JSON entry from data/resource_nodes.json for a single node
+## and exposes a try_gather() method that respects the player's equipped
+## tool tier. Yields are awarded to the inventory via InventoryManager.
+##
+## v0.9.1c: The visual sprite is rendered by MultiMeshResourceVisual in
+## LocalMapView, not by this node. Per-node Sprite2D + texture load
+## was the dominant chunk-load cost (3748 + 1966 = 5714 nodes each
+## loading a PNG and adding a Sprite2D = ~1.8 s blocking). The node
+## still lives in the scene tree for interaction, but has no
+## CanvasItem children — pure data + logic.
 ##
 ## Each node has:
-##   - a sprite (loaded by name from assets/sprites/resource_nodes/)
 ##   - a yield (item + qty range) — only if gather_secs > 0
 ##   - a respawn timer (real-time seconds) — node hides for respawn_secs
 ##     after depletion, then comes back
@@ -20,42 +25,25 @@ const INVENTORY_PATH := "/root/InventoryManager"
 
 @export var node_data: Dictionary = {}
 
-var _sprite: Sprite2D
+# v0.9.1c: removed _sprite. Visual comes from MultiMeshResourceVisual.
 var _depleted: bool = false
 var _respawn_remaining: float = 0.0
 
 
 func _ready() -> void:
-	_sprite = get_node_or_null("Sprite") as Sprite2D
-	if _sprite == null:
-		_sprite = Sprite2D.new()
-		_sprite.name = "Sprite"
-		_sprite.centered = true
-		add_child(_sprite)
-	_refresh_sprite()
+	# v0.9.1c: no per-node Sprite2D — visuals are batched in a
+	# MultiMesh by LocalMapView. Saves ~5714 × load(path) + add_child.
+	pass
 
 
 func setup(data: Dictionary) -> void:
 	node_data = data
-	_refresh_sprite()
+	# v0.9.1c: no per-node sprite setup; visual is in MultiMesh.
 
 
 func _refresh_sprite() -> void:
-	if _sprite == null:
-		return
-	var sprite_id: String = str(node_data.get("sprite", ""))
-	if sprite_id.is_empty():
-		return
-	# Try the procedural sprite path first.
-	var path := "res://assets/sprites/resource_nodes/%s.png" % sprite_id
-	if not ResourceLoader.exists(path):
-		# Fallback to a generic icon.
-		path = "res://assets/sprites/resource_nodes/_generic.png"
-	if ResourceLoader.exists(path):
-		var tex := load(path) as Texture2D
-		if tex != null:
-			_sprite.texture = tex
-			_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# v0.9.1c: no-op. The MultiMeshResourceVisual owns the sprite.
+	pass
 
 
 func is_decoration() -> bool:
@@ -123,9 +111,8 @@ func try_gather(tool_data: Dictionary) -> Dictionary:
 func deplete() -> void:
 	_depleted = true
 	_respawn_remaining = get_respawn_secs()
-	if _sprite != null:
-		_sprite.modulate = Color(0.3, 0.3, 0.3, 0.5)
-		# Could swap to a "depleted" sprite if we generate one; for now just dim.
+	# v0.9.1c: no _sprite.modulate. HubWorld (caller) updates the
+	# MultiMesh visual via LocalMapView.dim_resource_node(cell, true).
 
 
 ## Respawn tick (real-time). Returns true if respawn completed this frame.
@@ -136,8 +123,8 @@ func _process(delta: float) -> void:
 	if _respawn_remaining <= 0.0:
 		_depleted = false
 		_respawn_remaining = 0.0
-		if _sprite != null:
-			_sprite.modulate = Color(1, 1, 1, 1)
+		# v0.9.1c: no _sprite.modulate. HubWorld (caller) updates the
+		# MultiMesh visual via LocalMapView.dim_resource_node(cell, false).
 
 
 ## Returns the cell (Vector2i) of this node, computed from its world position.

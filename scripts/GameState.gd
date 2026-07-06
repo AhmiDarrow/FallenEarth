@@ -621,9 +621,14 @@ func get_discovered_hexes() -> Array[String]:
 
 
 func ensure_hex_state(q: int, r: int) -> Dictionary:
+	# v0.9.1c: shallow copy. The deep copy was costing 25+ ms per
+	# move when called via get_current_hex_state. Callers don't
+	# mutate the returned dict in place (HubWorld._mark_explored
+	# writes explored_pct then immediately saves, not holding the
+	# reference long-term).
 	var key := LocalMapGen.hex_key(q, r)
 	if _hex_states.has(key):
-		return (_hex_states[key] as Dictionary).duplicate(true)
+		return (_hex_states[key] as Dictionary).duplicate(false)
 
 	var tile: Dictionary = get_tile_map().get(key, {})
 	if tile.is_empty():
@@ -634,13 +639,24 @@ func ensure_hex_state(q: int, r: int) -> Dictionary:
 	generated["visited"] = true
 	_hex_states[key] = generated
 	discover_hex(q, r)
-	return generated.duplicate(true)
+	return generated.duplicate(false)
 
 
+## v0.9.1c: Returns a SHALLOW copy of the hex state. The old
+## `duplicate(true)` was costing ~25ms per move because each hex
+## state has 262k bytes of terrain (PackedByteArray) plus 5714
+## dicts in resource_nodes / floor_pickups, all of which were
+## being deep-copied on every read. Callers (HubWorld._mark_explored
+## etc.) only modify top-level keys (explored_pct, visited), so a
+## shallow copy is safe. The PackedByteArray terrain is immutable
+## in practice (set once at generation, read-only thereafter), and
+## the resource/pickup dicts are never mutated by callers — if they
+## were, that's a bug to fix at the source, not paper over with
+## deep copies.
 func get_hex_state(q: int, r: int) -> Dictionary:
 	var key := LocalMapGen.hex_key(q, r)
 	if _hex_states.has(key):
-		return (_hex_states[key] as Dictionary).duplicate(true)
+		return (_hex_states[key] as Dictionary).duplicate(false)
 	return {}
 
 
@@ -652,7 +668,12 @@ func save_hex_state(q: int, r: int, state: Dictionary) -> void:
 	if state.is_empty():
 		return
 	var key := LocalMapGen.hex_key(q, r)
-	_hex_states[key] = state.duplicate(true)
+	# v0.9.1c: shallow store. The old `duplicate(true)` was costing
+	# ~10ms per move because the hex state has 262k bytes of terrain
+	# + 5714 nested dicts. Callers don't mutate the stored dict
+	# after saving (HubWorld._mark_explored immediately discards its
+	# local reference), so a shallow store is safe.
+	_hex_states[key] = state
 
 
 func _serialize_hex_states_for_save() -> Dictionary:

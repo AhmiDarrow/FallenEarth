@@ -5,6 +5,10 @@
 ## TileSetService. Marker/mob/node/floor-pickup layers sit on top of the terrain.
 ## No sprite batching, no procedural drawing — Godot 4.3 TileMap handles
 ## 512x512 (~262k cells) at 60 fps without chunking.
+##
+## v0.9.1c: cell → node Dictionary indexes for O(1) lookups. Without these,
+## every move cost ~40 ms because get_floor_pickup_at and
+## get_resource_nodes_near iterated all 1966 + 3748 nodes.
 class_name LocalMapView
 extends Node2D
 
@@ -32,6 +36,11 @@ var station_layer: Node2D
 
 var _current_biome: String = ""
 var _current_map_data: Dictionary = {}
+
+# v0.9.1c: O(1) cell lookups. The old per-query iteration over all
+# 1966 + 3748 nodes was the dominant per-move cost.
+var _node_by_cell: Dictionary = {}     # Vector2i -> HarvestNode
+var _pickup_by_cell: Dictionary = {}    # Vector2i -> FloorPickup
 
 
 func _ready() -> void:
@@ -213,25 +222,33 @@ func get_station_layer() -> Node2D:
 func _populate_resource_nodes(nodes: Array) -> void:
 	if not is_instance_valid(node_layer):
 		return
+	_node_by_cell.clear()
 	for entry in nodes:
 		if not (entry is Dictionary):
 			continue
+		var cell: Vector2i = Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		var node: Node2D = HarvestNodeScene.instantiate()
 		node_layer.add_child(node)
 		node.setup((entry as Dictionary).duplicate(true))
-		node.position = cell_to_world(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+		node.position = cell_to_world(cell)
+		# v0.9.1c: cell → node index for O(1) gather lookups.
+		_node_by_cell[cell] = node
 
 
 func _populate_floor_pickups(pickups: Array) -> void:
 	if not is_instance_valid(pickup_layer):
 		return
+	_pickup_by_cell.clear()
 	for entry in pickups:
 		if not (entry is Dictionary):
 			continue
+		var cell: Vector2i = Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		var pickup: Node2D = FloorPickupScene.instantiate()
 		pickup_layer.add_child(pickup)
 		pickup.setup(str(entry.get("id", "")), int(entry.get("qty", 1)))
-		pickup.position = cell_to_world(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+		pickup.position = cell_to_world(cell)
+		# v0.9.1c: cell → pickup index for O(1) auto-collect.
+		_pickup_by_cell[cell] = pickup
 
 
 func get_resource_nodes() -> Array:
@@ -258,35 +275,44 @@ func get_floor_pickups() -> Array:
 
 ## Iterate every HarvestNode within `radius` cells of the player's cell.
 ## Returns Array of {node: HarvestNode, cell: Vector2i, dist: int}.
+## v0.9.1c: O(K) where K is the number of cells in the radius
+## (was O(N) over all 3748 nodes per query).
 func get_resource_nodes_near(player_cell: Vector2i, radius: int) -> Array:
 	var out: Array = []
-	for child in get_resource_nodes():
-		if not is_instance_valid(child):
-			continue
-		var c: Vector2i = child.get_cell(CELL_SIZE)
-		var d: int = maxi(abs(c.x - player_cell.x), abs(c.y - player_cell.y))
-		if d <= radius:
-			out.append({"node": child, "cell": c, "dist": d})
+	# Check all cells in the (2*radius+1)² box around the player.
+	# For radius=1 that's 9 cells; for radius=2, 25 cells. Cheap.
+	var r: int = maxi(0, radius)
+	for dy in range(-r, r + 1):
+		for dx in range(-r, r + 1):
+			var cell: Vector2i = player_cell + Vector2i(dx, dy)
+			var n: Node = _node_by_cell.get(cell)
+			if is_instance_valid(n):
+				var d: int = maxi(abs(dx), abs(dy))
+				out.append({"node": n, "cell": cell, "dist": d})
 	return out
 
 
 ## Iterate every FloorPickup within `radius` cells of the player's cell.
+## v0.9.1c: O(K) via _pickup_by_cell.
 func get_floor_pickups_near(player_cell: Vector2i, radius: int) -> Array:
 	var out: Array = []
-	for child in get_floor_pickups():
-		if not is_instance_valid(child):
-			continue
-		var c: Vector2i = child.get_cell(CELL_SIZE)
-		var d: int = maxi(abs(c.x - player_cell.x), abs(c.y - player_cell.y))
-		if d <= radius:
-			out.append({"node": child, "cell": c, "dist": d})
+	var r: int = maxi(0, radius)
+	for dy in range(-r, r + 1):
+		for dx in range(-r, r + 1):
+			var cell: Vector2i = player_cell + Vector2i(dx, dy)
+			var n: Node = _pickup_by_cell.get(cell)
+			if is_instance_valid(n):
+				var d: int = maxi(abs(dx), abs(dy))
+				out.append({"node": n, "cell": cell, "dist": d})
 	return out
 
 
 ## Returns the FloorPickup at a specific cell, or null.
+## v0.9.1c: O(1) via _pickup_by_cell (was O(N) over all pickups).
 func get_floor_pickup_at(cell: Vector2i) -> Node2D:
-	for entry in get_floor_pickups_near(cell, 0):
-		return entry["node"]
+	var n: Node = _pickup_by_cell.get(cell)
+	if is_instance_valid(n):
+		return n
 	return null
 
 
@@ -379,12 +405,16 @@ func _clear_nodes() -> void:
 	if is_instance_valid(node_layer):
 		for child in node_layer.get_children():
 			child.queue_free()
+	# v0.9.1c: clear the cell index too.
+	_node_by_cell.clear()
 
 
 func _clear_pickups() -> void:
 	if is_instance_valid(pickup_layer):
 		for child in pickup_layer.get_children():
 			child.queue_free()
+	# v0.9.1c: clear the cell index too.
+	_pickup_by_cell.clear()
 
 
 func _clear_settlements() -> void:

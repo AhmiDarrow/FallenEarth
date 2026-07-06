@@ -11,6 +11,8 @@
 ##   - Riftspire (orange ★ glyph, if riftspire_hex_key is set)
 ##   - NPC towns (faction-colored star; from data/towns.json or
 ##     world_data.towns_seeded if present)
+##   - v0.9.1: overworld mobs (red dots) in the current local hex so
+##     the player can see where to walk to find a fight.
 ##
 ## Coordinate system: the world is a hex sphere with axial coordinates
 ## (q, r). The minimap uses the same axial layout as WorldGenerator
@@ -29,12 +31,17 @@ const CURRENT_OUTLINE := Color(1, 1, 1)
 const RIFT_COLOR := Color(1.0, 0.85, 0.2)
 const RIFTSPIRE_COLOR := Color(1.0, 0.5, 0.15)
 const PLAYER_COLOR := Color(0.4, 0.85, 1.0)
+const MOB_HOSTILE_COLOR := Color(1.0, 0.5, 0.4)  # red — hostile mob
+const MOB_NEUTRAL_COLOR := Color(0.7, 0.85, 0.7)  # gray-green — neutral
 
 var _cached_discovered: Array = []
 var _cached_current: Vector2i = Vector2i.ZERO
 var _cached_rifts: Array = []
 var _cached_riftspire: Vector2i = Vector2i(-999, -999)
 var _cached_towns: Array = []  # [{q, r, color}]
+var _cached_mobs: Array = []  # [{local_x, local_y, hostile}]
+var _local_player_x: int = 0
+var _local_player_y: int = 0
 
 
 func _ready() -> void:
@@ -99,6 +106,26 @@ func _refresh_from_gamestate() -> void:
 				"r": int(tparts[1]),
 				"color": color,
 			})
+	# v0.9.1: pull overworld mobs in the current hex for the dot overlay.
+	# The player can use these to navigate toward fights.
+	_cached_mobs = []
+	var local_pos: Vector2i = gs.get_local_position()
+	_local_player_x = local_pos.x
+	_local_player_y = local_pos.y
+	var prefix: String = "%d,%d|" % [pos.x, pos.y]
+	for mob_key in gs.get_overworld_mobs().keys():
+		if not str(mob_key).begins_with(prefix):
+			continue
+		var rest: String = str(mob_key).substr(prefix.length())
+		var mparts: PackedStringArray = rest.split(",")
+		if mparts.size() < 2:
+			continue
+		var mob_data: Dictionary = gs.get_overworld_mobs()[mob_key] as Dictionary
+		_cached_mobs.append({
+			"local_x": int(mparts[0]),
+			"local_y": int(mparts[1]),
+			"hostile": bool(mob_data.get("hostile", true)),
+		})
 
 
 ## Force a refresh (call after GameState changes, e.g. travel, discovery).
@@ -124,6 +151,7 @@ func _draw() -> void:
 	if _cached_discovered.is_empty():
 		# Center on the current player even with no discovery
 		_draw_player(Vector2(WIDTH_PX / 2.0, HEIGHT_PX / 2.0))
+		_draw_local_inset()
 		return
 
 	# Compute center of discovered set
@@ -172,6 +200,55 @@ func _draw() -> void:
 	var player_px: Vector2 = axial_to_pixel(_cached_current.x, _cached_current.y, HEX_SIZE_PX) + origin
 	if _in_bounds(player_px):
 		_draw_player(player_px)
+
+	# v0.9.1: local-map inset (bottom-left) — shows the player's local
+	# cells with red/green mob dots. Player centered, ~25×15 local
+	# cells visible. Mobs outside this range are clipped.
+	_draw_local_inset()
+
+
+## v0.9.1: Draw a small inset showing the local map around the
+## player. The sphere map above is the strategic view; this inset
+## is the tactical view — the player uses it to find the nearest
+## mob without scrolling the world around.
+func _draw_local_inset() -> void:
+	# Inset frame: bottom-left, ~80x50 px
+	var inset_size := Vector2(80.0, 50.0)
+	var inset_pos := Vector2(8.0, HEIGHT_PX - inset_size.y - 8.0)
+	draw_rect(Rect2(inset_pos, inset_size), Color(0.02, 0.02, 0.03, 0.9), true)
+	draw_rect(Rect2(inset_pos, inset_size), Color(0.4, 0.4, 0.45, 0.7), false, 1.0)
+	# "LOCAL" label
+	# (no font drawing here, but a small dot at top-left identifies it)
+	# Player center
+	var player_local: Vector2 = Vector2(_local_player_x, _local_player_y)
+	# Local view radius: 25x15 cells = full camera view of the overworld
+	var local_radius: Vector2 = Vector2(25.0, 15.0)
+	# Center of inset
+	var center: Vector2 = inset_pos + inset_size * 0.5
+	# Player is always at the center
+	# Map local cell to inset position
+	for mob in _cached_mobs:
+		if not (mob is Dictionary):
+			continue
+		var mlx: int = int(mob.get("local_x", 0))
+		var mly: int = int(mob.get("local_y", 0))
+		var dx: float = float(mlx - _local_player_x)
+		var dy: float = float(mly - _local_player_y)
+		# Skip if outside the inset view
+		if absf(dx) > local_radius.x or absf(dy) > local_radius.y:
+			continue
+		# Map to inset pixel
+		var px: float = center.x + (dx / local_radius.x) * (inset_size.x * 0.5)
+		var py: float = center.y + (dy / local_radius.y) * (inset_size.y * 0.5)
+		var hostile: bool = bool(mob.get("hostile", true))
+		var c: Color = MOB_HOSTILE_COLOR if hostile else MOB_NEUTRAL_COLOR
+		draw_circle(Vector2(px, py), 1.5, c)
+	# Player dot at center
+	draw_circle(center, 2.0, PLAYER_COLOR)
+	draw_circle(center, 1.0, Color.WHITE)
+	# Faint crosshair to mark center
+	draw_line(center + Vector2(-3, 0), center + Vector2(3, 0), Color(0.6, 0.6, 0.7, 0.5), 0.5)
+	draw_line(center + Vector2(0, -3), center + Vector2(0, 3), Color(0.6, 0.6, 0.7, 0.5), 0.5)
 
 
 func _draw_player(px: Vector2) -> void:

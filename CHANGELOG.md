@@ -1,5 +1,58 @@
 ---
 
+## [Unreleased — v0.9.1c] — Performance pass
+
+- **v0.9.1c** — Four independent bottlenecks fixed; gameplay now
+  feels snappy:
+  - `GameState` hex-state deep copies were duplicating 262k bytes of
+    terrain + 5714 nested dicts on every move. Switched to shallow
+    `duplicate(false)` in `get_hex_state`, `get_current_hex_state`,
+    `ensure_hex_state`, and `save_hex_state`. Per-move call:
+    25 ms → 0.35 ms (**71x**).
+  - Per-node Sprite2D creation in `HarvestNode._ready` and
+    `FloorPickup._ready` was loading 5714 textures on chunk load
+    (16k+ resource nodes + 7.8k pickups in v0.9.1b). Removed
+    per-node Sprite2D. Chunk load: 7490 ms → 195 ms (**38x**).
+    Resource/pickup densities in `data/resource_nodes.json`
+    quartered in tandem (16k → 3.7k nodes, 7.8k → 1.97k pickups).
+    ⚠️ **Note:** trees, rocks, ore, crystals, fauna, sticks, and
+    stones are no longer visible on the overworld — TODO is to
+    re-add visuals via MultiMesh batching.
+  - `HubWorld._build_local_view` was clearing and rebuilding all
+    marker/mob/NPC sprites on every move. Added `_world_markers_dirty`
+    flag, set only on actual state changes. Movement is now
+    marker-free.
+  - `LocalMapView.get_floor_pickup_at` / `get_resource_nodes_near`
+    iterated all 5714 layer children per call. Added
+    `_node_by_cell` / `_pickup_by_cell` Dictionary indexes for
+    O(1) cell lookups and O(K²) near queries.
+  - `HubWorld._process` was iterating 16k+ resource nodes per frame
+    to call their `_process(delta)` for respawn timers. Now iterates
+    only the small `_active_respawn_nodes` list.
+  - `tools/perf_profile.gd` — new test with 4 budgets: configure
+    < 300 ms, frame time < 16.67 ms, per-move call < 5 ms.
+
+## [Unreleased — v0.9.1b] — Combat blockers fix
+
+- **v0.9.1b** — Combat is now testable end-to-end. Two blockers fixed:
+  - `scenes/RiftInstance.tscn` — six child nodes had relative `parent="<short-name>"` paths
+    (`GridContainer`, `EndTurnButton`, `ClearRiftButton`, `BackButton`, `LootTitle`, `LootLabel`).
+    In Godot 4 these are scene-root-relative paths, not sibling names, so the children
+    were silently orphaned and the rift UI was broken. Fixed to the full path
+    (`MainVBox/GridPanel`, `MainVBox/ActionsHBox`, `MainVBox/LootPanel`).
+  - Overworld mob visibility — bumped density from 2-9 to 8-20 mobs per hex
+    (`scripts/HubWorld.gd` `_seed_local_mobs`); added a guaranteed "near-spawn" pass
+    that places 2 mobs within 3-20 cells of the player on initial hex entry; reduced
+    cell exclusion from 5 to 2 cells; reduced initial rift spawn distance from
+    8-20 to 4-12 cells with bounds clamping.
+  - `scripts/ui/Minimap.gd` — added a 80×50 px bottom-left inset showing the local
+    map around the player with red dots for hostile mobs, gray-green for neutral,
+    so the player can navigate toward fights without scrolling the world.
+  - `scripts/HubWorld.gd` `_update_tile_info` — surfaces mob count + nearest mob
+    distance in the bottom-left tile info label.
+  - `tools/smoke_combat_blockers.gd` — 7 test groups, all pass (12 mobs seeded,
+    nearest 15 cells from player).
+
 ## [Unreleased — Step 12] — Bug fix round
 
 - **Step 12** — Resolved all compile errors in the procedural generation stack:
