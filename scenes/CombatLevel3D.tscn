@@ -7,6 +7,16 @@
 [ext_resource type="Script" path="res://scripts/combat/ui/TopPromptV110.gd" id="5_prompt"]
 [ext_resource type="Script" path="res://scripts/combat/ui/ActionBarV110.gd" id="6_actionbar"]
 
+[sub_resource type="Environment" id="env_combat"]
+background_mode = 1
+background_color = Color(0.18, 0.2, 0.22, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.6, 0.6, 0.65, 1)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+glow_enabled = false
+ssao_enabled = false
+
 [node name="CombatLevel3D" type="Node3D"]
 script = ExtResource("1_level")
 
@@ -28,16 +38,6 @@ shadow_enabled = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("env_combat")
-
-[sub_resource type="Environment" id="env_combat"]
-background_mode = 1
-background_color = Color(0.18, 0.2, 0.22, 1)
-ambient_light_source = 2
-ambient_light_color = Color(0.6, 0.6, 0.65, 1)
-ambient_light_energy = 0.6
-tonemap_mode = 2
-glow_enabled = false
-ssao_enabled = false
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]
 layer = 10
