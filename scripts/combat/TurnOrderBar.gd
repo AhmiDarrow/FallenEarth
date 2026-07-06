@@ -136,10 +136,6 @@ func refresh(_arg: Variant = null) -> void:
 		slot.visible = false
 		var portrait: TextureRect = slot.get_node("Portrait")
 		portrait.texture = null
-		var hp_fill: ColorRect = slot.get_node("HPBg/HPFill")
-		hp_fill.size = Vector2(0, 4)
-		var ct_bar: ColorRect = slot.get_node("CTBar")
-		ct_bar.size = Vector2(0, 2)
 		var active_glow: ColorRect = slot.get_node("ActiveGlow")
 		active_glow.color = Color(COLOR_ACTIVE.r, COLOR_ACTIVE.g, COLOR_ACTIVE.b, 0.0)
 	# Sort units by descending CT
