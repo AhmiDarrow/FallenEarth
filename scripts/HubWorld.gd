@@ -243,7 +243,6 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
-	print("[HubWorld] _unhandled_input key=%d" % event.keycode)
 	if get_tree().paused:
 		return
 
@@ -254,16 +253,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# Character-menu hotkeys — always allowed (open new or switch tabs)
 	if km.is_action_pressed("inventory", event):
-		print("[HubWorld] I hotkey matched, opening inventory")
 		open_character_tab("inventory")
 		return
 	if km.is_action_pressed("equipment", event):
-		print("[HubWorld] E hotkey matched, opening equipment")
 		if not _has_adjacent_harvest_node():
 			open_character_tab("equipment")
 			return
 	if km.is_action_pressed("crafting", event):
-		print("[HubWorld] C hotkey matched, opening crafting")
 		open_character_tab("crafting")
 		return
 	if km.is_action_pressed("party", event):
@@ -705,7 +701,6 @@ func _open_character_menu() -> void:
 ## Open the CharacterMenu to a specific tab. Called by keyboard
 ## hotkeys (I/E/C/P/S).
 func open_character_tab(tab_id: String) -> void:
-	print("[HubWorld] open_character_tab(%s)  _hud=%s" % [tab_id, str(_hud != null and is_instance_valid(_hud))])
 	if _hud == null or not is_instance_valid(_hud):
 		return
 	_hud.open_character_menu(tab_id)

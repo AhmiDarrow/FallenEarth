@@ -44,18 +44,18 @@ var _tab_buttons: Dictionary = {}
 var _active_tab: String = ""
 # Container for the content
 var _content: Control = null
+# Close button reference for repositioning on resize
+var _close_btn: Button = null
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	z_index = 50  # Ensure menu draws on top of HUD
+	z_index = 50
 	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.02, 0.02, 0.04, 0.92)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Title
@@ -66,22 +66,30 @@ func _ready() -> void:
 	title.position = Vector2(20, 12)
 	add_child(title)
 	# Close X
-	var close := Button.new()
-	close.text = "X"
-	close.position = Vector2(size.x - 60, 12)
-	close.custom_minimum_size = Vector2(40, 40)
-	close.pressed.connect(close_menu)
-	add_child(close)
+	_close_btn = Button.new()
+	_close_btn.text = "X"
+	_close_btn.custom_minimum_size = Vector2(40, 40)
+	_close_btn.pressed.connect(close_menu)
+	add_child(_close_btn)
 	# Tab bar
 	_build_tab_bar()
 	# Content area
 	_content = PanelContainer.new()
-	_content.position = Vector2(20, 80)
-	_content.size = Vector2(size.x - 40, size.y - 100)
 	_content.mouse_filter = Control.MOUSE_FILTER_PASS
 	add_child(_content)
+	# Defer layout so size is known
+	_update_layout()
+	resized.connect(_update_layout)
 	# Open the inventory tab by default
 	select_tab("inventory")
+
+
+func _update_layout() -> void:
+	if _close_btn != null:
+		_close_btn.position = Vector2(size.x - 60, 12)
+	if _content != null:
+		_content.position = Vector2(20, 80)
+		_content.size = Vector2(size.x - 40, size.y - 100)
 
 
 func _build_tab_bar() -> void:
@@ -133,7 +141,6 @@ func select_tab(tab_id: String) -> void:
 		_lazy_load_tab(tab_id)
 	_tab_controllers[tab_id].visible = true
 	_tab_buttons[tab_id].button_pressed = true
-	print("[CharacterMenu] Active tab: %s" % tab_id)
 
 
 func _lazy_load_tab(tab_id: String) -> void:
