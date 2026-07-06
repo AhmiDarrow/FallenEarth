@@ -1,16 +1,27 @@
-## BattleBackground — Atmospheric backdrop for the battle scene.
+## BattleBackground — Biome-themed atmosphere for the battle scene.
 ##
-## Wraps the grid with biome-themed darkening + vignette. Uses the
-## existing biome's tiles scattered around the grid border to suggest
-## rubble. Tints the whole thing toward the biome's dominant hue so
-## the player immediately recognizes the environment.
+## Layers, back to front:
+##  1. Tiled ground texture from the current biome (subtle, dimmed)
+##  2. Biome color tint over the tile (darkens + biases the hue)
+##  3. Scattered decoration tiles (debris/vegetation from the biome)
+##  4. Outer vignette (darkens the screen edges, focuses the eye on the grid)
+##  5. Drifting motes for atmosphere
+##
+## Everything uses the same biome the encounter happens in, so an Ash
+## Wastes fight feels different from a Neon Bogs fight without needing
+## dedicated per-biome background art.
 class_name BattleBackground extends Node2D
 
 const TILE_SIZE := 24
-const PADDING := 96
+const PADDING := 64
 const MOTE_COUNT := 18
+# Number of decoration tiles around the grid. Lower than the old 64
+# because the tiled ground now provides the floor texture and we just
+# want a few clusters of "rubble" / "plants" framing the play area.
+const DECOR_CLUSTER_COUNT := 18
 
-var _bg: ColorRect
+var _bg_tile: TextureRect
+var _tint: ColorRect
 var _tile_layer: Node2D
 var _vignette: Control
 var _particles: Node2D
@@ -26,23 +37,39 @@ func _ready() -> void:
 
 
 func _build_children() -> void:
-	_bg = ColorRect.new()
-	_bg.name = "BG"
-	_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_bg.z_index = -100
-	add_child(_bg)
+	# Layer 1: tiled biome ground. TextureRect is set to STRETCH_TILE so
+	# the 24x24 ground.png repeats across the whole viewport.
+	_bg_tile = TextureRect.new()
+	_bg_tile.name = "BGTile"
+	_bg_tile.stretch_mode = TextureRect.STRETCH_TILE
+	_bg_tile.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_bg_tile.z_index = -100
+	_bg_tile.modulate = Color(0.7, 0.7, 0.7, 0.85)
+	add_child(_bg_tile)
 
+	# Layer 2: biome tint. Sits over the tiled ground to bias the hue
+	# (e.g. bog → teal, wastes → brown) and dim it overall.
+	_tint = ColorRect.new()
+	_tint.name = "Tint"
+	_tint.color = Color(0.0, 0.0, 0.0, 0.55)
+	_tint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_tint.z_index = -90
+	add_child(_tint)
+
+	# Layer 3: scattered decoration tiles (debris + vegetation).
 	_tile_layer = Node2D.new()
 	_tile_layer.name = "TileLayer"
 	_tile_layer.z_index = -50
 	add_child(_tile_layer)
 
+	# Layer 4: outer vignette.
 	_vignette = Control.new()
 	_vignette.name = "Vignette"
 	_vignette.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_vignette.z_index = -10
 	add_child(_vignette)
 
+	# Layer 5: drifting motes.
 	_particles = Node2D.new()
 	_particles.name = "Particles"
 	_particles.z_index = -20
@@ -54,51 +81,65 @@ func configure(biome: String, grid_size: int, viewport_size: Vector2) -> void:
 	_grid_size = grid_size
 	_viewport_size = viewport_size
 	_rng.seed = hash(biome) ^ grid_size
+	_apply_biome_ground()
 	_apply_tint()
-	_scatter_tiles()
+	_scatter_decor()
 	_layout_vignette()
 	_spawn_particles()
 
 
+## Load the biome's ground.png and assign it to the tiled bg rect.
+func _apply_biome_ground() -> void:
+	var dir_name: String = TileSetService.biome_to_dir(_biome)
+	var ground_path := "res://assets/tilesets/%s/ground.png" % dir_name
+	if ResourceLoader.exists(ground_path):
+		var tex: Texture2D = load(ground_path) as Texture2D
+		_bg_tile.texture = tex
+	else:
+		# Fall back to a flat darker panel if no biome tile is found.
+		_bg_tile.texture = null
+	# Position the tiled rect so it covers the full viewport.
+	_bg_tile.size = _viewport_size
+	_bg_tile.position = -_viewport_size * 0.5
+
+
 func _apply_tint() -> void:
-	_bg.color = _biome_tint()
-	_bg.size = _viewport_size
-	_bg.position = Vector2(-_viewport_size.x * 0.5, -_viewport_size.y * 0.5)
+	# A stronger biome color is layered on top of the tiled ground
+	# so the player reads the environment's mood immediately.
+	_tint.color = _biome_tint_overlay()
 
 
-func _biome_tint() -> Color:
+## Stronger-biased version of the biome palette used as a tint over
+## the tiled ground. Alpha ~0.55 keeps the ground visible underneath.
+func _biome_tint_overlay() -> Color:
 	match _biome:
 		"Ash Wastes", "Scorched Plains", "Glass Dunes":
-			return Color(0.12, 0.09, 0.07, 1.0)
+			return Color(0.42, 0.28, 0.18, 0.55)
 		"Ironwood Thicket", "Corpse Fields":
-			return Color(0.06, 0.10, 0.06, 1.0)
+			return Color(0.18, 0.34, 0.18, 0.55)
 		"Neon Bogs", "Toxin Marshes":
-			return Color(0.06, 0.09, 0.13, 1.0)
+			return Color(0.10, 0.30, 0.42, 0.55)
 		"Stormspire Highlands":
-			return Color(0.07, 0.09, 0.14, 1.0)
+			return Color(0.18, 0.30, 0.46, 0.55)
 		"Rust Canyons", "Dead City Outskirts":
-			return Color(0.11, 0.07, 0.06, 1.0)
+			return Color(0.40, 0.22, 0.16, 0.55)
 		_:
-			return Color(0.08, 0.07, 0.10, 1.0)
+			return Color(0.22, 0.20, 0.28, 0.55)
 
 
-func _scatter_tiles() -> void:
+func _scatter_decor() -> void:
 	_clear_tile_layer()
-	var tileset_service = preload("res://scripts/TileSetService.gd")
-	var tile_set: TileSet = tileset_service.create_for_biome(_biome)
-	if tile_set == null:
+	var dir_name: String = TileSetService.biome_to_dir(_biome)
+	# Load debris + vegetation tiles directly. Skip ground (used as the
+	# bg fill) and blocked (collision-only, not scenery).
+	var decors: Array[Texture2D] = []
+	for kind in ["debris", "vegetation"]:
+		var path := "res://assets/tilesets/%s/%s.png" % [dir_name, kind]
+		if ResourceLoader.exists(path):
+			decors.append(load(path) as Texture2D)
+	if decors.is_empty():
 		return
-	var atlas_tex: Texture2D = null
-	for i in range(tile_set.get_source_count()):
-		var src: TileSetSource = tile_set.get_source(i)
-		if src is TileSetAtlasSource:
-			atlas_tex = (src as TileSetAtlasSource).texture
-			break
-	if atlas_tex == null:
-		return
-	var atlas_size_y: int = int(atlas_tex.get_size().y)
-	var row_count: int = mini(4, atlas_size_y / TILE_SIZE)
-	# Grid center in local space (BattleGridView centers the grid)
+
 	var grid_pixel_size: int = _grid_size * TILE_SIZE
 	var grid_rect := Rect2(
 		-grid_pixel_size * 0.5 - 12,
@@ -106,24 +147,55 @@ func _scatter_tiles() -> void:
 		grid_pixel_size + 24,
 		grid_pixel_size + 24,
 	)
+	# Place decor in two passes: a tight cluster in each of the four
+	# grid corners, then a few stragglers in the edges between. This
+	# looks more like scenery than the previous random scatter.
+	var anchor_pts: Array[Vector2] = [
+		Vector2(-grid_pixel_size * 0.5, -grid_pixel_size * 0.5),
+		Vector2(grid_pixel_size * 0.5, -grid_pixel_size * 0.5),
+		Vector2(-grid_pixel_size * 0.5, grid_pixel_size * 0.5),
+		Vector2(grid_pixel_size * 0.5, grid_pixel_size * 0.5),
+	]
 	var placed: int = 0
-	var attempts: int = 0
-	while placed < 64 and attempts < 400:
-		attempts += 1
-		var row: int = _rng.randi_range(0, row_count - 1)
-		var px: float = _rng.randf_range(-_viewport_size.x * 0.5 - PADDING, _viewport_size.x * 0.5 + PADDING)
-		var py: float = _rng.randf_range(-_viewport_size.y * 0.5 - PADDING, _viewport_size.y * 0.5 + PADDING)
-		if grid_rect.has_point(Vector2(px, py)):
+	# Corner clusters (3-4 tiles per corner)
+	for corner in anchor_pts:
+		for _i in range(3 + int(_rng.randf() * 2.0)):
+			var ang: float = _rng.randf() * TAU
+			var dist: float = _rng.randf_range(40.0, 90.0)
+			var pos: Vector2 = corner + Vector2(cos(ang), sin(ang)) * dist
+			if grid_rect.has_point(pos):
+				continue
+			_spawn_decor_tile(pos, decors[_rng.randi() % decors.size()])
+			placed += 1
+	# Edge fillers (along top/bottom/left/right outside the grid)
+	while placed < DECOR_CLUSTER_COUNT:
+		var side: int = _rng.randi() % 4
+		var margin: float = _rng.randf_range(8.0, 24.0)
+		var pos2: Vector2
+		match side:
+			0: # top
+				pos2 = Vector2(_rng.randf_range(-grid_pixel_size * 0.5 - 60, grid_pixel_size * 0.5 + 60), -grid_pixel_size * 0.5 - margin)
+			1: # bottom
+				pos2 = Vector2(_rng.randf_range(-grid_pixel_size * 0.5 - 60, grid_pixel_size * 0.5 + 60), grid_pixel_size * 0.5 + margin)
+			2: # left
+				pos2 = Vector2(-grid_pixel_size * 0.5 - margin, _rng.randf_range(-grid_pixel_size * 0.5, grid_pixel_size * 0.5))
+			3: # right
+				pos2 = Vector2(grid_pixel_size * 0.5 + margin, _rng.randf_range(-grid_pixel_size * 0.5, grid_pixel_size * 0.5))
+		if grid_rect.has_point(pos2):
 			continue
-		var sprite := Sprite2D.new()
-		sprite.texture = atlas_tex
-		sprite.region_enabled = true
-		sprite.region_rect = Rect2(0, row * TILE_SIZE, TILE_SIZE, TILE_SIZE)
-		sprite.position = Vector2(px, py)
-		sprite.modulate = Color(0.45, 0.45, 0.45, 0.55)
-		sprite.z_index = -50
-		_tile_layer.add_child(sprite)
+		_spawn_decor_tile(pos2, decors[_rng.randi() % decors.size()])
 		placed += 1
+
+
+func _spawn_decor_tile(world_pos: Vector2, tex: Texture2D) -> void:
+	if tex == null:
+		return
+	var sprite := Sprite2D.new()
+	sprite.texture = tex
+	sprite.position = world_pos
+	sprite.modulate = Color(0.85, 0.85, 0.85, 0.95)
+	sprite.z_index = -50
+	_tile_layer.add_child(sprite)
 
 
 func _clear_tile_layer() -> void:
@@ -134,10 +206,9 @@ func _clear_tile_layer() -> void:
 func _layout_vignette() -> void:
 	for c in _vignette.get_children():
 		c.queue_free()
-	# Outer dim
 	var outer := ColorRect.new()
 	outer.name = "Outer"
-	outer.color = Color(0, 0, 0, 0.45)
+	outer.color = Color(0, 0, 0, 0.50)
 	outer.position = -_viewport_size * 0.5
 	outer.size = _viewport_size
 	outer.mouse_filter = Control.MOUSE_FILTER_IGNORE
