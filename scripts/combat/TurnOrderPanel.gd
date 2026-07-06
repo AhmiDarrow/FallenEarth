@@ -26,14 +26,16 @@ func _ready() -> void:
 
 
 func _build_children() -> void:
+	# Anchor to right edge, vertically centered around the upper third so
+	# it sits above the action bar and doesn't drown the screen.
 	anchor_left = 1.0
 	anchor_right = 1.0
-	anchor_top = 0.5
-	anchor_bottom = 0.5
+	anchor_top = 0.0
+	anchor_bottom = 0.0
 	offset_left = -PANEL_WIDTH - 8
 	offset_right = -8
-	offset_top = -200
-	offset_bottom = 200
+	offset_top = 80
+	offset_bottom = 80 + ROW_HEIGHT * 6 + 56  # header + 6 rows + padding
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var panel := PanelContainer.new()
 	panel.name = "Panel"

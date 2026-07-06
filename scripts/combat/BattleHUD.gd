@@ -34,6 +34,12 @@ var _active_glow: ColorRect
 
 
 func _ready() -> void:
+	# The HUD itself needs full-rect anchors so children that anchor
+	# to 0.5 (centered) or 1.0 (right) have a real parent size to
+	# anchor against. Without this, panel.anchor_left=0.5 collapses
+	# to 0 (parent is 0x0) and the panel ends up at the top-left.
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_children()
 
 

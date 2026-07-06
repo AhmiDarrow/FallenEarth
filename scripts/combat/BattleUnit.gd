@@ -29,6 +29,7 @@ var current_ct: int = 0
 var current_facing: int = 0
 var is_boss: bool = false
 var is_alive: bool = true
+var _team_hp_color: Color = COLOR_ENEMY
 var _grid_pos: Vector2i = Vector2i.ZERO
 var _walk_tween: Tween = null
 var _flash_tween: Tween = null
@@ -36,9 +37,9 @@ var _death_tween: Tween = null
 var _swing_tween: Tween = null
 
 var _sprite: Sprite2D
-var _hp_bg: ColorRect
-var _hp_fill: ColorRect
-var _hp_label: Label
+var _hp_bg: ColorRect = null
+var _hp_fill: ColorRect = null
+var _hp_label: Label = null
 var _ct_bg: ColorRect
 var _ct_fill: ColorRect
 var _name_label: Label
@@ -94,36 +95,13 @@ func _build_children() -> void:
 	_status_label.z_index = 12
 	add_child(_status_label)
 
-	_hp_bg = ColorRect.new()
-	_hp_bg.name = "HPBg"
-	_hp_bg.color = Color(0.10, 0.05, 0.05, 0.85)
-	_hp_bg.position = Vector2(2, -8)
-	_hp_bg.size = Vector2(CELL_SIZE - 4, 4)
-	_hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hp_bg.z_index = 11
-	add_child(_hp_bg)
-
-	_hp_fill = ColorRect.new()
-	_hp_fill.name = "HPFill"
-	_hp_fill.color = COLOR_ENEMY
-	_hp_fill.position = Vector2(3, -7)
-	_hp_fill.size = Vector2(CELL_SIZE - 6, 2)
-	_hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hp_fill.z_index = 12
-	add_child(_hp_fill)
-
-	_hp_label = Label.new()
-	_hp_label.name = "HPLabel"
-	_hp_label.add_theme_color_override("font_color", Color.WHITE)
-	_hp_label.add_theme_color_override("font_outline_color", Color.BLACK)
-	_hp_label.add_theme_constant_override("outline_size", 2)
-	_hp_label.add_theme_font_size_override("font_size", 6)
-	_hp_label.position = Vector2(2, -22)
-	_hp_label.size = Vector2(CELL_SIZE - 4, 10)
-	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_hp_label.z_index = 12
-	add_child(_hp_label)
+	# HP bar (with X/X label) is rendered by CombatFeedback so the
+	# unit just owns the name + CT mini-bar. Avoids the previous
+	# double-bar look where the CombatFeedback bar overlapped the
+	# unit's internal bar.
+	_hp_bg = null
+	_hp_fill = null
+	_hp_label = null
 
 	_ct_bg = ColorRect.new()
 	_ct_bg.name = "CTBg"
@@ -229,17 +207,14 @@ func _apply_team_palette() -> void:
 		hp_color = COLOR_PLAYER
 	elif team == "ally":
 		hp_color = COLOR_ALLY
-	_hp_fill.color = hp_color
+	# HP bar is owned by CombatFeedback now; just remember the color
+	# for any future visual update.
+	_team_hp_color = hp_color
 
 
 func _refresh_hp() -> void:
-	if max_hp <= 0:
-		_hp_fill.size = Vector2(CELL_SIZE - 6, 2)
-		_hp_label.text = ""
-		return
-	var ratio: float = clampf(float(current_hp) / float(max_hp), 0.0, 1.0)
-	_hp_fill.size = Vector2((CELL_SIZE - 6) * ratio, 2)
-	_hp_label.text = "%d/%d" % [current_hp, max_hp]
+	# HP bar/label live in CombatFeedback. Nothing to draw here.
+	pass
 
 
 func _refresh_ct() -> void:
