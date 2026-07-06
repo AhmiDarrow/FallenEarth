@@ -6,6 +6,7 @@ extends CharacterBody3D
 ## Displays a billboard sprite facing the camera, with name label
 ## and health info. Movement is handled by UnitMovementService3D.
 
+const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
 const PAWN_HEIGHT: float = 0.6
 const CELL_SIZE: float = 1.0
 const SPRITE_FOLDER: String = "res://assets/mobs/"

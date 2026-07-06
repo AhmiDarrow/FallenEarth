@@ -5,6 +5,8 @@ extends RefCounted
 ##
 ## Adapted from ramaureirac/godot-tactical-rpg `TacticsPawnMovementService`.
 
+const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
+const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
 const STEP_SPEED: float = 5.0
 const JUMP_HEIGHT: float = 0.4
 
@@ -50,7 +52,7 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 		unit_res.grid_pos = next_grid
 		# Update tile occupancy
 		if pawn.arena_resource:
-			var tile: CombatTile3D = pawn.arena_resource.get_tile(next_grid.x, next_grid.y)
+			var tile = pawn.arena_resource.get_tile(next_grid.x, next_grid.y)
 			if tile:
 				tile.occupier = pawn
 		if unit_res.move_path.is_empty():

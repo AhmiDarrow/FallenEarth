@@ -10,6 +10,12 @@ const PlayerServiceScript = preload("res://scripts/combat/services/player/player
 const OpponentServiceScript = preload("res://scripts/combat/services/opponent/opponent_service.gd")
 const PathfindingServiceScript = preload("res://scripts/combat/services/pathfinding/pathfinding_service.gd")
 const ParticipantResourceScript = preload("res://scripts/combat/models/participant/participant_resource.gd")
+const CombatArena3DScript = preload("res://scripts/combat/v2/CombatArena3D.gd")
+const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
+const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
+const TacticsCamera3DScript = preload("res://scripts/combat/v2/TacticsCamera3D.gd")
+const TacticsInput3DScript = preload("res://scripts/combat/v2/TacticsInput3D.gd")
+const UnitMovementService3DScript = preload("res://scripts/combat/v2/UnitMovementService3D.gd")
 
 ## Scene references
 @onready var _arena: CombatArena3D = $Arena

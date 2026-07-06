@@ -5,6 +5,8 @@ extends Node3D
 ## Adapted from ramaureirac/godot-tactical-rpg `TacticsArena`.
 ## The arena owns the ArenaResource and manages tile/pawn lifecycle.
 
+const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
+const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
 const DEFAULT_GRID_SIZE: int = 7
 
 ## The ArenaResource this arena manages

@@ -7,6 +7,8 @@ extends StaticBody3D
 ## highlight states (reachable, attackable, hover). A RayCast3D
 ## child detects neighboring tiles for pathfinding.
 
+const CombatArena3DScript = preload("res://scripts/combat/v2/CombatArena3D.gd")
+const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
 const CELL_SIZE: float = 1.0
 const TILE_HEIGHT: float = 0.08
 const RAYCAST_REACH: float = 1.5

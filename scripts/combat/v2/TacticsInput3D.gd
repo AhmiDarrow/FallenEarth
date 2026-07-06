@@ -5,6 +5,9 @@ extends Node3D
 ## Casts rays from the camera through the mouse position to detect
 ## which tile or pawn was clicked. Emits signals for the CombatLevel.
 
+const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
+const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
+
 signal tile_clicked(tile: CombatTile3D)
 signal tile_hovered(tile: CombatTile3D)
 signal pawn_clicked(pawn: CombatPawn3D)
