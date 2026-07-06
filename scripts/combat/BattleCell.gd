@@ -33,6 +33,7 @@ var is_blocked: bool = false
 var terrain_kind: int = 0
 
 var _base: Sprite2D
+var _floor: Polygon2D
 var _height_label: Label
 var _highlight: Polygon2D
 var _highlight_border: Node2D
@@ -64,10 +65,20 @@ func _diamond_pts() -> PackedVector2Array:
 
 
 func _build_children() -> void:
+	# v0.10.9: dark diamond floor polygon visible at all times.
+	# This gives the isometric "tile socket" look even when the
+	# tile itself is flat (no rotation — pixel art stays crisp).
+	_floor = Polygon2D.new()
+	_floor.name = "Floor"
+	_floor.polygon = _diamond_pts()
+	_floor.color = Color(0.12, 0.10, 0.08, 1.0)
+	_floor.z_index = -1
+	add_child(_floor)
+
 	_base = Sprite2D.new()
 	_base.name = "Base"
 	_base.centered = true
-	_base.position = Vector2.ZERO  # v0.10.5+ iso: cell is at center
+	_base.position = Vector2.ZERO
 	_base.z_index = 0
 	_base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_base)
@@ -174,13 +185,19 @@ func setup_iso(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Te
 		var row: int = clampi(terrain, 0, 4)
 		clipped.region = Rect2(0, row * TILE_NATIVE, TILE_NATIVE, TILE_NATIVE)
 		_base.texture = clipped
-		_base.rotation = PI / 4.0
-		var scl: float = float(cell_size) / DIAMOND_DIAG
+		# v0.10.9: NO rotation — the 45° rotated pixel art looks bad.
+		# Instead we draw a dark diamond floor behind the tile and
+		# scale the flat tile to fill the inscribed square. The
+		# diamond floor provides the isometric feel; the tile stays
+		# crisp. Inscribed square diag = CELL_SIZE, side = CELL_SIZE/√2.
+		var inscribed_side: float = float(cell_size) / 1.4142
+		var scl: float = inscribed_side / TILE_NATIVE
+		_base.rotation = 0.0
 		_base.scale = Vector2(scl, scl)
 		_base.modulate = Color.WHITE
 	else:
 		_base.texture = null
-		_base.rotation = PI / 4.0
+		_base.rotation = 0.0
 		_base.modulate = _default_color(terrain)
 		_base.scale = Vector2.ONE
 	if height > 0:
@@ -190,10 +207,12 @@ func setup_iso(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Te
 		_height_label.text = ""
 		_height_label.visible = false
 	if blocked:
+		_floor.color = Color(0.06, 0.04, 0.03, 1.0)  # blocked cells darker
 		_base.modulate = BLOCKED_TINT
 		_blocked_x.visible = true
 		_area.input_pickable = false
 	else:
+		_floor.color = Color(0.12, 0.10, 0.08, 1.0)
 		_blocked_x.visible = false
 		_area.input_pickable = true
 	refresh_height_visual()

@@ -403,12 +403,13 @@ func _test_v103_cell_texture_clipping() -> void:
 			_fail("BattleCell: terrain %d should clip atlas y=%d (got %d)" % [terrain, int(expected_y), int(at.region.position.y)])
 		else:
 			_ok("BattleCell: terrain %d clips atlas to (0, %d, 24, 24)" % [terrain, terrain * 24])
-	# Scale should be 56/33.94 = 1.65 so the 24x24 fills the 56px diamond
-	var expected_scale: float = BattleCellScript.CELL_SIZE / 33.94
+	# v0.10.9: scale from inscribed square diag = CELL_SIZE, side = CELL_SIZE/√2.
+	var inscribed: float = BattleCellScript.CELL_SIZE / 1.4142
+	var expected_scale: float = inscribed / 24.0
 	if abs(cell._base.scale.x - expected_scale) > 0.01:
 		_fail("BattleCell: scale.x should be %.2f (got %.2f)" % [expected_scale, cell._base.scale.x])
 	else:
-		_ok("BattleCell: sprite scaled to %.2fx to fill 56px diamond" % expected_scale)
+		_ok("BattleCell: sprite scaled to %.2fx (inscribed square in diamond)" % expected_scale)
 	cell.queue_free()
 
 
