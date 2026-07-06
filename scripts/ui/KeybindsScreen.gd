@@ -73,12 +73,6 @@ func _build_ui() -> void:
 	reset_btn.pressed.connect(_on_reset_all)
 	bottom.add_child(reset_btn)
 
-	var back_btn := Button.new()
-	back_btn.text = "Back"
-	back_btn.custom_minimum_size = Vector2(120, 32)
-	back_btn.pressed.connect(_on_back)
-	bottom.add_child(back_btn)
-
 
 func _populate_bindings() -> void:
 	for child in _list_vbox.get_children():
@@ -199,7 +193,3 @@ func _on_reset_all() -> void:
 	km.reset_all()
 	_populate_bindings()
 	_status_label.text = "All keybindings reset to defaults."
-
-
-func _on_back() -> void:
-	get_parent().queue_free()
