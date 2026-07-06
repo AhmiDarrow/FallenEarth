@@ -226,13 +226,21 @@ func _set_portrait(portrait: TextureRect, unit: Dictionary) -> void:
 
 func _placeholder_portrait(team: String) -> Texture2D:
 	var img := Image.create(SLOT_SIZE - 4, SLOT_SIZE - 4, false, Image.FORMAT_RGBA8)
-	img.fill(_team_color(team).darkened(0.5))
+	img.fill(_team_color_str(team).darkened(0.5))
 	for i in range(SLOT_SIZE - 4):
 		img.set_pixel(i, 0, Color.BLACK)
 		img.set_pixel(0, i, Color.BLACK)
 		img.set_pixel(SLOT_SIZE - 5, i, Color.BLACK)
 		img.set_pixel(i, SLOT_SIZE - 5, Color.BLACK)
 	return ImageTexture.create_from_image(img)
+
+
+func _team_color_str(team: String) -> Color:
+	if team == "player":
+		return COLOR_PLAYER
+	if team == "ally":
+		return COLOR_ALLY
+	return COLOR_ENEMY
 
 
 func _team_color(unit: Dictionary) -> Color:
