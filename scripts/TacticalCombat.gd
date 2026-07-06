@@ -14,6 +14,9 @@ const DungeonGen = preload("res://scripts/RiftDungeonGenerator.gd")
 const ClassProg = preload("res://scripts/ClassProgression.gd")
 const BattleGridViewScript = preload("res://scripts/combat/BattleGridView.gd")
 const BattleBackgroundScript = preload("res://scripts/combat/BattleBackground.gd")
+const BattleHUDScript = preload("res://scripts/combat/BattleHUD.gd")
+const TurnOrderPanelScript = preload("res://scripts/combat/TurnOrderPanel.gd")
+const BattleResultPanelScript = preload("res://scripts/combat/BattleResultPanel.gd")
 const CombatFeedbackScript = preload("res://scripts/CombatFeedback.gd")
 
 var _encounter: Dictionary = {}
@@ -36,6 +39,9 @@ var _grid_size: int = 7
 @onready var _background = $BattleBackgroundLayer/BattleBackground
 @onready var _grid = $BattleLayer/BattleGridView
 @onready var _feedback: Node = $BattleLayer/CombatFeedback
+var _battle_hud: Control = null
+var _turn_order_panel: Control = null
+var _result_panel: Control = null
 
 
 func _ready() -> void:
@@ -81,6 +87,26 @@ func _ready() -> void:
 	if _feedback != null and _feedback.has_method("setup"):
 		_feedback.setup(_combat)
 		_feedback.setup_hp_bars(_combat.get_units())
+
+	# Phase 3 polish: top HUD + turn-order sidebar
+	_battle_hud = BattleHUDScript.new()
+	_battle_hud.name = "BattleHUD"
+	$HUDLayer.add_child(_battle_hud)
+	if _battle_hud.has_method("setup"):
+		_battle_hud.setup(_combat)
+
+	_turn_order_panel = TurnOrderPanelScript.new()
+	_turn_order_panel.name = "TurnOrderPanel"
+	$HUDLayer.add_child(_turn_order_panel)
+	if _turn_order_panel.has_method("setup"):
+		_turn_order_panel.setup(_combat)
+
+	# Phase 3 polish: replace simple result panel with the styled one
+	_result_panel = BattleResultPanelScript.new()
+	_result_panel.name = "BattleResultPanel"
+	$HUDLayer.add_child(_result_panel)
+	if _result_panel.has_method("set_continue_handler"):
+		_result_panel.set_continue_handler(_on_continue_pressed)
 
 	result_panel.visible = false
 	_refresh_ui()
@@ -244,13 +270,48 @@ func _show_result_if_done() -> void:
 		return
 	if _combat.battle_phase == CombatMgr.BattlePhase.ACTIVE:
 		return
-	result_panel.visible = true
+	# Build the BBCode body for the styled result panel.
+	var body: String = ""
 	if _combat.battle_phase == CombatMgr.BattlePhase.VICTORY:
-		result_label.text = "[b][color=#a5d6a7]VICTORY[/color][/b]"
+		body = _build_victory_body()
+		if _result_panel != null and _result_panel.has_method("set_outcome"):
+			_result_panel.set_outcome("victory", "VICTORY", body)
 		_grant_victory_loot()
 		_grant_victory_xp()
 	else:
-		result_label.text = "[b][color=#ef9a9a]DEFEAT[/color][/b]"
+		body = "[center]The wasteland claims another traveler.[/center]"
+		if _result_panel != null and _result_panel.has_method("set_outcome"):
+			_result_panel.set_outcome("defeat", "DEFEAT", body)
+	# Hide the legacy result panel (we use the styled one now).
+	result_panel.visible = false
+
+
+func _build_victory_body() -> String:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return "[center]Combat won.[/center]"
+	var xp: int = ClassProg.combat_xp_reward(_encounter, true)
+	var result: Dictionary = gs.grant_class_xp(xp)
+	var lvl: int = int(result.get("level", 1))
+	var gained: int = int(result.get("levels_gained", 0))
+	var cm: ClassManager = get_node_or_null("/root/ClassManager") as ClassManager
+	var next_xp: int = ClassProg.xp_required_for_next_level(lvl) if is_instance_valid(cm) else 0
+	var lines: Array[String] = []
+	if gained > 0:
+		lines.append("[center][b][color=#fff59d]LEVEL UP ×%d![/color][/b] Now [b]Lv.%d[/b] / %d[/center]" % [gained, lvl, ClassProg.MAX_LEVEL])
+	else:
+		lines.append("[center]+%d Class XP  ([b]Lv.%d[/b] — %d/%d to next)[/center]" % [xp, lvl, int(result.get("xp", 0)), next_xp])
+	if bool(_encounter.get("victory_loot", false)):
+		var runner: Node = get_node_or_null("/root/RiftRunner")
+		if is_instance_valid(runner):
+			var biome: String = str(_encounter.get("biome_key", "Ash Wastes"))
+			var count: int = int(_encounter.get("loot_count", 2))
+			var loot: Array = runner.get_random_loot(biome, count)
+			if not loot.is_empty():
+				lines.append("\n[b]Loot:[/b]")
+				for item in loot:
+					lines.append("• %s" % item.get("name", "Item"))
+	return "\n".join(lines)
 
 
 func _grant_victory_xp() -> void:
