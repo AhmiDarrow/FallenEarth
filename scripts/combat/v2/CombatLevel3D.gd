@@ -85,6 +85,11 @@ func _ready() -> void:
 	# Configure arena
 	_configure_from_encounter()
 
+	# Center camera on arena
+	var grid_size: int = _arena.res.grid_size
+	var center := Vector3(grid_size * 0.5 * CombatTile3D.CELL_SIZE, 0.0, grid_size * 0.5 * CombatTile3D.CELL_SIZE)
+	_camera.set_target(center)
+
 	# Kick off first turn
 	_start_turn("player")
 	_update_top_prompt()

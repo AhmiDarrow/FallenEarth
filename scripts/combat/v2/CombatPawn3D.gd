@@ -64,53 +64,44 @@ func _build_sprite() -> void:
 	_sprite.name = "Sprite3D"
 	_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_sprite.pixel_size = 0.01
-	_sprite.no_depth_test = false
-	_sprite.render_priority = 1.0
+	_sprite.no_depth_test = true
+	_sprite.render_priority = 0.0
 	_sprite.position = Vector3(0, PAWN_HEIGHT, 0)
 	add_child(_sprite)
 
 
 func _build_labels() -> void:
-	# Name label
-	_name_label = Label3D.new()
-	_name_label.name = "NameLabel"
-	_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_name_label.font_size = 32
-	_name_label.outline_size = 0
-	_name_label.position = Vector3(0, PAWN_HEIGHT + 1.0, 0)
-	_name_label.pixel_size = 0.01
-	_name_label.no_depth_test = false
-	_name_label.render_priority = 2.0
-	add_child(_name_label)
-
-	# HP label
+	# HP label (below name)
 	_hp_label = Label3D.new()
 	_hp_label.name = "HPLabel"
 	_hp_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_hp_label.font_size = 28
-	_hp_label.outline_size = 0
-	_hp_label.position = Vector3(0, PAWN_HEIGHT + 0.5, 0)
+	_hp_label.outline_size = 8
+	_hp_label.outline_modulate = Color.BLACK
+	_hp_label.position = Vector3(0, PAWN_HEIGHT + 1.5, 0)
 	_hp_label.pixel_size = 0.01
-	_hp_label.no_depth_test = false
-	_hp_label.render_priority = 1.5
+	_hp_label.no_depth_test = true
+	_hp_label.render_priority = 1.0
 	add_child(_hp_label)
+
+	# Name label (above HP)
+	_name_label = Label3D.new()
+	_name_label.name = "NameLabel"
+	_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_name_label.font_size = 32
+	_name_label.outline_size = 8
+	_name_label.outline_modulate = Color.BLACK
+	_name_label.position = Vector3(0, PAWN_HEIGHT + 2.0, 0)
+	_name_label.pixel_size = 0.01
+	_name_label.no_depth_test = true
+	_name_label.render_priority = 2.0
+	add_child(_name_label)
 
 
 func _build_animations() -> void:
 	_anim_player = AnimationPlayer.new()
 	_anim_player.name = "AnimationPlayer"
 	add_child(_anim_player)
-	# Create simple IDLE animation (bobbing)
-	var idle_anim := Animation.new()
-	idle_anim.resource_name = "IDLE"
-	var track_idx := idle_anim.add_track(Animation.TYPE_POSITION_3D)
-	idle_anim.track_set_path(track_idx, "Sprite3D")
-	idle_anim.track_insert_key(track_idx, 0.0, Vector3(0, PAWN_HEIGHT, 0))
-	idle_anim.track_insert_key(track_idx, 1.0, Vector3(0, PAWN_HEIGHT + 0.05, 0))
-	idle_anim.loop_mode = Animation.LOOP_LINEAR
-	_anim_player.add_animation_library("", AnimationLibrary.new())
-	_anim_player.get_animation_library("").add_animation("IDLE", idle_anim)
-	_anim_player.play("IDLE")
 
 
 func setup_from_data(data: Dictionary, arena: ArenaResource) -> void:
