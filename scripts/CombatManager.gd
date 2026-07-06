@@ -513,6 +513,13 @@ func _template_to_unit(template: Dictionary, pos: Vector2i, is_boss: bool, index
 		"ai_archetype": str(template.get("ai_archetype", "aggressive")),
 		"abilities": (template.get("abilities", []) as Array).duplicate(true),
 		"mp": int(template.get("mp", 0)),
+		# v0.10.0+: pass through the sprite_id from the encounter
+		# template so BattleUnit / TurnOrderBar can load the right
+		# mob art. Without this, the fallback "enemy_N" id was used
+		# and the sprite silently fell back to a gray placeholder.
+		"sprite_id": str(template.get("sprite_id", template.get("id", "mob"))),
+		"race": str(template.get("race", "human")),
+		"gender": str(template.get("gender", "male")),
 	}
 	# Mob presets that need ranged or caster behavior get a wider
 	# weapon range so they can actually reach. Specific data
