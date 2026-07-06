@@ -151,8 +151,8 @@ func _load_sprite(unit: Dictionary) -> void:
 	if team == "player":
 		var race: String = str(unit.get("race", "human")).to_lower()
 		var gender: String = str(unit.get("gender", "male")).to_lower()
-		var race_dir: String = _character_race_dir(race)
-		path = "%s%s/%s_%s_S.png" % [CHAR_FOLDER, race_dir, race_dir, gender]
+		# Folder structure is {race}_{gender}/{race}_{gender}_S.png
+		path = "%s%s_%s/%s_%s_S.png" % [CHAR_FOLDER, race, gender, race, gender]
 	else:
 		var sprite_id: String = str(unit.get("sprite_id", unit.get("id", "")))
 		path = SPRITE_FOLDER + sprite_id + ".png"

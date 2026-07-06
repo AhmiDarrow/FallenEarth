@@ -101,20 +101,17 @@ func _build_children() -> void:
 
 
 func _make_slot(hotkey: int) -> Control:
-	# Outer container so we can absolutely-position the hotkey badge
-	# in the top-left without breaking the button's hit area.
-	var slot := Control.new()
+	# Make the slot a Button so the whole area is clickable. Add
+	# visual children (icon, hotkey, name, MP) to the Button; since
+	# they're added after the Button's own internals, they render
+	# on top of any default stylebox.
+	var slot := Button.new()
+	slot.name = "Slot_%d" % hotkey
 	slot.custom_minimum_size = Vector2(160, 80)
-	slot.mouse_filter = Control.MOUSE_FILTER_PASS
-	# Clickable button
-	var btn := Button.new()
-	btn.name = "Button"
-	btn.anchor_right = 1.0
-	btn.anchor_bottom = 1.0
-	btn.flat = true
-	btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	slot.add_child(btn)
-	_slot_buttons.append(btn)
+	slot.flat = true
+	slot.focus_mode = Control.FOCUS_NONE
+	slot.mouse_filter = Control.MOUSE_FILTER_STOP
+	_slot_buttons.append(slot)
 	# Icon (top-center)
 	var icon := TextureRect.new()
 	icon.name = "Icon"

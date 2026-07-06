@@ -235,8 +235,7 @@ func _set_portrait(unit: Dictionary) -> void:
 	if team == "player":
 		var race: String = str(unit.get("race", "human")).to_lower()
 		var gender: String = str(unit.get("gender", "male")).to_lower()
-		var race_dir := _character_race_dir(race)
-		path = "res://assets/characters/%s/%s_%s_S.png" % [race_dir, race_dir, gender]
+		path = "res://assets/characters/%s_%s/%s_%s_S.png" % [race, gender, race, gender]
 	else:
 		var sprite_id: String = str(unit.get("sprite_id", unit.get("id", "")))
 		path = "res://assets/mobs/%s.png" % sprite_id
