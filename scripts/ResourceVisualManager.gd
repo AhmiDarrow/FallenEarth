@@ -63,9 +63,9 @@ func _build_node_visuals() -> void:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_2D
 		mm.instance_count = entries.size()
-		mm.texture = tex
 		var mesh_inst := MultiMeshInstance2D.new()
 		mesh_inst.multimesh = mm
+		mesh_inst.texture = tex
 		mesh_inst.name = "Nodes_%s" % sprite_id
 		add_child(mesh_inst)
 		_node_meshes[sprite_id] = mesh_inst
@@ -114,9 +114,9 @@ func _build_pickup_visuals() -> void:
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_2D
 		mm.instance_count = entries.size()
-		mm.texture = tex
 		var mesh_inst := MultiMeshInstance2D.new()
 		mesh_inst.multimesh = mm
+		mesh_inst.texture = tex
 		mesh_inst.name = "Pickups_%s" % item_id
 		add_child(mesh_inst)
 		_pickup_meshes[item_id] = mesh_inst
