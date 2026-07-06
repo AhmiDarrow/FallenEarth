@@ -1,96 +1,58 @@
 ---
-name: v101-combat-polish
-description: v0.10.1 Combat UI Polish — FFT-style selection arrow, top prompt, decor props, name plates, action bar.
+name: v102-combat-sizing
+description: v0.10.2 Combat sizing pass — bigger cells, bigger bars, bigger arrow, action bar at bottom.
 ---
-# v0.10.1 Combat UI Polish
+# v0.10.2 Combat Sizing Pass
 
 ## User request
-"We need to keep polishing and fixing battle" — with a Final Fantasy
-Tactics reference showing the desired look (blue down-arrow above the
-active unit, "Select a white tile to move" prompt, biome-themed decor
-props, white-bg name labels, FFT-style action bar).
+"still needs work" — screenshot showed the grid was way too small
+(7×7×24=168px wide, ~13% of the viewport), HP bars were tiny
+(24×4 = barely visible), selection arrow was a small triangle
+(18×16), and the action bar was floating in the middle of the
+screen rather than at the bottom.
 
 ## What shipped
 
-### New components
-- `scripts/combat/UnitSelectionArrow.gd` — bright cyan-blue down-arrow
-  with 3-layer (outer/mid/inner) Polygon2D triangles. Bobs up-and-down
-  + inner alpha pulses for a glow effect.
-- `scripts/combat/TopPrompt.gd` — top-center styled banner with
-  optional sub line and auto-fade. Uses the new
-  `assets/battle_ui/top_prompt_panel.png` as the backdrop (falls back
-  to styled rect).
-- `scripts/combat/UnitNamePlate.gd` — white-bg, dark-border name
-  label above each unit. Team-tinted text (player=green, enemy=red,
-  ally=blue, boss=gold). Bosses get a slightly cream bg.
+### Cell size: 24 → 40
+- `BattleGridView.CELL_SIZE` = 40 (was 24)
+- `BattleCell.CELL_SIZE` = 40 (was 24)
+- `BattleCell.BORDER_THICKNESS` = 3 (new const for chunky edges)
+- `BattleUnit.CELL_SIZE` = 40 (was 24)
+- `BattleBackground.TILE_SIZE` = 40 (was 24) — for the local
+  "no-decor-in-grid-rect" math
+- New grid is 7×7×40 = 280px wide, ~22% of the 1280px viewport
 
-### BattleBackground overhaul
-- Replaced the old debris/vegetation tile scatter with biome-themed
-  decor props from `assets/battle_decor/{kind}/`.
-- 7 decor types generated via PixelLab: boulders, animal skulls,
-  cacti, rubble, thorns, stumps, gnarled roots. Each with 3-4
-  variants.
-- Per-biome decor selection: Ash Wastes uses boulder/rubble/stump/
-  skull/roots; Neon Bogs uses roots/thorns/cactus/stump/rubble; etc.
-- New `BIOME_DECOR` map in `BattleBackground.gd`.
-- Props have random rotation + scale variance, so they read as
-  scattered scenery not as a grid of identical sprites.
+### Bigger HP bars
+- `CombatHPBar.BAR_WIDTH` = 36 (was 24), `BAR_HEIGHT` = 6 (was 4)
+- New `LABEL_OFFSET_Y` = -8, `BAR_OFFSET_Y` = -2 (constants)
+- New dark border ring around the bar for definition
+- Now reads as an actual bar, not a thin line
 
-### BattleCell polish
-- HIGHLIGHT_MOVE is now a soft white tint (was a blue full-cell).
-- HIGHLIGHT_ATTACK / HIGHLIGHT_SKILL use border-only frames
-  (4 ColorRect edges) so the ground texture still shows inside the
-  cell. This matches the FFT reference: red borders = attack range,
-  purple borders = skill range.
-- New `_highlight_border: Control` + `_build_border()` /
-  `_set_border_color()` helpers.
+### Bigger selection arrow
+- `UnitSelectionArrow.WIDTH` = 28 (was 18), `HEIGHT` = 24 (was 16)
+- `BOB_HEIGHT` = 5 (was 4)
+- Triangle layers re-tuned for the new size (still 3-layer)
 
-### BattleUnit polish
-- Each unit now owns a `UnitNamePlate` and a `UnitSelectionArrow`.
-- Arrow visibility follows `set_active(true/false)`.
-- New `display_name` field so the engine can override the
-  auto-generated name (e.g. "TestHero").
+### Bigger name plate
+- `UnitNamePlate.WIDTH` = 96 (was 80), `HEIGHT` = 20 (was 16)
+- `font_size` = 10 (was 9)
+- Re-positioned in BattleUnit to clear the new arrow + bars
 
-### BattleGridView helpers
-- `get_unit(id)`, `get_all_units()`, `cell_to_world(x, y)` for
-  consumers (TacticalCombat, TargetingReticle).
+### Turn order bar improvements
+- `SLOT_SIZE` = 64 (was 56), `SLOT_SPACING` = 8 (was 6)
+- Bar height 112 (was 96) to fit the bigger slots
+- **Procedural portrait fallback**: missing-sprite slots now draw
+  a chunky character silhouette in the team color (head + body
+  + eyes + border) so the player still reads "this unit exists"
+  even if the race sprite path is missing
 
-### TacticalCombat wiring
-- New `TopPrompt` is created on `_ready` and updated by
-  `_update_instructions()` whenever the subphase changes:
-  - MOVE → "Select a white tile to move" / "Then choose an action"
-  - ACTION → "Choose an action" / "Skill / Attack / Wait / Finish"
-  - TARGET_ATTACK → "Select a target" / "Red tiles = attack range"
-  - TARGET_SKILL → "Select a skill target" / "Purple tiles = skill range"
-  - enemy turn → "Enemy acting…"
-  - end of battle → hide.
-- New `_build_bottom_action_bar()` builds a dedicated bottom-center
-  HBox with the styled End Turn + Retreat buttons. The legacy
-  ActionsHBox is hidden so the player has a clean bottom row.
-- New `_style_action_button()` / `_style_finish_button()` apply
-  chunky FFT-style metal styleboxes (red/blue/grey for actions,
-  gold border for End Turn).
-- Legacy MainVBox labels (status, turn_order, instructions, log)
-  hidden — replaced by the new HUD components.
-
-### New assets (PixelLab MCP)
-- `assets/battle_ui/selection_arrow.png` (192×192) — cyan arrow
-- `assets/battle_ui/top_prompt_panel.png` (512×192) — gold-trim banner
-- `assets/battle_ui/name_plate_panel.png` (256×192) — blue-trim plate
-- `assets/battle_ui/button_red.png` / `button_blue.png` /
-  `button_grey.png` / `button_gold.png` (256×192 each)
-- `assets/battle_decor/boulder/` ×4 variants
-- `assets/battle_decor/skull/` ×3 variants
-- `assets/battle_decor/cactus/` ×4 variants
-- `assets/battle_decor/rubble/` ×4 variants
-- `assets/battle_decor/thorns/` ×4 variants
-- `assets/battle_decor/stump/` ×3 variants
-- `assets/battle_decor/roots/` ×3 variants
-- `tools/generate_battle_decor_imports.py` — generates
-  `.import` files for headless workflows (Godot rewrites them on
-  next editor import).
-
-Total: 25 PNGs + 25 .import files = 50 new asset files.
+### Action bar at the very bottom
+- New offset: `offset_top = -160`, `offset_bottom = -124`
+- Sits 12px above the SkillBar (-112..-16) and 16px below the
+  UnitInfoCard (-208..-16) — matches the FFT reference where
+  End Turn is just above the skill bar
+- End Turn button: 160×36 (was 140×56) — wider, less tall
+- Retreat button: 120×36 (was 110×44)
 
 ## Verification
 
@@ -99,27 +61,26 @@ Total: 25 PNGs + 25 .import files = 50 new asset files.
 | `validate_scripts.gd` | All | All OK |
 | `tools/smoke_combat_v100.gd` | 27 (visual) | All pass |
 | `tools/smoke_combat_ui.gd` | 15 (UI) | All pass |
-| `tools/smoke_combat_polish.gd` | NEW — 7 groups | All pass |
-| `tools/boot_combat.gd` | NEW — full scene boot | All pass |
+| `tools/smoke_combat_ai.gd` | 11 (AI) | All pass |
+| `tools/smoke_combat_feedback.gd` | 4 (feedback) | All pass |
+| `tools/smoke_combat_polish.gd` | 7 (polish) | All pass |
+| `tools/boot_combat.gd` | full scene boot | All pass |
 | `tools/boot_probe.gd` | 60 frames | 0 errors |
 
 ## Architecture constraints held
-- New components are pure data-driven (no new tile pipeline,
-  no new sprite system). Decor uses the same PixelLab pipeline
-  as the existing battle_ui/ assets.
-- BattleBackground reuses the existing `TileSetService.biome_to_dir()`
-  for the bg tile.
-- New scripts are added to `validate_scripts.gd` SCRIPTS list
-  (TopPrompt, UnitNamePlate, UnitSelectionArrow) so they get
-  compile-checked alongside the rest of the codebase.
+- Cell size is a single `const CELL_SIZE` on each combat node;
+  bumping it cascades cleanly through `BattleGridView`,
+  `BattleCell`, `BattleUnit`, `BattleBackground`. No magic
+  numbers in the layout code.
+- HP bar size is a single `const BAR_WIDTH/BAR_HEIGHT` block
+  on `CombatHPBar`. Update in one place to scale further.
 
 ## What's next (P1 for future)
-- Per-decor-test: a 6×6 visual grid test in `tools/smoke_combat_polish.gd`
-  that takes a screenshot for visual QA.
-- Consider adding a "Move preview" tooltip (FFT shows the range cost
-  on each tile when the unit is selected to move).
-- Bouncing battle damage popup: when the FloatingDamage numbers spawn,
-  they should arc from the attacker to the target rather than appear
-  in a fixed spot.
-- A "queue" indicator on the TurnOrderBar: a tiny pip showing how many
-  more turns until a unit's next action.
+- Make the unit sprites 32x32 or 48x48 to fill the bigger cells
+  (currently they're 64x64 scaled to 0.5× = 32x32 native, which
+  looks fine but could be punchier).
+- Consider isometric grid (FFT has subtle diamond-shape cells).
+- Per-decor-test: 6×6 visual grid test in
+  `tools/smoke_combat_polish.gd` that takes a screenshot for
+  visual QA.
+

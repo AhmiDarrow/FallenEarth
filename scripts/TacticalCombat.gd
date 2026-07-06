@@ -759,10 +759,9 @@ func _spawn_combat_popup(kind: String, target_cell: Vector2i) -> void:
 
 
 ## Build a bottom-center action bar (End Turn + Retreat). The bar
-## is anchored to the bottom-center of the screen and overlays the
-## SkillBar. The buttons reuse the styled approach from
-## `_style_action_button` / `_style_finish_button` so they match
-## the rest of the UI.
+## sits just above the SkillBar at the bottom-center of the screen.
+## Larger buttons (48px tall) to be more clickable on a 1280x720
+## viewport and read clearly even with the SkillBar below.
 func _build_bottom_action_bar() -> void:
 	var bar := HBoxContainer.new()
 	bar.name = "BottomActionBar"
@@ -770,11 +769,15 @@ func _build_bottom_action_bar() -> void:
 	bar.anchor_right = 0.5
 	bar.anchor_top = 1.0
 	bar.anchor_bottom = 1.0
-	bar.offset_left = -160
-	bar.offset_right = 160
-	bar.offset_top = -180
-	bar.offset_bottom = -132
-	bar.add_theme_constant_override("separation", 12)
+	# Sit just above the SkillBar (which is at -112..-16 from the
+	# bottom). This places the action bar at -134..-100, leaving a
+	# 12px gap above the SkillBar's top edge so they read as two
+	# distinct rows.
+	bar.offset_left = -180
+	bar.offset_right = 180
+	bar.offset_top = -160
+	bar.offset_bottom = -124
+	bar.add_theme_constant_override("separation", 16)
 	bar.alignment = BoxContainer.ALIGNMENT_CENTER
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	$HUDLayer.add_child(bar)
@@ -783,7 +786,7 @@ func _build_bottom_action_bar() -> void:
 	# bottom of the screen.
 	if finish_btn != null:
 		_style_finish_button(finish_btn)
-		finish_btn.custom_minimum_size = Vector2(140, 44)
+		finish_btn.custom_minimum_size = Vector2(160, 36)
 		finish_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		_remove_parent(finish_btn)
 		bar.add_child(finish_btn)
@@ -792,7 +795,7 @@ func _build_bottom_action_bar() -> void:
 			finish_btn.pressed.connect(_on_finish_pressed)
 	if retreat_btn != null:
 		_style_action_button(retreat_btn, "Retreat", Color(0.95, 0.7, 0.55))
-		retreat_btn.custom_minimum_size = Vector2(110, 44)
+		retreat_btn.custom_minimum_size = Vector2(120, 36)
 		retreat_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		_remove_parent(retreat_btn)
 		bar.add_child(retreat_btn)

@@ -21,7 +21,10 @@ const COLOR_CURSOR := Color(1.0, 0.95, 0.4, 0.65)
 const HEIGHT_COLOR := Color(0.20, 0.18, 0.30, 0.85)
 const BLOCKED_TINT := Color(0.05, 0.04, 0.08, 1.0)
 
-const CELL_SIZE := 24
+const CELL_SIZE := 40
+# Border thickness for the FFT-style edge frame. Chunky enough to
+# read as a "highlighted tile" without obscuring the ground.
+const BORDER_THICKNESS := 3
 
 var grid_x: int = 0
 var grid_y: int = 0
@@ -155,9 +158,9 @@ func set_highlight(kind: int) -> void:
 
 
 ## Build a 4-edge border control sized to the cell. Each edge is a
-## 1px-tall (or 2px for a chunky pixel-art look) ColorRect; the
-## edges are recolored by `_set_border_color` when the highlight
-## changes. This gives the FFT-style "white tile" outlined look.
+## chunky ColorRect; the edges are recolored by `_set_border_color`
+## when the highlight changes. This gives the FFT-style
+## "outlined tile" look.
 func _build_border() -> Control:
 	var border := Control.new()
 	border.name = "HighlightBorder"
@@ -169,29 +172,29 @@ func _build_border() -> Control:
 	var t := ColorRect.new()
 	t.name = "Top"
 	t.color = COLOR_MOVE
-	t.size = Vector2(CELL_SIZE, 2)
+	t.size = Vector2(CELL_SIZE, BORDER_THICKNESS)
 	t.position = Vector2(0, 0)
 	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border.add_child(t)
 	var b := ColorRect.new()
 	b.name = "Bottom"
 	b.color = COLOR_MOVE
-	b.size = Vector2(CELL_SIZE, 2)
-	b.position = Vector2(0, CELL_SIZE - 2)
+	b.size = Vector2(CELL_SIZE, BORDER_THICKNESS)
+	b.position = Vector2(0, CELL_SIZE - BORDER_THICKNESS)
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border.add_child(b)
 	var l := ColorRect.new()
 	l.name = "Left"
 	l.color = COLOR_MOVE
-	l.size = Vector2(2, CELL_SIZE)
+	l.size = Vector2(BORDER_THICKNESS, CELL_SIZE)
 	l.position = Vector2(0, 0)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border.add_child(l)
 	var r := ColorRect.new()
 	r.name = "Right"
 	r.color = COLOR_MOVE
-	r.size = Vector2(2, CELL_SIZE)
-	r.position = Vector2(CELL_SIZE - 2, 0)
+	r.size = Vector2(BORDER_THICKNESS, CELL_SIZE)
+	r.position = Vector2(CELL_SIZE - BORDER_THICKNESS, 0)
 	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	border.add_child(r)
 	return border

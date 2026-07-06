@@ -10,7 +10,8 @@
 ## UnitSelectionArrow is shown when this is the active unit.
 class_name BattleUnit extends Node2D
 
-const CELL_SIZE := 24
+# v0.10.2 polish: match the bumped grid CELL_SIZE (was 24).
+const CELL_SIZE := 40
 const SPRITE_FOLDER := "res://assets/mobs/"
 const CHAR_FOLDER := "res://assets/characters/"
 
@@ -115,11 +116,13 @@ func _build_children() -> void:
 	_hp_fill = null
 	_hp_label = null
 
+	# v0.10.2 polish: CT mini-bar on the cell, wider to match the
+	# bumped cell size.
 	_ct_bg = ColorRect.new()
 	_ct_bg.name = "CTBg"
 	_ct_bg.color = Color(0.08, 0.06, 0.05, 0.85)
-	_ct_bg.position = Vector2(2, -3)
-	_ct_bg.size = Vector2(CELL_SIZE - 4, 3)
+	_ct_bg.position = Vector2(2, -4)
+	_ct_bg.size = Vector2(CELL_SIZE - 4, 4)
 	_ct_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ct_bg.z_index = 11
 	add_child(_ct_bg)
@@ -127,26 +130,28 @@ func _build_children() -> void:
 	_ct_fill = ColorRect.new()
 	_ct_fill.name = "CTFill"
 	_ct_fill.color = CT_BAR_FILL
-	_ct_fill.position = Vector2(3, -2)
-	_ct_fill.size = Vector2(0, 1)
+	_ct_fill.position = Vector2(3, -3)
+	_ct_fill.size = Vector2(0, 2)
 	_ct_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ct_fill.z_index = 12
 	add_child(_ct_fill)
 
 	# v0.10.1 polish: white-bordered name plate above the unit's
-	# sprite (replaces the legacy outline-stroked Label).
+	# sprite (replaces the legacy outline-stroked Label). Sized for
+	# the bumped 40px cells.
 	_name_plate = UnitNamePlateScript.new()
 	_name_plate.name = "NamePlate"
-	_name_plate.position = Vector2(-40, -28)
+	_name_plate.position = Vector2(-40, -34)
 	_name_plate.z_index = 14
 	_name_plate.visible = true
 	add_child(_name_plate)
 
 	# v0.10.1 polish: down-pointing selection arrow above the unit.
 	# Hidden by default; shown only when this unit is active.
+	# Sits between the name plate and the unit's sprite.
 	_selection_arrow = UnitSelectionArrowScript.new()
 	_selection_arrow.name = "SelectionArrow"
-	_selection_arrow.position = Vector2(0, -18)
+	_selection_arrow.position = Vector2(0, -24)
 	_selection_arrow.z_index = 15
 	_selection_arrow.visible = false
 	add_child(_selection_arrow)

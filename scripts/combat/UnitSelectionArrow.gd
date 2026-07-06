@@ -4,13 +4,16 @@
 ## asset to look good. Bobs up-and-down and pulses.
 class_name UnitSelectionArrow extends Node2D
 
+# v0.10.2 polish: scaled up to 28x24 to be clearly visible above
+# the 40px cells (was 18x16, which was just a tiny triangle on
+# the 24px cells).
 const COLOR_OUTER := Color(0.05, 0.10, 0.30, 0.95)
 const COLOR_MID := Color(0.20, 0.55, 0.95, 1.0)
 const COLOR_INNER := Color(0.85, 0.95, 1.0, 1.0)
-const BOB_HEIGHT := 4.0
+const BOB_HEIGHT := 5.0
 const BOB_PERIOD := 0.7
-const WIDTH := 18
-const HEIGHT := 16
+const WIDTH := 28
+const HEIGHT := 24
 
 var _outer: Polygon2D
 var _mid: Polygon2D
@@ -39,14 +42,14 @@ func _build_polygons() -> void:
 		Vector2(cx, tip_y),
 	])
 	var mid_pts: PackedVector2Array = PackedVector2Array([
-		Vector2(cx - WIDTH * 0.45, top_y + 1.0),
-		Vector2(cx + WIDTH * 0.45, top_y + 1.0),
-		Vector2(cx, tip_y - 1.0),
+		Vector2(cx - WIDTH * 0.45, top_y + 1.5),
+		Vector2(cx + WIDTH * 0.45, top_y + 1.5),
+		Vector2(cx, tip_y - 1.5),
 	])
 	var inner_pts: PackedVector2Array = PackedVector2Array([
-		Vector2(cx - WIDTH * 0.20, top_y + 3.0),
-		Vector2(cx + WIDTH * 0.20, top_y + 3.0),
-		Vector2(cx, tip_y - 4.0),
+		Vector2(cx - WIDTH * 0.20, top_y + 4.0),
+		Vector2(cx + WIDTH * 0.20, top_y + 4.0),
+		Vector2(cx, tip_y - 5.0),
 	])
 	_outer = Polygon2D.new()
 	_outer.polygon = outer_pts

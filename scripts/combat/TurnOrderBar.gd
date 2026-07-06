@@ -3,8 +3,8 @@
 ## Replaces the old right-side TurnOrderPanel.
 class_name TurnOrderBar extends Control
 
-const SLOT_SIZE := 56
-const SLOT_SPACING := 6
+const SLOT_SIZE := 64
+const SLOT_SPACING := 8
 const PANEL_BG_PATH := "res://assets/battle_ui/turn_order_bar.png"
 const COLOR_BG := Color(0.05, 0.05, 0.08, 0.88)
 const COLOR_BORDER := Color(0.30, 0.50, 0.70, 1.0)
@@ -20,15 +20,16 @@ var _hsep: HSeparator
 
 
 func _ready() -> void:
-	# Top-center, full width minus a 16px margin, 96px tall.
+	# Top-center, full width minus a 16px margin, taller to fit the
+	# bumped 64x64 portrait slots (was 56x56 with 96px bar).
 	anchor_left = 0.5
 	anchor_right = 0.5
 	anchor_top = 0.0
 	anchor_bottom = 0.0
-	offset_left = -340
-	offset_right = 340
+	offset_left = -360
+	offset_right = 360
 	offset_top = 8
-	offset_bottom = 104
+	offset_bottom = 112
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_children()
 
@@ -86,11 +87,9 @@ func _build_children() -> void:
 
 
 func _make_slot() -> Control:
-	# Slot is just a Control with a Portrait + ActiveGlow. HP and
-	# CT bars are intentionally omitted here — CombatFeedback already
-	# draws them above the units on the grid, and trying to pack
-	# another HP+CT bar into the 56x72 slot was making the layout
-	# fight the generated bar backdrop.
+	# Slot is a Control with a portrait + active glow. We render the
+	# portrait through a small Node2D wrapper so the placeholder
+	# (which is procedurally drawn) sits at the right Z-order.
 	var slot := Control.new()
 	slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
 	slot.size = Vector2(SLOT_SIZE, SLOT_SIZE)
@@ -182,13 +181,44 @@ func _set_portrait(portrait: TextureRect, unit: Dictionary) -> void:
 
 
 func _placeholder_portrait(team: String) -> Texture2D:
-	var img := Image.create(SLOT_SIZE - 4, SLOT_SIZE - 4, false, Image.FORMAT_RGBA8)
-	img.fill(_team_color_str(team).darkened(0.5))
-	for i in range(SLOT_SIZE - 4):
+	# Procedural portrait: dark bg + a chunky character silhouette
+	# in the team color, so missing-sprite slots still read as
+	# "this unit exists" instead of an empty box. The silhouette
+	# is a head + body in pixel-art proportions matching the
+	# BattleUnit sprite.
+	var sz: int = SLOT_SIZE - 4
+	var img := Image.create(sz, sz, false, Image.FORMAT_RGBA8)
+	# Dark background
+	img.fill(Color(0.10, 0.08, 0.05, 1.0))
+	# Team-tinted body block (legs)
+	var team_c: Color = _team_color_str(team)
+	var head_y: int = int(sz * 0.20)
+	var head_h: int = int(sz * 0.30)
+	var body_y: int = head_y + head_h
+	var body_h: int = int(sz * 0.45)
+	var body_left: int = int(sz * 0.20)
+	var body_right: int = int(sz * 0.80)
+	for y in range(body_y, body_y + body_h):
+		for x in range(body_left, body_right):
+			if x >= 0 and x < sz and y >= 0 and y < sz:
+				img.set_pixel(x, y, team_c)
+	# Head (lighter team color)
+	var head_left: int = int(sz * 0.30)
+	var head_right: int = int(sz * 0.70)
+	for y in range(head_y, head_y + head_h):
+		for x in range(head_left, head_right):
+			if x >= 0 and x < sz and y >= 0 and y < sz:
+				img.set_pixel(x, y, team_c.lightened(0.25))
+	# Eyes (dark dots)
+	var eye_y: int = head_y + int(head_h * 0.45)
+	img.set_pixel(int(sz * 0.40), eye_y, Color(0, 0, 0))
+	img.set_pixel(int(sz * 0.60), eye_y, Color(0, 0, 0))
+	# Border (1px black ring)
+	for i in range(sz):
 		img.set_pixel(i, 0, Color.BLACK)
 		img.set_pixel(0, i, Color.BLACK)
-		img.set_pixel(SLOT_SIZE - 5, i, Color.BLACK)
-		img.set_pixel(i, SLOT_SIZE - 5, Color.BLACK)
+		img.set_pixel(sz - 1, i, Color.BLACK)
+		img.set_pixel(i, sz - 1, Color.BLACK)
 	return ImageTexture.create_from_image(img)
 
 

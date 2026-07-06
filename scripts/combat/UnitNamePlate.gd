@@ -4,14 +4,15 @@
 ## at a glance. The plate fades in/out and follows the unit's cell.
 class_name UnitNamePlate extends Control
 
+# v0.10.2 polish: scaled up the plate to match the bumped 40px cells.
 const BG_COLOR := Color(1.0, 1.0, 1.0, 0.92)
 const BORDER_COLOR := Color(0.10, 0.08, 0.05, 0.95)
 const BOSS_COLOR := Color(1.0, 0.85, 0.35, 1.0)
 const ALLY_COLOR := Color(0.45, 0.75, 1.0, 1.0)
 const PLAYER_COLOR := Color(0.45, 0.95, 0.55, 1.0)
 const ENEMY_COLOR := Color(1.0, 0.55, 0.45, 1.0)
-const WIDTH := 80
-const HEIGHT := 16
+const WIDTH := 96
+const HEIGHT := 20
 const PADDING := 4
 var _bg: ColorRect
 var _label: Label
@@ -49,7 +50,7 @@ func _build_children() -> void:
 	_label.add_theme_color_override("font_color", _team_color)
 	_label.add_theme_color_override("font_outline_color", Color.WHITE)
 	_label.add_theme_constant_override("outline_size", 0)
-	_label.add_theme_font_size_override("font_size", 9)
+	_label.add_theme_font_size_override("font_size", 10)
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_label)
 

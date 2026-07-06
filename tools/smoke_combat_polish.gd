@@ -32,6 +32,12 @@ func _initialize() -> void:
 	_test_battle_unit_owns_name_plate_and_arrow()
 	await process_frame
 	_test_pixellab_assets_exist()
+	await process_frame
+	_test_v102_cell_sizing()
+	await process_frame
+	_test_v102_turn_order_procedural_portrait()
+	await process_frame
+	_test_v102_hp_bar_sizing()
 	_print_summary()
 	quit()
 
@@ -282,6 +288,76 @@ func _test_pixellab_assets_exist() -> void:
 			_fail("missing asset: %s" % path)
 		else:
 			_ok("asset present: %s" % path.replace("res://", ""))
+
+
+func _test_v102_cell_sizing() -> void:
+	print("\n--- v0.10.2: cell sizing & visual proportions ---")
+	# v0.10.2: cells bumped from 24 to 40 for a 67% larger grid.
+	# Each combat component has a CELL_SIZE constant; verify all
+	# four agree so the layout is internally consistent.
+	var grid_cs: int = BattleGridViewScript.CELL_SIZE
+	var cell_cs: int = BattleCellScript.CELL_SIZE
+	var unit_cs: int = BattleUnitScript.CELL_SIZE
+	if not (grid_cs == 40 and cell_cs == 40 and unit_cs == 40):
+		_fail("v0.10.2 cell sizing mismatch: grid=%d cell=%d unit=%d (expect 40)" % [grid_cs, cell_cs, unit_cs])
+	else:
+		_ok("v0.10.2: grid/cell/unit CELL_SIZE all = 40")
+	# 7x7 grid at 40px = 280px wide — should be ~22% of a 1280px viewport.
+	var grid_px: int = 7 * 40
+	if grid_px < 240:
+		_fail("v0.10.2: 7x7 grid is %dpx wide (expect >= 240)" % grid_px)
+	else:
+		_ok("v0.10.2: 7x7 grid = %dpx wide (~%d%% of 1280px viewport)" % [grid_px, int(grid_px * 100 / 1280)])
+	# BattleCell border should be chunky (3px) for the FFT-style frame.
+	if BattleCellScript.BORDER_THICKNESS < 2:
+		_fail("v0.10.2: BORDER_THICKNESS too thin (%d)" % BattleCellScript.BORDER_THICKNESS)
+	else:
+		_ok("v0.10.2: BORDER_THICKNESS = %d (chunky FFT frame)" % BattleCellScript.BORDER_THICKNESS)
+	# Selection arrow should be ~28x24 — visible above the unit.
+	var arr: Node2D = UnitSelectionArrowScript.new()
+	root.add_child(arr)
+	await process_frame
+	if UnitSelectionArrowScript.WIDTH < 24 or UnitSelectionArrowScript.HEIGHT < 20:
+		_fail("v0.10.2: selection arrow too small (%dx%d)" % [UnitSelectionArrowScript.WIDTH, UnitSelectionArrowScript.HEIGHT])
+	else:
+		_ok("v0.10.2: selection arrow = %dx%d" % [UnitSelectionArrowScript.WIDTH, UnitSelectionArrowScript.HEIGHT])
+	arr.queue_free()
+
+
+func _test_v102_turn_order_procedural_portrait() -> void:
+	print("\n--- v0.10.2: TurnOrderBar procedural portrait ---")
+	var TurnOrderBarScript = preload("res://scripts/combat/TurnOrderBar.gd")
+	var bar: Node = TurnOrderBarScript.new()
+	bar.name = "TestTOB"
+	root.add_child(bar)
+	await process_frame
+	# Should not throw even with a missing-sprite path.
+	var placeholder: Texture2D = bar._placeholder_portrait("player")
+	if placeholder == null:
+		_fail("TurnOrderBar: _placeholder_portrait returned null for player")
+	else:
+		var sz: Vector2 = placeholder.get_size()
+		if sz.x < 32 or sz.y < 32:
+			_fail("TurnOrderBar: placeholder too small (%dx%d)" % [sz.x, sz.y])
+		else:
+			_ok("TurnOrderBar: procedural placeholder portrait built (%dx%d)" % [sz.x, sz.y])
+	# Should also work for enemy + ally
+	for team in ["enemy", "ally"]:
+		var p: Texture2D = bar._placeholder_portrait(team)
+		if p == null:
+			_fail("TurnOrderBar: placeholder null for %s" % team)
+		else:
+			_ok("TurnOrderBar: %s team placeholder portrait built" % team)
+	bar.queue_free()
+
+
+func _test_v102_hp_bar_sizing() -> void:
+	print("\n--- v0.10.2: HP bar sizing ---")
+	var CombatHPBarScript = preload("res://scripts/CombatHPBar.gd")
+	if CombatHPBarScript.BAR_WIDTH < 30 or CombatHPBarScript.BAR_HEIGHT < 5:
+		_fail("v0.10.2: HP bar too small (%dx%d)" % [CombatHPBarScript.BAR_WIDTH, CombatHPBarScript.BAR_HEIGHT])
+	else:
+		_ok("v0.10.2: HP bar = %dx%d" % [CombatHPBarScript.BAR_WIDTH, CombatHPBarScript.BAR_HEIGHT])
 
 
 func _print_summary() -> void:

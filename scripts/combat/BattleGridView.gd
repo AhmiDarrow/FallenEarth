@@ -5,7 +5,12 @@
 ## TacticalCombat via the cell_clicked signal.
 class_name BattleGridView extends Node2D
 
-const CELL_SIZE := 24
+# v0.10.2 polish: bumped cell size from 24 -> 40 so the grid is
+# visually prominent on a 1280x720 viewport. The grid is now
+# 7x7x40 = 280px wide, ~22% of the viewport. Combined with the
+# 16x16 -> 32x32 unit sprite scale, the FFT-style proportions
+# read clearly.
+const CELL_SIZE := 40
 
 const BattleCellScript = preload("res://scripts/combat/BattleCell.gd")
 const BattleUnitScript = preload("res://scripts/combat/BattleUnit.gd")
