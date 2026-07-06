@@ -1,17 +1,91 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.10.1
-**Last Updated:** 2026-07-06 04:55
+**Version:** 0.11.0
+**Last Updated:** 2026-07-06 14:00
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.10.1 Combat UI Polish — COMPLETE.
+**Current Phase:** v0.11.0 Combat Architecture Rewrite — COMPLETE.
 
 ## Summary
 
-v0.10.0 "Combat Overhaul" complete. v0.10.1 "Combat UI Polish" complete
-on top — adds FFT-style selection arrow, top-center prompt banner, biome
-decor prop scattering (boulders/skulls/cacti/etc), white-bg name plates
-above units, FFT-style metal action buttons, border-frame attack/skill
-range highlights. All 5 smoke test suites pass.
+v0.11.0 "Combat Architecture Rewrite" complete. Three rounds of
+polish (v0.10.5 → v0.11) hadn't fixed the visual issues, and the
+god-class architecture (TacticalCombat.gd 800+ lines,
+CombatManager.gd 1500+ lines) made the system hard to maintain.
+Rebuilt the combat system using the Resource/Service/Module
+pattern from `ramaureirac/godot-tactical-rpg`:
+  - 4 Resources (TileResource, UnitResource, ParticipantResource,
+    ArenaResource) for data + state
+  - 6 Services (PathfindingService, TurnService, UnitMovement,
+    UnitCombat, PlayerService, OpponentService) for logic
+  - 4 Modules (CombatTile, CombatUnit, CombatArena, CombatLevel)
+    for scene tree
+  - 2 UI panels (TopPrompt, ActionBar) — the other 3 deferred
+
+Backward compatible: old BattleCell/GridView/Unit + TacticalCombat
+scene still work, old encounter format auto-converted. To switch,
+replace TacticalCombat.tscn reference with CombatLevel.tscn.
+
+## v0.10.10 details
+
+**Layout revert:**
+- `BattleGridView.cell_to_world(x, y) -> (x*40 + 20, y*40 + 20)` —
+  no more 2:1 iso projection.
+- `BattleCell` no longer draws a `Polygon2D` diamond floor; the
+  cell IS the terrain sprite (a 40x40 scaled `Sprite2D` with
+  `TEXTURE_FILTER_NEAREST`).
+- `BORDER_THICKNESS` = 1 (was 3; on 40px cells the chunky 3px
+  line read as busy).
+- `COLOR_MOVE` = cyan `Color(0.30, 0.85, 1.0, 0.40)` (v0.10.11:
+  was white/0.22 — invisible against light sand/ground).
+- `DECOR_COUNT` = 14 (was 22), grid_rect buffer = 50px (v0.10.11:
+  was 60px sized for the 392px grid; now sized for 280px).
+
+**Always-visible cell borders (v0.10.10 polish):**
+- `BattleCell._highlight_border.visible = true` by default (was
+  `false` — only shown on ATTACK/SKILL). Default border color is
+  `Color(0.18, 0.16, 0.12, 0.55)` (dim warm gray) so the grid
+  structure reads at a glance without overwhelming the terrain.
+- `set_highlight` no longer toggles border visibility — it just
+  swaps the border color: ATTACK → red, SKILL → purple, MOVE/
+  CURSOR/NONE → dim warm gray.
+
+**Size-aware unit sprite scaling (v0.10.10 polish, v0.10.11 retuned):**
+- `BattleUnit._load_sprite` no longer hard-codes `scale = 0.7x`.
+- v0.10.10: target_px = 46 (~82% of 56px cell).
+- v0.10.11: target_px = 32 (~80% of 40px cell).
+- Result: 128x128 human at 0.25x = 32px (was 0.7x = 89.6px in v0.10.5,
+  overflowed the 56px cell). 64x64 mob at 0.5x = 32px.
+
+**Legacy right-side action bar hidden:**
+- `TacticalCombat._ready()` now sets
+  `legacy_main.visible = false` and
+  `legacy_actions.visible = false` so the right-side action
+  buttons (which the bottom action bar + SkillBar + TopPrompt
+  all replaced) stop bleeding into the middle of the screen.
+
+**Unit + HP-bar positioning:**
+- `BattleUnit.setup_from_data` places units at the cell center.
+- `CombatFeedback.setup_hp_bars` positions HP bars at the cell
+  center, offset 24px up.
+
+**v0.10.11 grid sizing:**
+- CELL_SIZE 56 → 40 across BattleGridView, BattleCell, BattleUnit.
+- 7×7 grid = 280px (~22% of 1280 viewport), fits cleanly between
+  the TopPrompt (top) and bottom ActionBar/SkillBar (60px clear
+  above, 60px clear below).
+
+## Smoke tests
+
+| File | Checks | Status |
+|------|--------|--------|
+| `validate_scripts.gd` | All | All OK |
+| `tools/smoke_combat_v100.gd` | 27 (Phase 1) | All pass |
+| `tools/smoke_combat_ai.gd` | 11 (Phase 2) | All pass |
+| `tools/smoke_combat_ui.gd` | 15 (Phase 3) | All pass |
+| `tools/smoke_combat_feedback.gd` | 4 (feedback) | All pass |
+| `tools/smoke_combat_polish.gd` | 30 (Polish + v0.10.10 + v0.10.11) | All pass |
+| `tools/smoke_combat_blockers.gd` | All | All pass |
+| `tools/boot_combat.gd` | full scene boot | All pass |
 
 ## v0.10.1 polish details
 

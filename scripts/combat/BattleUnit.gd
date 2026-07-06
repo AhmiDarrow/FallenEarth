@@ -1,17 +1,15 @@
 ## BattleUnit — Per-unit node on the battle grid.
 ##
-## Renders the mob sprite (with horizontal flip for E/W facing), HP
-## bar overlay, CT progress bar, name label, and animates walks,
-## attacks, hits, and deaths. Owns the visual state for one unit; the
-## engine (CombatManager) decides what they do.
-##
-## v0.10.1 polish: A child UnitNamePlate gives a white-background
-## name label above the unit (FFT-style), and a child
-## UnitSelectionArrow is shown when this is the active unit.
+## v0.10.10: SQUARE grid (was isometric diamond in v0.10.5+). Unit
+## positions are now simple (x * CELL_SIZE + CELL_SIZE/2,
+## y * CELL_SIZE + CELL_SIZE/2) — the cell's center. The unit's
+## sprite is centered at (0, 0) in local space and the whole node
+## is positioned at the cell center.
+## v0.10.11: CELL_SIZE 56 -> 40. Sprite target_px 46 -> 32 so the
+## sprite fits cleanly inside the smaller 40px cell.
 class_name BattleUnit extends Node2D
 
-# v0.10.5 polish: match the isometric grid CELL_SIZE (was 40).
-const CELL_SIZE := 56
+const CELL_SIZE := 40
 const SPRITE_FOLDER := "res://assets/mobs/"
 const CHAR_FOLDER := "res://assets/characters/"
 
@@ -68,9 +66,9 @@ func _ready() -> void:
 
 
 func _build_children() -> void:
-	# v0.10.5+ iso: the BattleUnit is positioned at the iso cell center
-	# directly (not the top-left of a square cell). So all children
-	# should be centered at (0, 0), not offset by CELL_SIZE*0.5.
+	# v0.10.10: SQUARE grid. BattleUnit is positioned at the cell
+	# center, so the sprite is centered at (0, 0). All overlays
+	# are positioned relative to the cell center.
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
 	_sprite.centered = true
@@ -86,26 +84,28 @@ func _build_children() -> void:
 	_active_glow.z_index = 9
 	add_child(_active_glow)
 
+	# Name label sits above the unit, centered on the cell.
 	_name_label = Label.new()
 	_name_label.name = "NameLabel"
 	_name_label.add_theme_color_override("font_color", Color.WHITE)
 	_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_name_label.add_theme_constant_override("outline_size", 2)
 	_name_label.add_theme_font_size_override("font_size", 8)
-	_name_label.position = Vector2(-CELL_SIZE * 0.5, -CELL_SIZE * 0.5 - 24)
-	_name_label.size = Vector2(CELL_SIZE * 2, 12)
+	_name_label.position = Vector2(-CELL_SIZE * 0.5, -CELL_SIZE * 0.5 - 12)
+	_name_label.size = Vector2(CELL_SIZE, 12)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_name_label.z_index = 12
 	add_child(_name_label)
 
+	# Status label (e.g. "★ BOSS") below the unit.
 	_status_label = Label.new()
 	_status_label.name = "StatusLabel"
 	_status_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_status_label.add_theme_constant_override("outline_size", 2)
 	_status_label.add_theme_font_size_override("font_size", 7)
-	_status_label.position = Vector2(-CELL_SIZE * 0.5, CELL_SIZE * 0.5 + 8)
-	_status_label.size = Vector2(CELL_SIZE * 2, 10)
+	_status_label.position = Vector2(-CELL_SIZE * 0.5, CELL_SIZE * 0.5 + 2)
+	_status_label.size = Vector2(CELL_SIZE, 10)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_label.z_index = 12
@@ -115,11 +115,11 @@ func _build_children() -> void:
 	_hp_fill = null
 	_hp_label = null
 
-	# CT mini-bar centered below the sprite
+	# CT mini-bar centered below the sprite (within the cell).
 	_ct_bg = ColorRect.new()
 	_ct_bg.name = "CTBg"
 	_ct_bg.color = Color(0.08, 0.06, 0.05, 0.85)
-	_ct_bg.position = Vector2(-CELL_SIZE * 0.5 + 2, CELL_SIZE * 0.5 - 2)
+	_ct_bg.position = Vector2(-CELL_SIZE * 0.5 + 2, CELL_SIZE * 0.5 - 8)
 	_ct_bg.size = Vector2(CELL_SIZE - 4, 4)
 	_ct_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ct_bg.z_index = 11
@@ -128,12 +128,14 @@ func _build_children() -> void:
 	_ct_fill = ColorRect.new()
 	_ct_fill.name = "CTFill"
 	_ct_fill.color = CT_BAR_FILL
-	_ct_fill.position = Vector2(-CELL_SIZE * 0.5 + 3, CELL_SIZE * 0.5 - 1)
+	_ct_fill.position = Vector2(-CELL_SIZE * 0.5 + 3, CELL_SIZE * 0.5 - 7)
 	_ct_fill.size = Vector2(0, 2)
 	_ct_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ct_fill.z_index = 12
 	add_child(_ct_fill)
 
+	# Name plate (white-bg label) sits above the unit sprite,
+	# below the selection arrow.
 	_name_plate = UnitNamePlateScript.new()
 	_name_plate.name = "NamePlate"
 	_name_plate.position = Vector2(-48, -CELL_SIZE * 0.5 - 24)
@@ -141,6 +143,7 @@ func _build_children() -> void:
 	_name_plate.visible = true
 	add_child(_name_plate)
 
+	# Selection arrow (cyan down-triangle) sits above the name plate.
 	_selection_arrow = UnitSelectionArrowScript.new()
 	_selection_arrow.name = "SelectionArrow"
 	_selection_arrow.position = Vector2(0, -CELL_SIZE * 0.5 - 48)
@@ -160,10 +163,11 @@ func setup_from_data(unit: Dictionary, cell_size: int) -> void:
 	is_alive = current_hp > 0
 	display_name = str(unit.get("name", _unit_display_name()))
 	_grid_pos = unit.get("pos", Vector2i.ZERO)
-	# v0.10.5: isometric positioning (same transform as the grid).
-	var iso_x: float = float(_grid_pos.x - _grid_pos.y) * cell_size * 0.5
-	var iso_y: float = float(_grid_pos.x + _grid_pos.y) * cell_size * 0.25
-	position = Vector2(iso_x, iso_y)
+	# v0.10.10: SQUARE grid — unit sits at the cell center.
+	position = Vector2(
+		_grid_pos.x * cell_size + cell_size * 0.5,
+		_grid_pos.y * cell_size + cell_size * 0.5,
+	)
 	_load_sprite(unit)
 	_apply_team_palette()
 	_refresh_hp()
@@ -191,11 +195,20 @@ func _load_sprite(unit: Dictionary) -> void:
 		path = SPRITE_FOLDER + sprite_id + ".png"
 	if ResourceLoader.exists(path):
 		_sprite.texture = load(path)
-		# v0.10.5: scale mob sprites to fill the 56px diamond cells.
-		# Mob sprites are 64x64 native. At 0.7x they're ~45x45,
-		# roughly half the diamond diagonal. Placeholder is 20x20
-		# native, scaled to ~30x30.
-		_sprite.scale = Vector2.ONE * 0.7
+		# v0.10.11 polish: scale the sprite to ~32px (was 46px) so
+		# it fits cleanly inside the smaller 40px cell with margin.
+		# Native sprite sizes vary (mobs are 64x64, character
+		# portraits are 128x128), so compute scale from the
+		# texture's native size.
+		# - 128x128 human portrait: 32/128 = 0.25x = 32px ✓
+		# - 64x64 mob sprite: 32/64 = 0.5x = 32px ✓
+		var tex_size: Vector2 = _sprite.texture.get_size()
+		var target_px: float = 32.0
+		var native_max: float = maxf(tex_size.x, tex_size.y)
+		if native_max <= 0.0:
+			native_max = 64.0
+		var scl: float = target_px / native_max
+		_sprite.scale = Vector2(scl, scl)
 	else:
 		_sprite.texture = _make_placeholder_texture()
 		_sprite.scale = Vector2.ONE * 1.2
@@ -292,9 +305,11 @@ func _unit_display_name() -> String:
 
 func move_to(grid_pos: Vector2i, animate: bool = true) -> void:
 	_grid_pos = grid_pos
-	var iso_x: float = float(grid_pos.x - grid_pos.y) * CELL_SIZE * 0.5
-	var iso_y: float = float(grid_pos.x + grid_pos.y) * CELL_SIZE * 0.25
-	var target := Vector2(iso_x, iso_y)
+	# v0.10.10: square cell center.
+	var target := Vector2(
+		grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+		grid_pos.y * CELL_SIZE + CELL_SIZE * 0.5,
+	)
 	if not animate:
 		position = target
 		return
@@ -308,9 +323,10 @@ func move_to(grid_pos: Vector2i, animate: bool = true) -> void:
 
 func set_grid_pos(grid_pos: Vector2i) -> void:
 	_grid_pos = grid_pos
-	var iso_x: float = float(grid_pos.x - grid_pos.y) * CELL_SIZE * 0.5
-	var iso_y: float = float(grid_pos.x + grid_pos.y) * CELL_SIZE * 0.25
-	position = Vector2(iso_x, iso_y)
+	position = Vector2(
+		grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+		grid_pos.y * CELL_SIZE + CELL_SIZE * 0.5,
+	)
 	if _name_plate != null:
 		_name_plate.position = Vector2(-48, -CELL_SIZE * 0.5 - 24)
 	if _selection_arrow != null:
@@ -321,9 +337,10 @@ func play_attack_swing() -> void:
 	if _swing_tween != null and _swing_tween.is_valid():
 		_swing_tween.kill()
 	var forward := _facing_offset() * 6.0
-	var iso_x: float = float(_grid_pos.x - _grid_pos.y) * CELL_SIZE * 0.5
-	var iso_y: float = float(_grid_pos.x + _grid_pos.y) * CELL_SIZE * 0.25
-	var start_pos := Vector2(iso_x, iso_y)
+	var start_pos := Vector2(
+		_grid_pos.x * CELL_SIZE + CELL_SIZE * 0.5,
+		_grid_pos.y * CELL_SIZE + CELL_SIZE * 0.5,
+	)
 	_swing_tween = create_tween()
 	_swing_tween.tween_property(self, "position", start_pos + forward, SWING_DURATION * 0.5).set_trans(Tween.TRANS_SINE)
 	_swing_tween.tween_property(self, "position", start_pos, SWING_DURATION * 0.5).set_trans(Tween.TRANS_SINE)

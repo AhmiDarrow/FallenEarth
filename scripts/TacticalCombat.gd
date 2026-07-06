@@ -58,15 +58,27 @@ func _ready() -> void:
 	_load_encounter()
 	_grid_size = int(_encounter.get("grid_size", 7))
 
-	# Hide the legacy status/log/instructions labels; the new
-	# TopPrompt + TurnOrderBar + UnitInfoCard + SkillBar take their
-	# place. Keeps the right-side MainVBox around so the legacy
-	# `instructions_label` and `result_panel` references still
-	# resolve, but invisible.
+	# v0.10.10: Hide the legacy status/log/instructions labels AND
+	# the legacy right-side MainVBox container itself. The new
+	# TopPrompt + TurnOrderBar + UnitInfoCard + SkillBar + bottom
+	# action bar take their place. The MainVBox had a yellow-border
+	# "Tactical Combat" header + status + turn order + log + action
+	# buttons that all bled through into the middle of the screen
+	# in the v0.10.5+ iso-diamond layout. We keep the @onready refs
+	# (status_label, etc.) so other code paths that touch them
+	# still resolve, but the whole MainVBox is invisible.
 	status_label.visible = false
 	turn_order_label.visible = false
 	instructions_label.visible = false
 	log_label.visible = false
+	var legacy_main := get_node_or_null("HUDLayer/MainVBox")
+	if legacy_main != null:
+		legacy_main.visible = false
+		# Drop the legacy actions hbox (the buttons are moved into
+		# the new bottom action bar below).
+		var legacy_actions := legacy_main.get_node_or_null("ActionsHBox")
+		if legacy_actions != null:
+			legacy_actions.visible = false
 
 	# v0.10.4 polish: use the actual viewport size (not a hardcoded
 	# 1280x720 assumption) to center the battle layers. The scene
@@ -97,9 +109,9 @@ func _ready() -> void:
 	encounter_for_grid = _grid.build_terrain_for_encounter(encounter_for_grid)
 	_grid.configure(encounter_for_grid)
 
-	# v0.10.8: CombatFeedback shares the grid_layer's offset so HP
-	# bars align with the isometric cell centers (not square-grid
-	# coordinates from the 40px era).
+	# v0.10.10: CombatFeedback shares the grid_layer's offset so
+	# HP bars align with the cell centers (square grid; the
+	# grid_layer's position is the top-left of the centered grid).
 	if _feedback != null and _grid._grid_layer != null:
 		_feedback.position = vp_center + _grid._grid_layer.position
 

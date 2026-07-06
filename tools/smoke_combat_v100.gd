@@ -65,7 +65,7 @@ func _test_battle_cell_constructs() -> void:
 		_fail("BattleCell: _area Area2D not built")
 	else:
 		_ok("BattleCell: _area Area2D built")
-	cell.setup(2, 3, 0, 1, false, null)
+	cell.setup(2, 3, 0, 1, false, null, 40)
 	if cell.grid_x != 2 or cell.grid_y != 3:
 		_fail("BattleCell: setup did not set grid coords")
 	else:
@@ -140,7 +140,7 @@ func _test_battle_unit_loads_sprite() -> void:
 		"pos": Vector2i(2, 3),
 		"sprite_id": "ash_crawler",
 	}
-	unit.setup_from_data(data, 56)
+	unit.setup_from_data(data, 40)
 	if unit.unit_id != "test_mob":
 		_fail("BattleUnit: unit_id not set")
 	else:
@@ -192,10 +192,14 @@ func _test_battle_grid_height_map() -> void:
 	else:
 		if cell_h1.height != 1:
 			_fail("BattleGridView: cell 1,1 height != 1")
-		elif not cell_h1._height_label.visible:
-			_fail("BattleGridView: cell 1,1 height label not visible")
 		else:
-			_ok("BattleGridView: cell 1,1 height label = 1")
+			# v0.10.10: height is encoded as a modulate tint on the
+			# base sprite (no separate height label).
+			var tinted: bool = cell_h1._base.modulate != Color.WHITE
+			if not tinted:
+				_fail("BattleGridView: cell 1,1 height should tint the base sprite")
+			else:
+				_ok("BattleGridView: cell 1,1 height = 1 (modulate tint)")
 	if cell_h2 == null:
 		_fail("BattleGridView: cell 2,2 missing")
 	else:

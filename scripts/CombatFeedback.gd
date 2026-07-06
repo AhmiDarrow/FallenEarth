@@ -54,10 +54,14 @@ func setup_hp_bars(units: Array[Dictionary], grid_size: int = 7, cell_size: floa
 		var max_hp: int = int(unit.get("max_hp", hp))
 		bar.setup(uid, team, hp, max_hp)
 		var pos: Vector2i = unit.get("pos", Vector2i.ZERO)
-		# v0.10.8: isometric positioning (same as BattleGridView + BattleUnit).
-		var iso_x: float = float(pos.x - pos.y) * _cell_size * 0.5
-		var iso_y: float = float(pos.x + pos.y) * _cell_size * 0.25
-		bar.position = Vector2(iso_x, iso_y - 24)
+		# v0.10.10: SQUARE grid. HP bar sits at the cell center,
+		# offset upward by ~24px so it appears just above the unit
+		# sprite. The CombatHPBar's own origin is centered (0, 0)
+		# horizontally, so we use the cell-center x.
+		bar.position = Vector2(
+			pos.x * _cell_size + _cell_size * 0.5,
+			pos.y * _cell_size + _cell_size * 0.5 - 24,
+		)
 		add_child(bar)
 		_hp_bars[uid] = bar
 

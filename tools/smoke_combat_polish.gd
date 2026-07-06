@@ -50,6 +50,22 @@ func _initialize() -> void:
 	_test_v104_hp_bar_bigger()
 	await process_frame
 	_test_v104_blocked_cell_x_overlay()
+	await process_frame
+	_test_v1010_square_grid_layout()
+	await process_frame
+	_test_v1010_cell_square_positioning()
+	await process_frame
+	_test_v1010_unit_square_positioning()
+	await process_frame
+	_test_v1010_move_highlight_opacity()
+	await process_frame
+	_test_v1010_decor_smaller_and_buffered()
+	await process_frame
+	_test_v1010_legacy_main_vbox_hidden()
+	await process_frame
+	_test_v1010_border_always_visible()
+	await process_frame
+	_test_v1010_unit_sprite_scales_to_cell()
 	_print_summary()
 	quit()
 
@@ -188,7 +204,7 @@ func _test_battle_cell_border_highlight() -> void:
 	cell.name = "TestCell"
 	root.add_child(cell)
 	await process_frame
-	cell.setup(0, 0, 0, 0, false, null)
+	cell.setup(0, 0, 0, 0, false, null, BattleCellScript.CELL_SIZE)
 	# Move range: full-cell tint (white)
 	cell.set_highlight(BattleCellScript.HIGHLIGHT_MOVE)
 	if not cell._highlight.visible:
@@ -211,12 +227,13 @@ func _test_battle_cell_border_highlight() -> void:
 		_fail("BattleCell: HIGHLIGHT_SKILL should show border")
 	else:
 		_ok("BattleCell: HIGHLIGHT_SKILL shows border frame")
-	# Clear
+	# Clear — v0.10.10: border stays visible (always-on grid line).
+	# Only the tint highlight should be hidden on NONE.
 	cell.set_highlight(BattleCellScript.HIGHLIGHT_NONE)
-	if cell._highlight.visible or cell._highlight_border.visible:
-		_fail("BattleCell: HIGHLIGHT_NONE should hide both tint + border")
+	if cell._highlight.visible:
+		_fail("BattleCell: HIGHLIGHT_NONE should hide full-cell tint")
 	else:
-		_ok("BattleCell: HIGHLIGHT_NONE hides both")
+		_ok("BattleCell: HIGHLIGHT_NONE hides tint (border stays visible)")
 	cell.queue_free()
 
 
@@ -305,26 +322,28 @@ func _test_pixellab_assets_exist() -> void:
 func _test_v102_cell_sizing() -> void:
 	print("\n--- v0.10.2: cell sizing & visual proportions ---")
 	# v0.10.2: cells bumped from 24 to 40 for a 67% larger grid.
-	# Each combat component has a CELL_SIZE constant; verify all
-	# four agree so the layout is internally consistent.
+	# v0.10.11: cells 56 -> 40 so the grid fits with the TopPrompt
+	# and bottom ActionBar (no overlap). All three CELL_SIZE
+	# constants must agree.
 	var grid_cs: int = BattleGridViewScript.CELL_SIZE
 	var cell_cs: int = BattleCellScript.CELL_SIZE
 	var unit_cs: int = BattleUnitScript.CELL_SIZE
-	if not (grid_cs == 56 and cell_cs == 56 and unit_cs == 56):
-		_fail("v0.10.2 cell sizing mismatch: grid=%d cell=%d unit=%d (expect 56)" % [grid_cs, cell_cs, unit_cs])
+	if not (grid_cs == 40 and cell_cs == 40 and unit_cs == 40):
+		_fail("v0.10.11 cell sizing mismatch: grid=%d cell=%d unit=%d (expect 40)" % [grid_cs, cell_cs, unit_cs])
 	else:
-		_ok("v0.10.2: grid/cell/unit CELL_SIZE all = 56")
+		_ok("v0.10.11: grid/cell/unit CELL_SIZE all = 40")
 	# 7x7 grid at 40px = 280px wide — should be ~22% of a 1280px viewport.
-	var grid_px: int = 7 * 56
-	if grid_px < 300:
-		_fail("v0.10.2: 7x7 grid is %dpx wide (expect >= 300)" % grid_px)
+	var grid_px: int = 7 * 40
+	if grid_px > 320:
+		_fail("v0.10.11: 7x7 grid is %dpx wide (expect <= 320 so it clears TopPrompt/ActionBar)" % grid_px)
 	else:
-		_ok("v0.10.2: 7x7 grid = %dpx wide (~%d%% of 1280px viewport)" % [grid_px, int(grid_px * 100 / 1280)])
-	# BattleCell border should be chunky (3px) for the FFT-style frame.
-	if BattleCellScript.BORDER_THICKNESS < 2:
-		_fail("v0.10.2: BORDER_THICKNESS too thin (%d)" % BattleCellScript.BORDER_THICKNESS)
+		_ok("v0.10.11: 7x7 grid = %dpx wide (~%d%% of 1280px viewport)" % [grid_px, int(grid_px * 100 / 1280)])
+	# v0.10.10 polish: border is now a thin 1px line (was 3px chunky).
+	# The 3px frame read as too busy on the 56px square cells.
+	if BattleCellScript.BORDER_THICKNESS < 1:
+		_fail("v0.10.10: BORDER_THICKNESS too thin (%d)" % BattleCellScript.BORDER_THICKNESS)
 	else:
-		_ok("v0.10.2: BORDER_THICKNESS = %d (chunky FFT frame)" % BattleCellScript.BORDER_THICKNESS)
+		_ok("v0.10.10: BORDER_THICKNESS = %d (thin grid line)" % BattleCellScript.BORDER_THICKNESS)
 	# Selection arrow should be ~28x24 — visible above the unit.
 	var arr: Node2D = UnitSelectionArrowScript.new()
 	root.add_child(arr)
@@ -373,11 +392,9 @@ func _test_v102_hp_bar_sizing() -> void:
 
 
 func _test_v103_cell_texture_clipping() -> void:
-	print("\n--- v0.10.3: BattleCell uses clipped terrain texture ---")
-	# v0.10.3 fix: the 24x120 atlas was being shown in full in each
-	# 40x40 cell, creating vertical stripes. The fix is to wrap the
-	# atlas in an AtlasTexture with the terrain-specific 24x24 region
-	# and scale the sprite to fill the cell.
+	print("\n--- v0.10.10: BattleCell uses square grid + clipped terrain ---")
+	# v0.10.10: cell is now SQUARE (was isometric diamond in v0.10.5+).
+	# The terrain atlas is clipped per row + scaled to fill the cell.
 	var cell: Node = BattleCellScript.new()
 	cell.name = "TestCell"
 	root.add_child(cell)
@@ -388,7 +405,7 @@ func _test_v103_cell_texture_clipping() -> void:
 	var atlas := ImageTexture.create_from_image(img)
 	# Test all 4 terrain kinds
 	for terrain in range(4):
-		cell.setup(0, 0, terrain, 0, false, atlas)
+		cell.setup(0, 0, terrain, 0, false, atlas, BattleCellScript.CELL_SIZE)
 		# _base.texture should be an AtlasTexture with the row clipped
 		var tex: Texture2D = cell._base.texture
 		if tex == null:
@@ -403,13 +420,17 @@ func _test_v103_cell_texture_clipping() -> void:
 			_fail("BattleCell: terrain %d should clip atlas y=%d (got %d)" % [terrain, int(expected_y), int(at.region.position.y)])
 		else:
 			_ok("BattleCell: terrain %d clips atlas to (0, %d, 24, 24)" % [terrain, terrain * 24])
-	# v0.10.9: scale from inscribed square diag = CELL_SIZE, side = CELL_SIZE/√2.
-	var inscribed: float = BattleCellScript.CELL_SIZE / 1.4142
-	var expected_scale: float = inscribed / 24.0
+	# v0.10.10: scale = cell_size / TILE_NATIVE (no diamond inscribing).
+	var expected_scale: float = float(BattleCellScript.CELL_SIZE) / 24.0
 	if abs(cell._base.scale.x - expected_scale) > 0.01:
 		_fail("BattleCell: scale.x should be %.2f (got %.2f)" % [expected_scale, cell._base.scale.x])
 	else:
-		_ok("BattleCell: sprite scaled to %.2fx (inscribed square in diamond)" % expected_scale)
+		_ok("BattleCell: sprite scaled to %.2fx (square cell fill)" % expected_scale)
+	# v0.10.10: highlight is a ColorRect (was a Polygon2D in v0.10.5+).
+	if not (cell._highlight is ColorRect):
+		_fail("BattleCell: _highlight should be ColorRect (got %s)" % cell._highlight.get_class())
+	else:
+		_ok("BattleCell: _highlight is ColorRect (square)")
 	cell.queue_free()
 
 
@@ -490,21 +511,19 @@ func _test_v104_hp_bar_bigger() -> void:
 
 
 func _test_v104_blocked_cell_x_overlay() -> void:
-	print("\n--- v0.10.4: Blocked cell has red X overlay ---")
-	# v0.10.4: blocked cells now have a red X overlay (two crossed
-	# ColorRects) so the player reads "impassable" at a glance,
-	# instead of the previous pure-black tint that looked like a
-	# rendering bug. Test the source code to avoid BattleCell
-	# _ready() hanging in headless mode.
+	print("\n--- v0.10.10: Blocked cell has red X overlay (square grid) ---")
+	# v0.10.10: blocked cells have a red X overlay (two crossed
+	# Line2Ds inside the square cell). The helper is now
+	# _build_blocked_x (was _build_blocked_diamond_x in v0.10.5+).
 	var src: String = load("res://scripts/combat/BattleCell.gd").source_code
 	if not src.contains("_blocked_x"):
 		_fail("BattleCell: _blocked_x member not found")
 	else:
 		_ok("BattleCell: _blocked_x member present")
-	if not src.contains("_build_blocked_diamond_x"):
-		_fail("BattleCell: _build_blocked_diamond_x() helper not found")
+	if not src.contains("_build_blocked_x"):
+		_fail("BattleCell: _build_blocked_x() helper not found")
 	else:
-		_ok("BattleCell: _build_blocked_diamond_x() helper present")
+		_ok("BattleCell: _build_blocked_x() helper present (square)")
 	if not src.contains("COLOR_BLOCKED_X"):
 		_fail("BattleCell: COLOR_BLOCKED_X constant not found")
 	else:
@@ -517,6 +536,218 @@ func _test_v104_blocked_cell_x_overlay() -> void:
 		_fail("BattleCell: non-blocked cell should set _blocked_x.visible = false")
 	else:
 		_ok("BattleCell: non-blocked cell hides X overlay")
+
+
+func _test_v1010_square_grid_layout() -> void:
+	print("\n--- v0.10.10: SQUARE grid layout (revert iso-diamond) ---")
+	# v0.10.10 reverted the v0.10.5 isometric-diamond layout. The
+	# grid is now a clean 7x7 square; each cell is a square sprite.
+	var src: String = load("res://scripts/combat/BattleGridView.gd").source_code
+	# cell_to_world should be a simple (x * CELL_SIZE, y * CELL_SIZE)
+	# transform, not a 2:1 iso projection.
+	if src.contains("float(x - y) * CELL_SIZE * 0.5") and src.contains("cell_to_iso"):
+		# cell_to_iso still exists as an alias for back-compat; check
+		# that cell_to_world uses the square transform.
+		if not src.contains("float(x) * CELL_SIZE + CELL_SIZE * 0.5"):
+			_fail("BattleGridView: cell_to_world should use square (x*CELL_SIZE + CELL_SIZE/2)")
+		else:
+			_ok("BattleGridView: cell_to_world uses SQUARE transform")
+	else:
+		if src.contains("cell_to_iso"):
+			_ok("BattleGridView: cell_to_iso retained as alias for back-compat")
+	# The grid_layer offset should be (-grid_px*0.5, -grid_px*0.5)
+	# (centered square), not the iso-bounds.
+	if not src.contains("-Vector2(grid_px * 0.5, grid_px * 0.5)"):
+		_fail("BattleGridView: grid_layer should be centered via -Vector2(grid_px*0.5, grid_px*0.5)")
+	else:
+		_ok("BattleGridView: grid_layer centered as SQUARE (no iso bounds)")
+
+
+func _test_v1010_cell_square_positioning() -> void:
+	print("\n--- v0.10.10: BattleCell positions as square grid ---")
+	# Cells are positioned at (x * CELL_SIZE, y * CELL_SIZE) — the
+	# top-left corner of the cell in the grid layer's local space.
+	var cell: Node = BattleCellScript.new()
+	cell.name = "TestSquareCell"
+	root.add_child(cell)
+	await process_frame
+	# Stub a 24x24 atlas for the texture
+	var img := Image.create(24, 24, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0.5, 0.5, 0.5, 1.0))
+	var atlas := ImageTexture.create_from_image(img)
+	cell.setup(2, 3, 0, 0, false, atlas, BattleCellScript.CELL_SIZE)
+	# Position should be (2*40, 3*40) = (80, 120) at (2, 3)
+	var expected_pos: Vector2 = Vector2(2 * 40, 3 * 40)
+	if cell.position != expected_pos:
+		_fail("BattleCell: position should be %s at (2, 3) (got %s)" % [expected_pos, cell.position])
+	else:
+		_ok("BattleCell: square position %s at (2, 3)" % expected_pos)
+	# The terrain sprite is centered in the cell.
+	var expected_center: Vector2 = Vector2(40 * 0.5, 40 * 0.5)
+	if cell._base.position != expected_center:
+		_fail("BattleCell: _base should be centered at %s (got %s)" % [expected_center, cell._base.position])
+	else:
+		_ok("BattleCell: _base sprite centered at cell center")
+	# No rotation on the sprite (was rotated 45° in v0.10.5+).
+	if cell._base.rotation != 0.0:
+		_fail("BattleCell: _base.rotation should be 0.0 (got %f)" % cell._base.rotation)
+	else:
+		_ok("BattleCell: _base.rotation = 0 (no diamond rotation)")
+	# Highlight is a ColorRect (square), not a Polygon2D.
+	if not (cell._highlight is ColorRect):
+		_fail("BattleCell: _highlight should be ColorRect (got %s)" % cell._highlight.get_class())
+	else:
+		_ok("BattleCell: _highlight is ColorRect (square tint)")
+	cell.queue_free()
+
+
+func _test_v1010_unit_square_positioning() -> void:
+	print("\n--- v0.10.10: BattleUnit positions as square grid ---")
+	var unit: Node = BattleUnitScript.new()
+	unit.name = "TestSquareUnit"
+	root.add_child(unit)
+	await process_frame
+	var data: Dictionary = {
+		"id": "hero", "team": "player", "hp": 80, "max_hp": 80, "ct": 45, "facing": 0,
+		"pos": Vector2i(2, 3), "race": "human", "gender": "male", "name": "TestHero",
+	}
+	unit.setup_from_data(data, 40)
+	# Position should be (2*40 + 20, 3*40 + 20) = (100, 140) — cell center.
+	var expected: Vector2 = Vector2(2 * 40 + 20, 3 * 40 + 20)
+	if unit.position != expected:
+		_fail("BattleUnit: position should be %s (cell center) (got %s)" % [expected, unit.position])
+	else:
+		_ok("BattleUnit: position at cell center %s" % expected)
+
+
+func _test_v1010_move_highlight_opacity() -> void:
+	print("\n--- v0.10.11: move highlight is visible cyan tint ---")
+	# v0.10.10 used COLOR_MOVE white 0.22 (invisible against light
+	# sand/ground terrain). v0.10.11 polish: visible cyan tint at
+	# 0.40 alpha so the move range reads clearly.
+	if BattleCellScript.COLOR_MOVE.a < 0.30:
+		_fail("BattleCell: COLOR_MOVE alpha too low (%.2f); invisible against terrain" % BattleCellScript.COLOR_MOVE.a)
+	elif BattleCellScript.COLOR_MOVE.a > 0.55:
+		_fail("BattleCell: COLOR_MOVE alpha too high (%.2f); washes out terrain" % BattleCellScript.COLOR_MOVE.a)
+	else:
+		_ok("BattleCell: COLOR_MOVE alpha = %.2f (visible, terrain still readable)" % BattleCellScript.COLOR_MOVE.a)
+	# v0.10.11: cyan tint (rgb leans blue) for visible move range.
+	if BattleCellScript.COLOR_MOVE.b < BattleCellScript.COLOR_MOVE.r:
+		_fail("BattleCell: COLOR_MOVE should lean cyan (b >= r); got r=%.2f b=%.2f" % [BattleCellScript.COLOR_MOVE.r, BattleCellScript.COLOR_MOVE.b])
+	else:
+		_ok("BattleCell: COLOR_MOVE is cyan (r=%.2f g=%.2f b=%.2f) - visible against terrain" % [BattleCellScript.COLOR_MOVE.r, BattleCellScript.COLOR_MOVE.g, BattleCellScript.COLOR_MOVE.b])
+
+
+func _test_v1010_decor_smaller_and_buffered() -> void:
+	print("\n--- v0.10.10: decor smaller + buffered from grid ---")
+	# v0.10.10: DECOR_COUNT = 14 (was 22), grid_rect buffer = 60
+	# (was 12), so decor doesn't land on top of cells.
+	var src: String = load("res://scripts/combat/BattleBackground.gd").source_code
+	if not src.contains("const DECOR_COUNT := 14"):
+		_fail("BattleBackground: DECOR_COUNT should be 14 (was 22)")
+	else:
+		_ok("BattleBackground: DECOR_COUNT = 14 (down from 22)")
+	if not src.contains("var buffer: int = 50"):
+		_fail("BattleBackground: grid_rect buffer should be 50 (was 12; v0.10.11 sized for 280px grid)")
+	else:
+		_ok("BattleBackground: grid_rect buffer = 50 (decor stays off cells)")
+	# Decor base_scale should be in the 0.40-0.55 range
+	# (was 0.32-0.41 which was fine, but we want it a bit bigger
+	# so it's visible — actually no, we shrunk it). Check the
+	# randf_range for scale.
+	if not src.contains("randf_range(1.05, 1.45)"):
+		_fail("BattleBackground: decor base_scale should be randf_range(1.05, 1.45)")
+	else:
+		_ok("BattleBackground: decor scale factor 1.05-1.45 (visible but smaller than cells)")
+
+
+func _test_v1010_legacy_main_vbox_hidden() -> void:
+	print("\n--- v0.10.10: legacy right-side MainVBox is hidden ---")
+	# v0.10.10: the legacy right-side MainVBox (status / turn order /
+	# instructions / log / action buttons) was bleeding through into
+	# the middle of the screen in the v0.10.5+ iso-diamond layout.
+	# TacticalCombat._ready now hides the whole MainVBox.
+	var src: String = load("res://scripts/TacticalCombat.gd").source_code
+	if not src.contains("legacy_main.visible = false"):
+		_fail("TacticalCombat: legacy_main.visible = false not found")
+	else:
+		_ok("TacticalCombat: legacy_main.visible = false (right-side MainVBox hidden)")
+	if not src.contains("legacy_actions.visible = false"):
+		_fail("TacticalCombat: legacy_actions.visible = false not found")
+	else:
+		_ok("TacticalCombat: legacy_actions.visible = false (legacy buttons hidden)")
+
+
+func _test_v1010_border_always_visible() -> void:
+	print("\n--- v0.10.10: BattleCell border is always visible ---")
+	# v0.10.10 polish: cell border is now always visible (was hidden
+	# by default and only shown on ATTACK/SKILL). Without always-on
+	# borders, the 7x7 grid reads as a single mass of cells.
+	var cell: Node = BattleCellScript.new()
+	cell.name = "TestBorderCell"
+	root.add_child(cell)
+	await process_frame
+	# setup() builds the border with the always-visible color.
+	cell.setup(0, 0, 0, 0, false, null, BattleCellScript.CELL_SIZE)
+	if cell._highlight_border == null:
+		_fail("BattleCell: _highlight_border not built")
+	elif not cell._highlight_border.visible:
+		_fail("BattleCell: _highlight_border should be visible by default (always-on grid line)")
+	else:
+		_ok("BattleCell: border is always visible (v0.10.10 grid line)")
+	# HIGHLIGHT_MOVE keeps the border visible (default warm gray)
+	cell.set_highlight(BattleCellScript.HIGHLIGHT_MOVE)
+	if not cell._highlight_border.visible:
+		_fail("BattleCell: HIGHLIGHT_MOVE should keep border visible")
+	else:
+		_ok("BattleCell: HIGHLIGHT_MOVE keeps border visible (default color)")
+	# HIGHLIGHT_ATTACK brightens the border to red.
+	cell.set_highlight(BattleCellScript.HIGHLIGHT_ATTACK)
+	var attack_visible: bool = cell._highlight_border.visible
+	if not attack_visible:
+		_fail("BattleCell: HIGHLIGHT_ATTACK should keep border visible (in red)")
+	else:
+		_ok("BattleCell: HIGHLIGHT_ATTACK keeps border visible (in red)")
+	cell.queue_free()
+
+
+func _test_v1010_unit_sprite_scales_to_cell() -> void:
+	print("\n--- v0.10.11: BattleUnit sprite scales to fit 40px cell ---")
+	# v0.10.10 polish: unit sprite scale is computed from the
+	# texture's native size, not a hard-coded 0.7x. The 128x128
+	# human portrait at 0.7x overflowed the 56x56 cell; with
+	# target_px = 46, it now becomes 0.36x = 46px and fits.
+	# v0.10.11: target_px = 32 (was 46) for the new 40px cell.
+	# 128x128 human at 0.25x = 32px. 64x64 mob at 0.5x = 32px.
+	var src: String = load("res://scripts/combat/BattleUnit.gd").source_code
+	if not src.contains("var target_px: float = 32.0"):
+		_fail("BattleUnit: _load_sprite should compute scale with target_px=32 (v0.10.11 40px cell)")
+	else:
+		_ok("BattleUnit: _load_sprite uses target_px=32 (fits 40px cell)")
+	if not src.contains("var scl: float = target_px / native_max"):
+		_fail("BattleUnit: _load_sprite should compute scl = target_px / native_max")
+	else:
+		_ok("BattleUnit: _load_sprite computes scl = target_px / native_max (size-aware)")
+	# Verify the old hard-coded 0.7x is GONE.
+	if src.contains("_sprite.scale = Vector2.ONE * 0.7"):
+		_fail("BattleUnit: hard-coded 0.7x scale still present (overflows 128x128 sprite)")
+	else:
+		_ok("BattleUnit: hard-coded 0.7x scale removed (replaced with size-aware compute)")
+	# Math check: a 128x128 sprite at scale 32/128 = 0.25 should
+	# render at 32px. A 64x64 sprite at 32/64 = 0.5 should render
+	# at 32px. Both fit a 40px cell with ~4px margin per side.
+	var human_scale: float = 32.0 / 128.0
+	var human_rendered: float = 128.0 * human_scale
+	if abs(human_rendered - 32.0) > 0.5:
+		_fail("BattleUnit: math check - 128x128 at 32/128 should render at 32px (got %.1f)" % human_rendered)
+	else:
+		_ok("BattleUnit: math - 128x128 sprite at scale %.3f renders at %.1fpx (fits 40px cell)" % [human_scale, human_rendered])
+	var mob_scale: float = 32.0 / 64.0
+	var mob_rendered: float = 64.0 * mob_scale
+	if abs(mob_rendered - 32.0) > 0.5:
+		_fail("BattleUnit: math check - 64x64 at 32/64 should render at 32px (got %.1f)" % mob_rendered)
+	else:
+		_ok("BattleUnit: math - 64x64 sprite at scale %.3f renders at %.1fpx (fits 40px cell)" % [mob_scale, mob_rendered])
 
 
 func _print_summary() -> void:

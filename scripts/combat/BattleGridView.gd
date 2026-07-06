@@ -1,17 +1,22 @@
 ## BattleGridView — 7x7 (configurable) FFT-style battle grid.
 ##
-## Owns 49 BattleCell nodes, lays them out in an isometric (diamond)
-## pattern, and surfaces the current encounter's terrain + height map.
-## Delegates clicks to the parent TacticalCombat via the cell_clicked
-## signal.
+## v0.10.10: REVERTED FROM ISOMETRIC DIAMOND. The v0.10.5 iso-diamond
+## view produced a 45°-rotated rhombus-shaped grid with diamond cells
+## that read as "broken" rather than as a tactical grid. The current
+## layout is a clean 7x7 SQUARE grid of SQUARE cells — same look as
+## the overworld LocalMapView. Cells position at (x * CELL_SIZE,
+## y * CELL_SIZE). Each cell renders the terrain as a square sprite,
+## and the highlight (move/attack/skill) is a square ColorRect on top.
+## v0.10.11: CELL_SIZE 56 -> 40. The 7x7 = 280px grid fits between
+## the TopPrompt (above) and the bottom ActionBar/SkillBar (below)
+## without overlap. The 56px version had the top row partially
+## hidden by the TopPrompt and the bottom row nearly touching the
+## ActionBar.
 class_name BattleGridView extends Node2D
 
-# v0.10.5 polish: isometric diamond grid with CELL_SIZE=56.
-# Each cell is drawn as a diamond (rotated 45°) and positioned
-# using a 2:1 isometric coordinate transform. This gives the
-# classic FFT 3/4 perspective without a 3D engine.
-const CELL_SIZE := 56
-const ISO_RATIO := 0.5  # vertical compression, 2:1 isometric
+# v0.10.11: CELL_SIZE 56 -> 40. 7x7 = 280px (~22% of 1280 viewport)
+# fits cleanly with the TopPrompt (top) and ActionBar (bottom).
+const CELL_SIZE := 40
 
 const BattleCellScript = preload("res://scripts/combat/BattleCell.gd")
 const BattleUnitScript = preload("res://scripts/combat/BattleUnit.gd")
@@ -49,38 +54,26 @@ func get_all_units() -> Array:
 
 
 ## Return the world-space center of a grid cell, in the grid's parent
-## local space. Uses the isometric coordinate transform.
+## local space. v0.10.10: simple square grid; cell at (x, y) is at
+## (x * CELL_SIZE + CELL_SIZE/2, y * CELL_SIZE + CELL_SIZE/2).
 func cell_to_world(x: int, y: int) -> Vector2:
-	return cell_to_iso(x, y)
-
-
-## Isometric coordinate transform: grid (x, y) → screen (iso_x, iso_y).
-## Uses a 2:1 isometric projection (horizontal step = CELL_SIZE * 0.5,
-## vertical step = CELL_SIZE * 0.25).
-func cell_to_iso(x: int, y: int) -> Vector2:
 	return Vector2(
-		float(x - y) * CELL_SIZE * 0.5,
-		float(x + y) * CELL_SIZE * ISO_RATIO
+		float(x) * CELL_SIZE + CELL_SIZE * 0.5,
+		float(y) * CELL_SIZE + CELL_SIZE * 0.5,
 	)
 
 
-## Isometric grid bounds: returns a Rect2 covering the full diamond
-## extent in local space (used to offset the layers so the grid sits
-## at (0, 0)).
+## v0.10.10: kept as an alias for code that still calls cell_to_iso.
+## Returns the same as cell_to_world now (no more iso transform).
+func cell_to_iso(x: int, y: int) -> Vector2:
+	return cell_to_world(x, y)
+
+
+## Square grid bounds: returns a Rect2 covering the full grid extent
+## in local space. Used to center the grid.
 func _iso_grid_bounds() -> Rect2:
-	var min_x: float = 1e9
-	var max_x: float = -1e9
-	var min_y: float = 1e9
-	var max_y: float = -1e9
-	for x in range(grid_size):
-		for y in range(grid_size):
-			var pos: Vector2 = cell_to_iso(x, y)
-			min_x = minf(min_x, pos.x)
-			max_x = maxf(max_x, pos.x)
-			min_y = minf(min_y, pos.y)
-			max_y = maxf(max_y, pos.y)
-	var half: float = CELL_SIZE * 0.5
-	return Rect2(min_x - half, min_y - half, max_x - min_x + CELL_SIZE, max_y - min_y + CELL_SIZE)
+	var grid_px: float = float(grid_size) * CELL_SIZE
+	return Rect2(0.0, 0.0, grid_px, grid_px)
 
 
 func _ready() -> void:
@@ -112,11 +105,12 @@ func configure(encounter: Dictionary) -> void:
 	_build_cells(encounter)
 	_clear_units()
 	_spawn_units(encounter)
-	# v0.10.5: center the isometric grid in local space using
-	# the iso grid bounds (so the grid's bounding-box center is
-	# at (0, 0) in this node's local space).
-	var bounds: Rect2 = _iso_grid_bounds()
-	var offset: Vector2 = -bounds.get_center()
+	# v0.10.10: center the square grid in local space so the
+	# grid's bounding-box center is at (0, 0) in this node's
+	# local space. With a 7x7 grid at 40px/cell (v0.10.11), that's
+	# 280x280 centered, so the grid spans -140..+140 in both axes.
+	var grid_px: float = float(grid_size) * CELL_SIZE
+	var offset: Vector2 = -Vector2(grid_px * 0.5, grid_px * 0.5)
 	_grid_layer.position = offset
 	_unit_layer.position = offset
 	_cursor_layer.position = offset
@@ -150,8 +144,9 @@ func _build_cells(encounter: Dictionary) -> void:
 			var h: int = int(_height_map.get("%d,%d" % [x, y], 0))
 			var b: bool = _bool_at_index(blocked, x, y, false) or t_idx == LocalMapGen.TERRAIN_BLOCKED
 			var tex: Texture2D = _tile_texture_for(t_idx)
-			# v0.10.5: position in isometric space
-			cell.setup_iso(x, y, t_idx, h, b, tex, cell_to_iso(x, y), CELL_SIZE)
+			# v0.10.10: square grid; cell origin is the top-left of
+			# the cell, sprite fills CELL_SIZE x CELL_SIZE.
+			cell.setup(x, y, t_idx, h, b, tex, CELL_SIZE)
 			_cells.append(cell)
 
 
@@ -160,9 +155,6 @@ func _tile_texture_for(terrain: int) -> Texture2D:
 		return null
 	if terrain < 0 or terrain > 3:
 		terrain = 0
-	# Use the full atlas as a single texture; BattleCell's Sprite2D
-	# renders the whole texture (clipped to its 24x24 bounds). The
-	# biome tilesets are 24-wide per-tile, vertically striped.
 	return _terrain_atlas
 
 

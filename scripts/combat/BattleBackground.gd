@@ -16,16 +16,18 @@
 ## dedicated per-biome background art.
 class_name BattleBackground extends Node2D
 
-# v0.10.5 polish: bumped to 56px to match BattleGridView.CELL_SIZE
-# for the grid-rect math in _scatter_decor. The bg ground tile
-# itself is still 24x24 (STRETCH_TILE covers the viewport regardless).
-const TILE_SIZE := 56
+# v0.10.11: TILE_SIZE 56 -> 40 to match BattleGridView.CELL_SIZE
+# (was 56; the grid is now 7x7 = 280px instead of 392px). The bg
+# ground tile itself is still 24x24 (STRETCH_TILE covers the
+# viewport regardless).
+const TILE_SIZE := 40
 const PADDING := 64
 const MOTE_COUNT := 18
-# Number of decor props scattered around the grid. Higher than the
-# old 18-debris-tile count because the new 64x64 decor reads as a
-# proper "props" not as "noise".
-const DECOR_COUNT := 22
+# v0.10.10: reduced decor count from 22 to 14. The v0.10.5+
+# scatter had 22 props at corners + edges, which read as noisy
+# "blocks" rather than scenery. 14 is enough to fill the four
+# corners + sparse edges without competing with the grid.
+const DECOR_COUNT := 14
 const DECOR_BASE := "res://assets/battle_decor/"
 
 # Biome → list of decor subfolders to use. Folders not present in
@@ -179,11 +181,16 @@ func _scatter_decor() -> void:
 			return
 
 	var grid_pixel_size: int = _grid_size * TILE_SIZE
+	# v0.10.11: 7x7 grid = 280px, decor stays at least 50px out
+	# so it never lands on a cell. The 60px buffer was sized for
+	# the v0.10.10 392px grid; 50px is enough now that the grid
+	# is smaller.
+	var buffer: int = 50
 	var grid_rect := Rect2(
-		-grid_pixel_size * 0.5 - 12,
-		-grid_pixel_size * 0.5 - 12,
-		grid_pixel_size + 24,
-		grid_pixel_size + 24,
+		-grid_pixel_size * 0.5 - buffer,
+		-grid_pixel_size * 0.5 - buffer,
+		grid_pixel_size + buffer * 2,
+		grid_pixel_size + buffer * 2,
 	)
 	# Place decor in two passes: a tight cluster in each of the four
 	# grid corners, then edge fillers. This reads more like scenery
@@ -195,11 +202,14 @@ func _scatter_decor() -> void:
 		Vector2(grid_pixel_size * 0.5, grid_pixel_size * 0.5),
 	]
 	var placed: int = 0
-	# Corner clusters (3-5 props per corner, mixed scales)
+	# Corner clusters (2-3 props per corner). v0.10.10: fewer props
+	# per corner, started further out so they look like scenery not
+	# competing with the grid.
 	for corner in anchor_pts:
-		for _i in range(3 + int(_rng.randf() * 3.0)):
+		for _i in range(2 + int(_rng.randf() * 2.0)):
 			var ang: float = _rng.randf() * TAU
-			var dist: float = _rng.randf_range(40.0, 100.0)
+			# Push further out from the corner anchor: 80-160 px.
+			var dist: float = _rng.randf_range(80.0, 160.0)
 			var pos: Vector2 = corner + Vector2(cos(ang), sin(ang)) * dist
 			if grid_rect.has_point(pos):
 				continue
@@ -209,13 +219,13 @@ func _scatter_decor() -> void:
 	# Edge fillers (along top/bottom/left/right outside the grid)
 	while placed < DECOR_COUNT:
 		var side: int = _rng.randi() % 4
-		var margin: float = _rng.randf_range(8.0, 28.0)
+		var margin: float = _rng.randf_range(60.0, 100.0)
 		var pos2: Vector2
 		match side:
 			0: # top
-				pos2 = Vector2(_rng.randf_range(-grid_pixel_size * 0.5 - 80, grid_pixel_size * 0.5 + 80), -grid_pixel_size * 0.5 - margin)
+				pos2 = Vector2(_rng.randf_range(-grid_pixel_size * 0.5 - 100, grid_pixel_size * 0.5 + 100), -grid_pixel_size * 0.5 - margin)
 			1: # bottom
-				pos2 = Vector2(_rng.randf_range(-grid_pixel_size * 0.5 - 80, grid_pixel_size * 0.5 + 80), grid_pixel_size * 0.5 + margin)
+				pos2 = Vector2(_rng.randf_range(-grid_pixel_size * 0.5 - 100, grid_pixel_size * 0.5 + 100), grid_pixel_size * 0.5 + margin)
 			2: # left
 				pos2 = Vector2(-grid_pixel_size * 0.5 - margin, _rng.randf_range(-grid_pixel_size * 0.5, grid_pixel_size * 0.5))
 			3: # right
@@ -232,14 +242,17 @@ func _spawn_decor_tile(world_pos: Vector2, tex: Texture2D, native_size: Vector2)
 		return
 	var sprite := Sprite2D.new()
 	sprite.texture = tex
-	# Random rotation + scale variance. Decor is 64x64 native; we
-	# scale by 0.6-1.0 to match the FFT reference's "scattered"
-	# feel where props feel like a small chunk, not full-size.
-	var base_scale: float = (24.0 / maxf(native_size.x, native_size.y)) * _rng.randf_range(0.85, 1.10)
+	# v0.10.10: shrunk decor so it reads as scenery not as cells.
+	# Decor is 64x64 native; we scale by 0.4-0.55 so the rendered
+	# decor is ~26-35px — well below the 56px cell size, so it
+	# looks like a small prop next to the cells, not a competing
+	# block. Less rotation variance too (was -0.4..+0.4 rad, now
+	# -0.15..+0.15) so the decor doesn't read as "tilted cards".
+	var base_scale: float = (24.0 / maxf(native_size.x, native_size.y)) * _rng.randf_range(1.05, 1.45)
 	sprite.scale = Vector2(base_scale, base_scale)
-	sprite.rotation = _rng.randf_range(-0.4, 0.4)
+	sprite.rotation = _rng.randf_range(-0.15, 0.15)
 	sprite.position = world_pos
-	sprite.modulate = Color(0.92, 0.92, 0.92, 0.95)
+	sprite.modulate = Color(0.85, 0.85, 0.85, 0.95)
 	sprite.z_index = -50
 	_tile_layer.add_child(sprite)
 

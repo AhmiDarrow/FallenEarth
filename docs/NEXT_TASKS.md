@@ -1,12 +1,33 @@
 # NEXT_TASKS — Fallen Earth
 
-**Version:** 0.10.0 · **Updated:** 2026-07-05 23:55 · **Phase:** v0.10.0 Combat Overhaul IN PROGRESS
+**Version:** 0.10.10 · **Updated:** 2026-07-06 13:05 · **Phase:** v0.10.10 Square Grid Fix COMPLETE
 
 *Aligns with `docs/PLAN_v040_crafting_progression.md`, `docs/HANDOFF_PROTOCOL.md`, and `memory/CURRENT_STATE.md`.*
 
 ---
 
 ## TOP PRIORITY — Next session
+
+### v0.10.10 milestone — Square Grid Fix (revert iso-diamond) ✅
+
+**Goal:** The v0.10.5+ isometric-diamond layout was a misstep — it
+produced a 45°-rotated rhombus grid with diamond cells that read
+as "broken" rather than as a tactical grid. v0.10.10 reverts to a
+flat 7x7 SQUARE grid of SQUARE terrain tiles, matching the overworld
+LocalMapView. Also reduces move-highlight opacity, shrinks decor
+props, and hides the legacy right-side action bar.
+
+| ID | Task | Status |
+|----|------|--------|
+| 10.1 | `BattleGridView.cell_to_world` — simple square transform | ✅ |
+| 10.2 | `BattleCell` — square terrain sprite, no diamond polygon | ✅ |
+| 10.3 | `BattleUnit` — square cell-center positioning | ✅ |
+| 10.4 | `CombatFeedback` — HP bars at cell center | ✅ |
+| 10.5 | `BattleCell.COLOR_MOVE.alpha` 0.42 → 0.22 | ✅ |
+| 10.6 | `BattleBackground` — DECOR_COUNT 22 → 14, buffer 12 → 60 | ✅ |
+| 10.7 | `TacticalCombat._ready()` — hide legacy right-side MainVBox | ✅ |
+| 10.8 | `tools/smoke_combat_polish.gd` — 6 new v0.10.10 tests | ✅ |
+| 10.9 | All smoke tests pass; no regressions | ✅ |
 
 ### v0.10.1 milestone — Combat UI Polish (FFT-style) ✅
 
