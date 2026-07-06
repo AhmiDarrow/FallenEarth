@@ -19,7 +19,7 @@ signal turn_ended(side: String)
 signal encounter_ended(victory: bool) ## true = player won, false = player lost
 
 ## v0.11.0: Grid config
-const CELL_SIZE: int = 40
+const CELL_SIZE: int = 60
 const DEFAULT_GRID_SIZE: int = 7
 var grid_size: int = DEFAULT_GRID_SIZE
 var biome: String = "Ash Wastes"

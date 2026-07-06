@@ -9,7 +9,7 @@ extends Node2D
 ## The CombatTile is much simpler than the reference: the
 ## Resource owns the state, the tile only renders.
 
-const CELL_SIZE: int = 40
+const CELL_SIZE: int = 60
 const BORDER_THICKNESS: int = 1
 const TILE_NATIVE: float = 24.0
 

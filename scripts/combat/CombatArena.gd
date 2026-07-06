@@ -10,7 +10,7 @@ extends Node2D
 ##   2. Populates the ArenaResource's `tiles` dict
 ##   3. Refrshes each tile's visual based on its TileResource state
 
-const CELL_SIZE: int = 40
+const CELL_SIZE: int = 60
 const GRID_SIZE: int = 7
 
 ## v0.11.0: The ArenaResource this arena manages. The encounter

@@ -11,7 +11,7 @@ extends Node2D
 ## unit sprite + name plate + HP bar and animates position
 ## changes. All decisions live in the services.
 
-const CELL_SIZE: int = 40
+const CELL_SIZE: int = 60
 const SPRITE_FOLDER: String = "res://assets/mobs/"
 const CHAR_FOLDER: String = "res://assets/characters/"
 
@@ -120,7 +120,7 @@ func setup_from_data(data: Dictionary, arena: ArenaResource) -> void:
 		var tile: TileResource = arena.get_tile(res.grid_pos.x, res.grid_pos.y)
 		if tile != null:
 			tile.occupier = self
-	# Load the sprite (32px target on 40px cell).
+	# Load the sprite (48px target on 60px cell).
 	_load_sprite()
 	_refresh_name()
 	_refresh_ct()
@@ -137,11 +137,11 @@ func _load_sprite() -> void:
 		path = SPRITE_FOLDER + res.sprite_id + ".png"
 	if ResourceLoader.exists(path):
 		_sprite.texture = load(path)
-		# Scale to 32px target.
+		# Scale to 48px target.
 		var tex_size: Vector2 = _sprite.texture.get_size()
 		var native_max: float = maxf(tex_size.x, tex_size.y)
 		if native_max > 0:
-			_sprite.scale = Vector2(32.0 / native_max, 32.0 / native_max)
+			_sprite.scale = Vector2(48.0 / native_max, 48.0 / native_max)
 		else:
 			_sprite.scale = Vector2.ONE
 	else:

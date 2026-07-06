@@ -524,7 +524,7 @@ func _test_combat_arena_builds_grid() -> void:
 
 
 func _test_combat_unit_loads_sprite() -> void:
-	print("\n--- CombatUnit: loads sprite, scales to 32px ---")
+	print("\n--- CombatUnit: loads sprite, scales to 48px ---")
 	var unit: CombatUnit = CombatUnitScript.new()
 	unit.name = "TestUnit"
 	root.add_child(unit)
@@ -551,7 +551,7 @@ func _test_combat_unit_loads_sprite() -> void:
 	else:
 		_ok("CombatUnit: res.unit_id = 'test_unit'")
 	# Position should be at the cell center.
-	var expected_pos: Vector2 = Vector2(2 * 40 + 20, 3 * 40 + 20)
+	var expected_pos: Vector2 = Vector2(2 * CombatTile.CELL_SIZE + CombatTile.CELL_SIZE * 0.5, 3 * CombatTile.CELL_SIZE + CombatTile.CELL_SIZE * 0.5)
 	if unit.position != expected_pos:
 		_fail("CombatUnit: position should be %s (cell center) (got %s)" % [expected_pos, unit.position])
 	else:
@@ -571,10 +571,10 @@ func _test_combat_unit_loads_sprite() -> void:
 			var native_size: Vector2 = tex.get_size()
 			var scl: float = unit._sprite.scale.x
 			var rendered: float = maxf(native_size.x, native_size.y) * scl
-			if rendered > 50.0:
-				_fail("CombatUnit: human sprite renders at %.1fpx (expected ~32px)" % rendered)
+			if rendered > 65.0:
+				_fail("CombatUnit: human sprite renders at %.1fpx (expected ~48px)" % rendered)
 			else:
-				_ok("CombatUnit: human sprite (128x128) renders at %.1fpx (fits 40px cell)" % rendered)
+				_ok("CombatUnit: human sprite (128x128) renders at %.1fpx (fits 60px cell)" % rendered)
 	else:
 		_ok("CombatUnit: human_male_S.png not present (test skipped)")
 	unit.queue_free()

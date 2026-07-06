@@ -166,14 +166,15 @@ func _read_viewport_size() -> Vector2i:
 ## viewport size changes (e.g. window resize in windowed mode).
 func _apply_layout() -> void:
 	# v0.11.0: Center the arena at the viewport midpoint.
-	# The arena is 7x7 = 280px wide/tall (CELL_SIZE 40), so the
-	# grid's top-left is at (vw/2 - 140, vh/2 - 140) and the
-	# arena node is at that position (each cell positions itself
-	# relative to the arena's origin).
+	# Grid pixel size = grid_size * CELL_SIZE; offset the arena
+	# origin so the grid is visually centered in the viewport.
 	if _arena != null:
+		var gs: int = _arena.res.grid_size if _arena.res != null else 7
+		var cs: float = float(CombatTile.CELL_SIZE) if CombatTile else 60.0
+		var grid_px: float = float(gs) * cs
 		var arena_pos: Vector2 = Vector2(
-			_viewport_size.x * 0.5 - 140.0,
-			_viewport_size.y * 0.5 - 140.0
+			_viewport_size.x * 0.5 - grid_px * 0.5,
+			_viewport_size.y * 0.5 - grid_px * 0.5
 		)
 		_arena.position = arena_pos
 		# CombatFeedback at v0.10.8 used the same offset; new
