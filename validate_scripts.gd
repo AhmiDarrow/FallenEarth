@@ -15,8 +15,8 @@ const SCENES := [
 	"res://scenes/SettlementInterior.tscn",
 	"res://scenes/DialogueUI.tscn",
 	"res://scenes/QuestTrackerUI.tscn",
-	"res://scenes/ui/OptionsMenu.tscn",
 	"res://scenes/TransitionScreen.tscn",
+	"res://scenes/ui/LocalMapView.tscn",
 ]
 
 const SCRIPTS := [
@@ -88,11 +88,13 @@ const SCRIPTS := [
 	"res://scripts/CombatHPBar.gd",
 	"res://scripts/CombatFeedback.gd",
 	"res://scripts/ui/MinimapOverhaul.gd",
-	"res://scripts/ui/OptionsMenu.gd",
 	"res://scripts/TransitionScreen.gd",
 	"res://scripts/LoadingTips.gd",
 	"res://scripts/AmbientAudio.gd",
 	"res://scripts/MusicManager.gd",
+	"res://scripts/KeybindManager.gd",
+	"res://scripts/ui/KeybindsScreen.gd",
+	"res://scripts/GraphicsManager.gd",
 ]
 
 func _initialize() -> void:
