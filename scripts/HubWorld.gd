@@ -245,16 +245,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if get_tree().paused:
 		return
-	# Block game input when any UI overlay is open
-	if _is_ui_overlay_open():
-		return
 
 	var km: Node = get_node_or_null("/root/KeybindManager")
 	if km == null:
 		_fallback_unhandled_input(event)
 		return
 
-	# Character-menu hotkeys
+	# Character-menu hotkeys — always allowed (open new or switch tabs)
 	if km.is_action_pressed("inventory", event):
 		open_character_tab("inventory")
 		return
@@ -270,6 +267,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	if km.is_action_pressed("stats", event):
 		open_character_tab("stats")
+		return
+
+	# Block remaining game input when any UI overlay is open
+	if _is_ui_overlay_open():
 		return
 
 	# Interact / gather
@@ -319,18 +320,28 @@ func _unhandled_input(event: InputEvent) -> void:
 func _fallback_unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
+	# Character-menu hotkeys — always allowed
 	match event.keycode:
 		KEY_I:
 			open_character_tab("inventory")
+			return
 		KEY_E:
 			if not _has_adjacent_harvest_node():
 				open_character_tab("equipment")
+				return
 		KEY_C:
 			open_character_tab("crafting")
+			return
 		KEY_P:
 			open_character_tab("party")
+			return
 		KEY_S:
 			open_character_tab("stats")
+			return
+	# Block remaining game input when any UI overlay is open
+	if _is_ui_overlay_open():
+		return
+	match event.keycode:
 		KEY_M:
 			_on_world_map_pressed()
 		KEY_UP, KEY_W:
