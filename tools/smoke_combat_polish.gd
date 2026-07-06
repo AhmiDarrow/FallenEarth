@@ -506,10 +506,10 @@ func _test_v104_blocked_cell_x_overlay() -> void:
 		_fail("BattleCell: _blocked_x member not found")
 	else:
 		_ok("BattleCell: _blocked_x member present")
-	if not src.contains("_build_blocked_x"):
-		_fail("BattleCell: _build_blocked_x() helper not found")
+	if not src.contains("_build_blocked_diamond_x"):
+		_fail("BattleCell: _build_blocked_diamond_x() helper not found")
 	else:
-		_ok("BattleCell: _build_blocked_x() helper present")
+		_ok("BattleCell: _build_blocked_diamond_x() helper present")
 	if not src.contains("COLOR_BLOCKED_X"):
 		_fail("BattleCell: COLOR_BLOCKED_X constant not found")
 	else:

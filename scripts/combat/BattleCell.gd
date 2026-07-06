@@ -1,7 +1,9 @@
 ## BattleCell — One cell of the battle grid.
 ##
-## Renders the terrain tile, optional height offset, and a range highlight
-## (move/attack/skill). Click routes back to the parent grid view.
+## Renders the terrain tile as a diamond (rotated 45°), optional
+## height offset, and a range highlight. Click routes back to the
+## parent grid view. v0.10.5: isometric diamond with Polygon2D
+## highlights that match the diamond geometry exactly.
 class_name BattleCell extends Node2D
 
 const HIGHLIGHT_NONE := 0
@@ -10,32 +12,19 @@ const HIGHLIGHT_ATTACK := 2
 const HIGHLIGHT_SKILL := 3
 const HIGHLIGHT_CURSOR := 4
 
-# FFT-style: move range is a soft white tint (semi-transparent so the
-# ground texture still shows through), attack is a red X-overlay, and
-# skill is a purple X-overlay. Stronger alpha than the old full-cell
-# tints so the cells really pop without hiding the ground.
 const COLOR_MOVE := Color(1.0, 1.0, 1.0, 0.42)
 const COLOR_ATTACK := Color(0.95, 0.20, 0.20, 0.55)
 const COLOR_SKILL := Color(0.65, 0.20, 0.90, 0.55)
 const COLOR_CURSOR := Color(1.0, 0.95, 0.4, 0.65)
 const HEIGHT_COLOR := Color(0.20, 0.18, 0.30, 0.85)
-# v0.10.4: blocked cells are now a very dark version of the
-# ground texture (not pure black), with a red X overlay so the
-# player reads "can't walk here" without it looking like a
-# rendering bug.
 const BLOCKED_TINT := Color(0.15, 0.10, 0.08, 0.85)
 const COLOR_BLOCKED_X := Color(0.85, 0.20, 0.20, 0.90)
 
 const CELL_SIZE := 56
-# Border thickness for the FFT-style edge frame. Chunky enough to
-# read as a "highlighted tile" without obscuring the ground.
 const BORDER_THICKNESS := 3
-# v0.10.5: the ground tile is 24x24 native. When rotated 45°, its
-# diagonal (tip-to-tip) is 24 * sqrt(2) ≈ 34 px. We scale by
-# CELL_SIZE/DIAMOND_DIAG so the diamond fills the cell footprint.
 const TILE_NATIVE := 24.0
-const DIAMOND_DIAG := 33.94  # TILE_NATIVE * sqrt(2)
-const DIAMOND_SCALE := CELL_SIZE / DIAMOND_DIAG  # ~1.65 at 56
+const DIAMOND_DIAG := 33.94
+const DIAMOND_SCALE := CELL_SIZE / DIAMOND_DIAG
 
 var grid_x: int = 0
 var grid_y: int = 0
@@ -45,9 +34,9 @@ var terrain_kind: int = 0
 
 var _base: Sprite2D
 var _height_label: Label
-var _highlight: ColorRect
-var _highlight_border: Control
-var _blocked_x: Control
+var _highlight: Polygon2D
+var _highlight_border: Node2D
+var _blocked_x: Node2D
 var _area: Area2D
 
 signal clicked(x: int, y: int)
@@ -62,12 +51,25 @@ func _ready() -> void:
 	set_highlight(HIGHLIGHT_NONE)
 
 
+## Diamond vertices centered in the CELL_SIZE box.
+## Top, right, bottom, left: a diamond fitting a 56×56 bounding square.
+func _diamond_pts() -> PackedVector2Array:
+	var hw: float = CELL_SIZE * 0.5
+	return PackedVector2Array([
+		Vector2(hw, 0),           # top
+		Vector2(CELL_SIZE, hw),   # right
+		Vector2(hw, CELL_SIZE),   # bottom
+		Vector2(0, hw),           # left
+	])
+
+
 func _build_children() -> void:
 	_base = Sprite2D.new()
 	_base.name = "Base"
 	_base.centered = true
 	_base.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5)
 	_base.z_index = 0
+	_base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # keep pixel art crisp at 45° rotation
 	add_child(_base)
 
 	_height_label = Label.new()
@@ -83,45 +85,82 @@ func _build_children() -> void:
 	_height_label.z_index = 5
 	add_child(_height_label)
 
-	_highlight = ColorRect.new()
+	# Highlight: a filled Polygon2D diamond (default invisible).
+	_highlight = Polygon2D.new()
 	_highlight.name = "Highlight"
+	_highlight.polygon = _diamond_pts()
 	_highlight.color = Color(0, 0, 0, 0)
-	_highlight.position = Vector2.ZERO
-	_highlight.size = Vector2(CELL_SIZE, CELL_SIZE)
-	_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_highlight.z_index = 3
 	add_child(_highlight)
-	# v0.10.5: diamond border built as a Polygon2D.
-	_highlight_border = _build_border()
+
+	# Border: an outline Polygon2D diamond drawn as a ring.
+	_highlight_border = _build_diamond_outline()
 	_highlight_border.visible = false
 	add_child(_highlight_border)
-	# v0.10.4: red X overlay for blocked cells.
-	_blocked_x = _build_blocked_x()
+
+	# Blocked-X overlay (two crossed lines inside the diamond).
+	_blocked_x = _build_blocked_diamond_x()
 	_blocked_x.visible = false
 	add_child(_blocked_x)
 
+	# Area2D with a convex polygon shape matching the diamond.
 	_area = Area2D.new()
 	_area.name = "Area2D"
 	var shape := CollisionShape2D.new()
 	shape.name = "Shape"
-	var rect := RectangleShape2D.new()
-	rect.size = Vector2(CELL_SIZE, CELL_SIZE)
-	shape.shape = rect
+	var poly := ConvexPolygonShape2D.new()
+	poly.points = _diamond_pts()
+	shape.shape = poly
 	_area.add_child(shape)
-	_area.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5)
+	_area.position = Vector2.ZERO
 	_area.input_pickable = true
 	_area.z_index = 2
 	add_child(_area)
 
 
-func setup(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Texture2D) -> void:
-	setup_iso(x, y, terrain, h, blocked, base_tex, Vector2(x * CELL_SIZE, y * CELL_SIZE), CELL_SIZE)
+## Diamond border outline using 4 Line2Ds at the diamond edges.
+## This gives the FFT-style "highlighted tile" outline without
+## relying on self-intersecting Polygon2D (which doesn't support
+## holes in Godot's renderer).
+func _build_diamond_outline() -> Node2D:
+	var wrap := Node2D.new()
+	wrap.name = "OutlineBorder"
+	wrap.z_index = 4
+	var hw: float = CELL_SIZE * 0.5
+	var color: Color = Color(0, 0, 0, 0)
+	# Top-left edge: (0, hw) → (hw, 0)
+	_add_line(wrap, PackedVector2Array([Vector2(0, hw), Vector2(hw, 0)]), color, "EdgeTL")
+	# Top-right edge: (hw, 0) → (CELL_SIZE, hw)
+	_add_line(wrap, PackedVector2Array([Vector2(hw, 0), Vector2(CELL_SIZE, hw)]), color, "EdgeTR")
+	# Bottom-right edge: (CELL_SIZE, hw) → (hw, CELL_SIZE)
+	_add_line(wrap, PackedVector2Array([Vector2(CELL_SIZE, hw), Vector2(hw, CELL_SIZE)]), color, "EdgeBR")
+	# Bottom-left edge: (hw, CELL_SIZE) → (0, hw)
+	_add_line(wrap, PackedVector2Array([Vector2(hw, CELL_SIZE), Vector2(0, hw)]), color, "EdgeBL")
+	return wrap
 
 
-## v0.10.5: isometric variant. The cell is positioned at `iso_pos`
-## (the output of BattleGridView.cell_to_iso) and the base sprite is
-## rotated 45° to form a diamond. cell_size is the tip-to-tip size
-## of the diamond (typically BattleGridView.CELL_SIZE).
+func _add_line(parent: Node2D, pts: PackedVector2Array, color: Color, name_: String) -> void:
+	var line := Line2D.new()
+	line.name = name_
+	line.width = BORDER_THICKNESS
+	line.default_color = color
+	line.points = pts
+	parent.add_child(line)
+
+
+## Red X overlay using two Line2Ds crossed at the diamond center.
+func _build_blocked_diamond_x() -> Node2D:
+	var wrap := Node2D.new()
+	wrap.name = "BlockedX"
+	wrap.z_index = 5
+	var pad := BORDER_THICKNESS
+	# Diagonal from top-left to bottom-right
+	_add_line(wrap, PackedVector2Array([Vector2(pad, pad), Vector2(CELL_SIZE - pad, CELL_SIZE - pad)]), COLOR_BLOCKED_X, "Diag1")
+	# Diagonal from top-right to bottom-left
+	_add_line(wrap, PackedVector2Array([Vector2(CELL_SIZE - pad, pad), Vector2(pad, CELL_SIZE - pad)]), COLOR_BLOCKED_X, "Diag2")
+	return wrap
+
+
 func setup_iso(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Texture2D, iso_pos: Vector2, cell_size: int) -> void:
 	grid_x = x
 	grid_y = y
@@ -130,15 +169,12 @@ func setup_iso(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Te
 	is_blocked = blocked
 	position = iso_pos
 	if base_tex != null:
-		# v0.10.5: extract the 24x24 terrain row via AtlasTexture,
-		# then set the sprite rotation to 45° and apply the diamond
-		# scale so the tile forms a clean diamond at the cell size.
 		var clipped := AtlasTexture.new()
 		clipped.atlas = base_tex
 		var row: int = clampi(terrain, 0, 4)
 		clipped.region = Rect2(0, row * TILE_NATIVE, TILE_NATIVE, TILE_NATIVE)
 		_base.texture = clipped
-		_base.rotation = PI / 4.0  # 45° for diamond
+		_base.rotation = PI / 4.0
 		var scl: float = float(cell_size) / DIAMOND_DIAG
 		_base.scale = Vector2(scl, scl)
 		_base.modulate = Color.WHITE
@@ -163,6 +199,10 @@ func setup_iso(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Te
 	refresh_height_visual()
 
 
+func setup(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Texture2D) -> void:
+	setup_iso(x, y, terrain, h, blocked, base_tex, Vector2(x * CELL_SIZE, y * CELL_SIZE), CELL_SIZE)
+
+
 func set_highlight(kind: int) -> void:
 	if _highlight == null:
 		return
@@ -170,96 +210,38 @@ func set_highlight(kind: int) -> void:
 		HIGHLIGHT_MOVE:
 			_highlight.color = COLOR_MOVE
 			_highlight.visible = true
-			_set_border_color(COLOR_MOVE)
+			_set_border_visible(false)
 		HIGHLIGHT_ATTACK:
 			_highlight.color = Color(0, 0, 0, 0)
 			_highlight.visible = false
-			_set_border_color(COLOR_ATTACK)
-			_highlight_border.visible = true
-			return
+			_set_border_line_colors(COLOR_ATTACK)
+			_set_border_visible(true)
 		HIGHLIGHT_SKILL:
 			_highlight.color = Color(0, 0, 0, 0)
 			_highlight.visible = false
-			_set_border_color(COLOR_SKILL)
-			_highlight_border.visible = true
-			return
+			_set_border_line_colors(COLOR_SKILL)
+			_set_border_visible(true)
 		HIGHLIGHT_CURSOR:
 			_highlight.color = COLOR_CURSOR
 			_highlight.visible = true
-			_set_border_color(COLOR_CURSOR)
+			_set_border_visible(false)
 		_:
 			_highlight.visible = false
-			_highlight_border.visible = false
+			_set_border_visible(false)
 
 
-## Build a 4-edge diamond border via Polygon2D. The border uses
-## a hollow diamond (four strips at the edge) so the highlight
-## reads as a "target tile outline" not a solid fill.
-func _build_border() -> Control:
-	var wrap := Control.new()
-	wrap.name = "HighlightBorder"
-	wrap.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	wrap.size = Vector2(CELL_SIZE, CELL_SIZE)
-	wrap.position = Vector2.ZERO
-	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrap.z_index = 4
-	# Top edge
-	var t := _mk_edge_rect(Vector2(CELL_SIZE * 0.5 - CELL_SIZE * 0.4, 0), Vector2(CELL_SIZE * 0.8, BORDER_THICKNESS))
-	wrap.add_child(t)
-	# Bottom edge
-	var b := _mk_edge_rect(Vector2(CELL_SIZE * 0.5 - CELL_SIZE * 0.4, CELL_SIZE - BORDER_THICKNESS), Vector2(CELL_SIZE * 0.8, BORDER_THICKNESS))
-	wrap.add_child(b)
-	# Left edge
-	var l := _mk_edge_rect(Vector2(0, CELL_SIZE * 0.5 - CELL_SIZE * 0.4), Vector2(BORDER_THICKNESS, CELL_SIZE * 0.8))
-	wrap.add_child(l)
-	# Right edge
-	var r := _mk_edge_rect(Vector2(CELL_SIZE - BORDER_THICKNESS, CELL_SIZE * 0.5 - CELL_SIZE * 0.4), Vector2(BORDER_THICKNESS, CELL_SIZE * 0.8))
-	wrap.add_child(r)
-	return wrap
+func _set_border_visible(v: bool) -> void:
+	if _highlight_border == null:
+		return
+	_highlight_border.visible = v
 
 
-func _mk_edge_rect(pos: Vector2, sz: Vector2) -> ColorRect:
-	var cr := ColorRect.new()
-	cr.color = COLOR_MOVE
-	cr.size = sz
-	cr.position = pos
-	cr.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return cr
-
-
-func _set_border_color(c: Color) -> void:
+func _set_border_line_colors(c: Color) -> void:
 	if _highlight_border == null:
 		return
 	for child in _highlight_border.get_children():
-		(child as ColorRect).color = c
-
-
-## Build a red X overlay (two crossed ColorRects) for blocked
-## cells. The X is sized to the cell minus 8px padding so the
-## border is visible.
-func _build_blocked_x() -> Control:
-	var wrap := Control.new()
-	wrap.name = "BlockedX"
-	wrap.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	wrap.size = Vector2(CELL_SIZE, CELL_SIZE)
-	wrap.position = Vector2.ZERO
-	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrap.z_index = 5
-	var diag1 := ColorRect.new()
-	diag1.color = COLOR_BLOCKED_X
-	diag1.size = Vector2(CELL_SIZE - 8, 3)
-	diag1.position = Vector2(4, CELL_SIZE * 0.5 - 1.5)
-	diag1.rotation = 0.7854  # 45 deg in radians
-	diag1.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrap.add_child(diag1)
-	var diag2 := ColorRect.new()
-	diag2.color = COLOR_BLOCKED_X
-	diag2.size = Vector2(CELL_SIZE - 8, 3)
-	diag2.position = Vector2(4, CELL_SIZE * 0.5 - 1.5)
-	diag2.rotation = -0.7854  # -45 deg in radians
-	diag2.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	wrap.add_child(diag2)
-	return wrap
+		if child is Line2D:
+			(child as Line2D).default_color = c
 
 
 func refresh_height_visual() -> void:
