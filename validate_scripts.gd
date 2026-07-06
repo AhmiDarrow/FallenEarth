@@ -101,6 +101,13 @@ const SCRIPTS := [
 	"res://scripts/combat/BattleGridView.gd",
 	"res://scripts/combat/BattleUnit.gd",
 	"res://scripts/combat/BattleBackground.gd",
+	"res://scripts/ai/CombatAI.gd",
+	"res://scripts/ai/AggressiveAI.gd",
+	"res://scripts/ai/RangedAI.gd",
+	"res://scripts/ai/CasterAI.gd",
+	"res://scripts/ai/DefensiveAI.gd",
+	"res://scripts/ai/BossAI.gd",
+	"res://scripts/ai/CombatAIEngine.gd",
 ]
 
 func _initialize() -> void:

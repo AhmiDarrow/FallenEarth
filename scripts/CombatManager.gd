@@ -3,6 +3,8 @@
 class_name CombatManager
 extends Node
 
+const CombatAIEngine = preload("res://scripts/ai/CombatAIEngine.gd")
+
 const TEAM_PLAYER := "player"
 const TEAM_ENEMY := "enemy"
 
@@ -38,6 +40,9 @@ var _attackable_tiles: Array[Vector2i] = []
 var _skillable_tiles: Array[Vector2i] = []
 var _class_combat: Dictionary = {}
 var _active_skill: Dictionary = {}
+# Per-unit AI instance cache. BossAI maintains state across turns, so
+# we keep the same instance alive for the fight.
+var _ai_instances: Dictionary = {}
 
 
 func setup_from_encounter(encounter: Dictionary) -> void:
@@ -55,6 +60,7 @@ func setup_from_encounter(encounter: Dictionary) -> void:
 	_class_combat = (encounter.get("class_combat", {}) as Dictionary).duplicate(true)
 	_active_skill = {}
 	_skillable_tiles.clear()
+	_ai_instances.clear()
 
 	_build_height_map(int(encounter.get("height_seed", 0)))
 	var player_start: Vector2i = encounter.get("player_start", Vector2i(grid_size / 2, grid_size - 1))
@@ -483,7 +489,7 @@ func _template_to_unit(template: Dictionary, pos: Vector2i, is_boss: bool, index
 	if is_boss:
 		enemy_name = "[Boss] %s" % enemy_name
 	_add_log("%s Lv.%d enters (HP %d)." % [enemy_name, enemy_level, maxi(1, hp)])
-	return {
+	var unit: Dictionary = {
 		"id": "enemy_%d" % index,
 		"team": TEAM_ENEMY,
 		"name": enemy_name,
@@ -504,7 +510,19 @@ func _template_to_unit(template: Dictionary, pos: Vector2i, is_boss: bool, index
 		"waited": false,
 		"is_boss": is_boss,
 		"player_controlled": false,
+		"ai_archetype": str(template.get("ai_archetype", "aggressive")),
+		"abilities": (template.get("abilities", []) as Array).duplicate(true),
+		"mp": int(template.get("mp", 0)),
 	}
+	# Mob presets that need ranged or caster behavior get a wider
+	# weapon range so they can actually reach. Specific data
+	# overrides should win over the archetype default.
+	var arch: String = unit["ai_archetype"]
+	if arch == "ranged" and int(unit["weapon_range"]) < 3:
+		unit["weapon_range"] = 3
+	if arch == "caster" and int(unit["weapon_range"]) < 2:
+		unit["weapon_range"] = 2
+	return unit
 
 
 func _init_ct_for_all_units() -> void:
@@ -582,36 +600,68 @@ func _finish_active_turn() -> void:
 
 func _run_enemy_turn(unit: Dictionary) -> void:
 	var uid: String = str(unit.get("id", ""))
-	var target: Dictionary = _nearest_player(unit.get("pos", Vector2i.ZERO))
-	if target.is_empty():
-		_finish_enemy_turn(uid)
-		return
-
-	var target_pos: Vector2i = target.get("pos", Vector2i.ZERO)
 	var my_pos: Vector2i = unit.get("pos", Vector2i.ZERO)
-
-	if _manhattan(my_pos, target_pos) <= int(unit.get("weapon_range", 1)):
-		var result: Dictionary = _resolve_attack(unit, target)
-		unit["has_acted"] = true
-		unit["facing"] = _facing_toward(my_pos, target_pos)
-		_add_log(str(result.get("message", "Enemy attack.")))
-	else:
-		var reachable: Array[Vector2i] = _compute_reachable(my_pos, int(unit.get("move", 3)), int(unit.get("jump", 2)), uid)
-		var best: Vector2i = my_pos
-		var best_dist: int = _manhattan(my_pos, target_pos)
-		for tile in reachable:
-			var d: int = _manhattan(tile, target_pos)
-			if d < best_dist:
-				best_dist = d
-				best = tile
-		if best != my_pos:
-			unit["pos"] = best
-			unit["has_moved"] = true
-			unit["facing"] = _facing_from_delta(best - my_pos)
-			_add_log("%s advances." % unit.get("name", "Enemy"))
-
+	var can_move: bool = not bool(unit.get("has_moved", false))
+	# Pre-compute reachable / attackable / skillable / blocked for the AI.
+	var reachable: Array[Vector2i] = []
+	if can_move:
+		reachable = _compute_reachable(my_pos, int(unit.get("move", 3)), int(unit.get("jump", 2)), uid)
+	var attackable: Array[Vector2i] = _compute_attackable(my_pos, int(unit.get("weapon_range", 1)))
+	var skillable: Array[Vector2i] = _compute_skillable(my_pos)
+	var blocked: Array = _build_blocked_grid()
+	var state: Dictionary = CombatAIEngine.build_state(
+		unit, _units, grid_size, _height_map, reachable, attackable, skillable, blocked, can_move
+	)
+	# Get / create the AI instance for this unit.
+	var ai: CombatAI = _ai_instances.get(uid, null)
+	if ai == null:
+		ai = CombatAIEngine.build(str(unit.get("ai_archetype", "aggressive")))
+		_ai_instances[uid] = ai
+	var action: Dictionary = ai.decide(state)
+	# Apply the action.
+	var acted: bool = false
+	match str(action.get("type", "wait")):
+		"move":
+			var target: Vector2i = action.get("target", my_pos)
+			if can_move and reachable.has(target) and get_unit_at(target).is_empty():
+				unit["pos"] = target
+				unit["has_moved"] = true
+				unit["facing"] = _facing_toward(my_pos, target)
+				_add_log("%s advances to (%d,%d)." % [unit.get("name", "Enemy"), target.x, target.y])
+		"attack":
+			var atk_pos: Vector2i = action.get("target", my_pos)
+			var tgt: Dictionary = get_unit_at(atk_pos)
+			if not tgt.is_empty() and attackable.has(atk_pos):
+				var result: Dictionary = _resolve_attack(unit, tgt)
+				unit["has_acted"] = true
+				acted = true
+				unit["facing"] = _facing_toward(my_pos, atk_pos)
+				_add_log(str(result.get("message", "Enemy attack.")))
+		"skill":
+			var sk: String = str(action.get("skill_id", ""))
+			var tgt_pos: Vector2i = action.get("target", my_pos)
+			var skill: Dictionary = _find_ability(unit, sk)
+			if not skill.is_empty() and skillable.has(tgt_pos):
+				_active_skill = skill.duplicate(true)
+				var target_dict: Dictionary = get_unit_at(tgt_pos)
+				var sr: Dictionary = _resolve_skill(unit, skill, tgt_pos, target_dict)
+				if bool(sr.get("ok", false)):
+					unit["mp"] = maxi(0, int(unit.get("mp", 0)) - int(skill.get("mp_cost", 0)))
+					unit["has_acted"] = true
+					acted = true
+					unit["facing"] = _facing_toward(my_pos, tgt_pos) if tgt_pos != my_pos else int(unit.get("facing", Facing.SOUTH))
+					_add_log(str(sr.get("message", "Enemy cast %s." % sk)))
+				_active_skill = {}
+		"defend":
+			# Future: add defend stance. For now, just end the turn.
+			unit["waited"] = true
+			_add_log("%s defends." % unit.get("name", "Enemy"))
+		"wait":
+			unit["waited"] = true
+			_add_log("%s waits." % unit.get("name", "Enemy"))
 	_emit_unit(uid)
-	_check_battle_end()
+	if not acted:
+		_check_battle_end()
 	_finish_enemy_turn(uid)
 
 
@@ -865,6 +915,62 @@ func _build_height_map(seed_val: int) -> void:
 	for y in range(grid_size):
 		for x in range(grid_size):
 			_height_map["%d,%d" % [x, y]] = randi_range(0, 2)
+
+
+## Tiles this unit can attack from `pos` with `weapon_range`. Mirrors
+## the logic in _refresh_attack_range so the AI sees the same view
+## the player does.
+func _compute_attackable(pos: Vector2i, weapon_range: int) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var p := Vector2i(x, y)
+			if not _is_in_bounds(p):
+				continue
+			if _manhattan(pos, p) > weapon_range and _chebyshev(pos, p) > weapon_range:
+				continue
+			var u: Dictionary = get_unit_at(p)
+			if u.is_empty():
+				continue
+			out.append(p)
+	return out
+
+
+## Tiles this unit can use a skill on (range, type, MP all considered).
+## Mirrors the logic in _refresh_skill_range.
+func _compute_skillable(pos: Vector2i) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	# AI just sees the player's skills; enemies use the same range
+	# model. For now, all abilities use range=1-3 AOE — we surface
+	# every tile in chebyshev 1-3 that has an enemy or ally.
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var p := Vector2i(x, y)
+			if not _is_in_bounds(p):
+				continue
+			var d: int = _chebyshev(pos, p)
+			if d < 1 or d > 3:
+				continue
+			out.append(p)
+	return out
+
+
+## Build a flat boolean array of blocked tiles. Uses the same data
+## the player view uses: terrain > 0 means debris/vegetation, h_diff
+## limit, or the explicit blocked list. For AI purposes we treat
+## `terrain_kind == 3` (TERRAIN_BLOCKED) as blocked.
+func _build_blocked_grid() -> Array:
+	var out: Array = []
+	for y in range(grid_size):
+		for x in range(grid_size):
+			var h: int = int(_height_map.get("%d,%d" % [x, y], 0))
+			var blocked: bool = h >= 3
+			out.append(blocked)
+	return out
+
+
+func _chebyshev(a: Vector2i, b: Vector2i) -> int:
+	return maxi(absi(a.x - b.x), absi(a.y - b.y))
 
 
 func _nearest_player(from: Vector2i) -> Dictionary:
