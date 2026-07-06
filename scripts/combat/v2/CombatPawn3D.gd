@@ -65,7 +65,6 @@ func _build_sprite() -> void:
 	_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_sprite.pixel_size = 0.01
 	_sprite.no_depth_test = false
-	_sprite.cast_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	_sprite.position = Vector3(0, PAWN_HEIGHT, 0)
 	add_child(_sprite)
 
