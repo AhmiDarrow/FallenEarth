@@ -57,8 +57,8 @@ func _build_ui() -> void:
 	vbox.add_child(_tab_container)
 
 	_build_graphics_tab()
-	_build_keybinds_tab()
 	_build_audio_tab()
+	_build_keybinds_tab()
 
 	# Bottom buttons
 	var btn_hbox := HBoxContainer.new()
