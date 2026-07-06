@@ -437,31 +437,25 @@ func _test_v103_selection_arrow_above_nameplate() -> void:
 	print("\n--- v0.10.3: Selection arrow positioned above nameplate ---")
 	# v0.10.3 fix: the selection arrow was hidden BEHIND the nameplate
 	# because they were both at similar y positions. Now the arrow sits
-	# at y=-78 and the nameplate at y=-54, so the arrow is clearly above.
-	# We test the positions directly via the source code to avoid
-	# any potential issues with creating BattleUnit in a test context.
+	# at y=-52 (CELL_SIZE*0.5 + 24) above cell center and the nameplate
+	# at y=-76 (CELL_SIZE*0.5 + 48). We test via source code.
 	var src: String = load("res://scripts/combat/BattleUnit.gd").source_code
-	# The _build_children method should set arrow position to (0, -78)
-	# and nameplate to (-48, -54). The arrow's y (-78) is more negative
-	# than the nameplate's y (-54), so it's above.
-	if not src.contains("Vector2(0, -78)"):
-		_fail("BattleUnit source: selection arrow position (0, -78) not found")
+	if not src.contains("Vector2(0, -CELL_SIZE * 0.5 - 48)"):
+		_fail("BattleUnit source: selection arrow position not found (expect -CELL_SIZE*0.5-48)")
 	else:
-		_ok("BattleUnit source: selection arrow positioned at (0, -78)")
-	if not src.contains("Vector2(-48, -54)"):
-		_fail("BattleUnit source: nameplate position (-48, -54) not found")
+		_ok("BattleUnit source: selection arrow positioned above cell center")
+	if not src.contains("Vector2(-48, -CELL_SIZE * 0.5 - 24)"):
+		_fail("BattleUnit source: nameplate position not found (expect -CELL_SIZE*0.5-24)")
 	else:
-		_ok("BattleUnit source: nameplate positioned at (-48, -54)")
-	# Z-index: arrow should be on top of nameplate
+		_ok("BattleUnit source: nameplate positioned above cell center")
 	if src.find("_selection_arrow.z_index = 15") < 0:
 		_fail("BattleUnit source: selection arrow z_index = 15 not found")
 	else:
 		_ok("BattleUnit source: selection arrow z_index = 15 (above nameplate's 14)")
-	# Verify the unit's refresh methods also use these positions
-	if not src.contains("_selection_arrow.position = Vector2(0, -78)"):
-		_fail("BattleUnit source: _refresh_selection_arrow should also use (0, -78)")
+	if not src.contains("_selection_arrow.position = Vector2(0, -CELL_SIZE"):
+		_fail("BattleUnit source: _refresh_selection_arrow should use CELL_SIZE-relative position")
 	else:
-		_ok("BattleUnit source: _refresh_selection_arrow uses (0, -78)")
+		_ok("BattleUnit source: _refresh_selection_arrow uses CELL_SIZE-relative position")
 
 
 func _test_v104_grid_centered_in_viewport() -> void:

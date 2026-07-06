@@ -68,17 +68,20 @@ func _ready() -> void:
 
 
 func _build_children() -> void:
+	# v0.10.5+ iso: the BattleUnit is positioned at the iso cell center
+	# directly (not the top-left of a square cell). So all children
+	# should be centered at (0, 0), not offset by CELL_SIZE*0.5.
 	_sprite = Sprite2D.new()
 	_sprite.name = "Sprite"
 	_sprite.centered = true
-	_sprite.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5)
+	_sprite.position = Vector2.ZERO
 	_sprite.z_index = 10
 	add_child(_sprite)
 
 	_active_glow = Sprite2D.new()
 	_active_glow.name = "ActiveGlow"
 	_active_glow.centered = true
-	_active_glow.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5)
+	_active_glow.position = Vector2.ZERO
 	_active_glow.modulate = Color(1.0, 0.95, 0.5, 0.6)
 	_active_glow.z_index = 9
 	add_child(_active_glow)
@@ -89,7 +92,7 @@ func _build_children() -> void:
 	_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_name_label.add_theme_constant_override("outline_size", 2)
 	_name_label.add_theme_font_size_override("font_size", 8)
-	_name_label.position = Vector2(-CELL_SIZE * 0.5, -CELL_SIZE * 0.5 - 18)
+	_name_label.position = Vector2(-CELL_SIZE * 0.5, -CELL_SIZE * 0.5 - 24)
 	_name_label.size = Vector2(CELL_SIZE * 2, 12)
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -101,27 +104,22 @@ func _build_children() -> void:
 	_status_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_status_label.add_theme_constant_override("outline_size", 2)
 	_status_label.add_theme_font_size_override("font_size", 7)
-	_status_label.position = Vector2(-CELL_SIZE * 0.5, CELL_SIZE * 0.5 + 2)
+	_status_label.position = Vector2(-CELL_SIZE * 0.5, CELL_SIZE * 0.5 + 8)
 	_status_label.size = Vector2(CELL_SIZE * 2, 10)
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_status_label.z_index = 12
 	add_child(_status_label)
 
-	# HP bar (with X/X label) is rendered by CombatFeedback so the
-	# unit just owns the name + CT mini-bar. Avoids the previous
-	# double-bar look where the CombatFeedback bar overlapped the
-	# unit's internal bar.
 	_hp_bg = null
 	_hp_fill = null
 	_hp_label = null
 
-	# v0.10.2 polish: CT mini-bar on the cell, wider to match the
-	# bumped cell size.
+	# CT mini-bar centered below the sprite
 	_ct_bg = ColorRect.new()
 	_ct_bg.name = "CTBg"
 	_ct_bg.color = Color(0.08, 0.06, 0.05, 0.85)
-	_ct_bg.position = Vector2(2, -4)
+	_ct_bg.position = Vector2(-CELL_SIZE * 0.5 + 2, CELL_SIZE * 0.5 - 2)
 	_ct_bg.size = Vector2(CELL_SIZE - 4, 4)
 	_ct_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ct_bg.z_index = 11
@@ -130,30 +128,22 @@ func _build_children() -> void:
 	_ct_fill = ColorRect.new()
 	_ct_fill.name = "CTFill"
 	_ct_fill.color = CT_BAR_FILL
-	_ct_fill.position = Vector2(3, -3)
+	_ct_fill.position = Vector2(-CELL_SIZE * 0.5 + 3, CELL_SIZE * 0.5 - 1)
 	_ct_fill.size = Vector2(0, 2)
 	_ct_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_ct_fill.z_index = 12
 	add_child(_ct_fill)
 
-	# v0.10.1 polish: white-bordered name plate above the unit's
-	# sprite (replaces the legacy outline-stroked Label). Sized for
-	# the bumped 40px cells. Sits ~22px above the cell top.
 	_name_plate = UnitNamePlateScript.new()
 	_name_plate.name = "NamePlate"
-	_name_plate.position = Vector2(-48, -54)
+	_name_plate.position = Vector2(-48, -CELL_SIZE * 0.5 - 24)
 	_name_plate.z_index = 14
 	_name_plate.visible = true
 	add_child(_name_plate)
 
-	# v0.10.1 polish: down-pointing selection arrow above the unit.
-	# Hidden by default; shown only when this unit is active.
-	# v0.10.2: positioned ABOVE the name plate so the arrow is
-	# the topmost visual indicator (the most visible "this unit
-	# is active" cue).
 	_selection_arrow = UnitSelectionArrowScript.new()
 	_selection_arrow.name = "SelectionArrow"
-	_selection_arrow.position = Vector2(0, -78)
+	_selection_arrow.position = Vector2(0, -CELL_SIZE * 0.5 - 48)
 	_selection_arrow.z_index = 15
 	_selection_arrow.visible = false
 	add_child(_selection_arrow)
@@ -264,7 +254,7 @@ func _refresh_hp() -> void:
 
 func _refresh_ct() -> void:
 	var ratio: float = clampf(float(current_ct) / 100.0, 0.0, 1.0)
-	_ct_fill.size = Vector2((CELL_SIZE - 6) * ratio, 1)
+	_ct_fill.size = Vector2((CELL_SIZE - 6) * ratio, 2)
 
 
 func _refresh_name() -> void:
@@ -275,18 +265,13 @@ func _refresh_name_plate() -> void:
 	if _name_plate == null:
 		return
 	_name_plate.set_unit_info(display_name if not display_name.is_empty() else _unit_display_name(), team, is_boss)
-	# Name plate sits above the cell. WIDTH=96, so center it on the
-	# 40px cell by offsetting -48px.
-	_name_plate.position = Vector2(-48, -54)
+	_name_plate.position = Vector2(-48, -CELL_SIZE * 0.5 - 24)
 
 
 func _refresh_selection_arrow() -> void:
 	if _selection_arrow == null:
 		return
-	# Selection arrow sits ABOVE the name plate (at y=-78). The
-	# arrow is centered on the cell horizontally (it's a 28×24
-	# Node2D with the polygon centered on its origin).
-	_selection_arrow.position = Vector2(0, -78)
+	_selection_arrow.position = Vector2(0, -CELL_SIZE * 0.5 - 48)
 
 
 func _refresh_status() -> void:
@@ -327,9 +312,9 @@ func set_grid_pos(grid_pos: Vector2i) -> void:
 	var iso_y: float = float(grid_pos.x + grid_pos.y) * CELL_SIZE * 0.25
 	position = Vector2(iso_x, iso_y)
 	if _name_plate != null:
-		_name_plate.position = Vector2(-48, -54)
+		_name_plate.position = Vector2(-48, -CELL_SIZE * 0.5 - 24)
 	if _selection_arrow != null:
-		_selection_arrow.position = Vector2(0, -78)
+		_selection_arrow.position = Vector2(0, -CELL_SIZE * 0.5 - 48)
 
 
 func play_attack_swing() -> void:

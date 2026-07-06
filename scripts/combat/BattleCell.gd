@@ -67,9 +67,9 @@ func _build_children() -> void:
 	_base = Sprite2D.new()
 	_base.name = "Base"
 	_base.centered = true
-	_base.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5)
+	_base.position = Vector2.ZERO  # v0.10.5+ iso: cell is at center
 	_base.z_index = 0
-	_base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST  # keep pixel art crisp at 45° rotation
+	_base.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	add_child(_base)
 
 	_height_label = Label.new()
@@ -248,10 +248,10 @@ func refresh_height_visual() -> void:
 	if _base == null:
 		return
 	if height > 0:
-		_base.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5 - height * 4)
+		_base.position = Vector2(0, -height * 4)
 		_base.modulate = _base.modulate.lerp(HEIGHT_COLOR, 0.4)
 	else:
-		_base.position = Vector2(CELL_SIZE * 0.5, CELL_SIZE * 0.5)
+		_base.position = Vector2.ZERO
 
 
 func _default_color(terrain: int) -> Color:
