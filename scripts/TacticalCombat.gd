@@ -1,36 +1,61 @@
-## TacticalCombat — Unified FFT-style battle scene (overworld + rift).
+## TacticalCombat — FFT-style battle scene (v0.10.0 overhaul).
+##
+## v0.10.0: The grid is now a real BattleGridView (49 cells with terrain
+## tiles + height marks), units are BattleUnit nodes (mob sprites +
+## facing + HP/CT bars + anim tweens), and the background is a
+## biome-themed BattleBackground with vignette + drifting motes.
+## The HUD status label, turn order, action buttons, and result panel
+## still live here (restyled in v0.10.0 Phase 3).
 class_name TacticalCombat extends Control
 
 const CombatMgr = preload("res://scripts/CombatManager.gd")
 const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
 const DungeonGen = preload("res://scripts/RiftDungeonGenerator.gd")
 const ClassProg = preload("res://scripts/ClassProgression.gd")
+const BattleGridViewScript = preload("res://scripts/combat/BattleGridView.gd")
+const BattleBackgroundScript = preload("res://scripts/combat/BattleBackground.gd")
+const CombatFeedbackScript = preload("res://scripts/CombatFeedback.gd")
 
 var _encounter: Dictionary = {}
 var _combat: Node = null
 var _grid_size: int = 7
-var _grid_cells: Array[Button] = []
 
-@onready var status_label: RichTextLabel = $MainVBox/StatusLabel as RichTextLabel
-@onready var grid_container: GridContainer = $MainVBox/GridPanel/GridContainer as GridContainer
-@onready var turn_order_label: RichTextLabel = $MainVBox/TurnOrderLabel as RichTextLabel
-@onready var instructions_label: RichTextLabel = $MainVBox/InstructionsLabel as RichTextLabel
-@onready var log_label: RichTextLabel = $MainVBox/LogLabel as RichTextLabel
-@onready var skill_btn: Button = $MainVBox/ActionsHBox/SkillButton as Button
-@onready var skill_menu: PopupMenu = $MainVBox/ActionsHBox/SkillMenu as PopupMenu
-@onready var attack_btn: Button = $MainVBox/ActionsHBox/AttackButton as Button
-@onready var wait_btn: Button = $MainVBox/ActionsHBox/WaitButton as Button
-@onready var finish_btn: Button = $MainVBox/ActionsHBox/FinishButton as Button
-@onready var retreat_btn: Button = $MainVBox/ActionsHBox/RetreatButton as Button
-@onready var result_panel: VBoxContainer = $MainVBox/ResultPanel as VBoxContainer
-@onready var result_label: RichTextLabel = $MainVBox/ResultPanel/ResultLabel as RichTextLabel
-@onready var continue_btn: Button = $MainVBox/ResultPanel/ContinueButton as Button
+@onready var status_label: RichTextLabel = $HUDLayer/MainVBox/StatusLabel as RichTextLabel
+@onready var turn_order_label: RichTextLabel = $HUDLayer/MainVBox/TurnOrderLabel as RichTextLabel
+@onready var instructions_label: RichTextLabel = $HUDLayer/MainVBox/InstructionsLabel as RichTextLabel
+@onready var log_label: RichTextLabel = $HUDLayer/MainVBox/LogLabel as RichTextLabel
+@onready var skill_btn: Button = $HUDLayer/MainVBox/ActionsHBox/SkillButton as Button
+@onready var skill_menu: PopupMenu = $HUDLayer/MainVBox/ActionsHBox/SkillMenu as PopupMenu
+@onready var attack_btn: Button = $HUDLayer/MainVBox/ActionsHBox/AttackButton as Button
+@onready var wait_btn: Button = $HUDLayer/MainVBox/ActionsHBox/WaitButton as Button
+@onready var finish_btn: Button = $HUDLayer/MainVBox/ActionsHBox/FinishButton as Button
+@onready var retreat_btn: Button = $HUDLayer/MainVBox/ActionsHBox/RetreatButton as Button
+@onready var result_panel: VBoxContainer = $HUDLayer/MainVBox/ResultPanel as VBoxContainer
+@onready var result_label: RichTextLabel = $HUDLayer/MainVBox/ResultPanel/ResultLabel as RichTextLabel
+@onready var continue_btn: Button = $HUDLayer/MainVBox/ResultPanel/ContinueButton as Button
+@onready var _background = $BattleBackgroundLayer/BattleBackground
+@onready var _grid = $BattleLayer/BattleGridView
+@onready var _feedback: Node = $BattleLayer/CombatFeedback
 
 
 func _ready() -> void:
 	_load_encounter()
 	_grid_size = int(_encounter.get("grid_size", 7))
-	grid_container.columns = _grid_size
+
+	# Configure background first (uses viewport size for the layout).
+	var vp_size: Vector2 = get_viewport_rect().size
+	_background.configure(
+		str(_encounter.get("biome_key", "Ash Wastes")),
+		_grid_size,
+		vp_size
+	)
+
+	# Build terrain from the same height_seed the engine uses, then
+	# configure the grid with both terrain + units.
+	var encounter_for_grid: Dictionary = (_encounter.duplicate(true) as Dictionary)
+	encounter_for_grid["units"] = []
+	encounter_for_grid = _grid.build_terrain_for_encounter(encounter_for_grid)
+	_grid.configure(encounter_for_grid)
 
 	_combat = CombatMgr.new()
 	_combat.setup_from_encounter(_encounter)
@@ -38,7 +63,12 @@ func _ready() -> void:
 	_combat.battle_phase_changed.connect(_on_battle_phase_changed)
 	_combat.active_unit_changed.connect(_on_active_unit_changed)
 	_combat.subphase_changed.connect(_on_subphase_changed)
+	_combat.unit_updated.connect(_on_unit_updated)
+	# Spawn unit visuals now that the engine has set them up.
+	_sync_grid_units()
 
+	# Wire input
+	_grid.cell_clicked.connect(_on_cell_clicked)
 	skill_btn.pressed.connect(_on_skill_pressed)
 	skill_menu.id_pressed.connect(_on_skill_selected)
 	attack_btn.pressed.connect(_on_attack_pressed)
@@ -47,10 +77,15 @@ func _ready() -> void:
 	retreat_btn.pressed.connect(_on_retreat_pressed)
 	continue_btn.pressed.connect(_on_continue_pressed)
 
-	_setup_grid()
+	# Feedback (HP bars + floating numbers)
+	if _feedback != null and _feedback.has_method("setup"):
+		_feedback.setup(_combat)
+		_feedback.setup_hp_bars(_combat.get_units())
+
 	result_panel.visible = false
 	_refresh_ui()
-	# Audio: combat music takes over; mute ambient bed.
+
+	# Audio
 	var mm: Node = get_node_or_null("/root/MusicManager")
 	if mm != null and mm.has_method("play_track"):
 		mm.call("play_track", "combat")
@@ -70,41 +105,43 @@ func _load_encounter() -> void:
 		)
 
 
-func _setup_grid() -> void:
-	for child in grid_container.get_children():
-		child.queue_free()
-	_grid_cells.clear()
-	for y in range(_grid_size):
-		for x in range(_grid_size):
-			var cell := Button.new()
-			cell.custom_minimum_size = Vector2(44, 44)
-			cell.focus_mode = Control.FOCUS_NONE
-			cell.pressed.connect(_on_cell_pressed.bind(x, y))
-			var style := StyleBoxFlat.new()
-			style.bg_color = Color(0.1, 0.08, 0.12)
-			style.border_width_left = 1
-			style.border_width_top = 1
-			style.border_width_right = 1
-			style.border_width_bottom = 1
-			style.border_color = Color(0.3, 0.25, 0.4)
-			cell.add_theme_stylebox_override("normal", style)
-			grid_container.add_child(cell)
-			_grid_cells.append(cell)
+func _sync_grid_units() -> void:
+	if _grid == null or _combat == null:
+		return
+	var units: Array = _combat.get_units()
+	# The grid built itself without units. Push the units in now via
+	# `update_unit` (which adds or updates the BattleUnit node).
+	for u in units:
+		_grid.update_unit(u)
 
 
-func _on_cell_pressed(x: int, y: int) -> void:
+func _on_cell_clicked(x: int, y: int) -> void:
 	if _combat == null or _combat.battle_phase != CombatMgr.BattlePhase.ACTIVE:
 		return
 	if not _combat.is_player_active():
 		return
-
 	var pos: Vector2i = Vector2i(x, y)
 	if _combat.turn_subphase == CombatMgr.TurnSubphase.TARGET_ATTACK:
+		# Find the unit at this position and play a swing before resolving.
+		var target: Dictionary = _combat.get_unit_at(pos)
+		if not target.is_empty():
+			_grid.play_unit_attack_swing("player")
+			_grid.flash_unit(str(target.get("id", "")))
 		_combat.try_attack_at(pos)
+		_sync_grid_units()
 	elif _combat.turn_subphase == CombatMgr.TurnSubphase.TARGET_SKILL:
+		var target2: Dictionary = _combat.get_unit_at(pos)
+		if not target2.is_empty():
+			_grid.flash_unit(str(target2.get("id", "")))
 		_combat.try_skill_at(pos)
+		_sync_grid_units()
 	elif _combat.turn_subphase == CombatMgr.TurnSubphase.MOVE:
+		# Move the active unit with a tween.
+		var active: Dictionary = _combat.get_active_unit()
+		if not active.is_empty():
+			_grid.move_unit_to(str(active.get("id", "")), x, y, true)
 		_combat.try_move_active_unit_to(pos)
+		_sync_grid_units()
 	_refresh_ui()
 
 
@@ -170,17 +207,32 @@ func _on_continue_pressed() -> void:
 
 
 func _on_battle_phase_changed(_phase: int) -> void:
+	_sync_grid_units()
 	_sync_player_health()
 	_show_result_if_done()
 	_refresh_ui()
 
 
 func _on_active_unit_changed(_uid: String) -> void:
+	if _grid != null:
+		_grid.set_active_unit(_uid)
 	_refresh_ui()
 
 
 func _on_subphase_changed(_sub: int) -> void:
 	_refresh_ui()
+
+
+func _on_unit_updated(_uid: String) -> void:
+	# Engine mutated a unit. Push the new state to the BattleUnit node.
+	if _grid == null or _combat == null:
+		return
+	for u in _combat.get_units():
+		if str(u.get("id", "")) == _uid:
+			_grid.update_unit(u)
+			if int(u.get("hp", 0)) > 0 and int(u.get("hp", 0)) < int(u.get("max_hp", u.get("hp", 0))):
+				_grid.flash_unit(_uid)
+			break
 
 
 func _on_combat_log(_text: String) -> void:
@@ -309,64 +361,17 @@ func _return_from_battle(victory: bool) -> void:
 
 
 func _refresh_ui() -> void:
-	_update_grid()
+	if _grid != null and _combat != null:
+		_grid.refresh_ranges(
+			_combat.get_reachable_move_tiles(),
+			_combat.get_attackable_tiles(),
+			_combat.get_skillable_tiles()
+		)
 	_update_status()
 	_update_turn_order()
 	_update_instructions()
 	_refresh_log()
 	_update_buttons()
-
-
-func _update_grid() -> void:
-	if _combat == null:
-		return
-	var reachable: Array[Vector2i] = _combat.get_reachable_move_tiles()
-	var attackable: Array[Vector2i] = _combat.get_attackable_tiles()
-	var skillable: Array[Vector2i] = _combat.get_skillable_tiles()
-
-	for i in range(_grid_cells.size()):
-		var x: int = i % _grid_size
-		var y: int = i / _grid_size
-		var cell: Button = _grid_cells[i]
-		var pos: Vector2i = Vector2i(x, y)
-		var txt: String = ""
-		var bg: Color = Color(0.1, 0.08, 0.12)
-		var h: int = _combat.get_height_at(pos)
-		if h > 0:
-			bg = Color(0.12 + h * 0.04, 0.1, 0.14)
-
-		for u in _combat.get_units():
-			if u.get("pos", Vector2i(-1, -1)) != pos or int(u.get("hp", 0)) <= 0:
-				continue
-			if u.get("team") == CombatMgr.TEAM_PLAYER:
-				txt = "◎"
-				bg = Color(0.2, 0.55, 0.35)
-			elif u.get("is_boss", false):
-				txt = "☠"
-				bg = Color(0.65, 0.15, 0.15)
-			else:
-				txt = "✕"
-				bg = Color(0.45, 0.18, 0.18)
-
-		if reachable.has(pos):
-			bg = bg.lerp(Color(0.25, 0.45, 0.7), 0.45)
-		if attackable.has(pos):
-			bg = bg.lerp(Color(0.75, 0.25, 0.2), 0.5)
-		if skillable.has(pos):
-			bg = bg.lerp(Color(0.55, 0.25, 0.75), 0.5)
-
-		var active: Dictionary = _combat.get_active_unit()
-		if not active.is_empty() and active.get("pos", Vector2i.ZERO) == pos:
-			cell.modulate = Color(1.25, 1.2, 0.9)
-		else:
-			cell.modulate = Color.WHITE
-
-		if h > 0 and txt.is_empty():
-			txt = str(h)
-		cell.text = txt
-		var style: StyleBoxFlat = cell.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-		style.bg_color = bg
-		cell.add_theme_stylebox_override("normal", style)
 
 
 func _update_status() -> void:
@@ -378,7 +383,7 @@ func _update_status() -> void:
 	var party_lv: int = int(_encounter.get("party_avg_level", 1))
 	var mission_title: String = str(_encounter.get("mission_title", ""))
 	var header: String = mission_title if not mission_title.is_empty() else source
-	var txt: String = "[b]FFT Combat[/b] — %s @ %s  [color=#90caf9](Party Lv.%d)[/color]\n" % [header, biome, party_lv]
+	var txt: String = "[b]Tactical Combat[/b] — %s @ %s  [color=#90caf9](Party Lv.%d)[/color]\n" % [header, biome, party_lv]
 	if not active.is_empty():
 		txt += "[b]Active:[/b] %s  [b]CT:[/b] %d  [b]Spd:[/b] %d  [b]Move:[/b] %d  [b]Jump:[/b] %d\n" % [
 			active.get("name", "?"),

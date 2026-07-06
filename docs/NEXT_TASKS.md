@@ -1,6 +1,6 @@
 # NEXT_TASKS — Fallen Earth
 
-**Version:** 0.9.0 · **Updated:** 2026-07-05 23:30 · **Phase:** v0.9.0 Phase A+B+C+D+E+F IN PROGRESS
+**Version:** 0.10.0 · **Updated:** 2026-07-05 23:55 · **Phase:** v0.10.0 Combat Overhaul IN PROGRESS
 
 *Aligns with `docs/PLAN_v040_crafting_progression.md`, `docs/HANDOFF_PROTOCOL.md`, and `memory/CURRENT_STATE.md`.*
 
@@ -8,9 +8,104 @@
 
 ## TOP PRIORITY — Next session
 
-### v0.9.0 milestone — Settlement Life & Combat Polish
+### v0.10.0 milestone — Combat Overhaul (FFT-style)
 
-**Goal:** Make settlements feel alive and combat feel satisfying. Build on v0.8.0's spatial interior system with NPC dialogue, ambient behavior, quest tracking, and combat feedback.
+**Goal:** Replace the placeholder Button[] grid with a proper FFT-style tactical combat scene. Use the same sprite + tile system as the overworld. Real AI for mobs. Stylish HUD. Matching biome backgrounds. Reference: Final Fantasy Tactics, but with the Fallen Earth post-apoc palette.
+
+**Architecture constraint:** combat must read from `data/mobs.json`, `data/tilesets/{biome}/`, `assets/mobs/{id}.png` — same pipeline as the overworld. No parallel sprite system.
+
+---
+
+### Phase 1 — Visual overhaul (grid + units + background)
+
+| ID | Task | New/Modified | Status |
+|----|------|--------------|--------|
+| 1.1 | `scripts/BattleGridView.gd` + `scenes/BattleGridView.tscn` — Replaces Button[] grid. Node2D with GridLayer (49 cells) + UnitLayer. Each cell is a real terrain Sprite2D from the current biome's tileset, plus a height indicator (stacked tile offset for h>0) and a range-highlight overlay | New | ⏳ |
+| 1.2 | `scripts/BattleCell.gd` — One cell: base tile, height mark, range overlay (move/attack/skill tints), click routing. Owns the cell's interaction with CombatManager | New | ⏳ |
+| 1.3 | `scripts/BattleUnit.gd` + `scenes/BattleUnit.tscn` — Per-unit Node2D: mob sprite (faces facing direction), HP bar overlay, CT bar, walk tween, attack swing tween, hit flash, death fade. Uses the existing `assets/mobs/{id}.png` | New | ⏳ |
+| 1.4 | `scripts/BattleBackground.gd` + `scenes/BattleBackground.tscn` — A Control wrapping the grid with the matching biome's panoramic art. Darkened + vignette so the grid pops. Subtle parallax drift on enemy turns | New | ⏳ |
+| 1.5 | `scripts/TacticalCombat.gd` — Refactor: delegate grid setup to BattleGridView, unit setup to BattleUnit, background to BattleBackground. Keep status label + turn order (these get restyled in Phase 3) | Modified | ⏳ |
+| 1.6 | `scenes/TacticalCombat.tscn` — Restructure to host the new components | Modified | ⏳ |
+| 1.7 | `tools/smoke_combat_v100.gd` — Boot probe: instantiates a 7x7 grid, spawns a player + 2 enemies using the new components, runs 3 turns, checks all units render with sprites | New | ⏳ |
+| 1.8 | Cleanup: remove old `Button[]` array, `ColorRect` grid, text symbols (◎/☠/✕), `setup_grid` legacy code | Cleanup | ⏳ |
+
+---
+
+### Phase 2 — AI overhaul (proper mob behavior)
+
+| ID | Task | New/Modified | Status |
+|----|------|--------------|--------|
+| 2.1 | `scripts/ai/CombatAI.gd` — Base class. `decide(ai_state) -> AIAction` interface. AIAction: `{ kind, target_pos, skill_id, score }` | New | ⏳ |
+| 2.2 | `scripts/ai/AggressiveAI.gd` — Default for melee mobs. Walk to closest enemy, attack when in range. Prefers flanking (back/side bonus). Charges if enemy is low HP | New | ⏳ |
+| 2.3 | `scripts/ai/RangedAI.gd` — Maintains distance. If enemy in range, shoot. If too close, retreat. If too far, advance | New | ⏳ |
+| 2.4 | `scripts/ai/CasterAI.gd` — Uses skills when MP ≥ cost. Position for max targets. Save MP for emergencies | New | ⏳ |
+| 2.5 | `scripts/ai/DefensiveAI.gd` — Guards low-HP allies. Uses cover (height advantage). Retreats at < 30% HP | New | ⏳ |
+| 2.6 | `scripts/ai/BossAI.gd` — Multi-phase: enrage at < 50% HP, summon adds at < 25%, signature move on cooldown. Used for `is_boss` mobs | New | ⏳ |
+| 2.7 | `scripts/CombatManager.gd` — Refactor `_run_enemy_turn` to dispatch to AI by unit's `ai_archetype`. AI evaluates tile scores (flanking, height, distance, ally HP, own HP) | Modified | ⏳ |
+| 2.8 | `data/mobs.json` — Add `ai_archetype` field to every mob. Defaults: aggressive (most melee), ranged (storm_raptor, glass_serpent, voidspine_leech, ash_crawler), caster (lifecycle_horror, spore_phantom, arc_dynamo), defensive (silkroot_tapper, echo_chorister), boss (storm_herald, rift_maw, mycelial_behemoth) | Modified | ⏳ |
+| 2.9 | `tools/smoke_combat_ai.gd` — Tests each AI archetype on a 7x7 grid with a single player + 1 mob. Verifies: aggressive moves closer; ranged maintains distance; caster uses skill when MP available; defensive guards when ally is low HP; boss enrages | New | ⏳ |
+
+---
+
+### Phase 3 — UI polish (FFT-style HUD)
+
+| ID | Task | New/Modified | Status |
+|----|------|--------------|--------|
+| 3.1 | `scripts/BattleHUD.gd` + `scenes/BattleHUD.tscn` — Top status bar: portrait (mob sprite) + name + class + HP/MP/CT bars with FFT-style segmented look. Updates on active_unit_changed | New | ⏳ |
+| 3.2 | `scripts/TurnOrderPanel.gd` + `scenes/TurnOrderPanel.tscn` — Right-side panel: vertical list of next 6 units with mini-portraits and CT progress. Highlights active unit. Click a unit to peek | New | ⏳ |
+| 3.3 | `scripts/ActionMenu.gd` + `scenes/ActionMenu.tscn` — Bottom action menu: Skill, Attack, Item, Wait, Defend, Retreat. Animates open/close. Disabled state styled. Uses button assets from `assets/sprites/ui/buttons/` | New | ⏳ |
+| 3.4 | `scripts/TargetingReticle.gd` — Sprite-based reticle (4 corner brackets) that follows the cursor when targeting. Different color for attack/skill/move | New | ⏳ |
+| 3.5 | `scripts/CombatPopup.gd` — Floating "MISS" / "CRITICAL" / "BACK ATTACK" / "SIDE ATTACK" / "COUNTER" / "DODGE" text with FFT-style zoom-in | New | ⏳ |
+| 3.6 | `scripts/VictoryPanel.gd` + `scripts/DefeatPanel.gd` — Styled result panels with biome-appropriate background, animated entry, loot list, XP summary | New | ⏳ |
+| 3.7 | `scripts/CombatCamera.gd` — Pans + zooms slightly when an attack happens. Pulls back for skill AOE. Returns to center on turn end | New | ⏳ |
+| 3.8 | `scenes/TacticalCombat.tscn` — Restructure to host HUD + TurnOrderPanel + ActionMenu + Camera | Modified | ⏳ |
+| 3.9 | `tools/smoke_combat_ui.gd` — Tests: HUD updates on active_unit_changed, TurnOrderPanel order matches, ActionMenu disables on enemy turn, popup spawns, camera pans | New | ⏳ |
+
+---
+
+### Phase 4 — Asset generation (PixelLab MCP)
+
+| ID | Task | New/Modified | Status |
+|----|------|--------------|--------|
+| 4.1 | `assets/battle_backgrounds/{biome}.png` — 10 panoramic battle backgrounds (1024×512). Darkened with vignette already baked in. Biome: ash_wastes, ironwood_thicket, neon_bogs, glass_dunes, scorched_plains, stormspire_highlands, toxin_marshes, corpse_fields, rust_canyons, dead_city_outskirts | New | ⏳ |
+| 4.2 | `assets/battle_ui/panel_parchment.png` — Parchment-style UI panel base, 256×256, used for HUD/result panels | New | ⏳ |
+| 4.3 | `assets/battle_ui/reticle.png` — 4-corner targeting reticle sprite (64×64) | New | ⏳ |
+| 4.4 | `assets/battle_ui/class_emblems.png` — 6-class emblem sheet (96×16), one per class (scavenger, warden, riftbinder, envoy, technician, survivor) | New | ⏳ |
+| 4.5 | `assets/battle_ui/action_icons.png` — 6-icon sheet (192×32): skill, attack, item, wait, defend, retreat | New | ⏳ |
+| 4.6 | `assets/battle_ui/portrait_frame.png` — Stylized frame for the top portrait (64×64) | New | ⏳ |
+
+---
+
+### Phase 5 — Cleanup (remove old unused code)
+
+| ID | Task | Status |
+|----|------|--------|
+| 5.1 | Remove `_setup_grid()` from TacticalCombat.gd (Button[] array) | ⏳ |
+| 5.2 | Remove text-symbol rendering (◎, ☠, ✕, height numbers) from `_update_grid` | ⏳ |
+| 5.3 | Remove `ColorRect` background placeholder (replaced by BattleBackground) | ⏳ |
+| 5.4 | Consolidate CombatHPBar into BattleUnit (or keep as separate child) | ⏳ |
+| 5.5 | Remove any orphan scripts/scenes from old combat | ⏳ |
+| 5.6 | Update validate_scripts.gd to include new files, remove deleted | ⏳ |
+| 5.7 | Verify all smoke tests pass; no regression | ⏳ |
+
+---
+
+## Verification
+
+All new smoke tests + regression of existing:
+```bash
+& godot --headless --path . -s tools/smoke_combat_v100.gd
+& godot --headless --path . -s tools/smoke_combat_ai.gd
+& godot --headless --path . -s tools/smoke_combat_ui.gd
+& godot --headless --path . -s validate_scripts.gd
+& godot --headless --path . -s tools/boot_probe.gd
+```
+
+---
+
+### v0.9.0 — Settlement Life & Combat Polish ✅
+
+(Phases A-F — see CHANGELOG.md for summary.)
 
 ---
 

@@ -97,6 +97,10 @@ const SCRIPTS := [
 	"res://scripts/ui/KeybindsScreen.gd",
 	"res://scripts/ui/OptionsMenu.gd",
 	"res://scripts/GraphicsManager.gd",
+	"res://scripts/combat/BattleCell.gd",
+	"res://scripts/combat/BattleGridView.gd",
+	"res://scripts/combat/BattleUnit.gd",
+	"res://scripts/combat/BattleBackground.gd",
 ]
 
 func _initialize() -> void:

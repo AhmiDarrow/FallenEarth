@@ -1,6 +1,9 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=5 format=3]
 
 [ext_resource type="Script" path="res://scripts/TacticalCombat.gd" id="1_tc"]
+[ext_resource type="Script" path="res://scripts/combat/BattleGridView.gd" id="2_grid"]
+[ext_resource type="Script" path="res://scripts/combat/BattleBackground.gd" id="3_bg"]
+[ext_resource type="Script" path="res://scripts/CombatFeedback.gd" id="4_cf"]
 
 [node name="TacticalCombat" type="Control"]
 anchors_preset = 15
@@ -10,15 +13,28 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_tc")
 
-[node name="Background" type="ColorRect" parent="."]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.02, 0.015, 0.04, 1)
+[node name="BattleBackgroundLayer" type="CanvasLayer" parent="."]
+layer = -10
 
-[node name="MainVBox" type="VBoxContainer" parent="."]
+[node name="BattleBackground" type="Node2D" parent="BattleBackgroundLayer"]
+position = Vector2(640, 360)
+script = ExtResource("3_bg")
+
+[node name="BattleLayer" type="CanvasLayer" parent="."]
+layer = 1
+
+[node name="BattleGridView" type="Node2D" parent="BattleLayer"]
+position = Vector2(640, 360)
+script = ExtResource("2_grid")
+
+[node name="CombatFeedback" type="Node2D" parent="BattleLayer"]
+position = Vector2(640, 360)
+script = ExtResource("4_cf")
+
+[node name="HUDLayer" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="MainVBox" type="VBoxContainer" parent="HUDLayer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -30,89 +46,69 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
-[node name="HeaderLabel" type="RichTextLabel" parent="MainVBox"]
+[node name="HeaderLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
 custom_minimum_size = Vector2(0, 32)
 bbcode_enabled = true
-text = "[center][b]TACTICAL COMBAT[/b] — Final Fantasy Tactics rules[/center]"
+text = "[center][b]TACTICAL COMBAT[/b] — Fallen Earth[/center]"
 fit_content = true
 
-[node name="StatusLabel" type="RichTextLabel" parent="MainVBox"]
+[node name="StatusLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
 custom_minimum_size = Vector2(0, 56)
 bbcode_enabled = true
 autowrap_mode = 3
 fit_content = true
 
-[node name="TurnOrderLabel" type="RichTextLabel" parent="MainVBox"]
+[node name="TurnOrderLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
 custom_minimum_size = Vector2(0, 24)
 bbcode_enabled = true
 fit_content = true
 
-[node name="GridPanel" type="Panel" parent="MainVBox"]
-custom_minimum_size = Vector2(300, 300)
-size_flags_horizontal = 4
-
-[node name="GridContainer" type="GridContainer" parent="MainVBox/GridPanel"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -140.0
-offset_top = -140.0
-offset_right = 140.0
-offset_bottom = 140.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/h_separation = 3
-theme_override_constants/v_separation = 3
-
-[node name="InstructionsLabel" type="RichTextLabel" parent="MainVBox"]
+[node name="InstructionsLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
 custom_minimum_size = Vector2(0, 28)
 bbcode_enabled = true
 fit_content = true
 
-[node name="LogLabel" type="RichTextLabel" parent="MainVBox"]
+[node name="LogLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
 custom_minimum_size = Vector2(0, 64)
 bbcode_enabled = true
 autowrap_mode = 3
 fit_content = true
 
-[node name="ActionsHBox" type="HBoxContainer" parent="MainVBox"]
+[node name="ActionsHBox" type="HBoxContainer" parent="HUDLayer/MainVBox"]
 size_flags_horizontal = 4
 theme_override_constants/separation = 10
 
-[node name="SkillButton" type="Button" parent="MainVBox/ActionsHBox"]
+[node name="SkillButton" type="Button" parent="HUDLayer/MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(90, 36)
 text = "Skill"
 
-[node name="SkillMenu" type="PopupMenu" parent="MainVBox/ActionsHBox"]
+[node name="SkillMenu" type="PopupMenu" parent="HUDLayer/MainVBox/ActionsHBox"]
 
-[node name="AttackButton" type="Button" parent="MainVBox/ActionsHBox"]
+[node name="AttackButton" type="Button" parent="HUDLayer/MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(90, 36)
 text = "Attack"
 
-[node name="WaitButton" type="Button" parent="MainVBox/ActionsHBox"]
+[node name="WaitButton" type="Button" parent="HUDLayer/MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(100, 36)
 text = "Wait"
 
-[node name="FinishButton" type="Button" parent="MainVBox/ActionsHBox"]
+[node name="FinishButton" type="Button" parent="HUDLayer/MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(100, 36)
 text = "Finish Turn"
 
-[node name="RetreatButton" type="Button" parent="MainVBox/ActionsHBox"]
+[node name="RetreatButton" type="Button" parent="HUDLayer/MainVBox/ActionsHBox"]
 custom_minimum_size = Vector2(100, 36)
 text = "Retreat"
 
-[node name="ResultPanel" type="VBoxContainer" parent="MainVBox"]
+[node name="ResultPanel" type="VBoxContainer" parent="HUDLayer/MainVBox"]
 visible = false
 size_flags_horizontal = 4
 
-[node name="ResultLabel" type="RichTextLabel" parent="MainVBox/ResultPanel"]
+[node name="ResultLabel" type="RichTextLabel" parent="HUDLayer/MainVBox/ResultPanel"]
 bbcode_enabled = true
 autowrap_mode = 3
 fit_content = true
 
-[node name="ContinueButton" type="Button" parent="MainVBox/ResultPanel"]
+[node name="ContinueButton" type="Button" parent="HUDLayer/MainVBox/ResultPanel"]
 custom_minimum_size = Vector2(180, 40)
 text = "Continue"
