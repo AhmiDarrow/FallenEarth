@@ -77,7 +77,7 @@ func _build_labels() -> void:
 	_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_name_label.font_size = 32
 	_name_label.outline_size = 0
-	_name_label.position = Vector3(0, PAWN_HEIGHT + 0.8, 0)
+	_name_label.position = Vector3(0, PAWN_HEIGHT + 1.0, 0)
 	_name_label.pixel_size = 0.01
 	_name_label.no_depth_test = true
 	_name_label.render_priority = 2.0
@@ -89,10 +89,10 @@ func _build_labels() -> void:
 	_hp_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_hp_label.font_size = 28
 	_hp_label.outline_size = 0
-	_hp_label.position = Vector3(0, PAWN_HEIGHT + 0.6, 0)
+	_hp_label.position = Vector3(0, PAWN_HEIGHT + 0.5, 0)
 	_hp_label.pixel_size = 0.01
 	_hp_label.no_depth_test = true
-	_hp_label.render_priority = 2.0
+	_hp_label.render_priority = 1.5
 	add_child(_hp_label)
 
 
