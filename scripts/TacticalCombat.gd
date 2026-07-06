@@ -14,7 +14,9 @@ const DungeonGen = preload("res://scripts/RiftDungeonGenerator.gd")
 const ClassProg = preload("res://scripts/ClassProgression.gd")
 const BattleGridViewScript = preload("res://scripts/combat/BattleGridView.gd")
 const BattleBackgroundScript = preload("res://scripts/combat/BattleBackground.gd")
-const BattleHUDScript = preload("res://scripts/combat/BattleHUD.gd")
+const TurnOrderBarScript = preload("res://scripts/combat/TurnOrderBar.gd")
+const UnitInfoCardScript = preload("res://scripts/combat/UnitInfoCard.gd")
+const SkillBarScript = preload("res://scripts/combat/SkillBar.gd")
 const TurnOrderPanelScript = preload("res://scripts/combat/TurnOrderPanel.gd")
 const BattleResultPanelScript = preload("res://scripts/combat/BattleResultPanel.gd")
 const CombatFeedbackScript = preload("res://scripts/CombatFeedback.gd")
@@ -42,7 +44,10 @@ var _reticle: Control = null
 @onready var _background = $BattleBackgroundLayer/BattleBackground
 @onready var _grid = $BattleLayer/BattleGridView
 @onready var _feedback: Node = $BattleLayer/CombatFeedback
-var _battle_hud: Control = null
+var _turn_order_bar: Control = null
+var _unit_info_card: Control = null
+var _skill_bar: Control = null
+var _end_turn_btn: Button = null
 var _turn_order_panel: Control = null
 var _result_panel: Control = null
 
@@ -90,24 +95,39 @@ func _ready() -> void:
 	_apply_button_icon(attack_btn, "res://assets/battle_ui/icon_attack.png")
 	_apply_button_icon(skill_btn, "res://assets/battle_ui/icon_skill.png")
 	_apply_button_icon(wait_btn, "res://assets/battle_ui/icon_wait.png")
+	_apply_button_icon(finish_btn, "res://assets/battle_ui/end_turn_button.png")
+	# Make End Turn button larger and prominent
+	finish_btn.custom_minimum_size = Vector2(120, 48)
+	finish_btn.add_theme_font_size_override("font_size", 14)
 
 	# Feedback (HP bars + floating numbers)
 	if _feedback != null and _feedback.has_method("setup"):
 		_feedback.setup(_combat)
 		_feedback.setup_hp_bars(_combat.get_units(), _grid_size, BattleGridViewScript.CELL_SIZE)
 
-	# Phase 3 polish: top HUD + turn-order sidebar
-	_battle_hud = BattleHUDScript.new()
-	_battle_hud.name = "BattleHUD"
-	$HUDLayer.add_child(_battle_hud)
-	if _battle_hud.has_method("setup"):
-		_battle_hud.setup(_combat)
+	# v0.10.0+: top-center turn order bar (replaces the right-side
+	# TurnOrderPanel and the older center BattleHUD panel; it shows
+	# the active unit's portrait + HP in its first slot, so we no
+	# longer need a separate BattleHUD overlay).
+	_turn_order_bar = TurnOrderBarScript.new()
+	_turn_order_bar.name = "TurnOrderBar"
+	$HUDLayer.add_child(_turn_order_bar)
+	if _turn_order_bar.has_method("setup"):
+		_turn_order_bar.setup(_combat)
 
-	_turn_order_panel = TurnOrderPanelScript.new()
-	_turn_order_panel.name = "TurnOrderPanel"
-	$HUDLayer.add_child(_turn_order_panel)
-	if _turn_order_panel.has_method("setup"):
-		_turn_order_panel.setup(_combat)
+	# v0.10.0+: bottom-left unit info card (portrait + stats)
+	_unit_info_card = UnitInfoCardScript.new()
+	_unit_info_card.name = "UnitInfoCard"
+	$HUDLayer.add_child(_unit_info_card)
+	if _unit_info_card.has_method("setup"):
+		_unit_info_card.setup(_combat)
+
+	# v0.10.0+: bottom-center skill bar (3 hotkeyed skills)
+	_skill_bar = SkillBarScript.new()
+	_skill_bar.name = "SkillBar"
+	$HUDLayer.add_child(_skill_bar)
+	if _skill_bar.has_method("setup"):
+		_skill_bar.setup(_combat)
 
 	# Phase 3 polish: targeting reticle (follows cursor during targeting)
 	_reticle = TargetingReticleScript.new()
