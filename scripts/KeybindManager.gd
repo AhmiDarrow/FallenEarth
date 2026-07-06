@@ -102,7 +102,7 @@ func get_label(action: String) -> String:
 
 
 ## Returns the display groups array.
-func get_groups() -> Array[Array]:
+func get_display_groups() -> Array[Array]:
 	return _groups
 
 

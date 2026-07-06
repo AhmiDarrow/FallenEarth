@@ -89,7 +89,7 @@ func _populate_bindings() -> void:
 	if km == null:
 		return
 
-	var groups: Array = km.get_groups() as Array
+	var groups: Array = km.get_display_groups() as Array
 	for group in groups:
 		var group_label: String = group[0]
 		var actions: Array = group[1] as Array
