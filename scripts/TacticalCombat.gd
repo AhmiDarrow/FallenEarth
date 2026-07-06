@@ -68,8 +68,22 @@ func _ready() -> void:
 	instructions_label.visible = false
 	log_label.visible = false
 
-	# Configure background first (uses viewport size for the layout).
+	# v0.10.4 polish: use the actual viewport size (not a hardcoded
+	# 1280x720 assumption) to center the battle layers. The scene
+	# file positions BattleBackground + BattleGridView at (640, 360)
+	# which is only correct for a 1280x720 viewport. On wider
+	# displays this left the grid off-center toward the right side
+	# of the screen. Re-anchor to the actual viewport center now.
 	var vp_size: Vector2 = get_viewport_rect().size
+	var vp_center: Vector2 = vp_size * 0.5
+	if _background != null:
+		_background.position = vp_center
+	if _grid != null:
+		_grid.position = vp_center
+	if _feedback != null:
+		_feedback.position = vp_center
+
+	# Configure background (uses viewport size for the layout).
 	_background.configure(
 		str(_encounter.get("biome_key", "Ash Wastes")),
 		_grid_size,

@@ -44,6 +44,12 @@ func _initialize() -> void:
 	_test_v103_top_prompt_positioning()
 	await process_frame
 	_test_v103_selection_arrow_above_nameplate()
+	await process_frame
+	_test_v104_grid_centered_in_viewport()
+	await process_frame
+	_test_v104_hp_bar_bigger()
+	await process_frame
+	_test_v104_blocked_cell_x_overlay()
 	_print_summary()
 	quit()
 
@@ -456,6 +462,66 @@ func _test_v103_selection_arrow_above_nameplate() -> void:
 		_fail("BattleUnit source: _refresh_selection_arrow should also use (0, -78)")
 	else:
 		_ok("BattleUnit source: _refresh_selection_arrow uses (0, -78)")
+
+
+func _test_v104_grid_centered_in_viewport() -> void:
+	print("\n--- v0.10.4: BattleGridView centered in actual viewport ---")
+	# v0.10.4 fix: BattleGridView was hardcoded at (640, 360) in the
+	# scene file, which is only the center of a 1280x720 viewport.
+	# On wider displays the grid appeared off-center toward the right.
+	# TacticalCombat._ready now re-anchors to get_viewport_rect().size * 0.5.
+	var src: String = load("res://scripts/TacticalCombat.gd").source_code
+	if not src.contains("vp_center"):
+		_fail("TacticalCombat: vp_center viewport-centering logic missing")
+	else:
+		_ok("TacticalCombat: uses vp_center (vp_size * 0.5) for grid centering")
+	if not src.contains("_grid.position = vp_center"):
+		_fail("TacticalCombat: _grid.position = vp_center missing")
+	else:
+		_ok("TacticalCombat: _grid.position re-anchored to vp_center")
+	if not src.contains("_background.position = vp_center"):
+		_fail("TacticalCombat: _background.position = vp_center missing")
+	else:
+		_ok("TacticalCombat: _background.position re-anchored to vp_center")
+
+
+func _test_v104_hp_bar_bigger() -> void:
+	print("\n--- v0.10.4: HP bar bigger (48x8) ---")
+	var CombatHPBarScript = preload("res://scripts/CombatHPBar.gd")
+	if CombatHPBarScript.BAR_WIDTH < 40 or CombatHPBarScript.BAR_HEIGHT < 6:
+		_fail("v0.10.4: HP bar too small (%dx%d)" % [CombatHPBarScript.BAR_WIDTH, CombatHPBarScript.BAR_HEIGHT])
+	else:
+		_ok("v0.10.4: HP bar = %dx%d" % [CombatHPBarScript.BAR_WIDTH, CombatHPBarScript.BAR_HEIGHT])
+
+
+func _test_v104_blocked_cell_x_overlay() -> void:
+	print("\n--- v0.10.4: Blocked cell has red X overlay ---")
+	# v0.10.4: blocked cells now have a red X overlay (two crossed
+	# ColorRects) so the player reads "impassable" at a glance,
+	# instead of the previous pure-black tint that looked like a
+	# rendering bug. Test the source code to avoid BattleCell
+	# _ready() hanging in headless mode.
+	var src: String = load("res://scripts/combat/BattleCell.gd").source_code
+	if not src.contains("_blocked_x"):
+		_fail("BattleCell: _blocked_x member not found")
+	else:
+		_ok("BattleCell: _blocked_x member present")
+	if not src.contains("_build_blocked_x"):
+		_fail("BattleCell: _build_blocked_x() helper not found")
+	else:
+		_ok("BattleCell: _build_blocked_x() helper present")
+	if not src.contains("COLOR_BLOCKED_X"):
+		_fail("BattleCell: COLOR_BLOCKED_X constant not found")
+	else:
+		_ok("BattleCell: COLOR_BLOCKED_X red overlay color defined")
+	if not src.contains("_blocked_x.visible = true"):
+		_fail("BattleCell: blocked cell should set _blocked_x.visible = true")
+	else:
+		_ok("BattleCell: blocked cell shows X overlay")
+	if not src.contains("_blocked_x.visible = false"):
+		_fail("BattleCell: non-blocked cell should set _blocked_x.visible = false")
+	else:
+		_ok("BattleCell: non-blocked cell hides X overlay")
 
 
 func _print_summary() -> void:

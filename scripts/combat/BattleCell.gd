@@ -19,7 +19,12 @@ const COLOR_ATTACK := Color(0.95, 0.20, 0.20, 0.55)
 const COLOR_SKILL := Color(0.65, 0.20, 0.90, 0.55)
 const COLOR_CURSOR := Color(1.0, 0.95, 0.4, 0.65)
 const HEIGHT_COLOR := Color(0.20, 0.18, 0.30, 0.85)
-const BLOCKED_TINT := Color(0.05, 0.04, 0.08, 1.0)
+# v0.10.4: blocked cells are now a very dark version of the
+# ground texture (not pure black), with a red X overlay so the
+# player reads "can't walk here" without it looking like a
+# rendering bug.
+const BLOCKED_TINT := Color(0.15, 0.10, 0.08, 0.85)
+const COLOR_BLOCKED_X := Color(0.85, 0.20, 0.20, 0.90)
 
 const CELL_SIZE := 40
 # Border thickness for the FFT-style edge frame. Chunky enough to
@@ -36,6 +41,7 @@ var _base: Sprite2D
 var _height_label: Label
 var _highlight: ColorRect
 var _highlight_border: Control
+var _blocked_x: Control
 var _area: Area2D
 
 signal clicked(x: int, y: int)
@@ -86,6 +92,12 @@ func _build_children() -> void:
 	_highlight_border = _build_border()
 	_highlight_border.visible = false
 	add_child(_highlight_border)
+	# v0.10.4: red X overlay for blocked cells (drawn over the
+	# dark ground texture so the player reads "impassable" at
+	# a glance). Built from two crossed ColorRects.
+	_blocked_x = _build_blocked_x()
+	_blocked_x.visible = false
+	add_child(_blocked_x)
 
 	_area = Area2D.new()
 	_area.name = "Area2D"
@@ -134,8 +146,10 @@ func setup(x: int, y: int, terrain: int, h: int, blocked: bool, base_tex: Textur
 		_height_label.visible = false
 	if blocked:
 		_base.modulate = BLOCKED_TINT
+		_blocked_x.visible = true
 		_area.input_pickable = false
 	else:
+		_blocked_x.visible = false
 		_area.input_pickable = true
 	refresh_height_visual()
 
@@ -217,6 +231,34 @@ func _set_border_color(c: Color) -> void:
 		return
 	for child in _highlight_border.get_children():
 		(child as ColorRect).color = c
+
+
+## Build a red X overlay (two crossed ColorRects) for blocked
+## cells. The X is sized to the cell minus 8px padding so the
+## border is visible.
+func _build_blocked_x() -> Control:
+	var wrap := Control.new()
+	wrap.name = "BlockedX"
+	wrap.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	wrap.size = Vector2(CELL_SIZE, CELL_SIZE)
+	wrap.position = Vector2.ZERO
+	wrap.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.z_index = 5
+	var diag1 := ColorRect.new()
+	diag1.color = COLOR_BLOCKED_X
+	diag1.size = Vector2(CELL_SIZE - 8, 3)
+	diag1.position = Vector2(4, CELL_SIZE * 0.5 - 1.5)
+	diag1.rotation = 0.7854  # 45 deg in radians
+	diag1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(diag1)
+	var diag2 := ColorRect.new()
+	diag2.color = COLOR_BLOCKED_X
+	diag2.size = Vector2(CELL_SIZE - 8, 3)
+	diag2.position = Vector2(4, CELL_SIZE * 0.5 - 1.5)
+	diag2.rotation = -0.7854  # -45 deg in radians
+	diag2.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wrap.add_child(diag2)
+	return wrap
 
 
 func refresh_height_visual() -> void:
