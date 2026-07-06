@@ -1144,6 +1144,9 @@ func _try_collect_floor_pickup_at(x: int, y: int) -> Dictionary:
 		push_warning("[HubWorld] No InventoryManager; pickup dropped on the floor.")
 		return {}
 	inv.add_item(item_id, qty)
+	# v0.10.0: hide the MultiMesh visual for this pickup.
+	var cell: Vector2i = Vector2i(x, y)
+	_map_view.hide_pickup_visual(cell)
 	print("[HubWorld] Picked up %d x %s" % [qty, item_id])
 	return {"item_id": item_id, "qty": qty}
 
@@ -1216,7 +1219,10 @@ func _try_start_gather() -> void:
 	# to bare hands (Phase 1 permissiveness — Phase 4 will gate this).
 	var tool: Dictionary = _resolve_hotbar_tool()
 	if tool.is_empty():
-		tool = {"speed_mult": 1.0, "harvests": ["*"], "name": "(bare hands)"}
+		# Bare hands cannot harvest resource nodes. Only sticks and stones
+		# (FloorPickups) are gatherable without a tool — those auto-collect
+		# on walk. E on a HarvestNode with no tool shows "wrong tool".
+		tool = {"speed_mult": 1.0, "harvests": [], "name": "(bare hands)"}
 
 	var result: Dictionary = node.try_gather(tool)
 	if not bool(result.get("ok", false)):
@@ -1261,6 +1267,10 @@ func _tick_gather(delta: float) -> void:
 		return
 	inv.add_item(item_id, qty)
 	node.deplete()
+	# v0.10.0: dim the MultiMesh visual for this node.
+	if is_instance_valid(_map_view):
+		var cell: Vector2i = node.get_cell(_map_view.get_cell_size())
+		_map_view.dim_resource_node(cell, true)
 	# v0.9.1c: track this node for active respawn ticking.
 	# The deferred_remove trick below handles the case where the node
 	# was queue_freed during the same frame (e.g. the player reloads).
@@ -1292,6 +1302,10 @@ func _tick_active_respawn_nodes(delta: float) -> void:
 		# (We access _depleted via a duck-typed check because HarvestNode
 		# has it as a private var; Godot allows it via get()).
 		if bool(node.get("_depleted")) == false:
+			# v0.10.0: restore the MultiMesh visual.
+			if is_instance_valid(_map_view) and is_instance_valid(node):
+				var cell: Vector2i = node.get_cell(_map_view.get_cell_size())
+				_map_view.dim_resource_node(cell, false)
 			_active_respawn_nodes.remove_at(i)
 
 

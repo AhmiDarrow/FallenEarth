@@ -113,6 +113,7 @@ const SCRIPTS := [
 	"res://scripts/combat/BattleResultPanel.gd",
 	"res://scripts/combat/CombatPopup.gd",
 	"res://scripts/combat/TargetingReticle.gd",
+	"res://scripts/ResourceVisualManager.gd",
 ]
 
 func _initialize() -> void:

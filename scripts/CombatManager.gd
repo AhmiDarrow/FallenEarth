@@ -692,6 +692,7 @@ func _resolve_attack(attacker: Dictionary, target: Dictionary) -> Dictionary:
 
 	return {
 		"damage": dmg,
+		"hit_type": hit_type,
 		"message": "%s hits %s (%s) for %d." % [
 			attacker.get("name", "?"), target.get("name", "?"), hit_type, dmg,
 		],

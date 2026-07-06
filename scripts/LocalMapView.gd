@@ -23,6 +23,7 @@ const FloorPickupScene = preload("res://scenes/FloorPickup.tscn")
 const SettlementNodeScene = preload("res://scenes/SettlementNode.tscn")
 const CookingTableScene = preload("res://scenes/CookingTable.tscn")
 const SettlementBuildingScene = preload("res://scenes/SettlementBuilding.tscn")
+const ResourceVisualManagerScript = preload("res://scripts/ResourceVisualManager.gd")
 
 const CELL_SIZE := 24
 
@@ -41,6 +42,8 @@ var _current_map_data: Dictionary = {}
 # 1966 + 3748 nodes was the dominant per-move cost.
 var _node_by_cell: Dictionary = {}     # Vector2i -> HarvestNode
 var _pickup_by_cell: Dictionary = {}    # Vector2i -> FloorPickup
+# v0.10.0: batched MultiMesh visuals for resource nodes + floor pickups.
+var _visual_manager: ResourceVisualManager = null
 
 
 func _ready() -> void:
@@ -106,6 +109,13 @@ func configure(map_data: Dictionary) -> void:
 	_populate_resource_nodes(map_data.get("resource_nodes", []))
 	# Spawn floor pickups (sticks, stones)
 	_populate_floor_pickups(map_data.get("floor_pickups", []))
+	# v0.10.0: batched MultiMesh visuals for all resource nodes + pickups.
+	if _visual_manager != null and is_instance_valid(_visual_manager):
+		_visual_manager.queue_free()
+	_visual_manager = ResourceVisualManagerScript.new()
+	_visual_manager.name = "ResourceVisualManager"
+	add_child(_visual_manager)
+	_visual_manager.setup(node_layer, pickup_layer)
 	# Spawn cooking tables (Phase 3 follow-up: cooking station)
 	_populate_cooking_tables(map_data.get("cooking_tables", []))
 	# Spawn settlement structures (Phase 3: NPC towns). The settlement
@@ -387,6 +397,18 @@ func get_pickup_layer() -> Node2D:
 	return pickup_layer
 
 
+## v0.10.0: Dim or restore a resource node visual at the given cell.
+func dim_resource_node(cell: Vector2i, dimmed: bool) -> void:
+	if _visual_manager != null and is_instance_valid(_visual_manager):
+		_visual_manager.dim_node(cell, dimmed)
+
+
+## v0.10.0: Hide a floor pickup visual at the given cell (after collection).
+func hide_pickup_visual(cell: Vector2i) -> void:
+	if _visual_manager != null and is_instance_valid(_visual_manager):
+		_visual_manager.hide_pickup(cell)
+
+
 func get_settlement_layer() -> Node2D:
 	return settlement_layer
 
@@ -407,6 +429,9 @@ func _clear_nodes() -> void:
 			child.queue_free()
 	# v0.9.1c: clear the cell index too.
 	_node_by_cell.clear()
+	if _visual_manager != null and is_instance_valid(_visual_manager):
+		_visual_manager.queue_free()
+		_visual_manager = null
 
 
 func _clear_pickups() -> void:

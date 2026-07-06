@@ -18,10 +18,13 @@ const BattleHUDScript = preload("res://scripts/combat/BattleHUD.gd")
 const TurnOrderPanelScript = preload("res://scripts/combat/TurnOrderPanel.gd")
 const BattleResultPanelScript = preload("res://scripts/combat/BattleResultPanel.gd")
 const CombatFeedbackScript = preload("res://scripts/CombatFeedback.gd")
+const TargetingReticleScript = preload("res://scripts/combat/TargetingReticle.gd")
+const CombatPopupScript = preload("res://scripts/combat/CombatPopup.gd")
 
 var _encounter: Dictionary = {}
 var _combat: Node = null
 var _grid_size: int = 7
+var _reticle: Control = null
 
 @onready var status_label: RichTextLabel = $HUDLayer/MainVBox/StatusLabel as RichTextLabel
 @onready var turn_order_label: RichTextLabel = $HUDLayer/MainVBox/TurnOrderLabel as RichTextLabel
@@ -83,6 +86,11 @@ func _ready() -> void:
 	retreat_btn.pressed.connect(_on_retreat_pressed)
 	continue_btn.pressed.connect(_on_continue_pressed)
 
+	# Wire action icons onto the buttons (Phase 4 assets).
+	_apply_button_icon(attack_btn, "res://assets/battle_ui/icon_attack.png")
+	_apply_button_icon(skill_btn, "res://assets/battle_ui/icon_skill.png")
+	_apply_button_icon(wait_btn, "res://assets/battle_ui/icon_wait.png")
+
 	# Feedback (HP bars + floating numbers)
 	if _feedback != null and _feedback.has_method("setup"):
 		_feedback.setup(_combat)
@@ -101,6 +109,12 @@ func _ready() -> void:
 	if _turn_order_panel.has_method("setup"):
 		_turn_order_panel.setup(_combat)
 
+	# Phase 3 polish: targeting reticle (follows cursor during targeting)
+	_reticle = TargetingReticleScript.new()
+	_reticle.name = "TargetingReticle"
+	_reticle.visible = false
+	$HUDLayer.add_child(_reticle)
+
 	# Phase 3 polish: replace simple result panel with the styled one
 	_result_panel = BattleResultPanelScript.new()
 	_result_panel.name = "BattleResultPanel"
@@ -118,6 +132,33 @@ func _ready() -> void:
 	var aa: Node = get_node_or_null("/root/AmbientAudio")
 	if aa != null and aa.has_method("stop_all"):
 		aa.call("stop_all", 0.4)
+
+
+func _process(_delta: float) -> void:
+	if _combat == null or _reticle == null:
+		return
+	var targeting: bool = _combat.turn_subphase in [
+		CombatMgr.TurnSubphase.TARGET_ATTACK, CombatMgr.TurnSubphase.TARGET_SKILL,
+	]
+	if not targeting:
+		_reticle.visible = false
+		return
+	# Set reticle color based on subphase.
+	if _combat.turn_subphase == CombatMgr.TurnSubphase.TARGET_ATTACK:
+		_reticle.set_kind("attack")
+	else:
+		_reticle.set_kind("skill")
+	# Convert mouse position to grid-local coords and snap to cell center.
+	var mouse_screen: Vector2 = get_viewport().get_mouse_position()
+	var grid_center: Vector2 = Vector2(640, 360)
+	var half_grid: float = float(_grid_size) * BattleGridViewScript.CELL_SIZE * 0.5
+	var grid_tl: Vector2 = grid_center - Vector2(half_grid, half_grid)
+	var local: Vector2 = mouse_screen - grid_tl
+	var cell_x: int = clampi(int(floor(local.x / BattleGridViewScript.CELL_SIZE)), 0, _grid_size - 1)
+	var cell_y: int = clampi(int(floor(local.y / BattleGridViewScript.CELL_SIZE)), 0, _grid_size - 1)
+	var snap: Vector2 = grid_tl + Vector2(cell_x * BattleGridViewScript.CELL_SIZE, cell_y * BattleGridViewScript.CELL_SIZE)
+	_reticle.position = snap
+	_reticle.visible = true
 
 
 func _load_encounter() -> void:
@@ -153,7 +194,12 @@ func _on_cell_clicked(x: int, y: int) -> void:
 		if not target.is_empty():
 			_grid.play_unit_attack_swing("player")
 			_grid.flash_unit(str(target.get("id", "")))
-		_combat.try_attack_at(pos)
+		var atk_result: Dictionary = _combat.try_attack_at(pos)
+		# Spawn popup for back/side attacks based on facing.
+		if not target.is_empty():
+			var hit_type: String = _compute_hit_type_for_popup(target, pos)
+			if not hit_type.is_empty():
+				_spawn_combat_popup(hit_type, pos)
 		_sync_grid_units()
 	elif _combat.turn_subphase == CombatMgr.TurnSubphase.TARGET_SKILL:
 		var target2: Dictionary = _combat.get_unit_at(pos)
@@ -527,3 +573,51 @@ func _facing_name(facing: int) -> String:
 			return "W"
 		_:
 			return "?"
+
+
+func _apply_button_icon(btn: Button, icon_path: String) -> void:
+	if btn == null:
+		return
+	if not ResourceLoader.exists(icon_path):
+		return
+	var tex: Texture2D = load(icon_path) as Texture2D
+	if tex != null:
+		btn.icon = tex
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		btn.expand_icon = true
+
+
+## Compute popup kind based on facing relation between attacker and target.
+## Returns "" for front attacks (no popup needed).
+func _compute_hit_type_for_popup(target: Dictionary, atk_pos: Vector2i) -> String:
+	if _combat == null:
+		return ""
+	var attacker: Dictionary = _combat.get_active_unit()
+	if attacker.is_empty():
+		return ""
+	var tgt_pos: Vector2i = target.get("pos", atk_pos)
+	var facing_mult: float = _combat._facing_multiplier(
+		int(target.get("facing", CombatMgr.Facing.SOUTH)), atk_pos, tgt_pos
+	)
+	if facing_mult >= CombatMgr.BACK_ATTACK_MULT - 0.01:
+		return "back_attack"
+	if facing_mult >= CombatMgr.SIDE_ATTACK_MULT - 0.01:
+		return "side_attack"
+	return ""
+
+
+## Spawn a CombatPopup at the target grid cell in screen space.
+func _spawn_combat_popup(kind: String, target_cell: Vector2i) -> void:
+	if CombatPopupScript == null:
+		return
+	var popup: Control = CombatPopupScript.new()
+	popup.name = "Popup_%s" % kind
+	$HUDLayer.add_child(popup)
+	# Convert grid cell to screen position (grid is centered at 640,360).
+	var half_grid: float = float(_grid_size) * BattleGridViewScript.CELL_SIZE * 0.5
+	var grid_tl: Vector2 = Vector2(640, 360) - Vector2(half_grid, half_grid)
+	var world_pos: Vector2 = grid_tl + Vector2(
+		target_cell.x * BattleGridViewScript.CELL_SIZE + BattleGridViewScript.CELL_SIZE * 0.5,
+		target_cell.y * BattleGridViewScript.CELL_SIZE + BattleGridViewScript.CELL_SIZE * 0.5,
+	)
+	popup.show_popup(kind, world_pos)
