@@ -291,9 +291,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	if km.is_action_pressed("party", event):
 		open_character_tab("party")
 		return
+	# S is shared between `move_down` and `stats` (see KeybindManager).
+	# Per the original Phase 3 design: S only opens the Stats tab when
+	# the CharacterMenu is already open — otherwise S is left to fall
+	# through to movement below. Same applies to the fallback handler.
 	if km.is_action_pressed("stats", event):
-		open_character_tab("stats")
-		return
+		if _hud != null and is_instance_valid(_hud) and _hud.has_method("is_character_menu_open") and _hud.is_character_menu_open():
+			open_character_tab("stats")
+			return
+		# Menu closed: don't consume the event — let it reach the
+		# movement block below so S moves the player south.
 
 	# Block remaining game input when any UI overlay is open OR the
 	# game is paused (e.g. pause menu).
@@ -363,8 +370,12 @@ func _fallback_unhandled_input(event: InputEvent) -> void:
 			open_character_tab("party")
 			return
 		KEY_S:
-			open_character_tab("stats")
-			return
+			# S is shared with movement. Only open Stats when the
+			# CharacterMenu is already open; otherwise let S fall
+			# through to the movement block below.
+			if _hud != null and is_instance_valid(_hud) and _hud.has_method("is_character_menu_open") and _hud.is_character_menu_open():
+				open_character_tab("stats")
+				return
 	# Block remaining game input when any UI overlay is open OR the
 	# game is paused (e.g. pause menu).
 	if _is_ui_overlay_open() or get_tree().paused:
