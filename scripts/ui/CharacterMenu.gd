@@ -12,6 +12,15 @@
 ##   - Tab / Shift+Tab: cycle forward / backward through tabs
 ##   - Escape: close the menu
 ##
+## Architecture: this Control is a SCENE (`scenes/ui/CharacterMenu.tscn`)
+## with the shell layout (background, title, close X, tab bar, content
+## panel) defined up-front and the dynamic tab content (the per-tab
+## screen Controls) lazy-loaded by the script. The shell mirrors the
+## `PauseMenu` pattern: an `.tscn` with `anchors_preset = 15` and
+## `grow_horizontal/vertical = 2`, plus an `open(initial_tab)` method
+## that explicitly sets `size = viewport_size` so the menu is correctly
+## sized whether its parent is a Container or a plain Control.
+##
 ## The content area is a `PanelContainer` whose children are the
 ## individual screen Controls. Only the active tab's screen is visible
 ## at a time (others are hidden, not freed, so their state is preserved).
@@ -36,68 +45,111 @@ const SCREEN_PATHS := {
 	"stats":     "res://scripts/ui/StatsScreen.gd",
 }
 
+# Scene references (resolved by Godot from the .tscn at load time).
+# These are `@onready` so they're resolved after the scene's children
+# are added. If the script is instantiated without the scene (e.g.
+# from a smoke test via `script.new()`), they will be null and the
+# defensive build in `_ready` constructs them on the fly.
+@onready var _background: ColorRect = get_node_or_null("Background") as ColorRect
+@onready var _title_label: Label = get_node_or_null("TitleLabel") as Label
+@onready var _close_btn: Button = get_node_or_null("CloseButton") as Button
+@onready var _tab_bar: HBoxContainer = get_node_or_null("TabBar") as HBoxContainer
+@onready var _content: PanelContainer = get_node_or_null("ContentPanel") as PanelContainer
+
 # Each tab's loaded Control (instantiated lazily on first open)
 var _tab_controllers: Dictionary = {}
 # Map tab id -> Button
 var _tab_buttons: Dictionary = {}
 # Currently active tab id
 var _active_tab: String = ""
-# Container for the content
-var _content: Control = null
-# Close button reference for repositioning on resize
-var _close_btn: Button = null
 
 
 func _ready() -> void:
-	anchors_preset = Control.PRESET_FULL_RECT
+	# Process even when the game is paused (so Escape / I / E / C / P
+	# / S keys reach us). Mirrors PauseMenu's `process_mode`.
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	z_index = 50
-	# Background
-	var bg := ColorRect.new()
-	bg.color = Color(0.02, 0.02, 0.04, 0.92)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bg)
-	# Title
-	var title := Label.new()
-	title.text = "[ Character ]"
-	title.add_theme_color_override("font_color", Color.WHITE)
-	title.add_theme_font_size_override("font_size", 28)
-	title.position = Vector2(20, 12)
-	add_child(title)
-	# Close X
-	_close_btn = Button.new()
-	_close_btn.text = "X"
-	_close_btn.custom_minimum_size = Vector2(40, 40)
-	_close_btn.pressed.connect(close_menu)
-	add_child(_close_btn)
-	# Tab bar
+	# If we were instantiated via `script.new()` (e.g. in a smoke
+	# test), the @onready scene references will be null. Build the
+	# shell on the fly so the script works either way. In production
+	# the .tscn provides the shell and these no-op.
+	_ensure_shell()
+	# Connect shell buttons
+	if _close_btn != null and not _close_btn.pressed.is_connected(close_menu):
+		_close_btn.pressed.connect(close_menu)
 	_build_tab_bar()
-	# Content area
-	_content = PanelContainer.new()
-	_content.mouse_filter = Control.MOUSE_FILTER_PASS
-	add_child(_content)
-	# Defer layout so size is known
-	_update_layout()
-	resized.connect(_update_layout)
-	# Open the inventory tab by default
-	select_tab("inventory")
+	# Open the inventory tab by default. `open()` will also call
+	# `select_tab(initial_tab)` for the scene-loaded case (the HUD
+	# always invokes `open` after instantiating the scene), so this
+	# default covers both paths.
+	if _active_tab == "":
+		select_tab("inventory")
 
 
-func _update_layout() -> void:
-	if _close_btn != null:
-		_close_btn.position = Vector2(size.x - 60, 12)
-	if _content != null:
-		_content.position = Vector2(20, 80)
-		_content.size = Vector2(size.x - 40, size.y - 100)
+## Build the shell (background, title, close X, tab bar, content
+## panel) on the fly if it isn't already there (i.e. when the script
+## is instantiated without its scene). Idempotent.
+func _ensure_shell() -> void:
+	if _background == null:
+		_background = ColorRect.new()
+		_background.name = "Background"
+		_background.color = Color(0.02, 0.02, 0.04, 0.92)
+		_background.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_background)
+	if _title_label == null:
+		_title_label = Label.new()
+		_title_label.name = "TitleLabel"
+		_title_label.text = "[ Character ]"
+		_title_label.add_theme_color_override("font_color", Color.WHITE)
+		_title_label.add_theme_font_size_override("font_size", 28)
+		_title_label.position = Vector2(20, 12)
+		add_child(_title_label)
+	if _close_btn == null:
+		_close_btn = Button.new()
+		_close_btn.name = "CloseButton"
+		_close_btn.text = "X"
+		_close_btn.custom_minimum_size = Vector2(40, 40)
+		add_child(_close_btn)
+	if _tab_bar == null:
+		_tab_bar = HBoxContainer.new()
+		_tab_bar.name = "TabBar"
+		_tab_bar.position = Vector2(20, 56)
+		_tab_bar.add_theme_constant_override("separation", 4)
+		add_child(_tab_bar)
+	if _content == null:
+		_content = PanelContainer.new()
+		_content.name = "ContentPanel"
+		_content.mouse_filter = Control.MOUSE_FILTER_PASS
+		add_child(_content)
+
+
+## Open the menu to the given tab. Mirrors PauseMenu.open(): explicitly
+## size the shell to the viewport so the layout is correct regardless
+## of whether the parent is a Container or a plain Control.
+func open(initial_tab: String = "inventory") -> void:
+	# Force full-viewport geometry since parent may not propagate layout
+	var vp_size: Vector2 = get_viewport_rect().size
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	custom_minimum_size = vp_size
+	size = vp_size
+	position = Vector2.ZERO
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	z_index = 50
+	move_to_front()
+	visible = true
+	# Select the requested tab (this is the first time, so the screen
+	# gets lazy-loaded). Also re-selects the same tab if the user
+	# presses the hotkey again while the menu is open.
+	if not _tab_controllers.has(initial_tab):
+		_lazy_load_tab(initial_tab)
+	select_tab(initial_tab)
 
 
 func _build_tab_bar() -> void:
-	var bar := HBoxContainer.new()
-	bar.name = "TabBar"
-	bar.position = Vector2(20, 56)
-	bar.add_theme_constant_override("separation", 4)
-	add_child(bar)
+	if _tab_bar == null:
+		return
 	for tab in TABS:
 		var btn := Button.new()
 		btn.name = "Tab_%s" % tab.id
@@ -107,7 +159,7 @@ func _build_tab_bar() -> void:
 		btn.focus_mode = Control.FOCUS_NONE
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
-		bar.add_child(btn)
+		_tab_bar.add_child(btn)
 		_tab_buttons[tab.id] = btn
 
 

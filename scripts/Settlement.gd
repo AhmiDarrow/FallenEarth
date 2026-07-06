@@ -29,10 +29,39 @@ var _resident_npc_ids: Array = []  # subset of PartyNPCManager.available_npcs th
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
+	# to avoid Godot's "size overridden after _ready" warning — see
+	# BaseShopUI for the full explanation.
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Sync our size to the parent BEFORE building children — otherwise
+	# `_build_ui()` reads `size = (0, 0)` and places the Leave button
+	# off-screen. Same anti-pattern as CharacterMenu / BaseShopUI.
+	_sync_size_to_parent()
 	_build_ui()
+	# Stay in lockstep with the parent if it ever resizes.
+	var parent := get_parent()
+	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
+		(parent as Control).resized.connect(_on_parent_resized)
+
+
+## Snap our `size` to the parent Control's rect. Required because we
+## are added as a child of a non-Container Control and the engine
+## doesn't auto-size us from anchors alone in every setup.
+func _sync_size_to_parent() -> void:
+	var parent := get_parent()
+	if parent is Control:
+		var p: Control = parent as Control
+		if p.size.x > 0 and p.size.y > 0:
+			size = p.size
+			position = Vector2.ZERO
+
+
+## Re-sync our size and re-place the Leave button when the parent Control resizes.
+func _on_parent_resized() -> void:
+	_sync_size_to_parent()
+	if has_node("LeaveButton"):
+		$LeaveButton.position = Vector2(size.x - 220, size.y - 60)
 
 
 func setup(town: Dictionary, hub: Node) -> void:

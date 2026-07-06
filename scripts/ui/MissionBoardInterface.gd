@@ -18,11 +18,42 @@ var _offers: Array = []
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
+	# to avoid Godot's "size overridden after _ready" warning — see
+	# BaseShopUI for the full explanation.
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Sync our size to the parent BEFORE building children — otherwise
+	# `_build_ui()` reads `size = (0, 0)` and places the status label
+	# and close button off-screen.
+	_sync_size_to_parent()
 	_build_ui()
 	_refresh()
+	# Stay in lockstep with the parent if it ever resizes.
+	var parent := get_parent()
+	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
+		(parent as Control).resized.connect(_on_parent_resized)
+
+
+## Snap our `size` to the parent Control's rect. Required because we
+## are added as a child of a non-Container Control and the engine
+## doesn't auto-size us from anchors alone.
+func _sync_size_to_parent() -> void:
+	var parent := get_parent()
+	if parent is Control:
+		var p: Control = parent as Control
+		if p.size.x > 0 and p.size.y > 0:
+			size = p.size
+			position = Vector2.ZERO
+
+
+## Re-sync our size and re-layout when the parent Control is resized.
+func _on_parent_resized() -> void:
+	_sync_size_to_parent()
+	if has_node("StatusLabel"):
+		$StatusLabel.position = Vector2(20, size.y - 70)
+	if has_node("Close"):
+		$Close.position = Vector2(size.x - 100, size.y - 50)
 
 
 func _build_ui() -> void:

@@ -39,9 +39,20 @@ var _display_class: String = "?"
 
 
 func _ready() -> void:
+	# Anchor with `anchor_right = 1.0, anchor_bottom = 1.0` (not the
+	# `anchors_preset` property) so the engine auto-propagates the
+	# parent rect into our `size`. The `anchors_preset` setter does
+	# NOT trigger this propagation in Godot 4.3, which left the HUD
+	# at size (0, 0) and broke the CharacterMenu (which is added as
+	# our child and inherits our 0 size). The "size overridden after
+	# _ready" warning is benign in this case.
 	anchor_right = 1.0
 	anchor_bottom = 1.0
 	mouse_filter = Control.MOUSE_FILTER_PASS  # let clicks fall through except on UI
+	# Defensive: also explicitly sync our size in case the parent
+	# hasn't been laid out yet. Same anti-pattern as CharacterMenu /
+	# BaseShopUI — see there for the full writeup.
+	_sync_size_to_parent()
 	_build_top_bar()
 	_build_resource_bars()
 	_build_minimap()
@@ -49,6 +60,30 @@ func _ready() -> void:
 	_build_menu_button()
 	_connect_signals()
 	_refresh_from_gamestate()
+
+
+## Snap our `size` to the parent Control's rect. Required because we
+## are added as a child of a non-Container Control and the engine
+## doesn't auto-size us from anchors alone in every setup.
+func _sync_size_to_parent() -> void:
+	var parent := get_parent()
+	if parent is Control:
+		var p: Control = parent as Control
+		if p.size.x > 0 and p.size.y > 0:
+			size = p.size
+			position = Vector2.ZERO
+
+
+## Re-sync our size and re-place any children whose position depends on `size`.
+func _on_parent_resized() -> void:
+	_sync_size_to_parent()
+	# Re-place the menu button if it's at an absolute position
+	if is_instance_valid(_menu_button):
+		_menu_button.position = Vector2(size.x - 80, 8)
+	# Keep lockstep with the parent
+	var parent := get_parent()
+	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
+		(parent as Control).resized.connect(_on_parent_resized)
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +293,11 @@ func _on_menu_pressed() -> void:
 ## "≡ Menu" button is clicked or when a character-screen hotkey fires
 ## (I/E/C/P/S). Idempotent: a second open of the same tab closes
 ## the menu.
+##
+## Mirrors the `PauseMenu` pattern: the menu is loaded from its
+## dedicated scene (`scenes/ui/CharacterMenu.tscn`) and added to a
+## `CanvasLayer` so it overlays everything, including the pause menu.
+## The menu's own `open()` method handles sizing and z-order.
 func open_character_menu(initial_tab: String = "inventory") -> void:
 	if _character_menu != null and is_instance_valid(_character_menu):
 		# Already open. Toggle off if the same tab is requested.
@@ -267,15 +307,25 @@ func open_character_menu(initial_tab: String = "inventory") -> void:
 		# Otherwise switch to the new tab.
 		_character_menu.select_tab(initial_tab)
 		return
-	var script: GDScript = load("res://scripts/ui/CharacterMenu.gd")
-	if script == null:
-		push_error("[HUD] CharacterMenu.gd not found")
+	var scene: PackedScene = load("res://scenes/ui/CharacterMenu.tscn") as PackedScene
+	if scene == null:
+		push_error("[HUD] CharacterMenu.tscn not found")
 		return
-	_character_menu = script.new()
+	_character_menu = scene.instantiate() as CharacterMenu
+	if _character_menu == null:
+		push_error("[HUD] CharacterMenu scene root is not a CharacterMenu")
+		return
 	_character_menu.name = "CharacterMenu"
 	_character_menu.closed.connect(_on_character_menu_closed)
-	add_child(_character_menu)
-	_character_menu.select_tab(initial_tab)
+	# Add to a dedicated CanvasLayer so the menu overlays the HUD
+	# and everything below it (including the pause menu, if open).
+	var layer := CanvasLayer.new()
+	layer.name = "CharacterMenuLayer"
+	layer.layer = 90  # below the pause menu's 100 so the pause can still
+	                  # be brought to the front if it opens after us
+	add_child(layer)
+	layer.add_child(_character_menu)
+	_character_menu.open(initial_tab)
 
 
 func _on_character_menu_closed() -> void:

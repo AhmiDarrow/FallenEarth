@@ -13,8 +13,11 @@ var _is_visible: bool = false
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
+	# to avoid Godot's "size overridden after _ready" warning — see
+	# BaseShopUI for the full explanation. This UI doesn't read `size`
+	# directly, but the consistent syntax keeps the project clean.
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_ui()
 	visible = false

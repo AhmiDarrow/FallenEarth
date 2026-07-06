@@ -16,7 +16,8 @@ const SCENES := [
 	"res://scenes/DialogueUI.tscn",
 	"res://scenes/QuestTrackerUI.tscn",
 	"res://scenes/TransitionScreen.tscn",
-	"res://scenes/ui/LocalMapView.tscn",
+	"res://scenes/LocalMapView.tscn",
+	"res://scenes/ui/CharacterMenu.tscn",
 ]
 
 const SCRIPTS := [
@@ -94,6 +95,7 @@ const SCRIPTS := [
 	"res://scripts/MusicManager.gd",
 	"res://scripts/KeybindManager.gd",
 	"res://scripts/ui/KeybindsScreen.gd",
+	"res://scripts/ui/OptionsMenu.gd",
 	"res://scripts/GraphicsManager.gd",
 ]
 
