@@ -94,7 +94,7 @@ func _ready() -> void:
 	# Feedback (HP bars + floating numbers)
 	if _feedback != null and _feedback.has_method("setup"):
 		_feedback.setup(_combat)
-		_feedback.setup_hp_bars(_combat.get_units())
+		_feedback.setup_hp_bars(_combat.get_units(), _grid_size, BattleGridViewScript.CELL_SIZE)
 
 	# Phase 3 polish: top HUD + turn-order sidebar
 	_battle_hud = BattleHUDScript.new()

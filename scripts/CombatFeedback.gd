@@ -13,6 +13,8 @@ var _floating_count: int = 0
 var _kill_count: int = 0
 var _kill_label: Label = null
 var _combat: Node = null
+var _grid_size: int = 7
+var _cell_size: float = 24.0
 
 
 func setup(combat_node: Node) -> void:
@@ -38,8 +40,13 @@ func setup(combat_node: Node) -> void:
 	add_child(_kill_label)
 
 
-func setup_hp_bars(units: Array[Dictionary]) -> void:
+func setup_hp_bars(units: Array[Dictionary], grid_size: int = 7, cell_size: float = 24.0) -> void:
+	_grid_size = grid_size
+	_cell_size = cell_size
 	_clear_hp_bars()
+	# Match BattleGridView's _unit_layer.position = -total * 0.5 so
+	# bars align with the units' on-grid pixel positions.
+	var half: float = float(_grid_size) * _cell_size * 0.5
 	for unit in units:
 		var uid: String = str(unit.get("id", ""))
 		if uid.is_empty():
@@ -50,8 +57,10 @@ func setup_hp_bars(units: Array[Dictionary]) -> void:
 		var max_hp: int = int(unit.get("max_hp", hp))
 		bar.setup(uid, team, hp, max_hp)
 		var pos: Vector2 = unit.get("pos", Vector2.ZERO)
-		var cell_size: float = 44.0  # Match grid cell size
-		bar.position = Vector2(pos.x * cell_size + cell_size * 0.5, pos.y * cell_size)
+		bar.position = Vector2(
+			pos.x * _cell_size + _cell_size * 0.5 - half,
+			pos.y * _cell_size - half - 14
+		)
 		add_child(bar)
 		_hp_bars[uid] = bar
 

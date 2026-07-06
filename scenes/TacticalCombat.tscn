@@ -35,40 +35,47 @@ script = ExtResource("4_cf")
 layer = 10
 
 [node name="MainVBox" type="VBoxContainer" parent="HUDLayer"]
-anchors_preset = 15
+anchors_preset = 12
+anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = 30.0
-offset_top = 16.0
+offset_top = -52.0
 offset_right = -30.0
 offset_bottom = -16.0
 grow_horizontal = 2
-grow_vertical = 2
+grow_vertical = 0
 theme_override_constants/separation = 8
+collapse_if_invisible = true
 
 [node name="HeaderLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
+visible = false
 custom_minimum_size = Vector2(0, 32)
 bbcode_enabled = true
 text = "[center][b]TACTICAL COMBAT[/b] — Fallen Earth[/center]"
 fit_content = true
 
 [node name="StatusLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
+visible = false
 custom_minimum_size = Vector2(0, 56)
 bbcode_enabled = true
 autowrap_mode = 3
 fit_content = true
 
 [node name="TurnOrderLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
+visible = false
 custom_minimum_size = Vector2(0, 24)
 bbcode_enabled = true
 fit_content = true
 
 [node name="InstructionsLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
+visible = false
 custom_minimum_size = Vector2(0, 28)
 bbcode_enabled = true
 fit_content = true
 
 [node name="LogLabel" type="RichTextLabel" parent="HUDLayer/MainVBox"]
+visible = false
 custom_minimum_size = Vector2(0, 64)
 bbcode_enabled = true
 autowrap_mode = 3
