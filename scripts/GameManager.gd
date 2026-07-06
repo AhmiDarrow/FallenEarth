@@ -13,7 +13,7 @@ const CHARACTER_SELECT_SCENE := "res://scenes/CharacterSelection.tscn"
 const HUB_SCENE := "res://scenes/HubWorld.tscn"
 const WORLD_MAP_SCENE := "res://scenes/WorldMapScreen.tscn"
 const RIFT_SCENE := "res://scenes/RiftInstance.tscn"
-const TACTICAL_COMBAT_SCENE := "res://scenes/TacticalCombat.tscn"
+const TACTICAL_COMBAT_SCENE := "res://scenes/CombatLevel.tscn"
 
 var _current_scene: String = ""
 

@@ -60,6 +60,35 @@ var _encounter: Dictionary = {}
 
 
 func _ready() -> void:
+	# v0.11.0: Pull the encounter from GameState if we didn't
+	# get one via set_encounter(). This mirrors the v0.10.1
+	# TacticalCombat pattern so the new system is a drop-in
+	# replacement — GameManager just calls go_to_tactical_combat
+	# as before and the scene reads the encounter on _ready.
+	if _encounter.is_empty():
+		var gs: GameState = get_node_or_null("/root/GameState") as GameState
+		if is_instance_valid(gs):
+			_encounter = gs.get_pending_combat()
+	if _encounter.is_empty():
+		# Fallback: build a minimal encounter so the scene
+		# doesn't crash in tests / standalone launches.
+		_encounter = {
+			"biome_key": "Ash Wastes",
+			"grid_size": 7,
+			"height_seed": 0,
+			"character_data": {"class": "recruit", "race": "human", "gender": "male", "hp": 100, "max_hp": 100, "move": 6, "speed": 10, "attack": 5, "defense": 0, "attack_range": 1, "facing": 2, "name": "Hero"},
+			"player_start": Vector2i(3, 5),
+			"enemy_templates": [],
+		}
+	# v0.11.0: Audio — switch to the combat music track and
+	# mute the ambient world audio (mirrors v0.10.1 TacticalCombat
+	# audio handoff so the combat screen feels right).
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "combat")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("stop_all"):
+		aa.call("stop_all", 0.4)
 	# v0.11.0: Build the services.
 	_turn_serv = TurnServiceScript.new()
 	_player_serv = PlayerServiceScript.new()
@@ -67,6 +96,9 @@ func _ready() -> void:
 	_path_serv = PathfindingServiceScript.new()
 	_move_serv = UnitMovementServiceScript.new()
 	_combat_serv = UnitCombatServiceScript.new()
+	# v0.11.0: Wire the encounter_ended signal so we return to
+	# the hub / rift automatically when combat resolves.
+	_arena.res.encounter_ended.connect(_on_encounter_ended)
 
 	# v0.11.0: Build the participants.
 	_player = ParticipantResource.new()
@@ -523,15 +555,15 @@ func _update_top_prompt() -> void:
 		_top_prompt.show_prompt("Battle ended", "")
 		return
 	if _arena.res.current_side == "opponent":
-		_top_prompt.show_prompt("Enemy acting…", "Wait for your turn", 0.0)
+		_top_prompt.show_prompt("Enemy acting…", "Wait for your turn")
 		return
 	match _player.stage:
 		ParticipantResourceScript.STAGE_SHOW_MOVEMENTS:
-			_top_prompt.show_prompt("Select a white tile to move", "Then choose an action", 0.0)
+			_top_prompt.show_prompt("Select a white tile to move", "Then choose an action")
 		ParticipantResourceScript.STAGE_SELECT_ATTACK_TARGET:
-			_top_prompt.show_prompt("Select a target", "Red tiles = attack range", 0.0)
+			_top_prompt.show_prompt("Select a target", "Red tiles = attack range")
 		_:
-			_top_prompt.show_prompt("Your turn", "Choose an action", 0.0)
+			_top_prompt.show_prompt("Your turn", "Choose an action")
 
 
 ## v0.11.0: Handler for the End Turn button. Force-completes
@@ -558,9 +590,73 @@ func _on_retreat_pressed() -> void:
 	_arena.res.is_ended = true
 	_arena.res.victory = false
 	_arena.res.encounter_ended.emit(false)
+	_return_from_battle(false)
 
 
 ## v0.11.0: Public API used by TacticalCombat.tscn to pass
 ## the encounter in before _ready.
 func set_encounter(encounter: Dictionary) -> void:
 	_encounter = encounter
+
+
+## v0.11.0: Hook the encounter_ended signal. Syncs player HP
+## to GameState and routes back to the hub/rift.
+func _on_encounter_ended(victory: bool) -> void:
+	_sync_player_health()
+	_return_from_battle(victory)
+
+
+## v0.11.0: Sync the player's current HP from the arena to
+## GameState (called when combat ends so the hub reflects damage
+## taken in the rift).
+func _sync_player_health() -> void:
+	if _arena == null:
+		return
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return
+	var player_unit: Object = null
+	for uid in _arena.res.units:
+		var u: Object = _arena.res.units[uid]
+		if u != null and is_instance_valid(u) and u.res.team == "player":
+			player_unit = u
+			break
+	if player_unit == null:
+		return
+	gs.set_character_health(int(player_unit.res.current_hp))
+
+
+## v0.11.0: Return to the previous scene (hub or rift) when
+## combat ends. Mirrors the v0.10.1 TacticalCombat._return_from_battle
+## pattern: notify missions of victory, clear the pending combat,
+## then change scene to the return_scene.
+func _return_from_battle(victory: bool) -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return
+	var ctx: Dictionary = _encounter.get("return_context", {}) as Dictionary
+	var source: String = str(_encounter.get("source", ""))
+	if victory:
+		# v0.10.1 pattern: report combat victory to the mission
+		# manager so quest progress updates.
+		var mm: MissionManager = get_node_or_null("/root/MissionManager") as MissionManager
+		if is_instance_valid(mm) and mm.has_method("report_combat_victory"):
+			mm.report_combat_victory(_encounter)
+	if victory and bool(ctx.get("remove_mob_on_victory", false)):
+		gs.remove_overworld_mob(str(ctx.get("tile_key", "")))
+	gs.clear_pending_combat()
+	var return_scene: String = str(_encounter.get("return_scene", "res://scenes/HubWorld.tscn"))
+	var gm: GameManager = get_node_or_null("/root/GameManager") as GameManager
+	if is_instance_valid(gm):
+		if return_scene.ends_with("HubWorld.tscn"):
+			gm.go_to_hub(gs.get_character_data())
+		elif return_scene.ends_with("RiftInstance.tscn"):
+			gm.go_to_rift(
+				str(ctx.get("rift_id", "rift_001")),
+				str(ctx.get("biome_key", "Ash Wastes")),
+				{}
+			)
+		else:
+			get_tree().change_scene_to_file(return_scene)
+	else:
+		get_tree().change_scene_to_file(return_scene)
