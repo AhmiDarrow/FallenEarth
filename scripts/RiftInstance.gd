@@ -44,6 +44,13 @@ func _ready() -> void:
 	_load_rift_context()
 	_ensure_dungeon()
 	_enter_dungeon_mode()
+	# Audio: rift music + eerie drone ambient.
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "rift")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("play_biome"):
+		aa.call("play_biome", "rift", 0.8)
 
 
 func _load_rift_context() -> void:

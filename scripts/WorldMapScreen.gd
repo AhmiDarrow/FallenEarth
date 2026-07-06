@@ -43,6 +43,15 @@ func _ready() -> void:
 	_world_gen = WorldGenerator.new()
 	add_child(_world_gen)
 
+	# Audio: strategic map uses exploration music; mute the biome
+	# ambient bed (the map view is a hex-sphere overview, not a tile).
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "exploration")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("stop_all"):
+		aa.call("stop_all", 0.4)
+
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if is_instance_valid(gs):
 		var char_data: Dictionary = gs.get_party_character_data()

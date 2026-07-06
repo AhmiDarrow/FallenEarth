@@ -16,6 +16,14 @@ func _ready() -> void:
 	options_btn.pressed.connect(_on_options)
 	exit_btn.pressed.connect(_on_exit)
 	print("[MainMenu] Main menu loaded.")
+	# Start main menu music. Defensive lookup in case the autoload
+	# hasn't been registered (e.g. when running a sub-scene headless).
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "main_menu")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("stop_all"):
+		aa.call("stop_all", 0.3)
 
 
 func save_game_label_text(text: String) -> void:

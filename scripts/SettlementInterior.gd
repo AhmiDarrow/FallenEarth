@@ -30,11 +30,45 @@ var _max_wanderers: int = 5
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
+	# to avoid Godot's "size overridden after _ready" warning — see
+	# BaseShopUI for the full explanation.
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Sync our size to the parent BEFORE building children — otherwise
+	# `_build_frame()` and any size-based positioning (e.g. dialog panel)
+	# would use `size = (0, 0)`. Same anti-pattern as CharacterMenu.
+	_sync_size_to_parent()
 	_build_frame()
 	_load_rooms()
+	# Stay in lockstep with the parent if it ever resizes.
+	var parent := get_parent()
+	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
+		(parent as Control).resized.connect(_on_parent_resized)
+	# Audio: switch to settlement music + ambient bed.
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "settlement")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("play_biome"):
+		aa.call("play_biome", "settlement", 0.8)
+
+
+## Snap our `size` to the parent Control's rect. Required because we
+## are added as a child of a non-Container Control and the engine
+## doesn't auto-size us from anchors alone in every setup.
+func _sync_size_to_parent() -> void:
+	var parent := get_parent()
+	if parent is Control:
+		var p: Control = parent as Control
+		if p.size.x > 0 and p.size.y > 0:
+			size = p.size
+			position = Vector2.ZERO
+
+
+## Re-sync our size when the parent Control is resized.
+func _on_parent_resized() -> void:
+	_sync_size_to_parent()
 
 
 func setup(town: Dictionary, hub: Node, focus_building: String = "") -> void:

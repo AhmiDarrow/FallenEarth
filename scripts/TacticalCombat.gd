@@ -50,6 +50,13 @@ func _ready() -> void:
 	_setup_grid()
 	result_panel.visible = false
 	_refresh_ui()
+	# Audio: combat music takes over; mute ambient bed.
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "combat")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("stop_all"):
+		aa.call("stop_all", 0.4)
 
 
 func _load_encounter() -> void:

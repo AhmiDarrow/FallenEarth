@@ -16,11 +16,44 @@ signal closed
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
+	# to avoid Godot's "size overridden after _ready" warning — see
+	# BaseShopUI for the full explanation.
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Sync our size to the parent BEFORE building children — otherwise
+	# the Panel's `offset_*` (which use `size.x/y * 0.5`) would be 0
+	# and the panel would collapse to nothing.
+	_sync_size_to_parent()
 	_build_ui()
 	_load_settings()
+	# Stay in lockstep with the parent if it ever resizes.
+	var parent := get_parent()
+	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
+		(parent as Control).resized.connect(_on_parent_resized)
+
+
+## Snap our `size` to the parent Control's rect. Required because we
+## are added as a child of a non-Container Control and the engine
+## doesn't auto-size us from anchors alone.
+func _sync_size_to_parent() -> void:
+	var parent := get_parent()
+	if parent is Control:
+		var p: Control = parent as Control
+		if p.size.x > 0 and p.size.y > 0:
+			size = p.size
+			position = Vector2.ZERO
+
+
+## Re-sync our size and re-center the panel when the parent Control is resized.
+func _on_parent_resized() -> void:
+	_sync_size_to_parent()
+	if has_node("Panel"):
+		var panel: Control = get_node("Panel") as Control
+		panel.offset_left = size.x * 0.5 - 150
+		panel.offset_right = size.x * 0.5 + 150
+		panel.offset_top = size.y * 0.5 - 150
+		panel.offset_bottom = size.y * 0.5 + 150
 
 
 func _build_ui() -> void:
@@ -152,10 +185,19 @@ func _build_ui() -> void:
 
 
 func _on_music_changed(value: float) -> void:
+	# Push live volume to the music manager so the change is
+	# audible immediately (not just on next launch).
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("set_volume"):
+		mm.call("set_volume", value)
 	_save_settings()
 
 
 func _on_sfx_changed(value: float) -> void:
+	# Push live volume to the ambient/SFX bed.
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa != null and aa.has_method("set_volume"):
+		aa.call("set_volume", value)
 	_save_settings()
 
 

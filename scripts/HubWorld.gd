@@ -202,6 +202,8 @@ func _ready() -> void:
 	_seed_local_mobs()
 	_build_local_view()
 	_save_to_autoslot_if_can()
+	# Audio: exploration music + ambient bed for the current biome.
+	_start_audio_for_current_region()
 
 
 var _escape_was_pressed: bool = false
@@ -243,8 +245,13 @@ func _process(delta: float) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
-	if get_tree().paused:
-		return
+	# Note: we do NOT early-return on `get_tree().paused` here. The
+	# character-menu hotkeys (I/E/C/P/S) must work even while the
+	# pause menu is open, so the player can flip between inventory
+	# and the pause menu without having to dismiss one first. The
+	# game-specific input (movement, interact, world map) is gated
+	# separately below by `_is_ui_overlay_open()` and the explicit
+	# `get_tree().paused` check in the `Interact` / movement blocks.
 
 	var km: Node = get_node_or_null("/root/KeybindManager")
 	if km == null:
@@ -252,6 +259,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	# Character-menu hotkeys — always allowed (open new or switch tabs)
+	# even while the pause menu is open. These don't mutate game state.
 	if km.is_action_pressed("inventory", event):
 		open_character_tab("inventory")
 		return
@@ -269,8 +277,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		open_character_tab("stats")
 		return
 
-	# Block remaining game input when any UI overlay is open
-	if _is_ui_overlay_open():
+	# Block remaining game input when any UI overlay is open OR the
+	# game is paused (e.g. pause menu).
+	if _is_ui_overlay_open() or get_tree().paused:
 		return
 
 	# Interact / gather
@@ -320,7 +329,7 @@ func _unhandled_input(event: InputEvent) -> void:
 func _fallback_unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
-	# Character-menu hotkeys — always allowed
+	# Character-menu hotkeys — always allowed even while paused
 	match event.keycode:
 		KEY_I:
 			open_character_tab("inventory")
@@ -338,8 +347,9 @@ func _fallback_unhandled_input(event: InputEvent) -> void:
 		KEY_S:
 			open_character_tab("stats")
 			return
-	# Block remaining game input when any UI overlay is open
-	if _is_ui_overlay_open():
+	# Block remaining game input when any UI overlay is open OR the
+	# game is paused (e.g. pause menu).
+	if _is_ui_overlay_open() or get_tree().paused:
 		return
 	match event.keycode:
 		KEY_M:
@@ -366,8 +376,14 @@ func _has_adjacent_harvest_node() -> bool:
 	return not nodes.is_empty()
 
 
-## True if any UI overlay is blocking game input (character menu,
-## cooking table, base interior, settlement interior, world map).
+## True if any *game-blocking* UI overlay is open. The pause menu
+## and the character menu are deliberately NOT included here — they
+## are independent overlays (toggled by Escape and I/E/C/P/S
+## respectively) and the player should be able to open either one
+## without having to dismiss the other first. Only the cooking table,
+## base interior, and settlement interior are "modal" in the sense
+## that they take over the world and need to be closed before any
+## other UI can be opened.
 func _is_ui_overlay_open() -> bool:
 	if _hud != null and is_instance_valid(_hud) and _hud.has_method("is_character_menu_open"):
 		if _hud.is_character_menu_open():
@@ -691,7 +707,10 @@ func _setup_hud() -> void:
 
 
 ## Called by the HUD's menu button. Opens the CharacterMenu (tabbed
-## shell) with the Inventory tab as default.
+## shell) with the Inventory tab as default. Always available — the
+## character menu is independent of the pause menu and other overlays
+## (e.g. pressing the menu button or the I/E/C/P/S hotkeys should
+## work even while the pause menu is open).
 func _open_character_menu() -> void:
 	if _hud == null or not is_instance_valid(_hud):
 		return
@@ -699,7 +718,7 @@ func _open_character_menu() -> void:
 
 
 ## Open the CharacterMenu to a specific tab. Called by keyboard
-## hotkeys (I/E/C/P/S).
+## hotkeys (I/E/C/P/S). Always available — see _open_character_menu.
 func open_character_tab(tab_id: String) -> void:
 	if _hud == null or not is_instance_valid(_hud):
 		return
@@ -1250,6 +1269,8 @@ func _try_cross_edge(dx: int, dy: int) -> void:
 	_update_rift_ui()
 	_update_npc_ui()
 	_update_mission_ui()
+	# Audio: re-evaluate ambient bed for the new biome.
+	_start_audio_for_current_region()
 	print("[HubWorld] Crossed to region (%d, %d) at local (%d, %d)" % [_player_q, _player_r, _local_x, _local_y])
 
 
@@ -1275,6 +1296,25 @@ func _update_tile_info() -> void:
 		] +
 		"[i]WASD to explore 512×512 map. Walk off edge to enter adjacent region. [b]M[/b] = World Map.[/i]"
 	)
+
+
+## Start the audio bed for the current hex. Safe to call from
+## `_ready` (no-op if the player isn't in a region yet) and from
+## `_try_cross_edge` after the local map swaps.
+func _start_audio_for_current_region() -> void:
+	var mm: Node = get_node_or_null("/root/MusicManager")
+	if mm != null and mm.has_method("play_track"):
+		mm.call("play_track", "exploration")
+	var aa: Node = get_node_or_null("/root/AmbientAudio")
+	if aa == null or not aa.has_method("map_biome"):
+		return
+	var tile: Dictionary = _tile_map.get("%d,%d" % [_player_q, _player_r], {})
+	var biome_name: String = str(tile.get("name", _local_map.get("biome", "")))
+	var ambient_key: String = aa.call("map_biome", biome_name) as String
+	if ambient_key.is_empty():
+		aa.call("stop_all", 0.5)
+	else:
+		aa.call("play_biome", ambient_key, 1.0)
 
 
 func _tick_rifts() -> void:

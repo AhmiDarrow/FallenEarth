@@ -12,7 +12,42 @@ var _biome_sounds: Dictionary = {
 	"desert": ["res://audio/desert/hot_wind_loop.ogg"],
 	"cave": ["res://audio/cave/water_drip_loop.ogg"],
 	"rift": ["res://audio/rift/eerie_drone.ogg"],
+	"settlement": ["res://audio/urban/industrial_hum.ogg"],
 }
+
+## World biome name → ambient key. The world has 10 distinct biomes
+## (Ash Wastes, Rust Canyons, Neon Bogs, Scorched Plains, Ironwood
+## Thicket, Glass Dunes, Corpse Fields, Stormspire Highlands, Toxin
+## Marshes, Dead City Outskirts). Each gets mapped to the closest
+## ambient bed that we actually have an .ogg for. Unknown / empty
+## names fall back to "wasteland" (the most common biome).
+var _biome_aliases: Dictionary = {
+	"ash wastes": "wasteland",
+	"rust canyons": "wasteland",
+	"ironwood thicket": "forest",
+	"scorched plains": "desert",
+	"glass dunes": "desert",
+	"neon bogs": "cave",
+	"toxin marshes": "cave",
+	"corpse fields": "cave",
+	"stormspire highlands": "wasteland",
+	"dead city outskirts": "urban",
+}
+
+
+## Map a world biome name to an ambient key. Returns "" if no match
+## (callers can pass that to play_biome to stop without restart).
+func map_biome(biome_name: String) -> String:
+	if biome_name.is_empty():
+		return ""
+	var key: String = biome_name.to_lower().strip_edges()
+	if _biome_sounds.has(key):
+		return key
+	if _biome_aliases.has(key):
+		return _biome_aliases[key]
+	# Default fallback — wasteland is the canonical "open badlands"
+	# bed we have audio for, and matches the default starting biome.
+	return "wasteland"
 
 var _current_biome: String = ""
 var _active_players: Array[AudioStreamPlayer] = []
