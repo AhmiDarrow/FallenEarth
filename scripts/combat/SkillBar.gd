@@ -101,17 +101,25 @@ func _build_children() -> void:
 
 
 func _make_slot(hotkey: int) -> Control:
-	# Make the slot a Button so the whole area is clickable. Add
-	# visual children (icon, hotkey, name, MP) to the Button; since
-	# they're added after the Button's own internals, they render
-	# on top of any default stylebox.
-	var slot := Button.new()
+	# Slot is a Control that holds all visual children. A transparent
+	# Button fills the slot for hit-testing + keyboard focus; the
+	# visual children render on top of it because they're added
+	# after the Button.
+	var slot := Control.new()
 	slot.name = "Slot_%d" % hotkey
 	slot.custom_minimum_size = Vector2(160, 80)
-	slot.flat = true
-	slot.focus_mode = Control.FOCUS_NONE
-	slot.mouse_filter = Control.MOUSE_FILTER_STOP
-	_slot_buttons.append(slot)
+	slot.mouse_filter = Control.MOUSE_FILTER_PASS
+	# Transparent click overlay so the whole 160x80 area is hit-testable
+	var btn := Button.new()
+	btn.name = "Click"
+	btn.anchor_right = 1.0
+	btn.anchor_bottom = 1.0
+	btn.flat = true
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.mouse_filter = Control.MOUSE_FILTER_STOP
+	btn.modulate = Color(1, 1, 1, 0)  # fully transparent
+	slot.add_child(btn)
+	_slot_buttons.append(btn)
 	# Icon (top-center)
 	var icon := TextureRect.new()
 	icon.name = "Icon"
