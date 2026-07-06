@@ -64,7 +64,7 @@ func _build_sprite() -> void:
 	_sprite.name = "Sprite3D"
 	_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_sprite.pixel_size = 0.01
-	_sprite.no_depth_test = true
+	_sprite.no_depth_test = false
 	_sprite.render_priority = 1.0
 	_sprite.position = Vector3(0, PAWN_HEIGHT, 0)
 	add_child(_sprite)
@@ -79,7 +79,7 @@ func _build_labels() -> void:
 	_name_label.outline_size = 0
 	_name_label.position = Vector3(0, PAWN_HEIGHT + 1.0, 0)
 	_name_label.pixel_size = 0.01
-	_name_label.no_depth_test = true
+	_name_label.no_depth_test = false
 	_name_label.render_priority = 2.0
 	add_child(_name_label)
 
@@ -91,7 +91,7 @@ func _build_labels() -> void:
 	_hp_label.outline_size = 0
 	_hp_label.position = Vector3(0, PAWN_HEIGHT + 0.5, 0)
 	_hp_label.pixel_size = 0.01
-	_hp_label.no_depth_test = true
+	_hp_label.no_depth_test = false
 	_hp_label.render_priority = 1.5
 	add_child(_hp_label)
 

@@ -100,7 +100,7 @@ func setup(gx: int, gy: int, terrain: int, materials: Dictionary) -> void:
 func _process(_delta: float) -> void:
 	if _mesh == null:
 		return
-	_mesh.visible = attackable or reachable or hover or blocked
+	_mesh.visible = true
 	_refresh_material()
 
 
