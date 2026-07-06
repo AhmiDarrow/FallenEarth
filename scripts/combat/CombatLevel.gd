@@ -123,6 +123,23 @@ func _ready() -> void:
 
 	# v0.11.0: Configure the arena with biome + grid size from
 	# the encounter, then place all units.
+	_configure_from_encounter()
+
+	# v0.11.0: Wire the arena's tile clicks back to the input
+	# handler.
+	if _arena != null:
+		for key in _arena._tiles:
+			var tile: CombatTile = _arena._tiles[key]
+			tile.clicked.connect(_on_tile_clicked)
+
+	# v0.11.0: Wire the action bar (if present).
+	if _action_bar != null and _action_bar.has_method("on_end_turn"):
+		_action_bar.on_end_turn = _on_end_turn_pressed
+		_action_bar.on_retreat = _on_retreat_pressed
+	# v0.11.0: Kick off the first turn.
+	_start_turn("player")
+	# v0.11.0: Show the initial prompt.
+	_update_top_prompt()
 
 
 ## v0.11.0: Read the actual viewport size. Prefers
@@ -219,24 +236,6 @@ func _apply_layout() -> void:
 		_skill_bar.offset_right = 288.0
 		_skill_bar.offset_top = -112.0
 		_skill_bar.offset_bottom = -16.0
-
-	_configure_from_encounter()
-
-	# v0.11.0: Wire the arena's tile clicks back to the input
-	# handler.
-	if _arena != null:
-		for key in _arena._tiles:
-			var tile: CombatTile = _arena._tiles[key]
-			tile.clicked.connect(_on_tile_clicked)
-
-	# v0.11.0: Wire the action bar (if present).
-	if _action_bar != null and _action_bar.has_method("on_end_turn"):
-		_action_bar.on_end_turn = _on_end_turn_pressed
-		_action_bar.on_retreat = _on_retreat_pressed
-	# v0.11.0: Kick off the first turn.
-	_start_turn("player")
-	# v0.11.0: Show the initial prompt.
-	_update_top_prompt()
 
 
 func _configure_from_encounter() -> void:
