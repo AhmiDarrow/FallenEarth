@@ -57,6 +57,12 @@ var _encounter: Dictionary = {}
 @onready var _action_bar: Control = get_node_or_null("HUDLayer/ActionBar")
 @onready var _top_prompt: Control = get_node_or_null("HUDLayer/TopPrompt")
 @onready var _background: Node2D = get_node_or_null("BattleBackgroundLayer/BattleBackground")
+@onready var _feedback: Node2D = get_node_or_null("BattleLayer/CombatFeedback")
+
+## v0.11.0: Cached viewport size (read in _ready, used to center
+## the arena + position the UI elements). The DisplayManager
+## picks the resolution; we adapt to whatever it is.
+var _viewport_size: Vector2i = Vector2i(1280, 720)
 
 
 func _ready() -> void:
@@ -89,6 +95,13 @@ func _ready() -> void:
 	var aa: Node = get_node_or_null("/root/AmbientAudio")
 	if aa != null and aa.has_method("stop_all"):
 		aa.call("stop_all", 0.4)
+	# v0.11.0: Read the actual viewport size from the
+	# DisplayManager (so we adapt to whatever resolution the
+	# player selected in the game settings) and re-center the
+	# arena + UI elements around it. Falls back to the project's
+	# window size if DisplayManager isn't ready.
+	_viewport_size = _read_viewport_size()
+	_apply_layout()
 	# v0.11.0: Build the services.
 	_turn_serv = TurnServiceScript.new()
 	_player_serv = PlayerServiceScript.new()
@@ -110,6 +123,103 @@ func _ready() -> void:
 
 	# v0.11.0: Configure the arena with biome + grid size from
 	# the encounter, then place all units.
+
+
+## v0.11.0: Read the actual viewport size. Prefers
+## DisplayManager.resolution_width/_height (the player-selected
+## resolution in the game settings), falls back to the
+## viewport rect, then to a hardcoded 1280x720.
+func _read_viewport_size() -> Vector2i:
+	var dm: Node = get_node_or_null("/root/DisplayManager")
+	if dm != null:
+		var w: int = int(dm.get("resolution_width"))
+		var h: int = int(dm.get("resolution_height"))
+		if w > 0 and h > 0:
+			return Vector2i(w, h)
+	# get_viewport_rect() returns a Rect2 whose .size is a Vector2.
+	var vp_size: Vector2 = get_viewport_rect().size
+	if vp_size.x > 0 and vp_size.y > 0:
+		return Vector2i(int(vp_size.x), int(vp_size.y))
+	return Vector2i(1280, 720)
+
+
+## v0.11.0: Center the arena + position the UI elements based
+## on the current viewport size. Called from _ready after
+## _viewport_size is set, and again from _process if the
+## viewport size changes (e.g. window resize in windowed mode).
+func _apply_layout() -> void:
+	# v0.11.0: Center the arena at the viewport midpoint.
+	# The arena is 7x7 = 280px wide/tall (CELL_SIZE 40), so the
+	# grid's top-left is at (vw/2 - 140, vh/2 - 140) and the
+	# arena node is at that position (each cell positions itself
+	# relative to the arena's origin).
+	if _arena != null:
+		var arena_pos: Vector2 = Vector2(
+			_viewport_size.x * 0.5 - 140.0,
+			_viewport_size.y * 0.5 - 140.0
+		)
+		_arena.position = arena_pos
+		# CombatFeedback at v0.10.8 used the same offset; new
+		# architecture doesn't have CombatFeedback anymore but
+		# other systems (CombatHPBar) may position relative to
+		# the arena's center. Apply the same center offset if
+		# such a system exists.
+		if _feedback != null:
+			_feedback.position = Vector2(_viewport_size.x * 0.5, _viewport_size.y * 0.5)
+	# v0.11.0: TopPrompt — anchored to top-center, 124px from
+	# the top of the viewport. Use a center-anchor + offsets so
+	# it adapts to any viewport size.
+	if _top_prompt != null:
+		_top_prompt.anchor_left = 0.5
+		_top_prompt.anchor_right = 0.5
+		_top_prompt.anchor_top = 0.0
+		_top_prompt.anchor_bottom = 0.0
+		_top_prompt.offset_left = -180.0
+		_top_prompt.offset_right = 180.0
+		_top_prompt.offset_top = 124.0
+		_top_prompt.offset_bottom = 172.0
+	# v0.11.0: ActionBar — anchored to bottom-center, 160px
+	# from the bottom of the viewport.
+	if _action_bar != null:
+		_action_bar.anchor_left = 0.5
+		_action_bar.anchor_right = 0.5
+		_action_bar.anchor_top = 1.0
+		_action_bar.anchor_bottom = 1.0
+		_action_bar.offset_left = -180.0
+		_action_bar.offset_right = 180.0
+		_action_bar.offset_top = -160.0
+		_action_bar.offset_bottom = -124.0
+	# v0.11.0: UnitInfoCard — bottom-left, fixed offset.
+	if _unit_info_card != null:
+		_unit_info_card.anchor_left = 0.0
+		_unit_info_card.anchor_right = 0.0
+		_unit_info_card.anchor_top = 1.0
+		_unit_info_card.anchor_bottom = 1.0
+		_unit_info_card.offset_left = 16.0
+		_unit_info_card.offset_right = 304.0  # 16 + 288 (PANEL_WIDTH)
+		_unit_info_card.offset_top = -208.0
+		_unit_info_card.offset_bottom = -16.0
+	# v0.11.0: TurnOrderBar — top-center, above the TopPrompt.
+	if _turn_order_bar != null:
+		_turn_order_bar.anchor_left = 0.5
+		_turn_order_bar.anchor_right = 0.5
+		_turn_order_bar.anchor_top = 0.0
+		_turn_order_bar.anchor_bottom = 0.0
+		_turn_order_bar.offset_left = -360.0
+		_turn_order_bar.offset_right = 360.0
+		_turn_order_bar.offset_top = 8.0
+		_turn_order_bar.offset_bottom = 112.0
+	# v0.11.0: SkillBar — bottom-center, below the ActionBar.
+	if _skill_bar != null:
+		_skill_bar.anchor_left = 0.5
+		_skill_bar.anchor_right = 0.5
+		_skill_bar.anchor_top = 1.0
+		_skill_bar.anchor_bottom = 1.0
+		_skill_bar.offset_left = -288.0
+		_skill_bar.offset_right = 288.0
+		_skill_bar.offset_top = -112.0
+		_skill_bar.offset_bottom = -16.0
+
 	_configure_from_encounter()
 
 	# v0.11.0: Wire the arena's tile clicks back to the input
@@ -253,6 +363,14 @@ func _start_turn(side: String) -> void:
 func _process(delta: float) -> void:
 	if _arena.res.is_ended:
 		return
+	# v0.11.0: Re-apply the layout if the viewport size changed
+	# (e.g. the user resized the window or switched resolution
+	# mid-combat). Only re-apply when the size actually changes
+	# to avoid per-frame churn.
+	var current_vp: Vector2i = _read_viewport_size()
+	if current_vp != _viewport_size:
+		_viewport_size = current_vp
+		_apply_layout()
 	# Animate the current pawn's movement along its path.
 	var current_unit: CombatUnit = _get_active_unit()
 	if current_unit != null and current_unit.is_moving:

@@ -20,10 +20,9 @@ var _panel: PanelContainer
 
 
 func _ready() -> void:
-	offset_top = 124
-	offset_left = -WIDTH * 0.5
-	offset_right = WIDTH * 0.5
-	offset_bottom = 124 + HEIGHT
+	# v0.11.0: Anchors and offsets are set by CombatLevel._apply_layout()
+	# which reads the actual viewport size from DisplayManager. Do not
+	# hardcode positions here — the orchestrator handles it.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_children()
 	visible = false

@@ -18,7 +18,6 @@ script = ExtResource("1_level")
 layer = 1
 
 [node name="CombatArena" type="Node2D" parent="ArenaLayer"]
-position = Vector2(640, 360)
 script = ExtResource("2_arena")
 
 [node name="HUDLayer" type="CanvasLayer" parent="."]

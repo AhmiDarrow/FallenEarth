@@ -13,14 +13,9 @@ var on_retreat: Callable = Callable()
 
 
 func _ready() -> void:
-	anchor_left = 0.5
-	anchor_right = 0.5
-	anchor_top = 1.0
-	anchor_bottom = 1.0
-	offset_left = -180
-	offset_right = 180
-	offset_top = -160
-	offset_bottom = -124
+	# v0.11.0: Anchors and offsets are set by CombatLevel._apply_layout()
+	# which reads the actual viewport size from DisplayManager. Do not
+	# hardcode positions here — the orchestrator handles it.
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_children()
 
