@@ -310,6 +310,6 @@ func _add_check_row(parent: Control, label_text: String) -> CheckBox:
 func _on_back() -> void:
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if is_instance_valid(gs) and not gs.get_character_data().is_empty():
-		get_tree().change_scene_to_file("res://scenes/HubWorld.tscn")
+		get_tree().call_deferred("change_scene_to_file", "res://scenes/HubWorld.tscn")
 	else:
-		get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
+		get_tree().call_deferred("change_scene_to_file", "res://scenes/ui/MainMenu.tscn")
