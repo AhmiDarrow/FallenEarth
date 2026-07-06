@@ -1,70 +1,78 @@
 ---
-name: v091c-perf-pass
-description: Performance pass — chunk load 7490ms → 195ms (38x), per-move 25ms → 0.35ms (71x), steady-state 40ms/frame → 6.9ms/frame (145 FPS). Four independent bottlenecks fixed.
+name: v100-combat-overhaul
+description: v0.10.0 Combat Overhaul — real sprites, AI for mobs, fancy UI, biome backgrounds. 4 phases, all green.
 ---
-# v0.9.1c Performance Pass
+# v0.10.0 Combat Overhaul
 
-## User complaint
-"Movement and chunk load is pretty slow and laggy feeling."
+## User request
+"Combat overhaul, it should use the same sprite system as the overworld, sprites
+and tiles. We also need to write AI for the mobs. and also need the battle ui to
+look fancier and more stylish, generate any assets needed. review final fantasy
+tactics for inspiration on how this should look and flow but with our styles.
+It should have matching backgrounds surrounding the battlegrid tiles."
 
-## Profile findings — 4 independent bottlenecks
+## What shipped (4 phases, all green)
 
-### 1. Hex state deep copies (25ms per move) — the BIG one
-`GameState.get_hex_state`, `get_current_hex_state`, `ensure_hex_state`,
-and `save_hex_state` all did `duplicate(true)` on the hex state, which
-has 262k bytes of terrain + 5714 nested dicts. Every move was
-duplicating the entire hex state twice. Fixed by switching all four
-to `duplicate(false)`. Per-move call: 25ms → 0.35ms (**71x**).
+### Phase 1 — Visual overhaul
+- `scripts/combat/BattleCell.gd` — terrain tile + height mark + range highlight
+- `scripts/combat/BattleGridView.gd` — 7×7 grid, real biome `ground.png` tiles
+- `scripts/combat/BattleUnit.gd` — mob sprite + facing flip + HP/CT bars + tweens
+- `scripts/combat/BattleBackground.gd` — biome tint + ~64 scattered tiles + 18 motes
+- `scripts/TacticalCombat.gd` refactored; `scenes/TacticalCombat.tscn` restructured
+- **Old `Button[]` grid + text symbols (◎/☠/✕) removed**
 
-### 2. Per-node Sprite2D creation (1780ms chunk load)
-`HarvestNode._ready` and `FloorPickup._ready` each created a per-node
-Sprite2D and loaded a texture. 3748+1966=5714 nodes × ~310µs = 1780ms.
-Fixed by removing the per-node Sprite2D creation. Chunk load: 7490ms
-→ 195ms (**38x**). ⚠️ This means trees/rocks/pickups are no longer
-visible on the overworld — see TODO below.
+### Phase 2 — AI overhaul
+- `scripts/ai/CombatAI.gd` — base + `chebyshev` / `facing_bonus` / `score_attack` helpers
+- `scripts/ai/AggressiveAI.gd` — melee rush, prefers flanking
+- `scripts/ai/RangedAI.gd` — maintains distance, retreats too close
+- `scripts/ai/CasterAI.gd` — prefers skills, AOE positioning
+- `scripts/ai/DefensiveAI.gd` — guards allies, retreats < 30% HP
+- `scripts/ai/BossAI.gd` — 3-phase enrage, signature ability once
+- `scripts/ai/CombatAIEngine.gd` — factory + state builder
+- `scripts/CombatManager.gd._run_enemy_turn` refactored to dispatch to AI
+- `data/mobs.json` — `ai_archetype` added to all 27 mobs (5 archetypes)
 
-### 3. Per-move marker rebuild (~10ms per move)
-`HubWorld._build_local_view` (called on every move) cleared and
-re-added all 12 mob sprites + 1-2 rift markers + 1 NPC marker, even
-though none of them change as the player walks. Fixed with a
-`_world_markers_dirty` flag that's set only on actual mob/rift/NPC
-state changes. Now zero cost on every move.
+### Phase 3 — UI polish (FFT-style HUD)
+- `scripts/combat/BattleHUD.gd` — top portrait + HP/MP/CT bars
+- `scripts/combat/TurnOrderPanel.gd` — right sidebar, 6 mini-portraits + CT
+- `scripts/combat/BattleResultPanel.gd` — styled victory/defeat
+- `scripts/combat/CombatPopup.gd` — MISS/CRITICAL/BACK floating text
+- `scripts/combat/TargetingReticle.gd` — 4-corner pulsing bracket
 
-### 4. Per-move O(N) cell lookups (~10ms per move)
-`LocalMapView.get_floor_pickup_at` and `get_resource_nodes_near`
-iterated all 1966 + 3748 layer children per call. Fixed with
-`_node_by_cell` / `_pickup_by_cell` Dictionaries for O(1) lookups
-and O(K²) near queries.
+### Phase 4 — Assets (PixelLab MCP)
+- `assets/battle_ui/battle_hud_panel.png` (512×256) — dark rusted metal
+- `assets/battle_ui/victory_panel.png` (512×256) — stained parchment
+- `assets/battle_ui/defeat_panel.png` (512×256) — cracked crimson stone
+- `assets/battle_ui/reticle.png` (64×64) — golden yellow brackets
+- `assets/battle_ui/icon_attack.png` (32×32) — sword + shield
+- `assets/battle_ui/icon_skill.png` (32×32) — magical blue flame
+- `assets/battle_ui/icon_wait.png` (32×32) — hourglass
 
-### Bonus: per-frame _process only ticks active respawning nodes
-Added `_active_respawn_nodes` to HubWorld. Was iterating 16k+ nodes
-per frame even though 99% were not depleted. Now iterates 0-3.
+## Verification
 
-## Files changed
-- `scripts/HubWorld.gd` — dirty-flag markers, active respawn list
-- `scripts/LocalMapView.gd` — cell-Dictionary indexes
-- `scripts/HarvestNode.gd` / `FloorPickup.gd` — no per-node sprite
-- `scripts/GameState.gd` — shallow `duplicate(false)` everywhere
-- `data/resource_nodes.json` — densities quartered (16k→3.7k nodes)
-- `tools/perf_profile.gd` — new profile with 4 budgets
+| File | Checks | Status |
+|------|--------|--------|
+| `tools/smoke_combat_v100.gd` | 27 (visual) | All pass |
+| `tools/smoke_combat_ai.gd` | 11 (AI) | All pass |
+| `tools/smoke_combat_ui.gd` | 15 (UI) | All pass |
+| `validate_scripts.gd` | All | All OK |
+| `tools/boot_probe.gd` | 60 frames | 0 errors |
+| `tools/smoke_combat_feedback.gd` | 4 (legacy) | All pass (no regression) |
 
-## Performance summary
+## Architecture constraints held
+- Combat reads from `data/mobs.json`, `data/tilesets/{biome}/`, `assets/mobs/{id}.png`
+  — same pipeline as overworld. No parallel sprite system.
+- Biome backgrounds use the existing biome `tilesets/{biome}/ground.png` scattered
+  around the grid + biome-themed tints + drifting motes (no new tile pipeline).
+- 7 UI assets generated via PixelLab MCP (uses existing MCP key, 4607→4487
+  generations remaining after this session).
 
-| Metric | v0.9.1b | v0.9.1c | Improvement |
-|--------|---------|---------|-------------|
-| Generator.generate | 108ms | 59ms | 1.8x |
-| Configure (chunk load) | 7490ms | 195ms | **38x** |
-| Frame time | ~40ms (25 FPS) | 6.9ms (**145 FPS**) | 5.7x |
-| Per-move call | 25ms | 0.35ms | **71x** |
-| Per-frame node iteration | 16k+ | 0-3 | infinite on idle |
-
-All regression tests pass. No fixtures broken.
-
-## TODO (P0 for next session)
-**Re-add visual for resource nodes + floor pickups.** The Sprite2D
-removal means trees/rocks/ore/crystals/fauna/sticks/stones are no
-longer visible. The 66ms populate has data but no visuals. Cleanest
-fix: integrate a `MultiMeshResourceVisual` (I prototyped one in
-v0.9.1c scratch, see deleted `scripts/MultiMeshResourceVisual.gd`)
-that batches all instances of a sprite type into a single draw call.
-5714 entities → ~5 draw calls. Even faster than current 66ms.
+## What's next (P1 for future)
+- Action menu polish — wire the 3 action icons (attack/skill/wait) into the
+  bottom HBoxContainer buttons (currently text-only).
+- TargetingReticle follow-the-cursor in `TacticalCombat._process` (currently
+  created but not yet positioned by mouse).
+- CombatPopup spawn integration in `_resolve_attack` (MISS / CRITICAL / BACK!
+  popups based on facing_bonus + crit roll).
+- MultiMesh resource visual re-add (deferred from v0.9.1c) so the overworld
+  trees/rocks are visible again.

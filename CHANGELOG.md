@@ -1,5 +1,117 @@
 ---
 
+## [Unreleased — v0.10.0] — Combat Overhaul (FFT-style)
+
+- **v0.10.0** — Complete combat overhaul. The 7×7 grid of plain
+  `ColorRect` buttons with text symbols is now a real tactical
+  scene with the same sprite + tile pipeline as the overworld.
+
+  ### Visual overhaul (Phase 1)
+  - `scripts/combat/BattleCell.gd` — one cell: terrain tile, height
+    mark, range highlight (move/attack/skill). Click routes to the
+    parent grid.
+  - `scripts/combat/BattleGridView.gd` — 7×7 grid, configurable size.
+    Lays out 49 cells with real biome `ground.png` tiles. Spawns
+    `BattleUnit` nodes from the encounter's units array. Range
+    highlighting follows the player's subphase.
+  - `scripts/combat/BattleUnit.gd` — per-unit Node2D with the mob's
+    sprite (8 directions, flips for E/W), HP bar overlay, CT bar,
+    name label, walk tween, attack swing, hit flash, death fade.
+    Uses `assets/mobs/{id}.png` for enemies and the character
+    sprite folder for the player.
+  - `scripts/combat/BattleBackground.gd` — atmospheric backdrop:
+    biome-themed dark tint + ~64 scattered biome tiles around the
+    grid + 18 drifting motes (sine-wave tween) for motion.
+  - `scripts/TacticalCombat.gd` refactored to delegate to the new
+    components. Old `Button[]` grid, text symbols (◎/☠/✕), `_setup_grid`,
+    and `_update_grid` rendering are removed. `scenes/TacticalCombat.tscn`
+    restructured with a `BattleBackgroundLayer` (z=-10),
+    `BattleLayer` (z=1, contains the grid + feedback), and `HUDLayer`
+    (z=10) for the existing status/turn-order/buttons.
+
+  ### AI overhaul (Phase 2)
+  - `scripts/ai/CombatAI.gd` — base class. Static helpers
+    `chebyshev`, `facing_toward`, `facing_bonus`, and `score_attack`.
+  - `scripts/ai/AggressiveAI.gd` — melee rush. Prefers flanking
+    (back/side bonus) and finishing off low-HP targets.
+  - `scripts/ai/RangedAI.gd` — maintains optimal distance. Retreats
+    if too close; advances cautiously otherwise.
+  - `scripts/ai/CasterAI.gd` — prefers skills when MP ≥ cost.
+    Positions for max AOE skill targets. Falls back to attack when
+    out of MP.
+  - `scripts/ai/DefensiveAI.gd` — guards low-HP allies. Retreats at
+    < 30% HP. Uses height advantage.
+  - `scripts/ai/BossAI.gd` — multi-phase: aggressive at >50% HP,
+    mixed AOE at 25-50%, enrage at <25% with signature ability used
+    once.
+  - `scripts/ai/CombatAIEngine.gd` — factory (`build(archetype)`)
+    and state builder (`build_state(...)`).
+  - `scripts/CombatManager.gd._run_enemy_turn` refactored to call
+    the AI and execute the returned action (move / attack / skill
+    / wait / defend). Per-unit AI instances are cached (BossAI
+    keeps state across turns).
+  - `data/mobs.json` — `ai_archetype` added to all 27 mobs.
+    Distribution: aggressive=11, defensive=3, ranged=4, boss=5,
+    caster=4.
+
+  ### UI polish (Phase 3)
+  - `scripts/combat/BattleHUD.gd` — top status bar with portrait,
+    name, class, HP / MP / CT bars. Auto-refreshes on
+    `active_unit_changed` and `unit_updated`.
+  - `scripts/combat/TurnOrderPanel.gd` — right-side sidebar with
+    mini-portraits and CT progress for the next 6 units. Highlights
+    the active unit.
+  - `scripts/combat/BattleResultPanel.gd` — styled victory / defeat
+    panel with biome-themed backdrop. Pop-in tween.
+  - `scripts/combat/CombatPopup.gd` — floating "MISS" / "CRITICAL" /
+    "BACK!" / "SIDE" / "DODGE" / "COUNTER" text with zoom-in
+    + rise + fade.
+  - `scripts/combat/TargetingReticle.gd` — 4-corner bracket sprite
+    that follows the cursor during TARGET_ATTACK / TARGET_SKILL.
+    Pulses (1.0 ↔ 1.15 scale). Color-coded for attack / skill / move.
+
+  ### Assets (Phase 4, PixelLab MCP)
+  - `assets/battle_ui/battle_hud_panel.png` — dark rusted metal
+    panel with weathered edges and glowing teal accents (512×256).
+  - `assets/battle_ui/victory_panel.png` — stained parchment with
+    iron rivets (512×256).
+  - `assets/battle_ui/defeat_panel.png` — cracked crimson stone
+    tablet (512×256).
+  - `assets/battle_ui/reticle.png` — 4-corner golden yellow
+    targeting reticle (64×64).
+  - `assets/battle_ui/icon_attack.png` — sword-crossing-shield
+    action icon (32×32).
+  - `assets/battle_ui/icon_skill.png` — magical blue flame (32×32).
+  - `assets/battle_ui/icon_wait.png` — hourglass wait symbol
+    (32×32).
+
+  ### Smoke tests
+  - `tools/smoke_combat_v100.gd` — Phase 1 (visual): 27 checks,
+    covers BattleCell, BattleGridView, BattleUnit, BattleBackground,
+    terrain generation, scene composition, legacy removal.
+  - `tools/smoke_combat_ai.gd` — Phase 2 (AI): 11 checks, covers
+    each archetype on controlled 7×7 grids, plus mobs.json
+    distribution check.
+  - `tools/smoke_combat_ui.gd` — Phase 3 (UI): 15 checks, covers
+    HUD updates, turn-order rendering, victory/defeat panel,
+    popups, reticle, asset presence.
+
+  ### Modified
+  - `scripts/CombatManager.gd` — added `ai_archetype` / `abilities`
+    / `mp` fields to enemy units. `_run_enemy_turn` refactored to
+    call the AI. New helpers: `_compute_attackable`,
+    `_compute_skillable`, `_build_blocked_grid`, `_chebyshev`.
+  - `data/mobs.json` — `ai_archetype` added to all 27 mobs.
+  - `validate_scripts.gd` — new scripts added.
+  - `docs/NEXT_TASKS.md` — v0.10.0 plan documented.
+
+## [v0.9.0] — Settlement Life & Combat Polish
+
+(Phases A-F — see `memory/SESSION_NOTES/HANDOFF_2026-07-05_charmenu_pause_pattern.md`
+and related session notes for the full breakdown.)
+
+---
+
 ## [Unreleased — v0.9.1c] — Performance pass
 
 - **v0.9.1c** — Four independent bottlenecks fixed; gameplay now

@@ -1,19 +1,35 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.9.0
-**Last Updated:** 2026-07-05 23:45
+**Version:** 0.10.0
+**Last Updated:** 2026-07-05 23:55
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.9.0 ALL PHASES COMPLETE (A-F). Milestone done.
+**Current Phase:** v0.10.0 Combat Overhaul — ALL 4 PHASES COMPLETE. Milestone done.
 
 ## Summary
 
-v0.9.0 "Settlement Life & Combat Polish" milestone is complete. All 6 phases (A-F) implemented:
-- **Phase A:** NPC Dialogue System — 11 dialogue trees, DialogueManager autoload, DialogueUI
-- **Phase B:** Settlement Ambient Behavior — NPCWanderer state machine, room rendering improvements
-- **Phase C:** Quest Tracker UI — QuestTracker autoload, collapsible Tab-toggled panel
-- **Phase D:** Combat Feedback — FloatingDamage numbers, CombatHPBar, kill counter
-- **Phase E:** Quality of Life — MinimapOverhaul icons, Sort/Loot All buttons, OptionsMenu
-- **Phase F:** Polish Pass — TransitionScreen fade effects, AmbientAudio biome loops, MusicManager crossfade, LoadingTips (18 tips)
+v0.10.0 "Combat Overhaul" is complete. All 4 phases implemented and tested:
+- **Phase 1 — Visual overhaul:** BattleCell, BattleGridView, BattleUnit, BattleBackground. Real
+  biome terrain tiles, mob sprites with facing + HP/CT overlays, biome-themed backdrop
+  with vignette + drifting motes. Old `Button[]` grid + text symbols (◎/☠/✕) removed.
+- **Phase 2 — AI overhaul:** 5 archetypes (Aggressive, Ranged, Caster, Defensive, Boss)
+  wired into CombatManager._run_enemy_turn. `ai_archetype` field added to all 27 mobs
+  in data/mobs.json. BossAI has 3-phase enrage with signature ability.
+- **Phase 3 — UI polish:** BattleHUD (portrait + HP/MP/CT bars), TurnOrderPanel
+  (mini-portraits + CT progress for next 6 units), BattleResultPanel (styled victory/
+  defeat with biome backdrop), CombatPopup (MISS/CRITICAL/BACK popups), TargetingReticle
+  (4-corner pulsing bracket).
+- **Phase 4 — Asset generation:** 7 PixelLab MCP assets in `assets/battle_ui/`:
+  battle_hud_panel.png, victory_panel.png, defeat_panel.png, reticle.png,
+  icon_attack.png, icon_skill.png, icon_wait.png.
+
+## Smoke tests
+
+| File | Checks | Status |
+|------|--------|--------|
+| `tools/smoke_combat_v100.gd` | 27 (Phase 1) | All pass |
+| `tools/smoke_combat_ai.gd` | 11 (Phase 2) | All pass |
+| `tools/smoke_combat_ui.gd` | 15 (Phase 3) | All pass |
+| `validate_scripts.gd` | All | All OK |
 
 ## Playable Flow (intended — unchanged)
 
