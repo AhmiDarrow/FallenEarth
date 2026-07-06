@@ -27,6 +27,27 @@ signal cell_clicked(x: int, y: int)
 signal cell_hovered(x: int, y: int, hovered: bool)
 
 
+## Return the BattleUnit by id (or null).
+func get_unit(unit_id: String) -> BattleUnit:
+	return _units.get(unit_id, null)
+
+
+## Return all current BattleUnit nodes in spawn order.
+func get_all_units() -> Array:
+	var out: Array = []
+	for uid in _units:
+		var bu: BattleUnit = _units[uid]
+		if is_instance_valid(bu):
+			out.append(bu)
+	return out
+
+
+## Return the world-space center of a grid cell, in the grid's parent
+## local space. Useful for the targeting reticle to snap to cells.
+func cell_to_world(x: int, y: int) -> Vector2:
+	return Vector2(x * CELL_SIZE + CELL_SIZE * 0.5, y * CELL_SIZE + CELL_SIZE * 0.5)
+
+
 func _ready() -> void:
 	_build_children()
 

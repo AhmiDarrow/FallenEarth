@@ -213,20 +213,20 @@ func _test_battle_background_renders() -> void:
 	root.add_child(bg)
 	await process_frame
 	bg.configure("Ash Wastes", 7, Vector2(1280, 720))
-	if bg._bg == null:
-		_fail("BattleBackground: _bg ColorRect not built")
+	if bg._bg_tile == null:
+		_fail("BattleBackground: _bg_tile TextureRect not built")
 	else:
-		_ok("BattleBackground: BG ColorRect built and tinted")
+		_ok("BattleBackground: BG TextureRect built and tinted")
 	if bg._tile_layer.get_child_count() == 0:
-		_fail("BattleBackground: no tiles scattered around grid")
+		_fail("BattleBackground: no decor scattered around grid")
 	else:
-		_ok("BattleBackground: %d tiles scattered" % bg._tile_layer.get_child_count())
+		_ok("BattleBackground: %d decor scattered" % bg._tile_layer.get_child_count())
 	if bg._particles.get_child_count() == 0:
 		_fail("BattleBackground: no motes spawned")
 	else:
 		_ok("BattleBackground: %d motes spawned" % bg._particles.get_child_count())
 	bg.configure("Neon Bogs", 5, Vector2(1280, 720))
-	if bg._bg.color == Color(0.12, 0.09, 0.07, 1.0):
+	if bg._tint.color == Color(0.42, 0.28, 0.18, 0.55):
 		_fail("BattleBackground: Neon Bogs tint should differ from Ash Wastes")
 	else:
 		_ok("BattleBackground: Neon Bogs tint differs (post-apoc palette)")

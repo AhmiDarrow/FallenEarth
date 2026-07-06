@@ -245,6 +245,19 @@ func _set_portrait(unit: Dictionary) -> void:
 		_portrait.texture = _placeholder_portrait()
 
 
+## Public method to force-refresh the card from the current
+## active unit. Useful after status changes (level up, etc.).
+func force_refresh() -> void:
+	refresh()
+
+
+## Public read-only access to the last-rendered unit name.
+func get_unit_name() -> String:
+	if _name_label != null:
+		return _name_label.text
+	return ""
+
+
 func _placeholder_portrait() -> Texture2D:
 	var img := Image.create(PORTRAIT_SIZE, PORTRAIT_SIZE, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0.3, 0.3, 0.4, 1.0))

@@ -10,10 +10,14 @@ const HIGHLIGHT_ATTACK := 2
 const HIGHLIGHT_SKILL := 3
 const HIGHLIGHT_CURSOR := 4
 
-const COLOR_MOVE := Color(0.20, 0.55, 0.85, 0.45)
-const COLOR_ATTACK := Color(0.90, 0.20, 0.20, 0.55)
-const COLOR_SKILL := Color(0.65, 0.20, 0.90, 0.50)
-const COLOR_CURSOR := Color(1.0, 0.95, 0.4, 0.55)
+# FFT-style: move range is a soft white tint (semi-transparent so the
+# ground texture still shows through), attack is a red X-overlay, and
+# skill is a purple X-overlay. Stronger alpha than the old full-cell
+# tints so the cells really pop without hiding the ground.
+const COLOR_MOVE := Color(1.0, 1.0, 1.0, 0.42)
+const COLOR_ATTACK := Color(0.95, 0.20, 0.20, 0.55)
+const COLOR_SKILL := Color(0.65, 0.20, 0.90, 0.55)
+const COLOR_CURSOR := Color(1.0, 0.95, 0.4, 0.65)
 const HEIGHT_COLOR := Color(0.20, 0.18, 0.30, 0.85)
 const BLOCKED_TINT := Color(0.05, 0.04, 0.08, 1.0)
 
@@ -28,6 +32,7 @@ var terrain_kind: int = 0
 var _base: Sprite2D
 var _height_label: Label
 var _highlight: ColorRect
+var _highlight_border: Control
 var _area: Area2D
 
 signal clicked(x: int, y: int)
@@ -71,6 +76,13 @@ func _build_children() -> void:
 	_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_highlight.z_index = 3
 	add_child(_highlight)
+	# 4-edge border overlay (FFT style). Default hidden; shown for
+	# move/attack/skill so the cell reads as a "target tile" with the
+	# ground still visible inside. We use ColorRects for each edge
+	# to keep the implementation minimal — no extra control nodes.
+	_highlight_border = _build_border()
+	_highlight_border.visible = false
+	add_child(_highlight_border)
 
 	_area = Area2D.new()
 	_area.name = "Area2D"
@@ -120,17 +132,76 @@ func set_highlight(kind: int) -> void:
 		HIGHLIGHT_MOVE:
 			_highlight.color = COLOR_MOVE
 			_highlight.visible = true
+			_set_border_color(COLOR_MOVE)
 		HIGHLIGHT_ATTACK:
-			_highlight.color = COLOR_ATTACK
-			_highlight.visible = true
+			_highlight.color = Color(0, 0, 0, 0)
+			_highlight.visible = false
+			_set_border_color(COLOR_ATTACK)
+			_highlight_border.visible = true
+			return
 		HIGHLIGHT_SKILL:
-			_highlight.color = COLOR_SKILL
-			_highlight.visible = true
+			_highlight.color = Color(0, 0, 0, 0)
+			_highlight.visible = false
+			_set_border_color(COLOR_SKILL)
+			_highlight_border.visible = true
+			return
 		HIGHLIGHT_CURSOR:
 			_highlight.color = COLOR_CURSOR
 			_highlight.visible = true
+			_set_border_color(COLOR_CURSOR)
 		_:
 			_highlight.visible = false
+			_highlight_border.visible = false
+
+
+## Build a 4-edge border control sized to the cell. Each edge is a
+## 1px-tall (or 2px for a chunky pixel-art look) ColorRect; the
+## edges are recolored by `_set_border_color` when the highlight
+## changes. This gives the FFT-style "white tile" outlined look.
+func _build_border() -> Control:
+	var border := Control.new()
+	border.name = "HighlightBorder"
+	border.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	border.size = Vector2(CELL_SIZE, CELL_SIZE)
+	border.position = Vector2.ZERO
+	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border.z_index = 4
+	var t := ColorRect.new()
+	t.name = "Top"
+	t.color = COLOR_MOVE
+	t.size = Vector2(CELL_SIZE, 2)
+	t.position = Vector2(0, 0)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border.add_child(t)
+	var b := ColorRect.new()
+	b.name = "Bottom"
+	b.color = COLOR_MOVE
+	b.size = Vector2(CELL_SIZE, 2)
+	b.position = Vector2(0, CELL_SIZE - 2)
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border.add_child(b)
+	var l := ColorRect.new()
+	l.name = "Left"
+	l.color = COLOR_MOVE
+	l.size = Vector2(2, CELL_SIZE)
+	l.position = Vector2(0, 0)
+	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border.add_child(l)
+	var r := ColorRect.new()
+	r.name = "Right"
+	r.color = COLOR_MOVE
+	r.size = Vector2(2, CELL_SIZE)
+	r.position = Vector2(CELL_SIZE - 2, 0)
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	border.add_child(r)
+	return border
+
+
+func _set_border_color(c: Color) -> void:
+	if _highlight_border == null:
+		return
+	for child in _highlight_border.get_children():
+		(child as ColorRect).color = c
 
 
 func refresh_height_visual() -> void:

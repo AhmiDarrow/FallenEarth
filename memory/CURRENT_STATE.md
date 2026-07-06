@@ -1,26 +1,46 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.10.0
-**Last Updated:** 2026-07-05 23:55
+**Version:** 0.10.1
+**Last Updated:** 2026-07-06 04:55
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.10.0 Combat Overhaul — ALL 4 PHASES COMPLETE. Milestone done.
+**Current Phase:** v0.10.1 Combat UI Polish — COMPLETE.
 
 ## Summary
 
-v0.10.0 "Combat Overhaul" is complete. All 4 phases implemented and tested:
-- **Phase 1 — Visual overhaul:** BattleCell, BattleGridView, BattleUnit, BattleBackground. Real
-  biome terrain tiles, mob sprites with facing + HP/CT overlays, biome-themed backdrop
-  with vignette + drifting motes. Old `Button[]` grid + text symbols (◎/☠/✕) removed.
-- **Phase 2 — AI overhaul:** 5 archetypes (Aggressive, Ranged, Caster, Defensive, Boss)
-  wired into CombatManager._run_enemy_turn. `ai_archetype` field added to all 27 mobs
-  in data/mobs.json. BossAI has 3-phase enrage with signature ability.
-- **Phase 3 — UI polish:** BattleHUD (portrait + HP/MP/CT bars), TurnOrderPanel
-  (mini-portraits + CT progress for next 6 units), BattleResultPanel (styled victory/
-  defeat with biome backdrop), CombatPopup (MISS/CRITICAL/BACK popups), TargetingReticle
-  (4-corner pulsing bracket).
-- **Phase 4 — Asset generation:** 7 PixelLab MCP assets in `assets/battle_ui/`:
-  battle_hud_panel.png, victory_panel.png, defeat_panel.png, reticle.png,
-  icon_attack.png, icon_skill.png, icon_wait.png.
+v0.10.0 "Combat Overhaul" complete. v0.10.1 "Combat UI Polish" complete
+on top — adds FFT-style selection arrow, top-center prompt banner, biome
+decor prop scattering (boulders/skulls/cacti/etc), white-bg name plates
+above units, FFT-style metal action buttons, border-frame attack/skill
+range highlights. All 5 smoke test suites pass.
+
+## v0.10.1 polish details
+
+**New components:**
+- `scripts/combat/UnitSelectionArrow.gd` — cyan down-arrow above active unit
+- `scripts/combat/TopPrompt.gd` — top-center styled prompt ("Select a white tile to move")
+- `scripts/combat/UnitNamePlate.gd` — white-bg name labels above units
+
+**BattleBackground overhaul:** replaced 18-tile debris/vegetation scatter
+with 22 biome-themed decor props (boulders, skulls, cacti, rubble, thorns,
+stumps, roots). 7 new decor types × 3-4 variants = 25 PNGs in
+`assets/battle_decor/`.
+
+**BattleCell polish:** HIGHLIGHT_MOVE = soft white tint; HIGHLIGHT_ATTACK/
+HIGHLIGHT_SKILL = border-only frames so ground shows inside.
+
+**TacticalCombat:** new `_build_bottom_action_bar()` creates a dedicated
+bottom-center HBox with styled End Turn + Retreat buttons. New
+`_style_action_button()` / `_style_finish_button()` apply chunky
+metal styleboxes. Legacy MainVBox labels (status/turn_order/instructions/
+log) hidden — replaced by TopPrompt + TurnOrderBar + UnitInfoCard + SkillBar.
+
+**New assets (25 PNGs):**
+- `assets/battle_ui/`: selection_arrow, top_prompt_panel, name_plate_panel,
+  button_red/blue/grey/gold (7 new files)
+- `assets/battle_decor/`: boulder ×4, skull ×3, cactus ×4, rubble ×4,
+  thorns ×4, stump ×3, roots ×3 (18 PNGs total)
+- `tools/generate_battle_decor_imports.py` — generates .import files
+  for headless workflows (Godot rewrites them on next editor import).
 
 ## Smoke tests
 
@@ -29,6 +49,8 @@ v0.10.0 "Combat Overhaul" is complete. All 4 phases implemented and tested:
 | `tools/smoke_combat_v100.gd` | 27 (Phase 1) | All pass |
 | `tools/smoke_combat_ai.gd` | 11 (Phase 2) | All pass |
 | `tools/smoke_combat_ui.gd` | 15 (Phase 3) | All pass |
+| `tools/smoke_combat_polish.gd` | NEW v0.10.1 — 7 groups | All pass |
+| `tools/boot_combat.gd` | NEW v0.10.1 — full scene boot | All pass |
 | `validate_scripts.gd` | All | All OK |
 
 ## Playable Flow (intended — unchanged)

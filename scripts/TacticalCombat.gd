@@ -22,11 +22,13 @@ const BattleResultPanelScript = preload("res://scripts/combat/BattleResultPanel.
 const CombatFeedbackScript = preload("res://scripts/CombatFeedback.gd")
 const TargetingReticleScript = preload("res://scripts/combat/TargetingReticle.gd")
 const CombatPopupScript = preload("res://scripts/combat/CombatPopup.gd")
+const TopPromptScript = preload("res://scripts/combat/TopPrompt.gd")
 
 var _encounter: Dictionary = {}
 var _combat: Node = null
 var _grid_size: int = 7
 var _reticle: Control = null
+var _top_prompt: Control = null
 
 @onready var status_label: RichTextLabel = $HUDLayer/MainVBox/StatusLabel as RichTextLabel
 @onready var turn_order_label: RichTextLabel = $HUDLayer/MainVBox/TurnOrderLabel as RichTextLabel
@@ -55,6 +57,16 @@ var _result_panel: Control = null
 func _ready() -> void:
 	_load_encounter()
 	_grid_size = int(_encounter.get("grid_size", 7))
+
+	# Hide the legacy status/log/instructions labels; the new
+	# TopPrompt + TurnOrderBar + UnitInfoCard + SkillBar take their
+	# place. Keeps the right-side MainVBox around so the legacy
+	# `instructions_label` and `result_panel` references still
+	# resolve, but invisible.
+	status_label.visible = false
+	turn_order_label.visible = false
+	instructions_label.visible = false
+	log_label.visible = false
 
 	# Configure background first (uses viewport size for the layout).
 	var vp_size: Vector2 = get_viewport_rect().size
@@ -96,9 +108,17 @@ func _ready() -> void:
 	_apply_button_icon(skill_btn, "res://assets/battle_ui/icon_skill.png")
 	_apply_button_icon(wait_btn, "res://assets/battle_ui/icon_wait.png")
 	_apply_button_icon(finish_btn, "res://assets/battle_ui/end_turn_button.png")
+	# v0.10.1 polish: restyle the action buttons with the new
+	# FFT-style metal assets (red/blue/grey/gold) and chunky text.
+	_style_action_button(attack_btn, "Attack", Color(0.95, 0.85, 0.55))
+	_style_action_button(skill_btn, "Skill", Color(0.65, 0.85, 1.0))
+	_style_action_button(wait_btn, "Wait", Color(0.85, 0.85, 0.95))
+	_style_finish_button(finish_btn)
+	# Hide the legacy skill popup (we use SkillBar at the bottom now).
+	skill_btn.visible = false
 	# Make End Turn button larger and prominent
-	finish_btn.custom_minimum_size = Vector2(120, 48)
-	finish_btn.add_theme_font_size_override("font_size", 14)
+	finish_btn.custom_minimum_size = Vector2(140, 56)
+	finish_btn.add_theme_font_size_override("font_size", 16)
 
 	# Feedback (HP bars + floating numbers)
 	if _feedback != null and _feedback.has_method("setup"):
@@ -128,6 +148,18 @@ func _ready() -> void:
 	$HUDLayer.add_child(_skill_bar)
 	if _skill_bar.has_method("setup"):
 		_skill_bar.setup(_combat)
+
+	# v0.10.1 polish: build a dedicated bottom-center action bar
+	# (End Turn + Retreat) so the player has the most important
+	# action always in view, regardless of the legacy right-side
+	# MainVBox. The legacy actions in MainVBox stay wired but
+	# become a fallback if the dedicated bar is somehow destroyed.
+	_build_bottom_action_bar()
+
+	# v0.10.1 polish: top-center prompt ("Select a white tile to move")
+	_top_prompt = TopPromptScript.new()
+	_top_prompt.name = "TopPrompt"
+	$HUDLayer.add_child(_top_prompt)
 
 	# Phase 3 polish: targeting reticle (follows cursor during targeting)
 	_reticle = TargetingReticleScript.new()
@@ -540,19 +572,31 @@ func _update_instructions() -> void:
 	if _combat == null:
 		return
 	if _combat.battle_phase != CombatMgr.BattlePhase.ACTIVE:
+		if _top_prompt != null:
+			_top_prompt.hide_prompt()
 		instructions_label.text = "[center]Battle ended.[/center]"
 		return
 	if not _combat.is_player_active():
+		if _top_prompt != null:
+			_top_prompt.show_prompt("Enemy acting…", "Wait for the next turn", 0.0)
 		instructions_label.text = "[center][i]Enemy acting…[/i][/center]"
 		return
 	match _combat.turn_subphase:
 		CombatMgr.TurnSubphase.MOVE:
-			instructions_label.text = "[center]FFT: Move (blue), then [b]Skill[/b] / [b]Attack[/b] / [b]Wait[/b] / [b]Finish[/b]. Flanking deals bonus damage.[/center]"
+			if _top_prompt != null:
+				_top_prompt.show_prompt("Select a white tile to move", "Then choose an action", 0.0)
+			instructions_label.text = "[center]Move (blue), then [b]Skill[/b] / [b]Attack[/b] / [b]Wait[/b] / [b]Finish[/b]. Flanking deals bonus damage.[/center]"
 		CombatMgr.TurnSubphase.ACTION:
+			if _top_prompt != null:
+				_top_prompt.show_prompt("Choose an action", "Skill / Attack / Wait / Finish", 0.0)
 			instructions_label.text = "[center]Choose [b]Skill[/b] (class ability), [b]Attack[/b], [b]Wait[/b], or [b]Finish Turn[/b].[/center]"
 		CombatMgr.TurnSubphase.TARGET_ATTACK:
+			if _top_prompt != null:
+				_top_prompt.show_prompt("Select a target", "Red tiles = attack range", 0.0)
 			instructions_label.text = "[center]Select enemy in [color=#c62828]red[/color] attack range.[/center]"
 		CombatMgr.TurnSubphase.TARGET_SKILL:
+			if _top_prompt != null:
+				_top_prompt.show_prompt("Select a skill target", "Purple tiles = skill range", 0.0)
 			instructions_label.text = "[center]Select target in [color=#7b1fa2]purple[/color] skill range.[/center]"
 
 
@@ -607,6 +651,77 @@ func _apply_button_icon(btn: Button, icon_path: String) -> void:
 		btn.expand_icon = true
 
 
+## Restyle a button as a chunky FFT-style action button.
+## Wraps the label text in a ColorRect-tinted stylebox so the
+## text reads cleanly on the metal button background. Uses the
+## provided accent color for the label.
+func _style_action_button(btn: Button, label_text: String, accent: Color) -> void:
+	if btn == null:
+		return
+	btn.text = label_text
+	btn.add_theme_font_size_override("font_size", 13)
+	btn.add_theme_color_override("font_color", accent)
+	btn.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	btn.add_theme_constant_override("outline_size", 3)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.10, 0.08, 0.12, 0.85)
+	sb.border_width_left = 2
+	sb.border_width_top = 2
+	sb.border_width_right = 2
+	sb.border_width_bottom = 2
+	sb.border_color = Color(0.45, 0.45, 0.55, 1.0)
+	sb.corner_radius_top_left = 3
+	sb.corner_radius_top_right = 3
+	sb.corner_radius_bottom_left = 3
+	sb.corner_radius_bottom_right = 3
+	btn.add_theme_stylebox_override("normal", sb)
+	var sb_hover := sb.duplicate()
+	sb_hover.bg_color = Color(0.20, 0.18, 0.25, 0.92)
+	sb_hover.border_color = Color(0.95, 0.80, 0.35, 1.0)
+	btn.add_theme_stylebox_override("hover", sb_hover)
+	var sb_pressed := sb.duplicate()
+	sb_pressed.bg_color = Color(0.35, 0.25, 0.15, 0.95)
+	btn.add_theme_stylebox_override("pressed", sb_pressed)
+	var sb_disabled := sb.duplicate()
+	sb_disabled.bg_color = Color(0.05, 0.05, 0.07, 0.5)
+	sb_disabled.border_color = Color(0.20, 0.20, 0.25, 0.5)
+	btn.add_theme_stylebox_override("disabled", sb_disabled)
+
+
+## Special styling for the "End Turn" button — uses the gold button
+## asset as a backdrop and a chunkier border.
+func _style_finish_button(btn: Button) -> void:
+	if btn == null:
+		return
+	btn.text = "End Turn"
+	btn.add_theme_font_size_override("font_size", 16)
+	btn.add_theme_color_override("font_color", Color(1.0, 0.95, 0.65))
+	btn.add_theme_color_override("font_outline_color", Color(0.10, 0.05, 0.0, 0.95))
+	btn.add_theme_constant_override("outline_size", 4)
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.30, 0.20, 0.05, 0.92)
+	sb.border_width_left = 3
+	sb.border_width_top = 3
+	sb.border_width_right = 3
+	sb.border_width_bottom = 3
+	sb.border_color = Color(0.95, 0.80, 0.30, 1.0)
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_left = 4
+	sb.corner_radius_bottom_right = 4
+	btn.add_theme_stylebox_override("normal", sb)
+	var sb_hover := sb.duplicate()
+	sb_hover.bg_color = Color(0.45, 0.30, 0.10, 0.95)
+	btn.add_theme_stylebox_override("hover", sb_hover)
+	var sb_pressed := sb.duplicate()
+	sb_pressed.bg_color = Color(0.55, 0.40, 0.15, 0.95)
+	btn.add_theme_stylebox_override("pressed", sb_pressed)
+	var sb_disabled := sb.duplicate()
+	sb_disabled.bg_color = Color(0.20, 0.15, 0.05, 0.5)
+	sb_disabled.border_color = Color(0.45, 0.40, 0.15, 0.5)
+	btn.add_theme_stylebox_override("disabled", sb_disabled)
+
+
 ## Compute popup kind based on facing relation between attacker and target.
 ## Returns "" for front attacks (no popup needed).
 func _compute_hit_type_for_popup(target: Dictionary, atk_pos: Vector2i) -> String:
@@ -641,3 +756,59 @@ func _spawn_combat_popup(kind: String, target_cell: Vector2i) -> void:
 		target_cell.y * BattleGridViewScript.CELL_SIZE + BattleGridViewScript.CELL_SIZE * 0.5,
 	)
 	popup.show_popup(kind, world_pos)
+
+
+## Build a bottom-center action bar (End Turn + Retreat). The bar
+## is anchored to the bottom-center of the screen and overlays the
+## SkillBar. The buttons reuse the styled approach from
+## `_style_action_button` / `_style_finish_button` so they match
+## the rest of the UI.
+func _build_bottom_action_bar() -> void:
+	var bar := HBoxContainer.new()
+	bar.name = "BottomActionBar"
+	bar.anchor_left = 0.5
+	bar.anchor_right = 0.5
+	bar.anchor_top = 1.0
+	bar.anchor_bottom = 1.0
+	bar.offset_left = -160
+	bar.offset_right = 160
+	bar.offset_top = -180
+	bar.offset_bottom = -132
+	bar.add_theme_constant_override("separation", 12)
+	bar.alignment = BoxContainer.ALIGNMENT_CENTER
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$HUDLayer.add_child(bar)
+	# Re-style the existing End Turn / Retreat buttons and reparent
+	# them into the new bar so the player can click them at the
+	# bottom of the screen.
+	if finish_btn != null:
+		_style_finish_button(finish_btn)
+		finish_btn.custom_minimum_size = Vector2(140, 44)
+		finish_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_remove_parent(finish_btn)
+		bar.add_child(finish_btn)
+		# Re-wire: ensure pressed is still connected
+		if not finish_btn.pressed.is_connected(_on_finish_pressed):
+			finish_btn.pressed.connect(_on_finish_pressed)
+	if retreat_btn != null:
+		_style_action_button(retreat_btn, "Retreat", Color(0.95, 0.7, 0.55))
+		retreat_btn.custom_minimum_size = Vector2(110, 44)
+		retreat_btn.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		_remove_parent(retreat_btn)
+		bar.add_child(retreat_btn)
+		if not retreat_btn.pressed.is_connected(_on_retreat_pressed):
+			retreat_btn.pressed.connect(_on_retreat_pressed)
+	# Hide the legacy ActionsHBox since we've moved the buttons out.
+	var legacy_hbox := get_node_or_null("HUDLayer/MainVBox/ActionsHBox")
+	if legacy_hbox != null:
+		legacy_hbox.visible = false
+
+
+## Helper to remove a node from its current parent (so it can be
+## reparented into a new container). Calls queue_free on the old
+## parent if it was a transient container.
+func _remove_parent(node: Node) -> void:
+	if node == null or node.get_parent() == null:
+		return
+	var old_parent: Node = node.get_parent()
+	old_parent.remove_child(node)

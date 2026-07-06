@@ -8,7 +8,27 @@
 
 ## TOP PRIORITY — Next session
 
-### v0.10.0 milestone — Combat Overhaul (FFT-style)
+### v0.10.1 milestone — Combat UI Polish (FFT-style) ✅
+
+**Goal:** Continue polishing the FFT-style battle scene with FFT-style
+selection arrow, top-center prompt banner, biome decor props, white-bg
+name labels, and FFT-style action buttons.
+
+| ID | Task | Status |
+|----|------|--------|
+| 1.1 | `scripts/combat/UnitSelectionArrow.gd` — cyan down-arrow above active unit | ✅ |
+| 1.2 | `scripts/combat/TopPrompt.gd` — top-center "Select a white tile to move" prompt | ✅ |
+| 1.3 | `scripts/combat/UnitNamePlate.gd` — white-bg name labels above units | ✅ |
+| 1.4 | `BattleBackground.gd` overhaul — replace debris tiles with biome decor props | ✅ |
+| 1.5 | `BattleCell.gd` polish — soft move tint, border-frame attack/skill | ✅ |
+| 1.6 | `TacticalCombat.gd` — bottom action bar + button styling + TopPrompt wiring | ✅ |
+| 1.7 | `tools/smoke_combat_polish.gd` + `tools/boot_combat.gd` — new tests | ✅ |
+| 1.8 | 25 new assets via PixelLab MCP (decor props + UI panels) | ✅ |
+| 1.9 | `tools/generate_battle_decor_imports.py` — headless asset import helper | ✅ |
+
+---
+
+### v0.10.0 milestone — Combat Overhaul (FFT-style) ✅
 
 **Goal:** Replace the placeholder Button[] grid with a proper FFT-style tactical combat scene. Use the same sprite + tile system as the overworld. Real AI for mobs. Stylish HUD. Matching biome backgrounds. Reference: Final Fantasy Tactics, but with the Fallen Earth post-apoc palette.
 

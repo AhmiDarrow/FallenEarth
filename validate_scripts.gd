@@ -10,6 +10,8 @@ const SCENES := [
 	"res://scenes/WorldMapScreen.tscn",
 	"res://scenes/RiftInstance.tscn",
 	"res://scenes/TacticalCombat.tscn",
+	"res://scenes/SettlementBuilding.tscn",
+	"res://scenes/SettlementInterior.tscn",
 	"res://scenes/CookingTable.tscn",
 	"res://scenes/ui/CookingTableUI.tscn",
 	"res://scenes/SettlementInterior.tscn",
@@ -113,6 +115,9 @@ const SCRIPTS := [
 	"res://scripts/combat/BattleResultPanel.gd",
 	"res://scripts/combat/CombatPopup.gd",
 	"res://scripts/combat/TargetingReticle.gd",
+	"res://scripts/combat/TopPrompt.gd",
+	"res://scripts/combat/UnitNamePlate.gd",
+	"res://scripts/combat/UnitSelectionArrow.gd",
 	"res://scripts/ResourceVisualManager.gd",
 ]
 

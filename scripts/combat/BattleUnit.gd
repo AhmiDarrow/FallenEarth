@@ -4,11 +4,18 @@
 ## bar overlay, CT progress bar, name label, and animates walks,
 ## attacks, hits, and deaths. Owns the visual state for one unit; the
 ## engine (CombatManager) decides what they do.
+##
+## v0.10.1 polish: A child UnitNamePlate gives a white-background
+## name label above the unit (FFT-style), and a child
+## UnitSelectionArrow is shown when this is the active unit.
 class_name BattleUnit extends Node2D
 
 const CELL_SIZE := 24
 const SPRITE_FOLDER := "res://assets/mobs/"
 const CHAR_FOLDER := "res://assets/characters/"
+
+const UnitNamePlateScript = preload("res://scripts/combat/UnitNamePlate.gd")
+const UnitSelectionArrowScript = preload("res://scripts/combat/UnitSelectionArrow.gd")
 
 const SWING_DURATION := 0.18
 const WALK_DURATION := 0.22
@@ -29,6 +36,7 @@ var current_ct: int = 0
 var current_facing: int = 0
 var is_boss: bool = false
 var is_alive: bool = true
+var display_name: String = ""
 var _team_hp_color: Color = COLOR_ENEMY
 var _grid_pos: Vector2i = Vector2i.ZERO
 var _walk_tween: Tween = null
@@ -45,11 +53,15 @@ var _ct_fill: ColorRect
 var _name_label: Label
 var _status_label: Label
 var _active_glow: Sprite2D
+var _name_plate: Control
+var _selection_arrow: Node2D
 
 
 func _ready() -> void:
 	_build_children()
 	_active_glow.visible = false
+	_name_plate.visible = true
+	_selection_arrow.visible = false
 	modulate = Color.WHITE if is_alive else Color(0.4, 0.4, 0.4, 0.6)
 	scale = Vector2.ONE * (1.4 if is_boss else 1.0)
 
@@ -121,6 +133,24 @@ func _build_children() -> void:
 	_ct_fill.z_index = 12
 	add_child(_ct_fill)
 
+	# v0.10.1 polish: white-bordered name plate above the unit's
+	# sprite (replaces the legacy outline-stroked Label).
+	_name_plate = UnitNamePlateScript.new()
+	_name_plate.name = "NamePlate"
+	_name_plate.position = Vector2(-40, -28)
+	_name_plate.z_index = 14
+	_name_plate.visible = true
+	add_child(_name_plate)
+
+	# v0.10.1 polish: down-pointing selection arrow above the unit.
+	# Hidden by default; shown only when this unit is active.
+	_selection_arrow = UnitSelectionArrowScript.new()
+	_selection_arrow.name = "SelectionArrow"
+	_selection_arrow.position = Vector2(0, -18)
+	_selection_arrow.z_index = 15
+	_selection_arrow.visible = false
+	add_child(_selection_arrow)
+
 
 func setup_from_data(unit: Dictionary, cell_size: int) -> void:
 	unit_id = str(unit.get("id", ""))
@@ -131,6 +161,7 @@ func setup_from_data(unit: Dictionary, cell_size: int) -> void:
 	current_facing = int(unit.get("facing", 0))
 	is_boss = bool(unit.get("is_boss", false))
 	is_alive = current_hp > 0
+	display_name = str(unit.get("name", _unit_display_name()))
 	_grid_pos = unit.get("pos", Vector2i.ZERO)
 	position = Vector2(_grid_pos.x * cell_size, _grid_pos.y * cell_size)
 	_load_sprite(unit)
@@ -141,6 +172,8 @@ func setup_from_data(unit: Dictionary, cell_size: int) -> void:
 	_refresh_status()
 	if _active_glow != null:
 		_active_glow.visible = false
+	_refresh_name_plate()
+	_refresh_selection_arrow()
 	modulate = Color.WHITE if is_alive else Color(0.4, 0.4, 0.4, 0.6)
 	scale = Vector2.ONE * (1.4 if is_boss else 1.0)
 	update_facing(current_facing)
@@ -226,6 +259,19 @@ func _refresh_name() -> void:
 	_name_label.text = _unit_display_name()
 
 
+func _refresh_name_plate() -> void:
+	if _name_plate == null:
+		return
+	_name_plate.set_unit_info(display_name if not display_name.is_empty() else _unit_display_name(), team, is_boss)
+	_name_plate.snap_to_cell(0, 0, CELL_SIZE)  # unit-local; we re-anchor in snap_to_grid below
+
+
+func _refresh_selection_arrow() -> void:
+	if _selection_arrow == null:
+		return
+	_selection_arrow.snap_to_cell(0, 0, CELL_SIZE)
+
+
 func _refresh_status() -> void:
 	if is_boss:
 		_status_label.text = "★ BOSS"
@@ -235,6 +281,8 @@ func _refresh_status() -> void:
 
 
 func _unit_display_name() -> String:
+	if not display_name.is_empty():
+		return display_name
 	if team == "player":
 		return "Player"
 	return unit_id.replace("_", " ").capitalize()
@@ -252,6 +300,19 @@ func move_to(grid_pos: Vector2i, animate: bool = true) -> void:
 	_walk_tween.set_trans(Tween.TRANS_QUAD)
 	_walk_tween.set_ease(Tween.EASE_OUT)
 	_walk_tween.tween_property(self, "position", target, WALK_DURATION)
+
+
+func set_grid_pos(grid_pos: Vector2i) -> void:
+	_grid_pos = grid_pos
+	position = Vector2(grid_pos.x * CELL_SIZE, grid_pos.y * CELL_SIZE)
+	# The name plate and selection arrow are anchored to the unit's
+	# local cell; their positions don't change when the unit moves
+	# because they're children of the unit. Snap them to (0,0)-cell
+	# so they re-center after any manual movement.
+	if _name_plate != null:
+		_name_plate.snap_to_cell(0, 0, CELL_SIZE)
+	if _selection_arrow != null:
+		_selection_arrow.snap_to_cell(0, 0, CELL_SIZE)
 
 
 func play_attack_swing() -> void:
@@ -286,6 +347,9 @@ func play_death() -> void:
 func set_active(active: bool) -> void:
 	if _active_glow != null:
 		_active_glow.visible = active
+	if _selection_arrow != null:
+		_selection_arrow.set_active(active)
+		_selection_arrow.visible = active
 
 
 func update_hp(new_hp: int) -> void:
