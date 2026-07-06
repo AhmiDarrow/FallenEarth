@@ -97,6 +97,12 @@ func _ready() -> void:
 	encounter_for_grid = _grid.build_terrain_for_encounter(encounter_for_grid)
 	_grid.configure(encounter_for_grid)
 
+	# v0.10.8: CombatFeedback shares the grid_layer's offset so HP
+	# bars align with the isometric cell centers (not square-grid
+	# coordinates from the 40px era).
+	if _feedback != null and _grid._grid_layer != null:
+		_feedback.position = vp_center + _grid._grid_layer.position
+
 	_combat = CombatMgr.new()
 	_combat.setup_from_encounter(_encounter)
 	_combat.log_message.connect(_on_combat_log)
@@ -770,13 +776,10 @@ func _spawn_combat_popup(kind: String, target_cell: Vector2i) -> void:
 	var popup: Control = CombatPopupScript.new()
 	popup.name = "Popup_%s" % kind
 	$HUDLayer.add_child(popup)
-	# Convert grid cell to screen position (grid is centered at 640,360).
-	var half_grid: float = float(_grid_size) * BattleGridViewScript.CELL_SIZE * 0.5
-	var grid_tl: Vector2 = Vector2(640, 360) - Vector2(half_grid, half_grid)
-	var world_pos: Vector2 = grid_tl + Vector2(
-		target_cell.x * BattleGridViewScript.CELL_SIZE + BattleGridViewScript.CELL_SIZE * 0.5,
-		target_cell.y * BattleGridViewScript.CELL_SIZE + BattleGridViewScript.CELL_SIZE * 0.5,
-	)
+	# Convert grid cell to iso screen position (grid is centered at vp_center).
+	var vp_center: Vector2 = get_viewport_rect().size * 0.5
+	var iso: Vector2 = _grid.cell_to_iso(target_cell.x, target_cell.y)
+	var world_pos: Vector2 = vp_center + iso + _grid._grid_layer.position
 	popup.show_popup(kind, world_pos)
 
 

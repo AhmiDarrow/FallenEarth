@@ -40,13 +40,10 @@ func setup(combat_node: Node) -> void:
 	add_child(_kill_label)
 
 
-func setup_hp_bars(units: Array[Dictionary], grid_size: int = 7, cell_size: float = 24.0) -> void:
+func setup_hp_bars(units: Array[Dictionary], grid_size: int = 7, cell_size: float = 56.0) -> void:
 	_grid_size = grid_size
 	_cell_size = cell_size
 	_clear_hp_bars()
-	# Match BattleGridView's _unit_layer.position = -total * 0.5 so
-	# bars align with the units' on-grid pixel positions.
-	var half: float = float(_grid_size) * _cell_size * 0.5
 	for unit in units:
 		var uid: String = str(unit.get("id", ""))
 		if uid.is_empty():
@@ -56,11 +53,11 @@ func setup_hp_bars(units: Array[Dictionary], grid_size: int = 7, cell_size: floa
 		var hp: int = int(unit.get("hp", 0))
 		var max_hp: int = int(unit.get("max_hp", hp))
 		bar.setup(uid, team, hp, max_hp)
-		var pos: Vector2 = unit.get("pos", Vector2.ZERO)
-		bar.position = Vector2(
-			pos.x * _cell_size + _cell_size * 0.5 - half,
-			pos.y * _cell_size - half - 14
-		)
+		var pos: Vector2i = unit.get("pos", Vector2i.ZERO)
+		# v0.10.8: isometric positioning (same as BattleGridView + BattleUnit).
+		var iso_x: float = float(pos.x - pos.y) * _cell_size * 0.5
+		var iso_y: float = float(pos.x + pos.y) * _cell_size * 0.25
+		bar.position = Vector2(iso_x, iso_y - 24)
 		add_child(bar)
 		_hp_bars[uid] = bar
 
