@@ -27,11 +27,13 @@ const FALLBACK_ICON := "res://assets/battle_ui/icon_skill.png"
 
 var _combat: Node = null
 var _slots: Array[Control] = []
-var _slot_buttons: Array[Button] = []
 var _slot_icons: Array[TextureRect] = []
 var _slot_names: Array[Label] = []
 var _slot_mp_labels: Array[Label] = []
 var _slot_hotkey_labels: Array[Label] = []
+# index -> enabled state at the time the slot was clicked. Used by
+# _on_slot_pressed so we don't try to cast a disabled skill.
+var _slot_enabled: Array[bool] = []
 
 
 func _ready() -> void:
@@ -101,25 +103,14 @@ func _build_children() -> void:
 
 
 func _make_slot(hotkey: int) -> Control:
-	# Slot is a Control that holds all visual children. A transparent
-	# Button fills the slot for hit-testing + keyboard focus; the
-	# visual children render on top of it because they're added
-	# after the Button.
+	# Slot is a plain Control. The visual children (icon, hotkey,
+	# name, MP) are added directly. Click handling goes through
+	# the slot's gui_input signal — no Button child, so nothing
+	# can occlude the visuals.
 	var slot := Control.new()
 	slot.name = "Slot_%d" % hotkey
 	slot.custom_minimum_size = Vector2(160, 80)
-	slot.mouse_filter = Control.MOUSE_FILTER_PASS
-	# Transparent click overlay so the whole 160x80 area is hit-testable
-	var btn := Button.new()
-	btn.name = "Click"
-	btn.anchor_right = 1.0
-	btn.anchor_bottom = 1.0
-	btn.flat = true
-	btn.focus_mode = Control.FOCUS_NONE
-	btn.mouse_filter = Control.MOUSE_FILTER_STOP
-	btn.modulate = Color(1, 1, 1, 0)  # fully transparent
-	slot.add_child(btn)
-	_slot_buttons.append(btn)
+	slot.mouse_filter = Control.MOUSE_FILTER_STOP
 	# Icon (top-center)
 	var icon := TextureRect.new()
 	icon.name = "Icon"
@@ -172,6 +163,9 @@ func _make_slot(hotkey: int) -> Control:
 	mp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot.add_child(mp_lbl)
 	_slot_mp_labels.append(mp_lbl)
+	# Click handling — no Button child needed.
+	slot.gui_input.connect(_on_slot_gui_input.bind(_slots.size()))
+	_slot_enabled.append(true)
 	return slot
 
 
@@ -179,9 +173,6 @@ func setup(combat: Node) -> void:
 	_combat = combat
 	if _combat == null:
 		return
-	# Wire up the click handlers (one per slot)
-	for i in range(_slot_buttons.size()):
-		_slot_buttons[i].pressed.connect(_on_slot_pressed.bind(i))
 	if _combat.has_signal("active_unit_changed"):
 		_combat.active_unit_changed.connect(refresh)
 	if _combat.has_signal("unit_updated"):
@@ -191,14 +182,18 @@ func setup(combat: Node) -> void:
 	refresh()
 
 
-func _on_slot_pressed(idx: int) -> void:
-	if _combat == null:
+func _on_slot_gui_input(event: InputEvent, idx: int) -> void:
+	if not (event is InputEventMouseButton):
 		return
-	var abilities: Array[Dictionary] = _combat.get_player_abilities()
-	if idx >= abilities.size():
-		return
-	var ab: Dictionary = abilities[idx]
-	_combat.begin_skill_action(str(ab.get("id", "")))
+	var mb: InputEventMouseButton = event
+	if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT and _slot_enabled[idx]:
+		if _combat == null:
+			return
+		var abilities: Array[Dictionary] = _combat.get_player_abilities()
+		if idx >= abilities.size():
+			return
+		var ab: Dictionary = abilities[idx]
+		_combat.begin_skill_action(str(ab.get("id", "")))
 
 
 func refresh(_arg: Variant = null) -> void:
@@ -213,13 +208,14 @@ func refresh(_arg: Variant = null) -> void:
 	for i in range(SLOT_COUNT):
 		var empty: bool = i >= abilities.size()
 		_slots[i].visible = not empty
+		_slot_enabled[i] = false
 		if empty:
 			continue
 		var ab: Dictionary = abilities[i]
 		var mp_cost: int = int(ab.get("mp_cost", 0))
 		var can_afford: bool = current_mp >= mp_cost
 		var enabled: bool = player_turn and can_afford and not targeting
-		_slot_buttons[i].disabled = not enabled
+		_slot_enabled[i] = enabled
 		_slot_icons[i].texture = _load_icon(str(ab.get("type", "physical")))
 		_slot_names[i].text = str(ab.get("name", "?"))
 		_slot_names[i].modulate = COLOR_TEXT if enabled else COLOR_DISABLED

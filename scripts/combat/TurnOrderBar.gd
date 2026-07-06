@@ -86,18 +86,15 @@ func _build_children() -> void:
 
 
 func _make_slot() -> Control:
+	# Slot is just a Control with a Portrait + ActiveGlow. HP and
+	# CT bars are intentionally omitted here — CombatFeedback already
+	# draws them above the units on the grid, and trying to pack
+	# another HP+CT bar into the 56x72 slot was making the layout
+	# fight the generated bar backdrop.
 	var slot := Control.new()
-	slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE + 16)
-	slot.size = Vector2(SLOT_SIZE, SLOT_SIZE + 16)
+	slot.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
+	slot.size = Vector2(SLOT_SIZE, SLOT_SIZE)
 	slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Portrait frame
-	var frame := ColorRect.new()
-	frame.name = "Frame"
-	frame.color = Color(0.12, 0.12, 0.16, 1.0)
-	frame.size = Vector2(SLOT_SIZE, SLOT_SIZE)
-	frame.position = Vector2(0, 0)
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(frame)
 	# Active highlight (hidden by default)
 	var active_glow := ColorRect.new()
 	active_glow.name = "ActiveGlow"
@@ -107,7 +104,7 @@ func _make_slot() -> Control:
 	active_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	active_glow.z_index = -1
 	slot.add_child(active_glow)
-	# Portrait texture rect
+	# Portrait texture rect (fills the slot)
 	var portrait := TextureRect.new()
 	portrait.name = "Portrait"
 	portrait.custom_minimum_size = Vector2(SLOT_SIZE - 4, SLOT_SIZE - 4)
@@ -117,30 +114,6 @@ func _make_slot() -> Control:
 	portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	slot.add_child(portrait)
-	# HP background
-	var hp_bg := ColorRect.new()
-	hp_bg.name = "HPBg"
-	hp_bg.color = Color(0.10, 0.05, 0.05, 0.95)
-	hp_bg.size = Vector2(SLOT_SIZE, 4)
-	hp_bg.position = Vector2(0, SLOT_SIZE)
-	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(hp_bg)
-	# HP fill (created at 0 width; refresh() updates)
-	var hp_fill := ColorRect.new()
-	hp_fill.name = "HPFill"
-	hp_fill.color = COLOR_PLAYER
-	hp_fill.size = Vector2(0, 4)
-	hp_fill.position = Vector2(0, SLOT_SIZE)
-	hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_bg.add_child(hp_fill)
-	# CT tiny fill above HP bar
-	var ct_bar := ColorRect.new()
-	ct_bar.name = "CTBar"
-	ct_bar.color = Color(0.95, 0.80, 0.30, 0.85)
-	ct_bar.size = Vector2(0, 2)
-	ct_bar.position = Vector2(0, SLOT_SIZE + 4)
-	ct_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	slot.add_child(ct_bar)
 	return slot
 
 
@@ -189,18 +162,6 @@ func _fill_slot(slot: Control, unit: Dictionary) -> void:
 	slot.visible = true
 	var portrait: TextureRect = slot.get_node("Portrait")
 	_set_portrait(portrait, unit)
-	# HP bar
-	var hp: int = int(unit.get("hp", 0))
-	var max_hp: int = int(unit.get("max_hp", hp))
-	var hp_ratio: float = float(hp) / float(maxi(1, max_hp))
-	var hp_fill: ColorRect = slot.get_node("HPBg/HPFill")
-	hp_fill.size = Vector2(SLOT_SIZE * hp_ratio, 4)
-	hp_fill.color = _team_color(unit)
-	# CT bar
-	var ct: int = int(unit.get("ct", 0))
-	var ct_ratio: float = clampf(float(ct) / 100.0, 0.0, 1.0)
-	var ct_bar: ColorRect = slot.get_node("CTBar")
-	ct_bar.size = Vector2(SLOT_SIZE * ct_ratio, 2)
 	# Active highlight
 	var active_glow: ColorRect = slot.get_node("ActiveGlow")
 	var is_active: bool = str(unit.get("id", "")) == str(_combat.active_unit_id)
