@@ -1115,18 +1115,11 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	var mob_node: Node2D = MobVisualScript.new()
 	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
 	mob_node.z_index = 50
-	# Add to mob_layer (y-sorted) so mobs render on top of terrain and
-	# stack correctly with the player and each other. Previously this
-	# added to world_grid directly which bypassed the y-sort layer.
-	if is_instance_valid(_mob_layer):
-		_mob_layer.add_child(mob_node)
-	else:
-		world_grid.add_child(mob_node)
-	# IMPORTANT: set the sprite AFTER the node is in the tree. Assigning a
-	# Sprite2D.texture while the parent is not yet in the scene causes the
-	# texture RID to not register in Godot 4.x — the sprite logs as loaded
-	# (texture != null, visible=true) but renders nothing. Adding first
-	# fixes it.
+	# Add directly to world_grid (same parent as the player's CharacterVisual,
+	# which renders correctly via _draw()). MobLayer's y_sort_enabled was
+	# preventing CanvasItem _draw() children from rendering even though the
+	# node was valid, visible, and had a loaded texture.
+	world_grid.add_child(mob_node)
 	mob_node.set_mob_sprite(sprite_id)
 	print("[HubWorld] _add_mob_sprite: id=%s cell=(%d,%d) pos=%s parent=%s visible=%s z=%d" % [
 		sprite_id, x, y, str(mob_node.position),
