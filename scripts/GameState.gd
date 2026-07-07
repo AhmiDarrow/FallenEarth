@@ -21,8 +21,11 @@ signal class_xp_gained(amount: int, total_xp: int)
 
 @export var active_scene: String = ""
 @export var last_save_slot: int = 0
-# Procedural graphics fallback — enabled by default (no external assets required)
-var use_procedural_graphics: bool = true
+# Procedural graphics fallback — currently OFF by default because the 3D
+# SubViewport billboard renders empty in-game (entities become invisible). The
+# proven 2D sprite path (CharacterVisual / MobVisual) is used instead until the
+# procedural billboard is fixed. Set to true to re-enable the 3D visuals.
+var use_procedural_graphics: bool = false
 
 # Runtime-only tracking (not persisted directly — SaveManager handles persistence)
 var _character_data: Dictionary = {}

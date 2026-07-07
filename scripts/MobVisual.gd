@@ -82,13 +82,14 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	_dbg_draw += 1
-	# ALWAYS draw magenta — proves _draw output is visible on this node.
-	draw_rect(Rect2(Vector2(-16, -16), Vector2(32, 32)), Color.MAGENTA)
-	draw_rect(Rect2(Vector2(-15, -15), Vector2(30, 30)), Color(1.0, 0.0, 1.0, 0.4))
-	if _has_sprite and is_instance_valid(_sprite) and _sprite.get_parent() == self:
-		# Real sprite present and parented — draw it on top of magenta.
+	if _has_sprite and is_instance_valid(_sprite) and _sprite.get_parent() == self and _sprite.texture != null:
+		# Real sprite present and parented — draw it.
 		var offset := Vector2(-_sprite.texture.get_width() * 0.5, -_sprite.texture.get_height() * 0.5)
 		draw_texture(_sprite.texture, offset)
+	else:
+		# Fallback marker only when the sprite is genuinely missing.
+		draw_rect(Rect2(Vector2(-16, -16), Vector2(32, 32)), Color.MAGENTA)
+		draw_rect(Rect2(Vector2(-15, -15), Vector2(30, 30)), Color(1.0, 0.0, 1.0, 0.4))
 	if not _mob_id.is_empty():
 		var label_offset := Vector2(-_mob_id.length() * 2.5, -24)
 		draw_string(ThemeDB.fallback_font, label_offset, _mob_id, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
