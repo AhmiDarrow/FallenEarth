@@ -126,8 +126,8 @@ func setup_from_data(data: Dictionary, arena: ArenaResource) -> void:
 	res.sprite_id = str(data.get("sprite_id", res.unit_id))
 	res.facing = int(data.get("facing", 2))
 	arena_resource = arena
-	# Position on grid
-	global_position = Vector3(
+	# Position on grid — use local position since we're a child of the Arena
+	position = Vector3(
 		res.grid_pos.x * CELL_SIZE,
 		0.0,
 		res.grid_pos.y * CELL_SIZE
@@ -231,6 +231,6 @@ func show_stats(v: bool) -> void:
 
 
 func move_to_world_pos(world_pos: Vector3) -> void:
-	global_position = Vector3(world_pos.x, 0.0, world_pos.z)
+	position = Vector3(world_pos.x, 0.0, world_pos.z)
 	if res:
 		res.grid_pos = Vector2i(int(world_pos.x / CELL_SIZE), int(world_pos.z / CELL_SIZE))

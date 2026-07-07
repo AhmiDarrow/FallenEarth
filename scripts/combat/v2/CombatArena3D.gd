@@ -132,14 +132,16 @@ func _build_ground_plane() -> void:
 	var ground := MeshInstance3D.new()
 	ground.name = "GroundPlane"
 	var plane := PlaneMesh.new()
-	plane.size = Vector2(grid_px + 2.0, grid_px + 2.0)
+	plane.size = Vector2(grid_px + 0.1, grid_px + 0.1)
 	ground.mesh = plane
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(0.22, 0.24, 0.26, 1.0)
+	mat.albedo_color = Color(0.15, 0.17, 0.19, 1.0)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	ground.material_override = mat
-	ground.position = Vector3(0.0, -0.01, 0.0)
+	ground.position = Vector3(0.0, -0.02, 0.0)
+	ground.cast_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	ground.receive_shadows = false
 	add_child(ground)
 
 

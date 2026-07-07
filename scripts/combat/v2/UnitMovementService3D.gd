@@ -41,13 +41,13 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 		next_grid.y * CombatPawn3D.CELL_SIZE
 	)
 
-	var current_pos: Vector3 = pawn.global_position
+	var current_pos: Vector3 = pawn.position
 	var flat_target := Vector3(target_pos.x, 0.0, target_pos.z)
 	var dist_to_target: float = Vector2(current_pos.x, current_pos.z).distance_to(Vector2(flat_target.x, flat_target.z))
 
 	if dist_to_target < 0.05:
 		# Arrived at this tile
-		pawn.global_position = flat_target
+		pawn.position = flat_target
 		unit_res.move_path.pop_front()
 		unit_res.grid_pos = next_grid
 		# Update tile occupancy
@@ -69,7 +69,7 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 	# Clamp past target
 	if new_flat.distance_to(flat_target) < 0.05:
 		new_flat = flat_target
-	pawn.global_position = Vector3(new_flat.x, jump_y, new_flat.z)
+	pawn.position = Vector3(new_flat.x, jump_y, new_flat.z)
 
 	pawn.is_moving = true
 	return true

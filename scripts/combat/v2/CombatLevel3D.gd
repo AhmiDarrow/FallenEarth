@@ -82,6 +82,13 @@ func _ready() -> void:
 	# Wire encounter ended
 	_arena.res.encounter_ended.connect(_on_encounter_ended)
 
+	# Wire action bar buttons
+	if _action_bar != null and _action_bar.has_method("show_move_button"):
+		_action_bar.on_move = _on_action_move
+		_action_bar.on_attack = _on_action_attack
+		_action_bar.on_end_turn = _on_end_turn_pressed
+		_action_bar.on_retreat = _on_retreat_pressed
+
 	# Configure arena
 	_configure_from_encounter()
 
@@ -108,9 +115,13 @@ func _process(delta: float) -> void:
 
 	# Tick the current participant's state machine
 	var p: ParticipantResource = _player if _arena.res.current_side == "player" else _opponent
+	var old_stage: int = p.stage
 	var new_stage: int = _turn_serv.tick(p, self)
 	if new_stage >= 0:
 		p.advance_to(new_stage)
+
+	if p.stage != old_stage:
+		_update_top_prompt()
 
 	if p.stage >= TurnServiceScript.STAGE_END_TURN or p.turn_completed:
 		var next_side: String = "opponent" if _arena.res.current_side == "player" else "player"
@@ -533,19 +544,51 @@ func _return_from_battle(victory: bool) -> void:
 func _update_top_prompt() -> void:
 	if _top_prompt == null or not _top_prompt.has_method("show_prompt"):
 		return
+	# Update action bar button visibility
+	var is_player_turn: bool = _arena.res.current_side == "player" and not _arena.res.is_ended
+	if _action_bar != null and _action_bar.has_method("show_move_button"):
+		_action_bar.show_move_button(is_player_turn)
+		_action_bar.show_attack_button(is_player_turn)
+		_action_bar.show_end_turn(is_player_turn)
+		_action_bar.show_retreat(is_player_turn)
+
 	if _arena.res.is_ended:
 		_top_prompt.show_prompt("Battle ended", "")
+		if _action_bar != null and _action_bar.has_method("show_move_button"):
+			_action_bar.show_move_button(false)
+			_action_bar.show_attack_button(false)
+			_action_bar.show_end_turn(false)
+			_action_bar.show_retreat(false)
 		return
 	if _arena.res.current_side == "opponent":
 		_top_prompt.show_prompt("Enemy acting...", "Wait for your turn")
+		if _action_bar != null and _action_bar.has_method("show_move_button"):
+			_action_bar.show_move_button(false)
+			_action_bar.show_attack_button(false)
+			_action_bar.show_end_turn(false)
+			_action_bar.show_retreat(false)
 		return
 	match _player.stage:
 		ParticipantResourceScript.STAGE_SHOW_MOVEMENTS:
-			_top_prompt.show_prompt("Select a tile to move", "Then choose an action")
+			_top_prompt.show_prompt("Select a tile to move", "Click a highlighted tile")
+			if _action_bar != null and _action_bar.has_method("show_move_button"):
+				_action_bar.show_move_button(false)
+				_action_bar.show_attack_button(false)
 		ParticipantResourceScript.STAGE_SELECT_ATTACK_TARGET:
-			_top_prompt.show_prompt("Select a target", "Red tiles = attack range")
+			_top_prompt.show_prompt("Select a target", "Click a highlighted enemy")
+			if _action_bar != null and _action_bar.has_method("show_move_button"):
+				_action_bar.show_move_button(false)
+				_action_bar.show_attack_button(false)
+		ParticipantResourceScript.STAGE_SHOW_ACTIONS:
+			_top_prompt.show_prompt("Choose an action", "Move or Attack")
+			if _action_bar != null and _action_bar.has_method("show_move_button"):
+				_action_bar.show_move_button(true)
+				_action_bar.show_attack_button(true)
 		_:
 			_top_prompt.show_prompt("Your turn", "Choose an action")
+			if _action_bar != null and _action_bar.has_method("show_move_button"):
+				_action_bar.show_move_button(true)
+				_action_bar.show_attack_button(true)
 
 
 func set_encounter(encounter: Dictionary) -> void:
@@ -561,6 +604,30 @@ func _on_end_turn_pressed() -> void:
 		return
 	_arena.reset_all_tile_markers()
 	_player.advance_to(ParticipantResourceScript.STAGE_END_TURN)
+
+
+func _on_action_move() -> void:
+	if _arena.res.is_ended:
+		return
+	if _arena.res.current_side != "player":
+		return
+	var p: ParticipantResource = _player
+	if p.current_pawn == null:
+		return
+	# Trigger movement stage
+	p.advance_to(TurnServiceScript.STAGE_SHOW_MOVEMENTS)
+
+
+func _on_action_attack() -> void:
+	if _arena.res.is_ended:
+		return
+	if _arena.res.current_side != "player":
+		return
+	var p: ParticipantResource = _player
+	if p.current_pawn == null:
+		return
+	# Skip to attack target selection
+	p.advance_to(TurnServiceScript.STAGE_DISPLAY_TARGETS)
 
 
 func _on_retreat_pressed() -> void:
