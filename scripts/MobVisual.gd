@@ -30,6 +30,13 @@ func get_mob_id() -> String:
 	return _mob_id
 
 
+func _process(_delta: float) -> void:
+	# Continuous redraw — same pattern as CharacterVisual (player). A single
+	# queue_redraw() requested during _ready was being dropped, so _draw()
+	# never executed. Redrawing each frame guarantees the sprite/marker shows.
+	queue_redraw()
+
+
 func _replace_sprite() -> void:
 	_texture = null
 	_has_sprite = false
