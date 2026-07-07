@@ -64,7 +64,7 @@ func _build_sprite() -> void:
 	_sprite.name = "Sprite3D"
 	_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	_sprite.pixel_size = 0.01
-	_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	_sprite.position = Vector3(0, PAWN_HEIGHT, 0)
 	_sprite.modulate = Color.WHITE
 	add_child(_sprite)
