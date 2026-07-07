@@ -7,6 +7,7 @@ extends Control
 @onready var medium_btn: Button = $VBox/TopBar/SizeHBox/MediumBtn
 @onready var large_btn: Button = $VBox/TopBar/SizeHBox/LargeBtn
 @onready var generate_btn: Button = $VBox/TopBar/GenerateBtn
+@onready var back_btn: Button = $VBox/TopRow/BackBtn
 @onready var continue_btn: Button = $VBox/ContentHBox/SideVBox/ContinueBtn
 @onready var hex_grid: Node2D = $VBox/ContentHBox/PreviewPanel/Margin/HexGrid
 @onready var preview_panel: Panel = $VBox/ContentHBox/PreviewPanel
@@ -48,6 +49,7 @@ const SETTLEMENT_COLOR := Color(0.9, 0.9, 0.95)
 
 
 func _ready() -> void:
+	back_btn.pressed.connect(_on_back_pressed)
 	random_btn.pressed.connect(_on_random_seed_pressed)
 	generate_btn.pressed.connect(_on_generate_pressed)
 	continue_btn.pressed.connect(_on_continue_pressed)
@@ -72,6 +74,10 @@ func _ready() -> void:
 	if not world_generator.initialize():
 		world_info_label.text = "[color=red]Failed to load biome data![/color]"
 		generate_btn.disabled = true
+
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/ui/MainMenu.tscn")
 
 
 func _on_random_seed_pressed() -> void:

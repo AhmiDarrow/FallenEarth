@@ -56,6 +56,20 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 8
 
+[node name="TopRow" type="HBoxContainer" parent="VBox"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="BackBtn" type="Button" parent="VBox/TopRow"]
+custom_minimum_size = Vector2(120, 36)
+layout_mode = 2
+theme_override_styles/normal = SubResource("button_normal")
+text = "Back"
+
+[node name="Spacer" type="Control" parent="VBox/TopRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="TopBar" type="HBoxContainer" parent="VBox"]
 custom_minimum_size = Vector2(0, 50)
 layout_mode = 2

@@ -116,6 +116,7 @@ func _build_graphics_tab() -> void:
 
 
 func _init_graphics() -> void:
+	_populate_monitors()
 	_monitor_option.select(DisplayManager.get_current_monitor())
 	_fullscreen_check.button_pressed = DisplayManager.fullscreen
 	_vsync_check.button_pressed = DisplayManager.vsync

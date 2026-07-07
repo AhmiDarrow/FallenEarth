@@ -22,6 +22,7 @@ var _race_info_cache: Dictionary = {}
 
 
 func _ready() -> void:
+	$MainVBox/BackRow/BackButton.pressed.connect(_on_back_pressed)
 	$MainVBox/BottomBar/ConfirmButton.pressed.connect(_on_confirm_pressed)
 	$MainVBox/BottomBar/ResetButton.pressed.connect(reset_selection)
 	character_created_and_ready.connect(_on_character_created_and_ready)
@@ -408,6 +409,10 @@ func _update_selection_summary():
 # ===================================================================
 # Confirm / Reset
 # ===================================================================
+
+func _on_back_pressed() -> void:
+	get_tree().change_scene_to_file("res://scenes/WorldGeneration.tscn")
+
 
 func _on_name_changed(_new_text: String):
 	_update_selection_summary()
