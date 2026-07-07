@@ -139,7 +139,7 @@ func _fallback_encounter() -> Dictionary:
 		"height_seed": 0,
 		"character_data": {
 			"class": "recruit", "race": "human", "gender": "male",
-			"hp": 100, "max_hp": 100, "move": 6, "speed": 10,
+			"hp": 100, "max_hp": 100, "move": 3, "speed": 10,
 			"attack": 5, "defense": 0, "attack_range": 1, "facing": 2,
 			"name": "Hero"
 		},
@@ -198,7 +198,7 @@ func _character_to_unit(char_data: Dictionary, pos: Vector2i) -> Dictionary:
 		"attack": int(char_data.get("attack", 5)) + int(char_data.get("attack_bonus", 0)),
 		"defense": int(char_data.get("defense", 0)) + int(char_data.get("armor_bonus", 0)),
 		"speed": int(char_data.get("speed", 10)),
-		"move": int(char_data.get("move", 6)),
+		"move": int(char_data.get("move", 3)),
 		"jump": int(char_data.get("jump", 1)),
 		"attack_range": int(char_data.get("attack_range", 1)),
 		"sprite_id": str(char_data.get("sprite_id", "recruit")),
@@ -223,7 +223,7 @@ func _template_to_unit(t: Dictionary, pos: Vector2i, is_boss: bool, idx: int) ->
 		"attack": int(t.get("attack", 5)) + int(t.get("attack_bonus", 0)),
 		"defense": int(t.get("defense", 0)) + int(t.get("armor_bonus", 0)),
 		"speed": int(t.get("speed", 8)),
-		"move": int(t.get("move", 4)),
+		"move": int(t.get("move", 2)),
 		"jump": int(t.get("jump", 1)),
 		"attack_range": int(t.get("attack_range", 1)),
 		"sprite_id": str(t.get("sprite_id", t.get("id", "blight_toad"))),
@@ -257,6 +257,11 @@ func _start_turn(side: String) -> void:
 	_arena.res.current_side = side
 	var p: ParticipantResource = _player if side == "player" else _opponent
 	p.reset_turn()
+	# Reset per-turn flags on all units so select_pawn can find them
+	for uid in _arena.res.units:
+		var u: UnitResource = _arena.res.units[uid].res
+		if u != null:
+			u.reset_turn()
 	_arena.res.turn_started.emit(side)
 	_arena.reset_all_tile_markers()
 	# Center camera on grid, offset slightly toward back to keep pawns in frame
