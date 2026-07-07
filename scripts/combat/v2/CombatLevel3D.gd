@@ -294,8 +294,11 @@ func on_select_pawn(participant: ParticipantResource) -> int:
 
 
 func on_show_actions(participant: ParticipantResource) -> int:
-	# Stay at SHOW_ACTIONS — wait for player to click Move or Attack
-	return TurnServiceScript.STAGE_SHOW_ACTIONS
+	if participant.side == "player":
+		# Stay at SHOW_ACTIONS — wait for player to click Move or Attack
+		return TurnServiceScript.STAGE_SHOW_ACTIONS
+	# Opponent (AI) auto-advances to movements
+	return TurnServiceScript.STAGE_SHOW_MOVEMENTS
 
 
 func on_show_movements(participant: ParticipantResource) -> int:
