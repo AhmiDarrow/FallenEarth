@@ -122,7 +122,7 @@ func setup_from_data(data: Dictionary, arena: ArenaResource, arena_node_ref: Nod
 	res.attack = int(data.get("attack", 0)) + int(data.get("attack_bonus", 0))
 	res.defense = int(data.get("defense", 0)) + int(data.get("armor_bonus", 0))
 	res.speed = int(data.get("speed", 0))
-	res.move = int(data.get("move", 0))
+	res.move = int(data.get("move", 3)) + int(sqrt(float(int(data.get("level", 1))) / 25.0))
 	res.jump = int(data.get("jump", 1))
 	res.attack_range = int(data.get("attack_range", 1))
 	res.sprite_id = str(data.get("sprite_id", res.unit_id))
