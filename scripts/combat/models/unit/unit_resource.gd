@@ -37,6 +37,7 @@ var sight: int = 5                             ## Vision range (future use)
 ## v0.11.0: Per-turn state. Resets at the start of each turn.
 var has_moved: bool = false
 var has_acted: bool = false
+var move_path: Array[Vector2i] = []
 var can_move: bool:
 	get: return not has_moved and current_hp > 0
 var can_act: bool:
@@ -55,6 +56,7 @@ var sprite_id: String = ""
 func reset_turn() -> void:
 	has_moved = false
 	has_acted = false
+	move_path = []
 
 
 ## v0.11.0: Mark the unit as having used its move. Subsequent
