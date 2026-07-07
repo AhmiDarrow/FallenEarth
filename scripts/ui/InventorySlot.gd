@@ -1,7 +1,7 @@
 ## InventorySlot — Single inventory cell, drawn via DisplayManager.
 extends Control
 
-const DISPLAY = preload("res://scripts/DisplayManager.gd")
+
 
 var _item: Dictionary = {}
 var _idx: int = 0
@@ -19,11 +19,11 @@ func get_item() -> Dictionary:
 func _draw() -> void:
 	if _item.is_empty():
 		return
-	if not DISPLAY.is_ready():
+	if not is_instance_valid(DisplayManager):
 		return
 	var r := get_rect()
 	var slot_rect := Rect2(r.position, r.size)
-	DISPLAY.draw_inventory_slot(slot_rect, _item, _idx)
+	DisplayManager.draw_inventory_slot(slot_rect, _item, _idx)
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:

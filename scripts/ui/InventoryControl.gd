@@ -1,6 +1,8 @@
 ## InventoryControl — Custom Control that draws inventory grid via DisplayManager.
 extends Control
 
+const InventorySlotScript = preload("res://scripts/ui/InventorySlot.gd")
+
 @onready var _container: ScrollContainer = $ScrollContainer
 @onready var _grid: GridContainer = $ScrollContainer/ScrollContainer/CenterContainer/Panel/InventoryGrid
 
@@ -20,7 +22,7 @@ func set_items(items: Array[Dictionary]) -> void:
 
 	for i in range(items.size()):
 		var item: Dictionary = items[i]
-		var slot := InventorySlot.new()
+		var slot := InventorySlotScript.new()
 		slot.size_override = Vector2(46, 46)
 		slot.setup_for(item, i)
 		_grid.add_child(slot)

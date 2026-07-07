@@ -6,7 +6,6 @@ signal return_to_local_requested()
 signal travel_to_hex_requested(q: int, r: int)
 
 const HEX_SIZE := 22.0
-const DISPLAY = preload("res://scripts/DisplayManager.gd")
 
 @onready var _world_grid_rect := Rect2(Vector2.ZERO, Vector2(1200, 700))
 @onready var _info_panel_rect := Rect2(Vector2(1220, 10), Vector2(320, 600))
@@ -46,29 +45,29 @@ func _configure_panels() -> void:
 		)
 		# Draw hex marker
 		var font := get_theme_font("font")
-		var fg := color.lighten(0.15)
-		DISPLAY.draw_multiline(text_rect, marker, 10.0, fg, 0.0)
+		var fg := color.lightened(0.15)
+		DisplayManager.draw_multiline(text_rect, marker, 10.0, fg, 0.0)
 
 		# Highlight player / selected
 		if q == _player_q and r == _player_r:
-			DISPLAY.draw_circle(text_rect.position + Vector2(11, 9), 4.5, Color(1.0, 0.95, 0.6))
+			DisplayManager.draw_circle(text_rect.position + Vector2(11, 9), 4.5, Color(1.0, 0.95, 0.6))
 		elif q == _selected_q and r == _selected_r:
-			DISPLAY.draw_circle(text_rect.position + Vector2(11, 9), 4.5, Color(0.7, 0.9, 1.0))
+			DisplayManager.draw_circle(text_rect.position + Vector2(11, 9), 4.5, Color(0.7, 0.9, 1.0))
 
 		# Store for click handling (simple 2D coordinate map)
 		var world_pos := WorldGenerator.axial_to_pixel(q, r, HEX_SIZE)
 		_hex_cells[world_pos] = {"q": q, "r": r, "tile": tile}
 
 	# Draw info panel background
-	DISPLAY.draw_rusted_panel(_info_panel_rect, "[b]Region (%d, %d)[/b] — [color=#c8e6c9]%s[/color]" % [
+	DisplayManager.draw_rusted_panel(_info_panel_rect, "[b]Region (%d, %d)[/b] — [color=#c8e6c9]%s[/color]" % [
 		_selected_q, _selected_r, _tile_map.get("%d,%d" % [_selected_q, _selected_r], {}).get("name", "?")
 	])
 
 	# Draw travel button (active)
-	DISPLAY.draw_button(_travel_btn_rect, "▶ TRAVEL HERE", _is_travel_active())
+	DisplayManager.draw_button(_travel_btn_rect, "▶ TRAVEL HERE", _is_travel_active())
 
 	# Draw local return button (always active)
-	DISPLAY.draw_button(_local_btn_rect, "◀ RETURN TO LOCAL", false)
+	DisplayManager.draw_button(_local_btn_rect, "◀ RETURN TO LOCAL", false)
 
 
 func _is_travel_active() -> bool:

@@ -24,6 +24,7 @@ const LootPopupScript = preload("res://scripts/ui/LootPopup.gd")
 const LootPopupScene = preload("res://scenes/ui/LootPopup.tscn")
 const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
 const TransitionScreenScene = preload("res://scenes/TransitionScreen.tscn")
+const EntityVisualComponentScript = preload("res://scripts/procedural/EntityVisualComponent.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -960,6 +961,27 @@ func _setup_map_view() -> void:
 	_pickup_layer = _map_view.get_pickup_layer()
 
 
+## Phase 2: attach a procedural EntityVisualComponent to an existing 2D entity
+## node, resolving its visual from appearance.json. Each component owns a
+## private 3D SubViewport studio, so no shared world is required. Returns the
+## component or null when procedural graphics are disabled.
+func _attach_procedural_visual(parent: Node2D, entity_data: Dictionary, group: String = "default") -> Node:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if gs == null or not gs.use_procedural_graphics:
+		return null
+	var am: Node = get_node_or_null("/root/AppearanceManager")
+	if am == null:
+		return null
+	var visual: Dictionary = am.call("resolve_entity_visual", entity_data)
+	if visual.is_empty():
+		return null
+	var comp = EntityVisualComponentScript.new()
+	comp.name = "ProcVisual"
+	comp.configure(visual, group)
+	parent.add_child(comp)
+	return comp
+
+
 func _setup_player_visual() -> void:
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if not is_instance_valid(gs):
@@ -982,6 +1004,12 @@ func _setup_player_visual() -> void:
 	)
 	_player_visual.z_index = 10
 	print("[HubWorld] Player visual set: race=%s gender=%s" % [race, gender])
+
+	# Phase 2: layered procedural 3D visual over the sprite.
+	var pv: Node = _attach_procedural_visual(_player_visual, char_data)
+	if pv != null:
+		pv.set_meta("entity_kind", "player")
+		print("[HubWorld] Player procedural visual attached.")
 
 
 func _build_local_view() -> void:
@@ -1071,11 +1099,68 @@ func _refresh_markers() -> void:
 				int(rd.get("local_x", 0)), int(rd.get("local_y", 0)),
 				Color(0.75, 0.4, 0.95), "⚡", "rift", cell_size
 			)
+			_add_rift_procedural_visual(rd, cell_size)
+
+
+## Phase 5: spawn a procedural 3D rift visual (large glow geometry).
+func _add_rift_procedural_visual(rd: Dictionary, cell_size: int) -> void:
+	var key: String = "riftvis|%s" % str(rd.get("id", "%d,%d" % [int(rd.get("local_x", 0)), int(rd.get("local_y", 0))]))
+	if _marker_nodes.has(key):
+		return
+	var rift_type: int = int(rd.get("rift_type", 0))
+	var preset_name: String = ["rift_void", "rift_life", "rift_energy"][rift_type % 3]
+	var rift_vis: Dictionary = {
+		"visual_preset": preset_name,
+		"id": str(rd.get("id", "rift")),
+	}
+	var node: Node2D = Node2D.new()
+	var rx: int = int(rd.get("local_x", 0))
+	var ry: int = int(rd.get("local_y", 0))
+	node.position = Vector2(rx * cell_size + cell_size * 0.5, ry * cell_size + cell_size * 0.5)
+	node.z_index = 900
+	node.scale = Vector2(1.6, 1.6)
+	world_grid.add_child(node)
+	var pv: Node = _attach_procedural_visual(node, rift_vis)
+	if pv != null:
+		pv.set_meta("entity_kind", "rift")
+	_marker_nodes[key] = node
 
 	var npc: Dictionary = _get_npc_at_hex()
 	if not npc.is_empty():
 		var npos := _npc_local_position(npc)
 		_add_marker(npos.x, npos.y, Color(1.0, 0.85, 0.4), "★", "npc", cell_size)
+		_add_npc_procedural_visual(npc, npos, cell_size)
+
+
+## Phase 5: spawn a procedural 3D visual for the NPC at the current hex.
+func _add_npc_procedural_visual(npc: Dictionary, npos: Vector2i, cell_size: int) -> void:
+	var key: String = "npcvis|%s" % str(npc.get("id", "?"))
+	if _marker_nodes.has(key):
+		return
+	var npc_vis: Dictionary = {
+		"visual_preset": "humanoid_default",
+		"id": str(npc.get("id", "npc")),
+		"faction": npc.get("faction", ""),
+	}
+	var node: Node2D = Node2D.new()
+	node.position = Vector2(npos.x * cell_size + cell_size * 0.5, npos.y * cell_size + cell_size * 0.5)
+	node.z_index = 1000
+	world_grid.add_child(node)
+	var pv: Node = _attach_procedural_visual(node, npc_vis)
+	if pv != null:
+		pv.set_meta("entity_kind", "npc")
+		# Faction tint if known.
+		var fac: String = str(npc.get("faction", ""))
+		if not fac.is_empty():
+			var fcol: Color = _faction_color(fac)
+			pv.set_faction_tint(fcol, 0.3)
+	_marker_nodes[key] = node
+
+
+## Stable faction -> color (same hue-hash approach used by the minimap).
+func _faction_color(faction_key: String) -> Color:
+	var h := float(str(faction_key).hash() % 360) / 360.0
+	return Color.from_hsv(h, 0.6, 0.9)
 
 
 func _dir_from_dx_dy(dx: int, dy: int) -> int:
@@ -1095,6 +1180,9 @@ func _reset_to_idle(dir_idx: int) -> void:
 	await get_tree().create_timer(0.25).timeout
 	if is_instance_valid(_player_visual):
 		_player_visual.call("play_animation", "idle", dir_idx)
+		var pv: Node = _player_visual.get_node_or_null("ProcVisual")
+		if pv != null:
+			pv.set_state(0)  # IDLE
 
 
 func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 24) -> void:
@@ -1120,6 +1208,11 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	# node was valid, visible, and had a loaded texture.
 	world_grid.add_child(mob_node)
 	mob_node.set_mob_sprite(sprite_id)
+	# Phase 2: layered procedural 3D visual.
+	var pv: Node = _attach_procedural_visual(mob_node, mob_data)
+	if pv != null:
+		pv.set_meta("entity_kind", "mob")
+		print("[HubWorld] _add_mob_sprite: procedural visual attached for %s" % sprite_id)
 	print("[HubWorld] _add_mob_sprite: id=%s cell=(%d,%d) path=%s world_grid_id=%d in_tree=%s" % [
 		sprite_id, x, y, mob_node.get_path(),
 		world_grid.get_instance_id(), str(mob_node.is_inside_tree())
@@ -1136,6 +1229,7 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	var entry: Dictionary = {
 		"node": mob_node,
 		"ai": ai,
+		"proc": pv,
 		"grid_x": x,
 		"grid_y": y,
 		"moving": false,
@@ -1171,6 +1265,7 @@ func _tick_overworld_mobs(delta: float) -> void:
 		var old_x: int = entry["grid_x"]
 		var old_y: int = entry["grid_y"]
 		ai.tick(delta, _local_map, _local_x, _local_y, Callable(self, "_is_cell_walkable"))
+		_sync_mob_anim_state(entry)
 
 		match ai.state:
 			OverworldMobAI.State.WANDER, OverworldMobAI.State.AGGRO:
@@ -1187,6 +1282,35 @@ func _tick_overworld_mobs(delta: float) -> void:
 	# Clean up invalid entries
 	for key in to_remove:
 		_overworld_mobs.erase(key)
+
+
+## Phase 4: map the overworld mob AI state onto the procedural EntityAnimator.
+## AGGRO/ATTACK -> Combat (tense), WANDER -> Walk, IDLE -> Idle. Facing is
+## derived from the vector toward the player when aggroed, or from the last
+## movement direction otherwise.
+func _sync_mob_anim_state(entry: Dictionary) -> void:
+	var ai: OverworldMobAI = entry.get("ai") as OverworldMobAI
+	var proc: Node = entry.get("proc")
+	if ai == null or proc == null:
+		return
+	var anim_state: int = 0  # IDLE
+	match ai.state:
+		OverworldMobAI.State.WANDER:
+			anim_state = 1  # WALK
+		OverworldMobAI.State.AGGRO, OverworldMobAI.State.ATTACK:
+			anim_state = 2  # COMBAT
+	proc.set_state(anim_state)
+	# Facing toward the player for aggro; else from current->target step.
+	var fx := float(_local_x - entry["grid_x"])
+	var fy := float(_local_y - entry["grid_y"])
+	if ai.state == OverworldMobAI.State.AGGRO or ai.state == OverworldMobAI.State.ATTACK:
+		if abs(fx) > 0.01 or abs(fy) > 0.01:
+			proc.set_facing(atan2(fx, fy))
+	elif ai._wander_target != Vector2i.ZERO:
+		var dx := float(ai._wander_target.x - entry["grid_x"])
+		var dy := float(ai._wander_target.y - entry["grid_y"])
+		if abs(dx) > 0.01 or abs(dy) > 0.01:
+			proc.set_facing(atan2(dx, dy))
 
 
 ## Tween a MobVisual node from its current position to a target cell.
@@ -1305,6 +1429,11 @@ func _try_move_local(dx: int, dy: int) -> void:
 		_player_visual.call("play_animation", "walk", dir_idx)
 		# Return to idle after brief walk frame cycle
 		_reset_to_idle(dir_idx)
+		# Phase 2: drive the procedural 3D visual too.
+		var pv: Node = _player_visual.get_node_or_null("ProcVisual")
+		if pv != null:
+			pv.set_state(1)  # WALK
+			pv.set_facing(float(dir_idx) / 8.0 * TAU)
 
 	# Phase 1: auto-collect any floor pickup at the new cell.
 	var pickup_info: Dictionary = _try_collect_floor_pickup_at(_local_x, _local_y)

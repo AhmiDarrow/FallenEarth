@@ -1,4 +1,4 @@
-[gd_scene load_steps=1 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/Phase6PerformanceTest.gd" id="1"]
 
@@ -10,52 +10,3 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
-
-[node name="UI" type="VBoxContainer" parent="."]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Title" type="Label" parent="UI"]
-layout_mode = 2
-text = "Phase 6 - Performance & Optimization Test"
-
-[node name="Controls" type="HBoxContainer" parent="UI"]
-layout_mode = 2
-
-[node name="Spawn10Button" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Spawn 10"
-
-[node name="Spawn30Button" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Spawn 30"
-
-[node name="Spawn60Button" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Spawn 60"
-
-[node name="AutoSpawnButton" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Auto: OFF"
-
-[node name="ClearButton" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Clear"
-
-[node name="ZoomInButton" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Zoom In"
-
-[node name="ZoomOutButton" type="Button" parent="UI/Controls"]
-layout_mode = 2
-text = "Zoom Out"
-
-[node name="StatsLabel" type="RichTextLabel" parent="UI"]
-custom_minimum_size = Vector2(0, 140)
-layout_mode = 2
-bbcode_enabled = true
-text = "Phase 6 Performance Test"

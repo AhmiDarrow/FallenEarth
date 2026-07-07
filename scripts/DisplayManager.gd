@@ -281,6 +281,12 @@ func draw_health_bar(rect: Rect2, pct: float, name: String = "") -> void:
 func draw_inventory_slot(rect: Rect2, item: Dictionary, idx: int) -> void:
 	return
 
+func draw_circle(pos: Vector2, radius: float, color: Color) -> void:
+	return
+
+func draw_multiline(rect: Rect2, text: String, size: float, color: Color, align: float) -> void:
+	return
+
 func draw_button(rect: Rect2, text: String, pressed: bool = false) -> void:
 	return
 

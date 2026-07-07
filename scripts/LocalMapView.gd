@@ -24,6 +24,8 @@ const SettlementNodeScene = preload("res://scenes/SettlementNode.tscn")
 const CookingTableScene = preload("res://scenes/CookingTable.tscn")
 const SettlementBuildingScene = preload("res://scenes/SettlementBuilding.tscn")
 const ResourceVisualManagerScript = preload("res://scripts/ResourceVisualManager.gd")
+const EntityVisualComponentScript = preload("res://scripts/procedural/EntityVisualComponent.gd")
+const AppearanceManagerScript = preload("res://scripts/AppearanceManager.gd")
 
 const CELL_SIZE := 24
 
@@ -179,6 +181,8 @@ func _populate_buildings(structures: Array) -> void:
 		var node: Node2D = SettlementBuildingScene.instantiate()
 		settlement_layer.add_child(node)
 		node.setup((entry as Dictionary).duplicate(true))
+		# Phase (extend coverage): procedural 3D visual for settlement structures.
+		_attach_procedural_if_enabled(node, {"visual_preset": "prop_structure", "id": str(entry.get("id", "bld"))})
 
 
 ## Returns the SettlementBuilding whose footprint contains the given cell, or null.
@@ -243,6 +247,39 @@ func _populate_resource_nodes(nodes: Array) -> void:
 		node.position = cell_to_world(cell)
 		# v0.9.1c: cell → node index for O(1) gather lookups.
 		_node_by_cell[cell] = node
+		# NOTE: Resource nodes are rendered by the batched MultiMesh
+		# ResourceVisualManager (one draw call for hundreds of nodes) for
+		# performance. Per-node procedural 3D studios would conflict (double
+		# draw) and regress perf, so they are intentionally NOT overlaid here.
+		# The procedural resource shapes (tree/crystal/ore/plant) are available
+		# via ProceduralEntityGenerator + appearance.json presets and shown in
+		# the Phase1Previewer for visual QA.
+
+
+## Phase (extend coverage): attach a procedural 3D EntityVisualComponent to a
+## discrete overworld node (resource node, settlement building) when procedural
+## graphics are enabled, and hide the original sprite so it isn't double-drawn.
+## Resource data resolves via resource_node_visual_map (by type); buildings use
+## an explicit visual_preset. Failures are non-fatal (original sprite remains).
+func _attach_procedural_if_enabled(node: Node2D, entity_data: Dictionary) -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if gs == null or not gs.use_procedural_graphics:
+		return
+	var am: Node = get_node_or_null("/root/AppearanceManager")
+	if am == null:
+		return
+	var visual: Dictionary = am.call("resolve_entity_visual", entity_data)
+	if visual.is_empty():
+		return
+	var comp = EntityVisualComponentScript.new()
+	comp.name = "ProcVisual"
+	comp.configure(visual, "default", 72.0)
+	node.add_child(comp)
+	# Hide the original sprite-driven visual to avoid overlap.
+	for child in node.get_children():
+		if child is Sprite2D or child.get_class() == "AnimatedSprite2D":
+			child.visible = false
+	comp.set_meta("entity_kind", str(entity_data.get("type", entity_data.get("visual_preset", "resource"))))
 
 
 func _populate_floor_pickups(pickups: Array) -> void:
