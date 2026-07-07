@@ -9,6 +9,7 @@ const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
 const MobVisualScript = preload("res://scripts/MobVisual.gd")
+const OverworldMobScript = preload("res://scripts/OverworldMob.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
 const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
 const ProgressionMgrScript = preload("res://scripts/ProgressionManager.gd")
@@ -109,6 +110,9 @@ var _mission_manager: Node = null
 var _pause_menu: PauseMenu = null
 var _player_visual: Node2D = null
 var _transition_screen: CanvasLayer = null
+
+# v0.10.0: OverworldMob instances keyed by "lx,ly" for AI ticking.
+var _overworld_mobs: Dictionary = {}
 
 
 func _ready() -> void:
@@ -261,6 +265,9 @@ func _process(delta: float) -> void:
 	# The active list is small (typically 0-5 nodes) — only nodes
 	# that the player has depleted and is waiting to respawn.
 	_tick_active_respawn_nodes(delta)
+
+	# v0.10.0: Tick overworld mob AI (pathfinding + aggro + combat trigger).
+	_tick_overworld_mobs(delta)
 
 	# Phase 1b: hover tooltip — find what's under the mouse and update.
 	_tick_hover_tooltip()
@@ -1003,6 +1010,12 @@ func _refresh_markers() -> void:
 
 	var all_mobs: Dictionary = gs.get_overworld_mobs()
 	var mob_count := 0
+	# v0.10.0: Clear old OverworldMob instances before rebuilding.
+	for key in _overworld_mobs:
+		var m: Node2D = _overworld_mobs[key] as Node2D
+		if is_instance_valid(m):
+			m.queue_free()
+	_overworld_mobs.clear()
 	for mob_key in all_mobs:
 		if not str(mob_key).begins_with("%d,%d|" % [_player_q, _player_r]):
 			continue
@@ -1016,7 +1029,7 @@ func _refresh_markers() -> void:
 		var my := int(local_parts[1])
 		var mob_data: Dictionary = all_mobs[mob_key] as Dictionary
 		var sprite_id: String = str(mob_data.get("sprite_id", mob_data.get("type", "")))
-		_add_mob_sprite(mx, my, sprite_id, cell_size)
+		_add_mob_sprite(mx, my, sprite_id, cell_size, mob_data)
 		mob_count += 1
 
 	if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
@@ -1062,18 +1075,101 @@ func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cel
 		_marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = node
 
 
-func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24) -> void:
+func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob_data: Dictionary = {}) -> void:
 	if sprite_id.is_empty():
 		return
-	var mob_node: Node2D = MobVisualScript.new()
-	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	mob_node.z_index = 50
-	mob_node.set_mob_sprite(sprite_id)
+	# v0.10.0: Use OverworldMob for AI (pathfinding + aggro).
+	# If mob_data is empty (legacy callers), fall back to plain MobVisual.
+	if mob_data.is_empty():
+		var mob_node: Node2D = MobVisualScript.new()
+		mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+		mob_node.z_index = 50
+		mob_node.set_mob_sprite(sprite_id)
+		if is_instance_valid(_mob_layer):
+			_mob_layer.add_child(mob_node)
+		elif is_instance_valid(_map_view):
+			_map_view.get_mob_layer().add_child(mob_node)
+		_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
+		return
+
+	var mob: Node2D = OverworldMobScript.new()
+	mob.name = "OverworldMob_%s" % sprite_id
+	mob.z_index = 50
+	mob.setup(mob_data, cell_size, Callable(self, "_is_cell_walkable"))
+	mob.reached_player.connect(_on_overworld_mob_reached_player)
 	if is_instance_valid(_mob_layer):
-		_mob_layer.add_child(mob_node)
+		_mob_layer.add_child(mob)
 	elif is_instance_valid(_map_view):
-		_map_view.get_mob_layer().add_child(mob_node)
-	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
+		_map_view.get_mob_layer().add_child(mob)
+	_overworld_mobs["%d,%d" % [x, y]] = mob
+	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob
+
+
+## v0.10.0: Tick all OverworldMob instances. Each mob runs its AI
+## (wander/aggro/pathfinding) and tweens toward its next cell. When a
+## mob reaches the player's cell, combat starts.
+func _tick_overworld_mobs(delta: float) -> void:
+	if _overworld_mobs.is_empty():
+		return
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return
+
+	var to_remove: Array[String] = []
+	for pos_key in _overworld_mobs:
+		var mob: Node2D = _overworld_mobs[pos_key] as Node2D
+		if not is_instance_valid(mob):
+			to_remove.append(pos_key)
+			continue
+		if not mob.has_method("tick_mob"):
+			continue
+
+		var old_x: int = mob.grid_x
+		var old_y: int = mob.grid_y
+		var _ai_state: int = mob.tick_mob(delta, _local_map, _local_x, _local_y)
+
+		# If mob moved to a new cell, update GameState tracking
+		if mob.grid_x != old_x or mob.grid_y != old_y:
+			mob.update_game_state(gs, _player_q, _player_r, old_x, old_y)
+			# Update the dictionary key
+			to_remove.append(pos_key)
+			var new_key: String = "%d,%d" % [mob.grid_x, mob.grid_y]
+			if not _overworld_mobs.has(new_key):
+				_overworld_mobs[new_key] = mob
+
+	for key in to_remove:
+		_overworld_mobs.erase(key)
+
+
+## v0.10.0: Called when an OverworldMob reaches the player's cell.
+## Starts tactical combat with that mob.
+func _on_overworld_mob_reached_player(mob_data: Dictionary) -> void:
+	# Prevent combat while a UI overlay is open or already in combat
+	if _is_ui_overlay_open() or get_tree().paused:
+		return
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return
+
+	var lx: int = int(mob_data.get("local_x", _local_x))
+	var ly: int = int(mob_data.get("local_y", _local_y))
+	var tile_key := "%d,%d|%d,%d" % [_player_q, _player_r, lx, ly]
+	var char_data: Dictionary = gs.get_party_character_data()
+	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
+	var equip_stats: Dictionary = em.get_combat_stats("player") if is_instance_valid(em) else {}
+	var biome: String = str(_tile_map.get("%d,%d" % [_player_q, _player_r], {}).get("name", "Ash Wastes"))
+
+	var encounter: Dictionary = EncounterBuilder.build_overworld(char_data, mob_data, tile_key, biome, equip_stats)
+	if encounter.is_empty():
+		return
+
+	# Remove mob from GameState (combat consumes it)
+	gs.remove_overworld_mob(gs.mob_key(_player_q, _player_r, lx, ly))
+	_mark_world_markers_dirty()
+
+	var gm: GameManager = get_node_or_null("/root/GameManager") as GameManager
+	if is_instance_valid(gm):
+		gm.go_to_tactical_combat(encounter)
 
 
 func _update_camera() -> void:
