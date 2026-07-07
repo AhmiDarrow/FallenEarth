@@ -70,21 +70,25 @@ func _replace_sprite() -> void:
 func _process(_delta: float) -> void:
 	_dbg_process += 1
 	if _dbg_process <= 120 and _dbg_process % 60 == 0:
-		print("[MobVisual] %s _process=%d _draw=%d parent=%s in_tree=%s visible=%s sprite=%s" % [
+		print("[MobVisual] %s _process=%d _draw=%d parent=%s in_tree=%s visible=%s sprite_valid=%s sprite_parented=%s" % [
 			_mob_id, _dbg_process, _dbg_draw,
 			get_parent().name if get_parent() else "null",
 			str(is_inside_tree()), str(visible),
-			str(is_instance_valid(_sprite))
+			str(is_instance_valid(_sprite)),
+			str(is_instance_valid(_sprite) and _sprite.get_parent() == self)
 		])
 	queue_redraw()
 
 
 func _draw() -> void:
 	_dbg_draw += 1
-	# Magenta fallback rectangle — only visible when no real sprite is present.
-	if not _has_sprite:
-		draw_rect(Rect2(Vector2(-14, -14), Vector2(28, 28)), Color.MAGENTA)
-		draw_rect(Rect2(Vector2(-13, -13), Vector2(26, 26)), Color(1.0, 0.0, 1.0, 0.4))
-		if not _mob_id.is_empty():
-			var label_offset := Vector2(-_mob_id.length() * 2.5, -22)
-			draw_string(ThemeDB.fallback_font, label_offset, _mob_id, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
+	# ALWAYS draw magenta — proves _draw output is visible on this node.
+	draw_rect(Rect2(Vector2(-16, -16), Vector2(32, 32)), Color.MAGENTA)
+	draw_rect(Rect2(Vector2(-15, -15), Vector2(30, 30)), Color(1.0, 0.0, 1.0, 0.4))
+	if _has_sprite and is_instance_valid(_sprite) and _sprite.get_parent() == self:
+		# Real sprite present and parented — draw it on top of magenta.
+		var offset := Vector2(-_sprite.texture.get_width() * 0.5, -_sprite.texture.get_height() * 0.5)
+		draw_texture(_sprite.texture, offset)
+	if not _mob_id.is_empty():
+		var label_offset := Vector2(-_mob_id.length() * 2.5, -24)
+		draw_string(ThemeDB.fallback_font, label_offset, _mob_id, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)

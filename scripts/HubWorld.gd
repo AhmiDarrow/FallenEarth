@@ -1113,7 +1113,7 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	# tree-entry issues.
 	var mob_node: Node2D = MobVisualScript.new()
 	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	mob_node.z_index = 10  # match the player's CharacterVisual exactly
+	mob_node.z_index = 1000  # high to escape any z-based covering; test only
 	# Add directly to world_grid (same parent as the player's CharacterVisual,
 	# which renders correctly via _draw()). MobLayer's y_sort_enabled was
 	# preventing CanvasItem _draw() children from rendering even though the
