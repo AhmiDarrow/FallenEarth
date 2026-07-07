@@ -294,12 +294,14 @@ func on_select_pawn(participant: ParticipantResource) -> int:
 
 
 func on_show_actions(participant: ParticipantResource) -> int:
-	return TurnServiceScript.STAGE_SHOW_MOVEMENTS
+	# Stay at SHOW_ACTIONS — wait for player to click Move or Attack
+	return TurnServiceScript.STAGE_SHOW_ACTIONS
 
 
 func on_show_movements(participant: ParticipantResource) -> int:
 	var pawn: CombatPawn3D = participant.current_pawn as CombatPawn3D
 	if pawn == null or pawn.res == null:
+		participant.advance_to(TurnServiceScript.STAGE_END_TURN)
 		return TurnServiceScript.STAGE_END_TURN
 	var arena: ArenaResource = _arena.res
 	var enemies: Array = []
@@ -316,7 +318,9 @@ func on_show_movements(participant: ParticipantResource) -> int:
 	# Process surrounding tiles using arena
 	var root_tile: CombatTile3D = pawn.get_tile()
 	if root_tile == null:
-		return TurnServiceScript.STAGE_END_TURN
+		# Can't find tile — skip movement, go to attack phase
+		participant.advance_to(TurnServiceScript.STAGE_DISPLAY_TARGETS)
+		return TurnServiceScript.STAGE_DISPLAY_TARGETS
 	_arena.process_surrounding_tiles(root_tile, pawn.res.move, enemies)
 	_arena.mark_reachable_tiles(root_tile, pawn.res.move)
 	return TurnServiceScript.STAGE_SELECT_LOCATION
@@ -616,6 +620,7 @@ func _on_action_move() -> void:
 		return
 	# Trigger movement stage
 	p.advance_to(TurnServiceScript.STAGE_SHOW_MOVEMENTS)
+	_update_top_prompt()
 
 
 func _on_action_attack() -> void:
@@ -628,6 +633,7 @@ func _on_action_attack() -> void:
 		return
 	# Skip to attack target selection
 	p.advance_to(TurnServiceScript.STAGE_DISPLAY_TARGETS)
+	_update_top_prompt()
 
 
 func _on_retreat_pressed() -> void:
