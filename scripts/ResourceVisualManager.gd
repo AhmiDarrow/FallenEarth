@@ -61,6 +61,8 @@ func _build_node_visuals() -> void:
 		var entries: Array = groups[sprite_id]
 		var tex: Texture2D = _load_node_texture(sprite_id)
 		var mm := MultiMesh.new()
+		mm.mesh = QuadMesh.new()
+		mm.use_colors = true
 		mm.transform_format = MultiMesh.TRANSFORM_2D
 		mm.instance_count = entries.size()
 		var mesh_inst := MultiMeshInstance2D.new()
@@ -112,6 +114,8 @@ func _build_pickup_visuals() -> void:
 		var entries: Array = groups[item_id]
 		var tex: Texture2D = _load_pickup_texture(item_id)
 		var mm := MultiMesh.new()
+		mm.mesh = QuadMesh.new()
+		mm.use_colors = true
 		mm.transform_format = MultiMesh.TRANSFORM_2D
 		mm.instance_count = entries.size()
 		var mesh_inst := MultiMeshInstance2D.new()

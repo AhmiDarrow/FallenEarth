@@ -68,9 +68,9 @@ func _handle_input(delta: float) -> void:
 	if Input.is_key_pressed(KEY_E):
 		_rotation_target += rotate_speed * delta
 
-	if Input.is_action_just_released("ui_pageup") or Input.is_key_pressed(KEY_Z):
+	if Input.is_action_just_released("ui_page_up") or Input.is_key_pressed(KEY_Z):
 		_current_zoom = clampf(_current_zoom - zoom_speed, zoom_min, zoom_max)
-	if Input.is_action_just_released("ui_pagedown") or Input.is_key_pressed(KEY_X):
+	if Input.is_action_just_released("ui_page_down") or Input.is_key_pressed(KEY_X):
 		_current_zoom = clampf(_current_zoom + zoom_speed, zoom_min, zoom_max)
 
 	_target_position.x = clampf(_target_position.x, -boundary_radius, boundary_radius)
