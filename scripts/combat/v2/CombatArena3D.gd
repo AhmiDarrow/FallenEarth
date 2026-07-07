@@ -138,10 +138,9 @@ func _build_ground_plane() -> void:
 	mat.albedo_color = Color(0.15, 0.17, 0.19, 1.0)
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	ground.material_override = mat
 	ground.position = Vector3(0.0, -0.02, 0.0)
-	ground.cast_shadows = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	ground.receive_shadows = false
 	add_child(ground)
 
 
