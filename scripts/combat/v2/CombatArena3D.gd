@@ -183,7 +183,7 @@ func add_unit(unit_data: Dictionary) -> CombatPawn3D:
 		pawns_node.name = "Pawns"
 		add_child(pawns_node)
 	pawns_node.add_child(pawn)
-	pawn.setup_from_data(unit_data, res)
+	pawn.setup_from_data(unit_data, res, self)
 	_pawns[pawn.res.unit_id] = pawn
 	res.units[pawn.res.unit_id] = pawn
 	return pawn

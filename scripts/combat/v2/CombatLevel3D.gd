@@ -351,7 +351,7 @@ func on_move_unit(participant: ParticipantResource) -> int:
 		return TurnServiceScript.STAGE_MOVE_UNIT
 	# Move complete — clear highlights and update grid_pos
 	_arena.reset_all_tile_markers()
-	if pawn.res and pawn.arena_resource:
+	if pawn.res and pawn.arena_node:
 		var old_pos: Vector2i = pawn.res.grid_pos
 		var tile: CombatTile3D = _arena.get_tile(old_pos.x, old_pos.y)
 		if tile:

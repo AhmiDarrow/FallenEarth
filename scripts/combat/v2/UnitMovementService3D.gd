@@ -51,9 +51,9 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 		unit_res.move_path.pop_front()
 		unit_res.grid_pos = next_grid
 		# Update tile occupancy
-		if pawn.arena_resource:
-			var tile = pawn.arena_resource.get_tile(next_grid.x, next_grid.y)
-			if tile:
+		if pawn.arena_node:
+			var tile = pawn.arena_node.get_tile(next_grid.x, next_grid.y)
+			if tile and tile is CombatTile3D:
 				tile.occupier = pawn
 		if unit_res.move_path.is_empty():
 			pawn.is_moving = false

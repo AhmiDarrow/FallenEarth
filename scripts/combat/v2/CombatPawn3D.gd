@@ -15,8 +15,8 @@ const CHAR_FOLDER: String = "res://assets/characters/"
 ## The UnitResource this pawn reads from
 var res: UnitResource
 
-## Reference to arena
-var arena_resource: ArenaResource
+## Reference to arena node (for tile lookups that return CombatTile3D)
+var arena_node: Node3D = null
 
 ## True while animating movement
 var is_moving: bool = false
@@ -105,7 +105,7 @@ func _build_animations() -> void:
 	add_child(_anim_player)
 
 
-func setup_from_data(data: Dictionary, arena: ArenaResource) -> void:
+func setup_from_data(data: Dictionary, arena: ArenaResource, arena_node_ref: Node3D = null) -> void:
 	res = UnitResource.new()
 	res.unit_id = str(data.get("id", ""))
 	res.display_name = str(data.get("name", ""))
@@ -127,7 +127,7 @@ func setup_from_data(data: Dictionary, arena: ArenaResource) -> void:
 	res.attack_range = int(data.get("attack_range", 1))
 	res.sprite_id = str(data.get("sprite_id", res.unit_id))
 	res.facing = int(data.get("facing", 2))
-	arena_resource = arena
+	arena_node = arena_node_ref
 	# Position on grid — use local position since we're a child of the Arena
 	position = Vector3(
 		res.grid_pos.x * CELL_SIZE,
@@ -199,8 +199,8 @@ func get_tile() -> CombatTile3D:
 		if collider is CombatTile3D:
 			return collider as CombatTile3D
 	# Fallback: look up tile by grid_pos from arena
-	if arena_resource != null and res != null:
-		var tile = arena_resource.get_tile(res.grid_pos.x, res.grid_pos.y)
+	if arena_node != null and res != null:
+		var tile = arena_node.get_tile(res.grid_pos.x, res.grid_pos.y)
 		if tile != null and tile is CombatTile3D:
 			return tile as CombatTile3D
 	return null
