@@ -62,10 +62,16 @@ func get_unit(unit_id: String) -> Object:
 ## v0.11.0: Helper to find which unit is standing on (x, y).
 ## Returns the unit's node (CombatUnit) or null.
 func get_unit_at(x: int, y: int) -> Object:
-	var key: String = "%d,%d" % [x, y]
 	for unit_id in units:
 		var u: Object = units[unit_id]
-		if u != null and is_instance_valid(u) and u.grid_pos == Vector2i(x, y):
+		if u == null or not is_instance_valid(u):
+			continue
+		var u_grid: Vector2i = Vector2i.ZERO
+		if "res" in u and u.res != null and "grid_pos" in u.res:
+			u_grid = u.res.grid_pos
+		elif "grid_pos" in u:
+			u_grid = u.grid_pos
+		if u_grid == Vector2i(x, y):
 			return u
 	return null
 
