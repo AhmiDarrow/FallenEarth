@@ -1094,8 +1094,9 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 
 	var mob: Node2D = OverworldMobScript.new()
 	mob.name = "OverworldMob_%s" % sprite_id
+	mob.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
 	mob.z_index = 50
-	mob.setup(mob_data, cell_size, Callable(self, "_is_cell_walkable"))
+	mob.setup(mob_data, cell_size, Callable(self, "_is_cell_walkable"), x, y)
 	mob.reached_player.connect(_on_overworld_mob_reached_player)
 	if is_instance_valid(_mob_layer):
 		_mob_layer.add_child(mob)

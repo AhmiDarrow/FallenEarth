@@ -31,10 +31,10 @@ var _move_tween: Tween = null
 var _walkable_check: Callable = Callable()
 
 
-func setup(p_mob_data: Dictionary, p_cell_size: int, p_walkable: Callable) -> void:
+func setup(p_mob_data: Dictionary, p_cell_size: int, p_walkable: Callable, p_grid_x: int = 0, p_grid_y: int = 0) -> void:
 	mob_data = p_mob_data
-	grid_x = int(mob_data.get("local_x", 0))
-	grid_y = int(mob_data.get("local_y", 0))
+	grid_x = p_grid_x
+	grid_y = p_grid_y
 	_walkable_check = p_walkable
 
 	# Position at cell center
