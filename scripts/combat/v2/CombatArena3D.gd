@@ -267,7 +267,7 @@ func get_pathfinding_tilestack(to: CombatTile3D) -> Array:
 	var path: Array = []
 	while to:
 		to.hover = true
-		path.push_front(to.global_position)
+		path.push_front(to.position)
 		to = to.pf_root
 	return path
 
