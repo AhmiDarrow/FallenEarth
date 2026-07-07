@@ -1091,7 +1091,18 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
 	mob_node.z_index = 50
 	mob_node.set_mob_sprite(sprite_id)
-	world_grid.add_child(mob_node)
+	# Add to mob_layer (y-sorted) so mobs render on top of terrain and
+	# stack correctly with the player and each other. Previously this
+	# added to world_grid directly which bypassed the y-sort layer.
+	if is_instance_valid(_mob_layer):
+		_mob_layer.add_child(mob_node)
+	else:
+		world_grid.add_child(mob_node)
+	print("[HubWorld] _add_mob_sprite: id=%s cell=(%d,%d) pos=%s parent=%s visible=%s z=%d" % [
+		sprite_id, x, y, str(mob_node.position),
+		str(mob_node.get_parent().name) if mob_node.get_parent() else "null",
+		str(mob_node.visible), mob_node.z_index
+	])
 
 	# Create AI state entry
 	var ai: OverworldMobAI = OverworldMobAIScript.new()
