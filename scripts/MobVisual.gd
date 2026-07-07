@@ -27,7 +27,8 @@ func _load_texture() -> void:
 	_texture = null
 	if _mob_id.is_empty():
 		return
-	var path := "%s%s.png" % [SPRITE_DIR, _mob_id]
+	# Convert underscores in mob_id to hyphens for the PNG filename
+	var path := "%s%s.png" % [SPRITE_DIR, _mob_id.replace("_", "-")]
 	if not ResourceLoader.exists(path):
 		push_warning("[MobVisual] No sprite for '%s' (looked in %s)" % [_mob_id, path])
 		return
