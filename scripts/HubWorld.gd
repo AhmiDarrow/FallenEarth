@@ -68,6 +68,10 @@ var _active_respawn_nodes: Array[Node2D] = []
 # rebuild on every move. This alone takes per-move from ~25ms to ~1ms.
 var _world_markers_dirty: bool = true
 
+# Track which hexes have had mobs seeded so killed mobs aren't re-seeded
+# when HubWorld reloads (deterministic RNG would place them again).
+var _seeded_hexes: Dictionary = {}
+
 # Currently equipped MainHand tool (Phase 1 placeholder until
 # EquipmentManager lands in Phase 4). Empty dict = no tool.
 var _equipped_tool: Dictionary = {}
@@ -1717,6 +1721,14 @@ func _seed_local_mobs() -> void:
 	if _tile_map.is_empty():
 		push_warning("[HubWorld] _tile_map is empty — cannot seed mobs.")
 		return
+
+	# Skip if this hex was already seeded (prevents killed mobs from
+	# re-appearing when HubWorld reloads — deterministic RNG would
+	# place them at the same positions).
+	var hex_key: String = "%d,%d" % [_player_q, _player_r]
+	if _seeded_hexes.has(hex_key):
+		return
+	_seeded_hexes[hex_key] = true
 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = LocalMapGen.hash_seed(LocalMapGen.make_local_seed(

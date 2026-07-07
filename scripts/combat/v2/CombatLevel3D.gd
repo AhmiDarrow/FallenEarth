@@ -184,6 +184,15 @@ func _configure_from_encounter() -> void:
 
 
 func _character_to_unit(char_data: Dictionary, pos: Vector2i) -> Dictionary:
+	# Player attack = equipment attack (weapon damage + stat mods from
+	# EquipmentManager.get_combat_stats). Defense = armor + con.
+	# These are injected by EncounterBuilder from equip_stats.
+	var player_attack: int = int(char_data.get("attack", 5))
+	var player_defense: int = int(char_data.get("defense", 0))
+	# Fallback: if attack is still default 5, compute from class stats
+	if player_attack <= 5:
+		var stats: Dictionary = char_data.get("stats", {})
+		player_attack = 5 + int(stats.get("str", 0)) + int(stats.get("dex", 0)) / 2
 	return {
 		"id": "player",
 		"name": str(char_data.get("name", char_data.get("display_name", "Hero"))),
@@ -198,8 +207,8 @@ func _character_to_unit(char_data: Dictionary, pos: Vector2i) -> Dictionary:
 		"max_hp": int(char_data.get("max_hp", 100)),
 		"mp": int(char_data.get("mp", char_data.get("current_mp", 0))),
 		"mp_max": int(char_data.get("mp_max", 0)),
-		"attack": int(char_data.get("attack", 5)) + int(char_data.get("attack_bonus", 0)),
-		"defense": int(char_data.get("defense", 0)) + int(char_data.get("armor_bonus", 0)),
+		"attack": player_attack + int(char_data.get("attack_bonus", 0)),
+		"defense": player_defense + int(char_data.get("armor_bonus", 0)),
 		"speed": int(char_data.get("speed", 10)),
 		"move": int(char_data.get("move", 3)),
 		"jump": int(char_data.get("jump", 1)),
@@ -212,11 +221,12 @@ func _character_to_unit(char_data: Dictionary, pos: Vector2i) -> Dictionary:
 func _template_to_unit(t: Dictionary, pos: Vector2i, is_boss: bool, idx: int) -> Dictionary:
 	# Mobs use "armor" in mobs.json; map it to defense for combat.
 	var mob_armor: int = int(t.get("armor", 0))
-	# Scale mob attack by level + armor so tankier mobs hit harder.
 	var mob_level: int = int(t.get("level", 1))
+	# Mob attack: level-scaled base. Level 1 mobs hit for ~6, scaling
+	# up by ~2 per level. Armor adds a small bonus to damage.
 	var mob_attack: int = int(t.get("attack", 0))
 	if mob_attack == 0:
-		mob_attack = 5 + mob_level + int(mob_armor * 0.5)
+		mob_attack = 4 + mob_level * 2 + int(mob_armor * 0.3)
 	return {
 		"id": "enemy_%d" % idx,
 		"name": str(t.get("name", t.get("display_name", "Enemy"))),

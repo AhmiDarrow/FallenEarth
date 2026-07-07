@@ -19,24 +19,40 @@ var _on_continue: Callable = Callable()
 
 func setup(victory: bool, xp: int, ec: int, loot: Array, cont: Callable) -> void:
 	_on_continue = cont
+	# Wait one frame so the CanvasLayer has proper viewport info
+	await get_tree().process_frame
 	_build_ui(victory, xp, ec, loot)
 
 
 func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
-	# Full-screen backdrop — set anchors then explicit size to fill CanvasLayer
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	size = Vector2(1920, 1080)
+	var vp_size: Vector2 = get_viewport_rect().size
+	# Full-screen dark backdrop
+	position = Vector2.ZERO
+	size = vp_size
+	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Force size in case anchors don't propagate in CanvasLayer
+	size = vp_size
 
-	# Center panel
+	# Dark background panel covering full screen
+	var bg_panel := PanelContainer.new()
+	bg_panel.position = Vector2.ZERO
+	bg_panel.size = vp_size
+	bg_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(bg_panel)
+	var bg_sb := StyleBoxFlat.new()
+	bg_sb.bg_color = Color(0.0, 0.0, 0.0, 0.6)
+	bg_panel.add_theme_stylebox_override("panel", bg_sb)
+
+	# Center results box
+	var panel_w: float = min(440.0, vp_size.x * 0.4)
+	var panel_h: float = min(340.0, vp_size.y * 0.5)
+	var panel_x: float = (vp_size.x - panel_w) * 0.5
+	var panel_y: float = (vp_size.y - panel_h) * 0.5
+
 	var panel := PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
-	panel.offset_left = -220
-	panel.offset_top = -160
-	panel.offset_right = 220
-	panel.offset_bottom = 160
-	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	panel.grow_vertical = Control.GROW_DIRECTION_BOTH
+	panel.position = Vector2(panel_x, panel_y)
+	panel.size = Vector2(panel_w, panel_h)
 	add_child(panel)
 
 	var sb := StyleBoxFlat.new()
@@ -55,6 +71,7 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 
 	# Inner margin
 	var margin := MarginContainer.new()
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_right", 24)
 	margin.add_theme_constant_override("margin_top", 20)
@@ -82,11 +99,9 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 
 	if victory:
 		# XP
-		var xp_row := _make_row("Experience Gained:", str(xp))
-		vbox.add_child(xp_row)
+		vbox.add_child(_make_row("Experience Gained:", str(xp)))
 		# EC
-		var ec_row := _make_row("EarthCoin Gained:", str(ec))
-		vbox.add_child(ec_row)
+		vbox.add_child(_make_row("EarthCoin Gained:", str(ec)))
 		# Loot
 		if loot.size() > 0:
 			var loot_label := Label.new()
