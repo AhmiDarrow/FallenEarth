@@ -1806,12 +1806,15 @@ func _start_local_combat(lx: int, ly: int, mob: Dictionary, mission: Dictionary 
 	var biome: String = str(tile.get("name", "Ash Wastes"))
 	var tile_key := "%d,%d|%d,%d" % [_player_q, _player_r, lx, ly]
 	var char_data: Dictionary = gs.get_party_character_data()
+	# Compute equipment-derived combat stats for the encounter
+	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
+	var equip_stats: Dictionary = em.get_combat_stats("player") if is_instance_valid(em) else {}
 	var encounter: Dictionary = {}
 	var mission_id: String = str(mob.get("mission_id", mission.get("mission_id", "")))
 	if not mission_id.is_empty() and is_instance_valid(_mission_manager) and _mission_manager.has_method("build_mission_encounter"):
-		encounter = _mission_manager.call("build_mission_encounter", mission_id, char_data) as Dictionary
+		encounter = _mission_manager.call("build_mission_encounter", mission_id, char_data, equip_stats) as Dictionary
 	if encounter.is_empty():
-		encounter = EncounterBuilder.build_overworld(char_data, mob, tile_key, biome)
+		encounter = EncounterBuilder.build_overworld(char_data, mob, tile_key, biome, equip_stats)
 	# v0.9.1c: mark markers dirty so the mob we just walked into is
 	# removed from the overworld view (combat consumes the mob).
 	_mark_world_markers_dirty()

@@ -132,6 +132,8 @@ func create_character(race_id: String, class_id: String, origin: String, char_na
 		"equipment": _equipment_data.duplicate() if not _equipment_data.is_empty() else {}
 	}
 
+	_grant_starting_equipment(class_id)
+
 	character_created.emit(char_id, race_id, class_id, origin)
 	print("[GameState] Character created: %s '%s' (race=%s, class=%s, origin=%s)" % [char_id, display_name, race_id, class_id, origin])
 	return true
@@ -140,6 +142,42 @@ func create_character(race_id: String, class_id: String, origin: String, char_na
 func get_character_data() -> Dictionary:
 	# Return a clean copy so callers can't mutate internal state
 	return _character_data.duplicate(true) if not _character_data.is_empty() else {}
+
+
+## Grants a base tier-1 weapon (class-matching) and a full tier-1 armor
+## set to the newly created character. Also adds a small stack of
+## bandages to inventory for early-game healing.
+func _grant_starting_equipment(class_id: String) -> void:
+	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
+	var im: Node = get_node_or_null("/root/InventoryManager")
+	if not is_instance_valid(em):
+		push_warning("[GameState] EquipmentManager not available — skipping starting equipment.")
+		return
+
+	# Weapon (tier 0 = level 1)
+	var weapon: Dictionary = em.get_weapon(class_id, 0)
+	if not weapon.is_empty():
+		var weapon_id: String = str(weapon.get("id", ""))
+		if not weapon_id.is_empty():
+			em.equip("player", weapon_id, "mainhand")
+			print("[GameState] Starting weapon equipped: %s" % weapon.get("name", weapon_id))
+
+	# Armor — full set (tier 0 = level 1)
+	for slot in ["head", "chest", "legs", "boots"]:
+		var armor_piece: Dictionary = em.get_armor(class_id, slot, 0)
+		if not armor_piece.is_empty():
+			var armor_id: String = str(armor_piece.get("id", ""))
+			if not armor_id.is_empty():
+				em.equip("player", armor_id, slot)
+				print("[GameState] Starting armor equipped (%s): %s" % [slot, armor_piece.get("name", armor_id)])
+
+	# Consumables — 3 bandages for early healing
+	if is_instance_valid(im) and im.has_method("add_item"):
+		im.call("add_item", "bandage", 3)
+		print("[GameState] Starting consumables: 3x Bandage")
+
+	# Sync equipment into character data for save/encounter use
+	_character_data["equipment"] = em.get_equipment("player").duplicate(true)
 
 
 func set_character_health(health: int) -> void:

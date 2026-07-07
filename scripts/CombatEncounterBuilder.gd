@@ -416,12 +416,21 @@ static func random_overworld_mob(biome: String = "Ash Wastes", prefer_hostile: b
 		}
 	return enemy
 
-static func build_overworld(char_data: Dictionary, mob: Dictionary, tile_key: String, biome: String) -> Dictionary:
+static func build_overworld(char_data: Dictionary, mob: Dictionary, tile_key: String, biome: String, equip_stats: Dictionary = {}) -> Dictionary:
 	var enemies: Array = []
 	if not mob.is_empty():
 		enemies.append(mob)
+	# Inject equipment-derived attack/defense into char_data if the caller
+	# provided equip_stats from EquipmentManager.get_combat_stats("player").
+	# This ensures combat reads real gear stats, not just base character values.
+	var equip_data: Dictionary = char_data.duplicate(true) if char_data else {}
+	if not equip_stats.is_empty():
+		if not equip_data.has("attack") or int(equip_data.get("attack", 0)) == 0:
+			equip_data["attack"] = int(equip_stats.get("attack", 0))
+		if not equip_data.has("defense") or int(equip_data.get("defense", 0)) == 0:
+			equip_data["defense"] = int(equip_stats.get("defense", 0))
 	return {
-		"character_data": char_data.duplicate(true) if char_data else {},
+		"character_data": equip_data,
 		"enemy_templates": enemies,
 		"source": SOURCE_OVERWORLD,
 		"tile_key": tile_key,
@@ -437,9 +446,10 @@ static func build_mission(
 	mob: Dictionary,
 	tile_key: String,
 	biome: String,
-	mission: Dictionary = {}
+	mission: Dictionary = {},
+	equip_stats: Dictionary = {}
 ) -> Dictionary:
-	var enc := build_overworld(character_data, mob, tile_key, biome)
+	var enc := build_overworld(character_data, mob, tile_key, biome, equip_stats)
 	enc["source"] = SOURCE_MISSION
 	enc["mission"] = mission.duplicate(true) if mission else {}
 	enc["return_context"] = {"mission_id": mission.get("id", "")}
@@ -453,7 +463,8 @@ static func build_rift_room(
 	encounter_type: String,
 	tile_key: String,
 	lx: int = -1,
-	ly: int = -1
+	ly: int = -1,
+	equip_stats: Dictionary = {}
 ) -> Dictionary:
 	var diff := {"min_level": 2, "max_level": 7, "danger_threshold": 0.85}
 	if encounter_type == "boss":
@@ -464,7 +475,7 @@ static func build_rift_room(
 	var enemy := generate_procedural_enemy("rift_" + rift_id, tm, tile_key, diff, "rift", biome)
 	if encounter_type == "boss" and not enemy.is_empty() and not enemy.get("is_boss", false):
 		enemy["is_boss"] = true
-	var enc := build_overworld(char_data, enemy if not enemy.is_empty() else {}, tile_key, biome)
+	var enc := build_overworld(char_data, enemy if not enemy.is_empty() else {}, tile_key, biome, equip_stats)
 	enc["source"] = SOURCE_RIFT
 	enc["rift_id"] = rift_id
 	enc["encounter_type"] = encounter_type

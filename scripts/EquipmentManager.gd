@@ -423,6 +423,16 @@ func get_defense(npc_id: String) -> int:
 	return total_armor + int(mods.get("con", 0))
 
 
+## Returns combined combat stats (attack + defense) from equipment for
+## the given npc_id. Used by EncounterBuilder to wire real equipment
+## into combat encounters.
+func get_combat_stats(npc_id: String) -> Dictionary:
+	return {
+		"attack": get_attack(npc_id),
+		"defense": get_defense(npc_id),
+	}
+
+
 # ---------------------------------------------------------------------------
 # Snapshot / restore (save/load in Phase 8)
 # ---------------------------------------------------------------------------

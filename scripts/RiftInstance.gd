@@ -206,9 +206,11 @@ func _trigger_combat(encounter_type: String, tile_key: String) -> void:
 	if not is_instance_valid(gs):
 		return
 	var char_data: Dictionary = gs.get_character_data()
+	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
+	var equip_stats: Dictionary = em.get_combat_stats("player") if is_instance_valid(em) else {}
 	var encounter: Dictionary = EncounterBuilder.build_rift_room(
 		char_data, _biome_key, _rift_id, _entry_q, _entry_r, encounter_type, tile_key,
-		_entry_local_x, _entry_local_y
+		_entry_local_x, _entry_local_y, equip_stats
 	)
 	var ctx: Dictionary = gs.get_pending_rift()
 	ctx["dungeon"] = _dungeon.duplicate(true)

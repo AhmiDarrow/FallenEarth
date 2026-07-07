@@ -194,7 +194,7 @@ func report_rift_cleared(rift_id: String) -> Array[Dictionary]:
 	return updates
 
 
-func build_mission_encounter(mission_id: String, character_data: Dictionary) -> Dictionary:
+func build_mission_encounter(mission_id: String, character_data: Dictionary, equip_stats: Dictionary = {}) -> Dictionary:
 	if not _active.has(mission_id):
 		return {}
 	var mission: Dictionary = (_active[mission_id] as Dictionary).duplicate(true)
@@ -219,7 +219,7 @@ func build_mission_encounter(mission_id: String, character_data: Dictionary) -> 
 				tile_key = gs.mob_key(int(parts[0]), int(parts[1]), lx, ly)
 
 	var encounter: Dictionary = EncounterBuilder.build_mission(
-		character_data, mob, tile_key, biome, mission
+		character_data, mob, tile_key, biome, mission, equip_stats
 	)
 	return encounter
 
