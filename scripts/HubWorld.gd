@@ -1737,6 +1737,7 @@ func _seed_local_mobs() -> void:
 	var tile: Dictionary = _tile_map.get("%d,%d" % [_player_q, _player_r], {})
 	var biome: String = str(tile.get("name", "Ash Wastes"))
 	var danger: float = float(tile.get("rift_chance", 0.25))
+	var level_range: Dictionary = tile.get("level_range", {"min_level": 2, "max_level": 6})
 	# v0.9.1: Bumped density. With the previous 2-9 mobs in 502×502, the
 	# player had to walk hundreds of cells to find one. Bumping to 8-18
 	# + adding 2 guaranteed "near-spawn" mobs ensures the player
@@ -1767,7 +1768,7 @@ func _seed_local_mobs() -> void:
 			var nkey: String = gs.mob_key(_player_q, _player_r, nlx, nly)
 			if not gs.get_overworld_mob(nkey).is_empty():
 				continue
-			var near_diff: Dictionary = {"min_level": 2, "max_level": 5}
+			var near_diff: Dictionary = {"min_level": int(level_range.get("min_level", 2)), "max_level": mini(int(level_range.get("min_level", 2)) + 3, int(level_range.get("max_level", 5)))}
 			var near_enemy: Dictionary = EncounterBuilder.generate_procedural_enemy(
 				str(gs.get_world_data().get("seed", "")), _tile_map,
 				"%d,%d" % [_player_q, _player_r], near_diff, "upworld", biome
@@ -1801,7 +1802,7 @@ func _seed_local_mobs() -> void:
 			continue
 
 		# Generate enemy via EncounterBuilder (independent of NPC system)
-		var difficulty: Dictionary = {"min_level": 2, "max_level": 6}
+		var difficulty: Dictionary = {"min_level": int(level_range.get("min_level", 2)), "max_level": int(level_range.get("max_level", 6))}
 		var enemy: Dictionary = EncounterBuilder.generate_procedural_enemy(
 			str(gs.get_world_data().get("seed", "")), _tile_map,
 			"%d,%d" % [_player_q, _player_r], difficulty, "upworld", biome
@@ -1813,8 +1814,8 @@ func _seed_local_mobs() -> void:
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
 		seeded += 1
 
-	print("[HubWorld] Mob seed: biome=%s danger=%.2f total_attempts=%d seeded=%d (blocked=%d near=%d dup=%d no_enemy=%d) at q,r=%d,%d" % [
-		biome, danger, count + 2, seeded, skipped_blocked, skipped_near, skipped_duplicate, skipped_no_enemy,
+	print("[HubWorld] Mob seed: biome=%s tier=%d danger=%.2f total_attempts=%d seeded=%d (blocked=%d near=%d dup=%d no_enemy=%d) at q,r=%d,%d" % [
+		biome, int(tile.get("difficulty_tier", 0)), danger, count + 2, seeded, skipped_blocked, skipped_near, skipped_duplicate, skipped_no_enemy,
 		_player_q, _player_r
 	])
 

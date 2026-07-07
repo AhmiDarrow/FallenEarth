@@ -102,6 +102,8 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 	var biomes = _biome_definitions
 
 	# Generate hex tiles in a large "sphere" patch using axial coords
+	# Track assigned biomes for neighbor clustering bonus
+	var assigned_biomes: Dictionary = {}  # key -> biome name
 	for q in range(-_hex_radius, _hex_radius + 1):
 		for r in range(max(-_hex_radius, -q - _hex_radius), min(_hex_radius, -q + _hex_radius) + 1):
 			# Simulate latitude from r (polar bias)
@@ -119,8 +121,19 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 			# Rainfall / moisture noise (RimWorld rain)
 			var rain = clamp(0.5 + (randf() - 0.5) * 1.2 - (elevation - 0.5) * 0.6, 0.0, 1.0)
 
-			# Pick biome based on temp/rain/elev like RimWorld
-			var chosen_biome = _pick_biome_by_climate(temp, rain, elevation, biomes)
+			# Count adjacent hexes by biome for clustering bonus
+			var neighbor_bonus: Dictionary = {}
+			var dirs = [[+1, 0], [+1, -1], [0, -1], [-1, 0], [-1, +1], [0, +1]]
+			for d in dirs:
+				var nk: String = "%d,%d" % [q + d[0], r + d[1]]
+				if assigned_biomes.has(nk):
+					var nb: String = assigned_biomes[nk]
+					neighbor_bonus[nb] = neighbor_bonus.get(nb, 0.0) + 1.0
+
+			# Pick biome based on temp/rain/elev + neighbor clustering
+			var chosen_biome = _pick_biome_by_climate(temp, rain, elevation, biomes, neighbor_bonus)
+			var chosen_name: String = chosen_biome.get("name", "")
+			assigned_biomes["%d,%d" % [q, r]] = chosen_name
 
 			var tile: Dictionary = chosen_biome.duplicate(true)
 			if not tile.has("rift_chance"):
@@ -147,29 +160,56 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 	return tile_map
 
 
-func _pick_biome_by_climate(temp: float, rain: float, elev: float, biomes: Array) -> Dictionary:
-	# Simple scoring like RimWorld biome assignment
+func _pick_biome_by_climate(temp: float, rain: float, elev: float, biomes: Array, neighbor_bonus: Dictionary = {}) -> Dictionary:
+	# Climate profile scoring: each biome has ideal ranges, score = proximity to ideal.
+	# Profiles: [temp_min, temp_max, rain_min, rain_max, elev_min, elev_max]
+	var profiles: Dictionary = {
+		"Ash Wastes": [0.5, 0.7, 0.3, 0.5, 0.3, 0.6],
+		"Rust Canyons": [0.3, 0.5, 0.2, 0.5, 0.6, 0.9],
+		"Neon Bogs": [0.5, 0.7, 0.6, 0.9, 0.0, 0.3],
+		"Scorched Plains": [0.7, 1.0, 0.1, 0.4, 0.3, 0.6],
+		"Ironwood Thicket": [0.4, 0.6, 0.5, 0.8, 0.3, 0.7],
+		"Glass Dunes": [0.6, 0.9, 0.0, 0.3, 0.4, 0.7],
+		"Corpse Fields": [0.3, 0.6, 0.3, 0.6, 0.2, 0.5],
+		"Stormspire Highlands": [0.1, 0.4, 0.4, 0.7, 0.7, 1.0],
+		"Toxin Marshes": [0.4, 0.7, 0.7, 1.0, 0.0, 0.3],
+		"Dead City Outskirts": [0.3, 0.6, 0.3, 0.6, 0.4, 0.7],
+	}
+
 	var best_score = -999.0
 	var best = biomes[0] if biomes.size() > 0 else {"name": "Ash Wastes"}
 	for b in biomes:
-		var score = 0.0
 		var name = b.get("name", "")
-		if temp > 0.6 and ("Wastes" in name or "Plains" in name or "Bogs" in name):
-			score += 2.0
-		if temp < 0.4 and ("Canyons" in name or "Highlands" in name or "Marshes" in name):
-			score += 1.5
-		if rain > 0.6 and ("Bogs" in name or "Thicket" in name):
-			score += 1.5
-		if rain < 0.4 and ("Wastes" in name or "Dunes" in name or "Canyons" in name):
-			score += 1.5
-		if elev > 0.7 and ("Highlands" in name or "Canyons" in name):
-			score += 1.0
-		if elev < 0.3 and ("Bogs" in name or "Marshes" in name):
-			score += 0.8
+		var p: Array = profiles.get(name, [0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
+
+		# How well does this hex's climate fit the biome's ideal range?
+		var temp_fit = _range_fit(temp, p[0], p[1])
+		var rain_fit = _range_fit(rain, p[2], p[3])
+		var elev_fit = _range_fit(elev, p[4], p[5])
+		var score = (temp_fit + rain_fit + elev_fit) / 3.0 * 3.0
+
+		# Neighbor clustering bonus: +1.0 per adjacent hex with same biome
+		score += neighbor_bonus.get(name, 0.0)
+
+		# Small random jitter to break ties
+		score += randf_range(-0.2, 0.2)
+
 		if score > best_score:
 			best_score = score
 			best = b
 	return best.duplicate(true)
+
+
+## Returns 0.0-1.0: how well `val` fits inside [lo, hi]. 1.0 = inside, falls off outside.
+func _range_fit(val: float, lo: float, hi: float) -> float:
+	if val >= lo and val <= hi:
+		return 1.0
+	var dist: float = 0.0
+	if val < lo:
+		dist = lo - val
+	else:
+		dist = val - hi
+	return max(0.0, 1.0 - dist * 3.0)
 
 
 func _get_features(elev: float, rain: float) -> Array:
@@ -181,6 +221,10 @@ func _get_features(elev: float, rain: float) -> Array:
 
 
 func _is_good_start(tile: Dictionary) -> bool:
+	# Only tier 1-2 biomes are valid start locations
+	var tier: int = int(tile.get("difficulty_tier", 5))
+	if tier > 2:
+		return false
 	# RimWorld-like good start: decent temp/rain, not extreme
 	var temp = tile.get("temperature", 0.5)
 	var rain = tile.get("rainfall", 0.5)
@@ -239,15 +283,21 @@ func get_neighbors(q: int, r: int) -> Array:
 
 
 ## Return list of good starting tiles (RimWorld "select random site" / browse)
+## Excludes riftspire and settlement hexes — player cannot spawn there.
 func get_starting_candidates(count: int = 5) -> Array:
 	var cands = []
 	for key in _tile_map.keys():
 		var t = _tile_map[key]
+		if t.get("is_riftspire", false) or t.get("is_town", false):
+			continue
 		if t.get("is_start_candidate", false):
 			cands.append({"key": key, "tile": t})
 	if cands.size() == 0:
 		for key in _tile_map.keys():
-			cands.append({"key": key, "tile": _tile_map[key]})
+			var t = _tile_map[key]
+			if t.get("is_riftspire", false) or t.get("is_town", false):
+				continue
+			cands.append({"key": key, "tile": t})
 			if cands.size() >= count: break
 	cands.shuffle()
 	return cands.slice(0, min(count, cands.size()))

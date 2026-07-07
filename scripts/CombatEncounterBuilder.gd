@@ -100,6 +100,15 @@ static func generate_procedural_enemy(
 	if chosen_mob.has("armor"):
 		base_armor = int(chosen_mob["armor"])
 
+	# Apply biome threat_multiplier to stats (scales with danger)
+	var threat_mult: float = 1.0
+	if not tile.is_empty():
+		threat_mult = float(tile.get("wildlife_modifiers", {}).get("threat_multiplier", 1.0))
+	if threat_mult != 1.0:
+		base_hp = int(base_hp * threat_mult)
+		base_damage = int(base_damage * threat_mult)
+		base_armor = int(base_armor * threat_mult)
+
 	var enemy: Dictionary = {
 		"id": enemy_id,
 		"name": display_name,
@@ -470,12 +479,25 @@ static func build_rift_room(
 	ly: int = -1,
 	equip_stats: Dictionary = {}
 ) -> Dictionary:
-	var diff := {"min_level": 2, "max_level": 7, "danger_threshold": 0.85}
+	# Look up biome level_range and wildlife_modifiers from biomes.json
+	var biome_level_range: Dictionary = {"min_level": 2, "max_level": 7}
+	var wildlife_mods: Dictionary = {}
+	var biomes_file: FileAccess = FileAccess.open("res://data/biomes.json", FileAccess.READ)
+	if biomes_file:
+		var biomes_parsed: Variant = JSON.parse_string(biomes_file.get_as_text())
+		biomes_file.close()
+		if biomes_parsed is Array:
+			for b in biomes_parsed:
+				if b is Dictionary and str(b.get("name", "")) == biome:
+					biome_level_range = b.get("level_range", biome_level_range)
+					wildlife_mods = b.get("wildlife_modifiers", {})
+					break
+	var diff := {"min_level": int(biome_level_range.get("min_level", 2)), "max_level": int(biome_level_range.get("max_level", 7)), "danger_threshold": 0.85}
 	if encounter_type == "boss":
 		diff["danger_threshold"] = 0.95
-		diff["max_level"] = 10
+		diff["max_level"] = int(biome_level_range.get("max_level", 7)) + 3
 	var tm := {}
-	tm[tile_key] = {"name": biome, "rift_chance": 0.95}
+	tm[tile_key] = {"name": biome, "rift_chance": 0.95, "wildlife_modifiers": wildlife_mods}
 	var enemy := generate_procedural_enemy("rift_" + rift_id, tm, tile_key, diff, "rift", biome)
 	if encounter_type == "boss" and not enemy.is_empty() and not enemy.get("is_boss", false):
 		enemy["is_boss"] = true

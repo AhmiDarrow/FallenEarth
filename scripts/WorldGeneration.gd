@@ -28,7 +28,7 @@ var _preview_focused: bool = false
 var _selected_glow: Polygon2D = null
 
 const DEFAULT_SEED := "UNDEREARTH_001"
-const SIZE_RADII := {"small": 6, "medium": 12, "large": 18}
+const SIZE_RADII := {"small": 8, "medium": 15, "large": 23}
 
 const BIOME_COLORS := {
 	"Ash Wastes": Color(0.75, 0.65, 0.5),
@@ -41,7 +41,10 @@ const BIOME_COLORS := {
 	"Stormspire Highlands": Color(0.5, 0.55, 0.75),
 	"Toxin Marshes": Color(0.45, 0.7, 0.4),
 	"Dead City Outskirts": Color(0.5, 0.5, 0.55),
+	"Riftspire": Color(1.0, 0.85, 0.2),
 }
+const RIFT_COLOR := Color(1.0, 0.85, 0.2)
+const SETTLEMENT_COLOR := Color(0.9, 0.9, 0.95)
 
 
 func _ready() -> void:
@@ -179,6 +182,30 @@ func _render_hex_preview() -> void:
 		poly.set_meta("key", key)
 		hex_grid.add_child(poly)
 		_hex_nodes[key] = poly
+
+		# Riftspire marker — bright diamond
+		if tile.get("is_riftspire", false):
+			var marker := Polygon2D.new()
+			var ms := hex_size * 0.35
+			marker.polygon = PackedVector2Array([
+				Vector2(0, -ms), Vector2(ms, 0), Vector2(0, ms), Vector2(-ms, 0)
+			])
+			marker.position = pos - center_offset
+			marker.color = RIFT_COLOR
+			hex_grid.add_child(marker)
+			hex_grid.move_child(marker, hex_grid.get_child_count() - 1)
+
+		# Settlement marker — small white square
+		elif tile.get("is_town", false):
+			var marker := Polygon2D.new()
+			var ms := hex_size * 0.2
+			marker.polygon = PackedVector2Array([
+				Vector2(-ms, -ms), Vector2(ms, -ms), Vector2(ms, ms), Vector2(-ms, ms)
+			])
+			marker.position = pos - center_offset
+			marker.color = SETTLEMENT_COLOR
+			hex_grid.add_child(marker)
+			hex_grid.move_child(marker, hex_grid.get_child_count() - 1)
 
 	# Position the grid at center of its parent container
 	var parent_ctrl := hex_grid.get_parent() as Control
@@ -341,8 +368,8 @@ func _update_world_info_label() -> void:
 		return
 
 	var size_name := "Medium"
-	if _world_size == 6: size_name = "Small"
-	elif _world_size == 18: size_name = "Large"
+	if _world_size == 8: size_name = "Small"
+	elif _world_size == 23: size_name = "Large"
 
 	# Biome distribution
 	var biome_counts: Dictionary = {}
@@ -374,14 +401,20 @@ func _update_selected_info_label() -> void:
 	var elev: float = float(t.get("elevation", 0))
 	var rift: float = float(t.get("rift_chance", 0)) * 100.0
 	var danger: String = str(t.get("danger_level", "unknown"))
+	var tier: int = int(t.get("difficulty_tier", 0))
+	var lr: Dictionary = t.get("level_range", {})
 	var features: Array = t.get("features", [])
 	var risks: Array = t.get("survival_risks", [])
+
+	var tier_colors: Dictionary = {1: "#66bb6a", 2: "#aed581", 3: "#fff176", 4: "#ffab91", 5: "#ef5350"}
+	var tier_color: String = str(tier_colors.get(tier, "#ffffff"))
 
 	var lines: PackedStringArray = [
 		"[b]SELECTED HEX[/b]",
 		"[color=#c8e6c9]%s[/color] (%s)" % [biome, _selected_key],
 		"Temp: %.0f%% | Rain: %.0f%%" % [temp, rain],
 		"Elev: %.2f | Rift: %.0f%%" % [elev, rift],
+		"[color=%s]Tier %d[/color] | Lv %d-%d" % [tier_color, tier, int(lr.get("min_level", 1)), int(lr.get("max_level", 1))],
 		"Danger: %s" % danger.capitalize(),
 	]
 	if features.size() > 0:

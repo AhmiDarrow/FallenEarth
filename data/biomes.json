@@ -2,6 +2,8 @@
   {
     "name": "Ash Wastes",
     "description": "Barren, toxic dust plains. The common starter biome outside settlements. Twisted, irradiated scrub with constant wind-blown ash, low visibility, and nutrient-scarce soil.",
+    "difficulty_tier": 2,
+    "level_range": {"min_level": 2, "max_level": 5},
     "rift_chance": 0.25,
     "danger_level": "medium",
     "wildlife_modifiers": {
@@ -15,6 +17,8 @@
   {
     "name": "Rust Canyons",
     "description": "Deep canyons filled with rusted wreckage from the old corporate wars. High rift chance due to the fractures in reality here. Excellent for scavenging but extremely hazardous.",
+    "difficulty_tier": 4,
+    "level_range": {"min_level": 6, "max_level": 12},
     "rift_chance": 0.70,
     "danger_level": "high",
     "wildlife_modifiers": {
@@ -28,6 +32,8 @@
   {
     "name": "Neon Bogs",
     "description": "Polluted wetlands with glowing flora. Bioluminescent plants and failing pre-Collapse power lines create an eerie, beautiful, and deadly landscape full of hidden toxins and rifts.",
+    "difficulty_tier": 3,
+    "level_range": {"min_level": 4, "max_level": 8},
     "rift_chance": 0.40,
     "danger_level": "medium-high",
     "wildlife_modifiers": {
@@ -41,6 +47,8 @@
   {
     "name": "Scorched Plains",
     "description": "Cracked earth and constant oppressive heat. Low rift chance but punishing environment with little cover. Former farmlands and highways baked into glass-like surfaces.",
+    "difficulty_tier": 1,
+    "level_range": {"min_level": 1, "max_level": 3},
     "rift_chance": 0.12,
     "danger_level": "medium",
     "wildlife_modifiers": {
@@ -54,6 +62,8 @@
   {
     "name": "Ironwood Thicket",
     "description": "Dense metallic trees and vines. The forest has been transmuted by Underearth energies into living iron and chrome-like growths. Hard to traverse, full of ambush points.",
+    "difficulty_tier": 3,
+    "level_range": {"min_level": 4, "max_level": 8},
     "rift_chance": 0.30,
     "danger_level": "high",
     "wildlife_modifiers": {
@@ -67,6 +77,8 @@
   {
     "name": "Glass Dunes",
     "description": "Shimmering sand made of melted glass from ancient cataclysmic heat. High rift chance. The dunes sing in the wind and hide ancient structures and lethal crystal formations.",
+    "difficulty_tier": 4,
+    "level_range": {"min_level": 6, "max_level": 12},
     "rift_chance": 0.75,
     "danger_level": "high",
     "wildlife_modifiers": {
@@ -80,6 +92,8 @@
   {
     "name": "Corpse Fields",
     "description": "Old battlegrounds littered with bones and wreckage. The earth itself remembers the wars. High concentration of remains makes this a favored hunting ground for certain horrors and Revenants.",
+    "difficulty_tier": 4,
+    "level_range": {"min_level": 6, "max_level": 12},
     "rift_chance": 0.55,
     "danger_level": "high",
     "wildlife_modifiers": {
@@ -93,6 +107,8 @@
   {
     "name": "Stormspire Highlands",
     "description": "High plateaus with constant lightning and fierce winds. Very high rift chance. Ancient communication towers and corporate spires still crackle with power. Extremely dangerous but rich in energy resources.",
+    "difficulty_tier": 5,
+    "level_range": {"min_level": 10, "max_level": 16},
     "rift_chance": 0.92,
     "danger_level": "extreme",
     "wildlife_modifiers": {
@@ -106,6 +122,8 @@
   {
     "name": "Toxin Marshes",
     "description": "Heavily polluted swamps thick with chemical runoff and Underearth bio-contamination. The water and air are lethal. Home to resilient and mutated life adapted to the poison.",
+    "difficulty_tier": 4,
+    "level_range": {"min_level": 6, "max_level": 12},
     "rift_chance": 0.65,
     "danger_level": "high",
     "wildlife_modifiers": {
@@ -119,6 +137,8 @@
   {
     "name": "Dead City Outskirts",
     "description": "Ruined megacity edges — extremely dangerous. Collapsed skyscrapers, collapsed subways, and countless rifts make this the most perilous surface biome. Only the desperate or well-armed enter.",
+    "difficulty_tier": 5,
+    "level_range": {"min_level": 10, "max_level": 16},
     "rift_chance": 0.88,
     "danger_level": "extreme",
     "wildlife_modifiers": {
