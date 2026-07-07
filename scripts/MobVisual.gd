@@ -18,6 +18,8 @@ const SPRITE_DIR := "res://assets/mobs/"
 var _texture: Texture2D = null
 var _mob_id: String = ""
 var _has_sprite: bool = false
+var _dbg_process: int = 0
+var _dbg_draw: int = 0
 
 
 func set_mob_sprite(mob_id: String) -> void:
@@ -31,10 +33,28 @@ func get_mob_id() -> String:
 
 
 func _process(_delta: float) -> void:
-	# Continuous redraw — same pattern as CharacterVisual (player). A single
-	# queue_redraw() requested during _ready was being dropped, so _draw()
-	# never executed. Redrawing each frame guarantees the sprite/marker shows.
+	_dbg_process += 1
+	if _dbg_process <= 120 and _dbg_process % 60 == 0:
+		print("[MobVisual] %s _process ran %d times, _draw ran %d times, parent=%s in_tree=%s visible=%s" % [
+			_mob_id, _dbg_process, _dbg_draw,
+			get_parent().name if get_parent() else "null",
+			str(is_inside_tree()), str(visible)
+		])
+	# Continuous redraw — same pattern as CharacterVisual (player).
 	queue_redraw()
+
+
+func _draw() -> void:
+	_dbg_draw += 1
+	# UNCONDITIONAL debug square — proves _draw() runs on this node.
+	draw_rect(Rect2(Vector2(-14, -14), Vector2(28, 28)), Color.MAGENTA)
+	draw_rect(Rect2(Vector2(-13, -13), Vector2(26, 26)), Color(1.0, 0.0, 1.0, 0.4))
+	if _has_sprite and _texture != null:
+		var offset := Vector2(-_texture.get_width() * 0.5, -_texture.get_height() * 0.5)
+		draw_texture(_texture, offset)
+	if not _mob_id.is_empty():
+		var label_offset := Vector2(-_mob_id.length() * 2.5, -22)
+		draw_string(ThemeDB.fallback_font, label_offset, _mob_id, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
 
 
 func _replace_sprite() -> void:

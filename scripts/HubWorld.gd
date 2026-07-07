@@ -971,6 +971,7 @@ func _setup_player_visual() -> void:
 	_player_visual = CharacterVisualScript.new() as Node2D
 	_player_visual.name = "PlayerVisual"
 	world_grid.add_child(_player_visual)
+	print("[HubWorld] Player attached to world_grid_id=%d path=%s" % [world_grid.get_instance_id(), _player_visual.get_path()])
 
 	var race: String = str(char_data.get("race", "human"))
 	var gender: String = str(char_data.get("gender", "male"))
@@ -1119,10 +1120,9 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	# node was valid, visible, and had a loaded texture.
 	world_grid.add_child(mob_node)
 	mob_node.set_mob_sprite(sprite_id)
-	print("[HubWorld] _add_mob_sprite: id=%s cell=(%d,%d) pos=%s parent=%s visible=%s z=%d" % [
-		sprite_id, x, y, str(mob_node.position),
-		str(mob_node.get_parent().name) if mob_node.get_parent() else "null",
-		str(mob_node.visible), mob_node.z_index
+	print("[HubWorld] _add_mob_sprite: id=%s cell=(%d,%d) path=%s world_grid_id=%d in_tree=%s" % [
+		sprite_id, x, y, mob_node.get_path(),
+		world_grid.get_instance_id(), str(mob_node.is_inside_tree())
 	])
 
 	# Create AI state entry
