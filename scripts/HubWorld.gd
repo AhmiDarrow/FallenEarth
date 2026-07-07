@@ -250,8 +250,6 @@ func _ready() -> void:
 					print("[HubWorld] DIAGNOSTIC: mob key=%s sprite_id=%s name=%s" % [
 						str(mk), str(md.get("sprite_id", "NONE")), str(md.get("name", "?"))
 					])
-	# FAILSAFE: Always draw a giant test marker on mob_layer to prove it renders
-	_add_mob_layer_test_marker()
 	# v0.9.1c: Mobs were just seeded — force marker refresh on the
 	# next _build_local_view call.
 	_mark_world_markers_dirty()
@@ -1114,7 +1112,7 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	# tree-entry issues.
 	var mob_node: Node2D = MobVisualScript.new()
 	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	mob_node.z_index = 50
+	mob_node.z_index = 10  # match the player's CharacterVisual exactly
 	# Add directly to world_grid (same parent as the player's CharacterVisual,
 	# which renders correctly via _draw()). MobLayer's y_sort_enabled was
 	# preventing CanvasItem _draw() children from rendering even though the
@@ -1898,57 +1896,6 @@ func _on_recruit_pressed() -> void:
 # Skips the per-move marker rebuild unless something actually moved.
 func _mark_world_markers_dirty() -> void:
 	_world_markers_dirty = true
-
-
-## FAILSAFE: Draw a giant obvious test marker on _mob_layer to prove it renders.
-## Red circle at player pos, green circle 5 cells east, blue 5 cells south.
-func _add_mob_layer_test_marker() -> void:
-	if not is_instance_valid(_mob_layer):
-		push_error("[HubWorld] _mob_layer is NULL — cannot add test marker!")
-		return
-	var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
-	# Remove old test markers
-	for child in _mob_layer.get_children():
-		if child is Node2D and child.has_meta("test_marker"):
-			child.queue_free()
-	# Create test markers at known positions near the player
-	var offsets: Array = [
-		{"dx": 0, "dy": 0, "color": Color.RED, "label": "HERE"},
-		{"dx": 5, "dy": 0, "color": Color.GREEN, "label": "+5E"},
-		{"dx": 0, "dy": 5, "color": Color.BLUE, "label": "+5S"},
-		{"dx": -5, "dy": 0, "color": Color.YELLOW, "label": "-5W"},
-		{"dx": 0, "dy": -5, "color": Color.CYAN, "label": "-5N"},
-	]
-	for entry in offsets:
-		var tm: Node2D = Node2D.new()
-		tm.set_meta("test_marker", true)
-		tm.position = Vector2(
-			(_local_x + entry["dx"]) * cell_size + cell_size * 0.5,
-			(_local_y + entry["dy"]) * cell_size + cell_size * 0.5
-		)
-		tm.z_index = 999
-		_mob_layer.add_child(tm)
-		# Draw a colored circle as a child ColorRect
-		var rect := ColorRect.new()
-		rect.color = entry["color"]
-		rect.size = Vector2(20, 20)
-		rect.position = Vector2(-10, -10)
-		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tm.add_child(rect)
-		# Label
-		var lbl := Label.new()
-		lbl.text = entry["label"]
-		lbl.add_theme_color_override("font_color", Color.WHITE)
-		lbl.add_theme_color_override("font_outline_color", Color.BLACK)
-		lbl.add_theme_constant_override("outline_size", 2)
-		lbl.position = Vector2(-16, -28)
-		lbl.size = Vector2(32, 16)
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		tm.add_child(lbl)
-	print("[HubWorld] TEST MARKERS added to _mob_layer (child_count=%d) at player=(%d,%d) cell_size=%d" % [
-		_mob_layer.get_child_count(), _local_x, _local_y, cell_size
-	])
 
 
 func _seed_local_mobs() -> void:

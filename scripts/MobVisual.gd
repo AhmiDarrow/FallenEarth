@@ -56,15 +56,13 @@ func _replace_sprite() -> void:
 
 
 func _draw() -> void:
+	# UNCONDITIONAL debug square — proves _draw() runs on this node.
+	draw_rect(Rect2(Vector2(-14, -14), Vector2(28, 28)), Color.MAGENTA)
+	draw_rect(Rect2(Vector2(-13, -13), Vector2(26, 26)), Color(1.0, 0.0, 1.0, 0.4))
 	if _has_sprite and _texture != null:
 		# Center the 64x64 sprite on the node origin (matches Sprite2D centered=true)
 		var offset := Vector2(-_texture.get_width() * 0.5, -_texture.get_height() * 0.5)
 		draw_texture(_texture, offset)
-	else:
-		# Bright magenta rect — impossible to miss on any biome. Confirms the
-		# node position is correct even when the sprite file is missing.
-		draw_rect(Rect2(Vector2(-12, -12), Vector2(24, 24)), Color.MAGENTA)
-		draw_rect(Rect2(Vector2(-11, -11), Vector2(22, 22)), Color(1.0, 0.0, 1.0, 0.3))
-		if not _mob_id.is_empty():
-			var label_offset := Vector2(-_mob_id.length() * 2.5, -20)
-			draw_string(ThemeDB.fallback_font, label_offset, _mob_id, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
+	if not _mob_id.is_empty():
+		var label_offset := Vector2(-_mob_id.length() * 2.5, -22)
+		draw_string(ThemeDB.fallback_font, label_offset, _mob_id, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color.WHITE)
