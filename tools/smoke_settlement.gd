@@ -84,7 +84,7 @@ func _test_town_layout_small() -> void:
 	occupied.resize(LocalMapGen.MAP_SIZE * LocalMapGen.MAP_SIZE)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
-	var center := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var center := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 
 	var structures: Array = LocalMapGen._generate_town_layout(rng, town, terrain, occupied, center)
 	if structures.size() != 3:
@@ -109,7 +109,7 @@ func _test_town_layout_medium() -> void:
 	occupied.resize(LocalMapGen.MAP_SIZE * LocalMapGen.MAP_SIZE)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
-	var center := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var center := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 
 	var structures: Array = LocalMapGen._generate_town_layout(rng, town, terrain, occupied, center)
 	if structures.size() != 6:
@@ -134,7 +134,7 @@ func _test_town_layout_large() -> void:
 	occupied.resize(LocalMapGen.MAP_SIZE * LocalMapGen.MAP_SIZE)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 777
-	var center := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var center := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 
 	var structures: Array = LocalMapGen._generate_town_layout(rng, town, terrain, occupied, center)
 	if structures.size() != 9:
@@ -159,7 +159,7 @@ func _test_building_terrain_marking() -> void:
 	occupied.resize(LocalMapGen.MAP_SIZE * LocalMapGen.MAP_SIZE)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
-	var center := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var center := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 
 	var structures: Array = LocalMapGen._generate_town_layout(rng, town, terrain, occupied, center)
 	var blocked_count := 0
@@ -200,7 +200,7 @@ func _test_building_occupied_marking() -> void:
 	occupied.resize(LocalMapGen.MAP_SIZE * LocalMapGen.MAP_SIZE)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
-	var center := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var center := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 
 	var structures: Array = LocalMapGen._generate_town_layout(rng, town, terrain, occupied, center)
 	var occupied_count := 0
@@ -226,7 +226,7 @@ func _test_building_occupied_marking() -> void:
 
 func _test_town_boundary() -> void:
 	print("[smoke] test: town boundary Rect2i")
-	var center := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var center := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 	var structures := [
 		{"x": 240, "y": 240, "w": 3, "h": 3},
 		{"x": 270, "y": 240, "w": 2, "h": 2},

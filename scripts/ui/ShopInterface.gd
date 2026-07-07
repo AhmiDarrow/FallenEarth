@@ -202,7 +202,7 @@ func _sell_price_for(item_id: String) -> int:
 	# Sell at half the buy price (or 1 EC, whichever is higher)
 	for s in DEFAULT_STOCK:
 		if str(s.get("item", "")) == item_id:
-			return maxi(1, int(s.get("buy_price", 1)) / 2)
+			return maxi(1, int(int(s.get("buy_price", 1)) / 2.0))
 	# Items not in the shop stock sell for 1 EC by default
 	return 1
 

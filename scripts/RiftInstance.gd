@@ -230,7 +230,7 @@ func _save_player_pos() -> void:
 func _refresh_dungeon_ui() -> void:
 	for i in range(_grid_cells.size()):
 		var x: int = i % _dungeon_w
-		var y: int = i / _dungeon_w
+		var y: int = int(i / float(_dungeon_w))
 		var cell: Button = _grid_cells[i]
 		var tile: Dictionary = DungeonGen.tile_at(_dungeon, x, y)
 		var tile_type: String = str(tile.get("type", DungeonGen.TILE_WALL))

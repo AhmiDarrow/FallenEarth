@@ -162,7 +162,7 @@ func _configure_from_encounter() -> void:
 
 	# Legacy format
 	var char_data: Dictionary = _encounter.get("character_data", {}) as Dictionary
-	var player_start: Vector2i = _encounter.get("player_start", Vector2i(grid_size / 2, grid_size - 1))
+	var player_start: Vector2i = _encounter.get("player_start", Vector2i(int(grid_size / 2.0), grid_size - 1))
 	if not char_data.is_empty():
 		var player_data: Dictionary = _character_to_unit(char_data, player_start)
 		_arena.add_unit(player_data)

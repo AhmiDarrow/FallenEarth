@@ -569,8 +569,8 @@ func set_start_tile(tile_key: String, tile_data: Dictionary) -> void:
 	if parts.size() >= 2:
 		_player_q = int(parts[0])
 		_player_r = int(parts[1])
-	_local_x = LocalMapGen.MAP_SIZE / 2
-	_local_y = LocalMapGen.MAP_SIZE / 2
+	_local_x = int(LocalMapGen.MAP_SIZE / 2.0)
+	_local_y = int(LocalMapGen.MAP_SIZE / 2.0)
 	discover_hex(_player_q, _player_r)
 	ensure_hex_state(_player_q, _player_r)
 	print("[GameState] Starting grid chosen: ", tile_key, " biome: ", tile_data.get("name", "?"))
@@ -701,7 +701,7 @@ func _deserialize_hex_states_from_save(src: Variant) -> Dictionary:
 				var regen: Dictionary = LocalMapGen.generate(seed_str, q, r, tile)
 				state["terrain"] = regen.get("terrain", PackedByteArray())
 				if not state.has("spawn"):
-					state["spawn"] = regen.get("spawn", Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2))
+					state["spawn"] = regen.get("spawn", Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0)))
 		out[key] = state
 	return out
 

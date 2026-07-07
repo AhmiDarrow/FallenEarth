@@ -1627,7 +1627,7 @@ func _ensure_world_npcs() -> void:
 func _npc_local_position(npc: Dictionary) -> Vector2i:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = abs(str(npc.get("id", "npc")).hash())
-	var base := Vector2i(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	var base := Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 	return Vector2i(
 		clampi(base.x + rng.randi_range(-40, 40), 8, LocalMapGen.MAP_SIZE - 8),
 		clampi(base.y + rng.randi_range(-40, 40), 8, LocalMapGen.MAP_SIZE - 8),

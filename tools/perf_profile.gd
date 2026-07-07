@@ -70,7 +70,7 @@ func _setup_world() -> Dictionary:
 	var parts: PackedStringArray = start_key.split(",")
 	gs.set_start_tile(start_key, tile_map[start_key])
 	gs.create_character("Human", "Survivor", "Upworld", "PerfHero", "male")
-	gs.set_local_position(LocalMapGen.MAP_SIZE / 2, LocalMapGen.MAP_SIZE / 2)
+	gs.set_local_position(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0))
 	wg.queue_free()
 	var t0: int = Time.get_ticks_usec()
 	var map_data: Dictionary = LocalMapGen.generate("perf_seed", int(parts[0]), int(parts[1]), tile_map[start_key])

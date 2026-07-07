@@ -429,7 +429,7 @@ func _cleanup_mission_world_state(mission: Dictionary) -> void:
 func _mission_local_position(mission_id: String, q: int, r: int) -> Vector2i:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = LocalMapGen.hash_seed("%s|%d,%d" % [mission_id, q, r])
-	var center: int = LocalMapGen.MAP_SIZE / 2
+	var center: int = int(LocalMapGen.MAP_SIZE / 2.0)
 	return Vector2i(
 		clampi(center + rng.randi_range(-80, 80), 24, LocalMapGen.MAP_SIZE - 24),
 		clampi(center + rng.randi_range(-80, 80), 24, LocalMapGen.MAP_SIZE - 24),

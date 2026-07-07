@@ -54,7 +54,7 @@ func setup(data: Dictionary) -> void:
 	building_rect = Rect2i(bx, by, bw, bh)
 	position = Vector2(bx * CELL_SIZE, by * CELL_SIZE)
 
-	var ex: int = int(data.get("entrance_x", bx + bw / 2))
+	var ex: int = int(data.get("entrance_x", bx + int(bw / 2.0)))
 	var ey: int = int(data.get("entrance_y", by + bh))
 	entrance_cell = Vector2i(ex, ey)
 

@@ -203,7 +203,7 @@ func get_tile_at(q: int, r: int) -> Dictionary:
 static func hex_distance(q1: int, r1: int, q2: int, r2: int) -> int:
 	var s1 := -q1 - r1
 	var s2 := -q2 - r2
-	return int((abs(q1 - q2) + abs(r1 - r2) + abs(s1 - s2)) / 2)
+	return int((abs(q1 - q2) + abs(r1 - r2) + abs(s1 - s2)) / 2.0)
 
 
 static func axial_to_pixel(q: int, r: int, hex_size: float) -> Vector2:

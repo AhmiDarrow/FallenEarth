@@ -29,10 +29,10 @@ const EDGE_TO_HEX_DIR: Array[Vector2i] = [
 
 ## Entry local position when crossing from a given edge into this hex.
 const EDGE_ENTRY_POS: Array[Vector2i] = [
-	Vector2i(MAP_SIZE / 2, MAP_SIZE - 4),  # entered from north → spawn near south edge
-	Vector2i(MAP_SIZE / 2, 3),           # from south → near north
-	Vector2i(3, MAP_SIZE / 2),           # from east → near west
-	Vector2i(MAP_SIZE - 4, MAP_SIZE / 2),  # from west → near east
+	Vector2i(256, MAP_SIZE - 4),  # entered from north → spawn near south edge
+	Vector2i(256, 3),           # from south → near north
+	Vector2i(3, 256),           # from east → near west
+	Vector2i(MAP_SIZE - 4, 256),  # from west → near east
 ]
 
 
@@ -91,8 +91,8 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				terrain[idx] = TERRAIN_GROUND
 
 	# Clear a large homestead pocket at center so the player has room to explore on spawn.
-	var cx := MAP_SIZE / 2
-	var cy := MAP_SIZE / 2
+	var cx := int(MAP_SIZE / 2.0)
+	var cy := int(MAP_SIZE / 2.0)
 	for dy in range(-24, 25):
 		for dx in range(-24, 25):
 			var px := cx + dx
@@ -395,15 +395,15 @@ static func _generate_town_layout(
 		var by_center: int = cy + int(sin(angle) * place_radius)
 
 		# Convert center to top-left corner
-		var bx: int = bx_center - bw / 2
-		var by: int = by_center - bh / 2
+		var bx: int = bx_center - int(bw / 2.0)
+		var by: int = by_center - int(bh / 2.0)
 
 		# Clamp to map bounds (leave 2-cell border)
 		bx = clampi(bx, 2, MAP_SIZE - bw - 2)
 		by = clampi(by, 2, MAP_SIZE - bh - 2)
 
 		# Step 3: Mark building footprint as TERRAIN_BLOCKED + occupied
-		var entrance_x: int = bx + bw / 2
+		var entrance_x: int = bx + int(bw / 2.0)
 		var entrance_y: int = by + bh  # entrance is at bottom center
 		for dy2 in bh:
 			for dx2 in bw:
@@ -593,7 +593,7 @@ static func get_neighbor_hex(q: int, r: int, edge: int) -> Vector2i:
 
 static func get_entry_position(from_edge: int) -> Vector2i:
 	if from_edge < 0 or from_edge >= EDGE_ENTRY_POS.size():
-		return Vector2i(MAP_SIZE / 2, MAP_SIZE / 2)
+		return Vector2i(int(MAP_SIZE / 2.0), int(MAP_SIZE / 2.0))
 	return EDGE_ENTRY_POS[from_edge]
 
 

@@ -120,7 +120,7 @@ static func _place_rooms(width: int, height: int, count: int) -> Array[Dictionar
 		var candidate := {
 			"x1": x1, "y1": y1, "w": rw, "h": rh,
 			"x2": x1 + rw - 1, "y2": y1 + rh - 1,
-			"cx": x1 + rw / 2, "cy": y1 + rh / 2,
+			"cx": x1 + int(rw / 2.0), "cy": y1 + int(rh / 2.0),
 		}
 		var overlap: bool = false
 		for r in rooms:

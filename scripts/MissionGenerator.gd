@@ -117,7 +117,7 @@ static func _build_rewards(
 ) -> Dictionary:
 	var xp: int = int(scaling.get("xp_base", 35)) + party_level * int(scaling.get("xp_per_level", 7))
 	var rep: int = int(scaling.get("rep_base", 4)) + party_level * int(scaling.get("rep_per_level", 1))
-	var loot: int = int(scaling.get("loot_base", 1)) + party_level / int(scaling.get("loot_every_n_levels", 12))
+	var loot: int = int(scaling.get("loot_base", 1)) + int(party_level / float(int(scaling.get("loot_every_n_levels", 12))))
 	if str(template.get("objective_type", "")) == "clear_quest_rift":
 		xp = int(xp * 1.35)
 		loot += 1

@@ -110,8 +110,8 @@ static func combat_xp_reward(encounter: Dictionary, victory: bool) -> int:
 	base += enemies.size() * 12
 	for e in enemies:
 		if e is Dictionary:
-			base += int((e as Dictionary).get("hp", 50)) / 25
-	base += party_level / 4
+			base += int(int((e as Dictionary).get("hp", 50)) / 25.0)
+	base += int(party_level / 4.0)
 	return base
 
 

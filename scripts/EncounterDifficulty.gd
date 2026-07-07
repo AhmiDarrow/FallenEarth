@@ -118,7 +118,7 @@ static func scale_enemy_templates(
 
 static func rift_enemy_count(party_avg_level: int) -> int:
 	var lvl: int = ClassProg.clamp_level(party_avg_level)
-	var extra: int = lvl / 48
+	var extra: int = int(lvl / 48.0)
 	return clampi(1 + extra + randi() % 2, 1, 6)
 
 
