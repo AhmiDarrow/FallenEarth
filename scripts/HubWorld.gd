@@ -1954,6 +1954,9 @@ func _add_mob_layer_test_marker() -> void:
 
 
 func _seed_local_mobs() -> void:
+	print("[HubWorld] _seed_local_mobs() called — q,r=%d,%d local=(%d,%d) seeded_hexes=%s" % [
+		_player_q, _player_r, _local_x, _local_y, str(_seeded_hexes)
+	])
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if not is_instance_valid(gs):
 		return
@@ -1961,6 +1964,11 @@ func _seed_local_mobs() -> void:
 	if _tile_map.is_empty():
 		push_warning("[HubWorld] _tile_map is empty — cannot seed mobs.")
 		return
+	# DIAGNOSTIC: test mob pool loading directly
+	var pool_test: Array = EncounterBuilder._get_mob_pool("upworld", str(_tile_map.get("%d,%d" % [_player_q, _player_r], {}).get("name", ""))) if true else []
+	print("[HubWorld] DIAGNOSTIC: EncounterBuilder mob pool size for biome='%s' = %d" % [
+		str(_tile_map.get("%d,%d" % [_player_q, _player_r], {}).get("name", "")), pool_test.size()
+	])
 
 	# Skip if this hex was already seeded (prevents killed mobs from
 	# re-appearing when HubWorld reloads — deterministic RNG would
@@ -2049,10 +2057,20 @@ func _seed_local_mobs() -> void:
 		)
 		if enemy.is_empty():
 			skipped_no_enemy += 1
+			# DIAGNOSTIC: log first few failures in detail
+			if skipped_no_enemy <= 3:
+				print("[HubWorld] SEED FAIL #%d: generate_procedural_enemy returned empty (biome=%s spawn_context=upworld diff=%s)" % [
+					skipped_no_enemy, biome, str(difficulty)
+				])
 			continue
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
 		seeded += 1
+		# DIAGNOSTIC: log first successful seed
+		if seeded <= 3:
+			print("[HubWorld] SEED OK #%d: sprite_id=%s cell=(%d,%d) name=%s" % [
+				seeded, str(enemy.get("sprite_id", "?")), lx, ly, str(enemy.get("name", "?"))
+			])
 
 	print("[HubWorld] Mob seed: biome=%s tier=%d danger=%.2f total_attempts=%d seeded=%d (blocked=%d near=%d dup=%d no_enemy=%d) at q,r=%d,%d" % [
 		biome, int(tile.get("difficulty_tier", 0)), danger, count + 2, seeded, skipped_blocked, skipped_near, skipped_duplicate, skipped_no_enemy,
