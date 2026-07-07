@@ -23,16 +23,14 @@ func setup(victory: bool, xp: int, ec: int, loot: Array, cont: Callable) -> void
 
 
 func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
-	# Full-screen backdrop
+	# Full-screen backdrop — set anchors then explicit size to fill CanvasLayer
 	set_anchors_preset(Control.PRESET_FULL_RECT)
+	size = Vector2(1920, 1080)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	# Center panel
 	var panel := PanelContainer.new()
-	panel.anchor_left = 0.5
-	panel.anchor_top = 0.5
-	panel.anchor_right = 0.5
-	panel.anchor_bottom = 0.5
+	panel.set_anchors_preset(Control.PRESET_CENTER)
 	panel.offset_left = -220
 	panel.offset_top = -160
 	panel.offset_right = 220

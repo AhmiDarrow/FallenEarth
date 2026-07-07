@@ -62,8 +62,12 @@ func resolve_attack(attacker, target, arena: ArenaResource) -> int:
 	if not in_range(atk_res.grid_pos, tgt_res.grid_pos, atk_res.attack_range):
 		return 0
 	var mult: float = facing_multiplier(tgt_res.facing, atk_res.grid_pos, tgt_res.grid_pos)
-	var damage: int = maxi(1, int(round(float(atk_res.attack) * mult)) - tgt_res.defense)
-	damage = maxi(1, damage)  # always at least 1 damage on a successful attack
+	# Percentage-based defense: defense reduces damage by a percentage
+	# instead of flat subtraction. At 0 defense = 0% reduction,
+	# at 10 defense = ~33% reduction, at 20 defense = ~50% reduction.
+	var raw: float = float(atk_res.attack) * mult
+	var reduction: float = float(tgt_res.defense) / (float(tgt_res.defense) + 20.0)
+	var damage: int = maxi(1, int(round(raw * (1.0 - reduction))))
 	tgt_res.apply_damage(damage)
 	arena.unit_attacked.emit(atk_res.unit_id, tgt_res.unit_id, damage)
 	return damage

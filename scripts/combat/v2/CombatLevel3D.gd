@@ -210,6 +210,13 @@ func _character_to_unit(char_data: Dictionary, pos: Vector2i) -> Dictionary:
 
 
 func _template_to_unit(t: Dictionary, pos: Vector2i, is_boss: bool, idx: int) -> Dictionary:
+	# Mobs use "armor" in mobs.json; map it to defense for combat.
+	var mob_armor: int = int(t.get("armor", 0))
+	# Scale mob attack by level + armor so tankier mobs hit harder.
+	var mob_level: int = int(t.get("level", 1))
+	var mob_attack: int = int(t.get("attack", 0))
+	if mob_attack == 0:
+		mob_attack = 5 + mob_level + int(mob_armor * 0.5)
 	return {
 		"id": "enemy_%d" % idx,
 		"name": str(t.get("name", t.get("display_name", "Enemy"))),
@@ -218,14 +225,14 @@ func _template_to_unit(t: Dictionary, pos: Vector2i, is_boss: bool, idx: int) ->
 		"race": str(t.get("race", "human")),
 		"gender": str(t.get("gender", "none")),
 		"is_boss": is_boss,
-		"level": int(t.get("level", 1)),
+		"level": mob_level,
 		"pos": pos,
 		"hp": int(t.get("hp", t.get("current_hp", 30))),
 		"max_hp": int(t.get("max_hp", 30)),
 		"mp": int(t.get("mp", 0)),
 		"mp_max": int(t.get("mp_max", 0)),
-		"attack": int(t.get("attack", 5)) + int(t.get("attack_bonus", 0)),
-		"defense": int(t.get("defense", 0)) + int(t.get("armor_bonus", 0)),
+		"attack": mob_attack + int(t.get("attack_bonus", 0)),
+		"defense": mob_armor + int(t.get("armor_bonus", 0)),
 		"speed": int(t.get("speed", 8)),
 		"move": int(t.get("move", 2)),
 		"jump": int(t.get("jump", 1)),
