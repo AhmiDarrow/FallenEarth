@@ -248,10 +248,10 @@ func _start_turn(side: String) -> void:
 	p.reset_turn()
 	_arena.res.turn_started.emit(side)
 	_arena.reset_all_tile_markers()
-	# Camera follows first pawn of the acting side
-	var first_pawn: CombatPawn3D = _get_active_unit()
-	if first_pawn:
-		_camera.follow_pawn(first_pawn)
+	# Center camera on grid center
+	var grid_size: int = _arena.res.grid_size
+	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.5)
+	_camera.set_target(arena_center)
 
 
 func _get_active_unit() -> CombatPawn3D:
@@ -278,7 +278,6 @@ func on_select_pawn(participant: ParticipantResource) -> int:
 		participant.turn_completed = true
 		return TurnServiceScript.STAGE_END_TURN
 	participant.current_pawn = pawn
-	_camera.follow_pawn(pawn as CombatPawn3D)
 	participant.advance_to(TurnServiceScript.STAGE_SHOW_ACTIONS)
 	return TurnServiceScript.STAGE_SHOW_ACTIONS
 

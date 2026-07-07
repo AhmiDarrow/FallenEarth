@@ -12,7 +12,6 @@ extends Camera3D
 @export var zoom_min: float = 4.0
 @export var zoom_max: float = 20.0
 @export var boundary_radius: float = 10.0
-@export var follow_smoothing: float = 5.0
 
 ## Isometric angles
 @export var pitch_angle: float = -35.0
@@ -42,7 +41,8 @@ func _process(delta: float) -> void:
 		global_position = desired_pos
 		_snap_next_frame = false
 	else:
-		global_position = global_position.lerp(desired_pos, follow_smoothing * delta)
+		global_position = desired_pos
+
 	look_at(_target_position, Vector3.UP)
 
 
@@ -82,7 +82,9 @@ func follow_pawn(pawn: Node3D) -> void:
 		return
 	_target_position = pawn.global_position
 	_target_position.y = 0.0
+	_snap_next_frame = true
 
 
 func set_target(pos: Vector3) -> void:
 	_target_position = Vector3(pos.x, 0.0, pos.z)
+	_snap_next_frame = true
