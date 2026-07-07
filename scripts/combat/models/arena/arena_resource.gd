@@ -50,7 +50,8 @@ var victory: bool = false
 
 
 ## v0.11.0: Helper to get a tile by grid coordinates.
-func get_tile(x: int, y: int) -> TileResource:
+## Returns TileResource (2D) or CombatTile3D (3D).
+func get_tile(x: int, y: int):
 	return tiles.get("%d,%d" % [x, y], null)
 
 
