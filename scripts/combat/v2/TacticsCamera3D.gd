@@ -20,7 +20,7 @@ extends Camera3D
 
 ## State
 var _target_position: Vector3 = Vector3.ZERO
-var _current_zoom: float = 10.0
+var _current_zoom: float = 7.0
 var _rotation_target: float = 0.0
 var _snap_next_frame: bool = true
 

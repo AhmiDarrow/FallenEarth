@@ -29,37 +29,40 @@ func _ready() -> void:
 
 
 func _build_materials() -> void:
-	# Default terrain colors
-	var ground_color := Color(0.45, 0.52, 0.48, 1.0)
-	var vegetation_color := Color(0.30, 0.55, 0.30, 1.0)
-	var debris_color := Color(0.60, 0.45, 0.30, 1.0)
-	var blocked_color := Color(0.70, 0.30, 0.25, 0.8)
+	# Default terrain colors — brighter for visibility
+	var ground_color := Color(0.55, 0.62, 0.55, 1.0)
+	var vegetation_color := Color(0.35, 0.65, 0.35, 1.0)
+	var debris_color := Color(0.70, 0.55, 0.35, 1.0)
+	var blocked_color := Color(0.80, 0.35, 0.25, 1.0)
 
 	# Highlight colors
-	var reach_color := Color(0.30, 0.70, 1.0, 0.5)
-	var attack_color := Color(0.95, 0.20, 0.20, 0.5)
-	var hover_color := Color(1.0, 0.95, 0.4, 0.5)
-	var hover_reach_color := Color(0.30, 0.85, 1.0, 0.6)
-	var hover_attack_color := Color(1.0, 0.40, 0.30, 0.6)
+	var reach_color := Color(0.30, 0.70, 1.0, 0.7)
+	var attack_color := Color(0.95, 0.20, 0.20, 0.7)
+	var hover_color := Color(1.0, 0.95, 0.4, 0.8)
+	var hover_reach_color := Color(0.30, 0.85, 1.0, 0.8)
+	var hover_attack_color := Color(1.0, 0.40, 0.30, 0.8)
 
 	_materials = {
-		"default": _make_mat(ground_color),
+		"default": _make_mat(ground_color, true),
 		"reachable": _make_mat(reach_color),
 		"attackable": _make_mat(attack_color),
 		"hover": _make_mat(hover_color),
 		"hover_reachable": _make_mat(hover_reach_color),
 		"hover_attackable": _make_mat(hover_attack_color),
 		"blocked": _make_mat(blocked_color),
-		"terrain_vegetation": _make_mat(vegetation_color),
-		"terrain_debris": _make_mat(debris_color),
+		"terrain_vegetation": _make_mat(vegetation_color, true),
+		"terrain_debris": _make_mat(debris_color, true),
 		"terrain_blocked": _make_mat(blocked_color),
 	}
 
 
-func _make_mat(color: Color) -> StandardMaterial3D:
+func _make_mat(color: Color, opaque: bool = false) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = color
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	if opaque:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+	else:
+		mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return mat
 
@@ -68,7 +71,9 @@ func configure(biome: String = "Ash Wastes", grid_size: int = DEFAULT_GRID_SIZE,
 	res.biome = biome
 	res.grid_size = grid_size
 	_clear_tiles()
+	_build_ground_plane()
 	_build_tiles(height_seed)
+	_build_grid_wireframe()
 	_center_grid()
 
 
@@ -114,6 +119,58 @@ func _clear_tiles() -> void:
 	if tiles_node:
 		tiles_node.queue_free()
 	_tiles.clear()
+	var ground := get_node_or_null("GroundPlane")
+	if ground:
+		ground.queue_free()
+	var wireframe := get_node_or_null("GridWireframe")
+	if wireframe:
+		wireframe.queue_free()
+
+
+func _build_ground_plane() -> void:
+	var grid_px: float = float(res.grid_size) * CombatTile3D.CELL_SIZE
+	var ground := MeshInstance3D.new()
+	ground.name = "GroundPlane"
+	var plane := PlaneMesh.new()
+	plane.size = Vector2(grid_px + 2.0, grid_px + 2.0)
+	ground.mesh = plane
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.22, 0.24, 0.26, 1.0)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_DISABLED
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	ground.material_override = mat
+	ground.position = Vector3(0.0, -0.01, 0.0)
+	add_child(ground)
+
+
+func _build_grid_wireframe() -> void:
+	var im := ImmediateMesh.new()
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = "GridWireframe"
+	var grid_px: float = float(res.grid_size) * CombatTile3D.CELL_SIZE
+	var half: float = grid_px * 0.5
+	var line_y: float = CombatTile3D.TILE_HEIGHT + 0.01
+	im.clear_surfaces()
+	im.surface_begin(Mesh.PRIMITIVE_LINES)
+	# Vertical lines
+	for i in range(res.grid_size + 1):
+		var x: float = float(i) * CombatTile3D.CELL_SIZE - half
+		im.surface_add_vertex(Vector3(x, line_y, -half))
+		im.surface_add_vertex(Vector3(x, line_y, half))
+	# Horizontal lines
+	for i in range(res.grid_size + 1):
+		var z: float = float(i) * CombatTile3D.CELL_SIZE - half
+		im.surface_add_vertex(Vector3(-half, line_y, z))
+		im.surface_add_vertex(Vector3(half, line_y, z))
+	im.surface_end()
+	mesh_instance.mesh = im
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color(0.1, 0.1, 0.1, 0.6)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = false
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mesh_instance.material_override = mat
+	add_child(mesh_instance)
 
 
 func add_unit(unit_data: Dictionary) -> CombatPawn3D:

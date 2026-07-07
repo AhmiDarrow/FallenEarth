@@ -67,6 +67,7 @@ func _build_sprite() -> void:
 	_sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	_sprite.position = Vector3(0, PAWN_HEIGHT, 0)
 	_sprite.modulate = Color.WHITE
+	_sprite.render_priority = 0
 	add_child(_sprite)
 
 
@@ -78,10 +79,9 @@ func _build_labels() -> void:
 	_hp_label.font_size = 28
 	_hp_label.outline_size = 8
 	_hp_label.outline_modulate = Color.BLACK
-	_hp_label.position = Vector3(0, PAWN_HEIGHT + 1.5, 0)
+	_hp_label.position = Vector3(0, PAWN_HEIGHT + 1.0, 0)
 	_hp_label.pixel_size = 0.01
-	_hp_label.no_depth_test = true
-	_hp_label.render_priority = 10
+	_hp_label.render_priority = 1
 	add_child(_hp_label)
 
 	# Name label (above HP)
@@ -91,10 +91,9 @@ func _build_labels() -> void:
 	_name_label.font_size = 32
 	_name_label.outline_size = 8
 	_name_label.outline_modulate = Color.BLACK
-	_name_label.position = Vector3(0, PAWN_HEIGHT + 2.0, 0)
+	_name_label.position = Vector3(0, PAWN_HEIGHT + 1.4, 0)
 	_name_label.pixel_size = 0.01
-	_name_label.no_depth_test = true
-	_name_label.render_priority = 20
+	_name_label.render_priority = 2
 	add_child(_name_label)
 
 

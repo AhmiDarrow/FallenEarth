@@ -10,7 +10,8 @@ extends StaticBody3D
 const CombatArena3DScript = preload("res://scripts/combat/v2/CombatArena3D.gd")
 const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
 const CELL_SIZE: float = 1.0
-const TILE_HEIGHT: float = 0.08
+const TILE_INSET: float = 0.05
+const TILE_HEIGHT: float = 0.3
 const RAYCAST_REACH: float = 1.5
 
 ## Visual state flags (read by _process for material swap)
@@ -56,9 +57,11 @@ func _build_mesh() -> void:
 	_mesh = MeshInstance3D.new()
 	_mesh.name = "Tile"
 	var box := BoxMesh.new()
-	box.size = Vector3(CELL_SIZE, TILE_HEIGHT, CELL_SIZE)
+	var tile_visual: float = CELL_SIZE - TILE_INSET * 2.0
+	box.size = Vector3(tile_visual, TILE_HEIGHT, tile_visual)
 	_mesh.mesh = box
-	_mesh.position = Vector3.ZERO
+	# Lift mesh so bottom face sits at y=0 (half height above ground)
+	_mesh.position = Vector3(0.0, TILE_HEIGHT * 0.5, 0.0)
 	add_child(_mesh)
 
 
@@ -66,9 +69,10 @@ func _build_collision() -> void:
 	_collision = CollisionShape3D.new()
 	_collision.name = "CollisionShape3D"
 	var box := BoxShape3D.new()
-	box.size = Vector3(CELL_SIZE, TILE_HEIGHT, CELL_SIZE)
+	var tile_visual: float = CELL_SIZE - TILE_INSET * 2.0
+	box.size = Vector3(tile_visual, TILE_HEIGHT, tile_visual)
 	_collision.shape = box
-	_collision.position = Vector3.ZERO
+	_collision.position = Vector3(0.0, TILE_HEIGHT * 0.5, 0.0)
 	add_child(_collision)
 
 
