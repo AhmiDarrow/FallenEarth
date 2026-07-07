@@ -516,7 +516,45 @@ func _on_unit_attacked(attacker_id: String, target_id: String, damage: int) -> v
 
 func _on_encounter_ended(victory: bool) -> void:
 	_sync_player_health()
-	_return_from_battle(victory)
+	if victory:
+		_show_battle_results(victory)
+	else:
+		_return_from_battle(victory)
+
+
+func _show_battle_results(victory: bool) -> void:
+	# Gather mob data for loot rolling
+	var mob_data := {}
+	var templates: Array = _encounter.get("enemy_templates", []) as Array
+	if templates.size() > 0:
+		mob_data = templates[0] as Dictionary
+	var biome: String = str(_encounter.get("biome", "Ash Wastes"))
+
+	# Roll and apply rewards
+	var loot_result := {}
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var prog: Node = get_node_or_null("/root/ProgressionManager")
+	if not mob_data.is_empty():
+		var LootRollerScript = preload("res://scripts/LootRoller.gd")
+		loot_result = LootRollerScript.roll_and_apply(mob_data, biome, inv, prog)
+
+	# Build results UI
+	var hud: CanvasLayer = get_node_or_null("HUDLayer") as CanvasLayer
+	if hud == null:
+		_return_from_battle(victory)
+		return
+	var BattleResultsScript = preload("res://scripts/combat/ui/BattleResultsUI.gd")
+	var results_ui: Control = Control.new()
+	results_ui.set_script(BattleResultsScript)
+	hud.add_child(results_ui)
+	results_ui.setup(
+		victory,
+		int(loot_result.get("xp", 0)),
+		int(loot_result.get("ec", 0)),
+		loot_result.get("item_drops", []) as Array,
+		func(): _return_from_battle(victory)
+	)
 
 
 func _sync_player_health() -> void:

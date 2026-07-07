@@ -438,7 +438,11 @@ static func build_overworld(char_data: Dictionary, mob: Dictionary, tile_key: St
 		"grid_size": 7,
 		"player_start": Vector2i(3, 5),
 		"height_seed": abs(tile_key.hash()),
-		"class_combat": {}
+		"class_combat": {},
+		"return_context": {
+			"remove_mob_on_victory": true,
+			"tile_key": tile_key,
+		},
 	}
 
 static func build_mission(
