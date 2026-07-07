@@ -59,6 +59,7 @@ func setup(p_mob_data: Dictionary, p_cell_size: int, p_walkable: Callable, p_gri
 	add_child(_visual)
 	var sprite_id: String = str(mob_data.get("sprite_id", mob_data.get("type", "")))
 	_visual.set_mob_sprite(sprite_id)
+	print("[OverworldMob] setup: sprite_id='%s' grid=(%d,%d) pos=(%.0f,%.0f) children=%d" % [sprite_id, grid_x, grid_y, position.x, position.y, get_child_count()])
 
 
 func tick_mob(delta: float, local_map: Dictionary, player_x: int, player_y: int) -> int:

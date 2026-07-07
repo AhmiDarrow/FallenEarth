@@ -1016,6 +1016,7 @@ func _refresh_markers() -> void:
 		if is_instance_valid(m):
 			m.queue_free()
 	_overworld_mobs.clear()
+	print("[HubWorld] _refresh_markers: %d total mobs in GameState, mob_layer valid=%s" % [all_mobs.size(), is_instance_valid(_mob_layer)])
 	for mob_key in all_mobs:
 		if not str(mob_key).begins_with("%d,%d|" % [_player_q, _player_r]):
 			continue
@@ -1098,10 +1099,13 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	mob.z_index = 50
 	mob.setup(mob_data, cell_size, Callable(self, "_is_cell_walkable"), x, y)
 	mob.reached_player.connect(_on_overworld_mob_reached_player)
+	print("[HubWorld] Spawning OverworldMob '%s' at grid (%d,%d) pos=(%.0f,%.0f)" % [sprite_id, x, y, mob.position.x, mob.position.y])
 	if is_instance_valid(_mob_layer):
 		_mob_layer.add_child(mob)
+		print("[HubWorld]   -> added to _mob_layer (children: %d)" % _mob_layer.get_child_count())
 	elif is_instance_valid(_map_view):
 		_map_view.get_mob_layer().add_child(mob)
+		print("[HubWorld]   -> added to map_view.mob_layer")
 	_overworld_mobs["%d,%d" % [x, y]] = mob
 	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob
 
