@@ -9,7 +9,7 @@ const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
 const MobVisualScript = preload("res://scripts/MobVisual.gd")
-const OverworldMobScript = preload("res://scripts/OverworldMob.gd")
+const OverworldMobAIScript = preload("res://scripts/ai/OverworldMobAI.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
 const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
 const ProgressionMgrScript = preload("res://scripts/ProgressionManager.gd")
@@ -111,7 +111,8 @@ var _pause_menu: PauseMenu = null
 var _player_visual: Node2D = null
 var _transition_screen: CanvasLayer = null
 
-# v0.10.0: OverworldMob instances keyed by "lx,ly" for AI ticking.
+# v0.10.1: Mob AI entries keyed by "lx,ly" — each value is a dictionary
+# { node: MobVisual, ai: OverworldMobAI, grid_x, grid_y, moving, tween, data }.
 var _overworld_mobs: Dictionary = {}
 
 
@@ -988,10 +989,20 @@ func _refresh_markers() -> void:
 		for child in _marker_layer.get_children():
 			child.queue_free()
 	_marker_nodes.clear()
-	# Clear old mob sprites from MobLayer
-	if is_instance_valid(_mob_layer):
-		for child in _mob_layer.get_children():
-			child.queue_free()
+	# Clear old mob sprites from world_grid
+	for key in _overworld_mobs:
+		var entry: Dictionary = _overworld_mobs[key]
+		var mob_node: Node2D = entry.get("node") as Node2D
+		if is_instance_valid(mob_node):
+			mob_node.queue_free()
+	_overworld_mobs.clear()
+	# Also clear any leftover mob entries in _marker_nodes
+	for mkey in _marker_nodes:
+		if mkey.begins_with("mob|"):
+			var mn: Node2D = _marker_nodes[mkey] as Node2D
+			if is_instance_valid(mn):
+				mn.queue_free()
+			_marker_nodes.erase(mkey)
 	var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
 
 	# Player visual is handled by _player_visual node — skip circle marker
@@ -1010,12 +1021,6 @@ func _refresh_markers() -> void:
 
 	var all_mobs: Dictionary = gs.get_overworld_mobs()
 	var mob_count := 0
-	# v0.10.0: Clear old OverworldMob instances before rebuilding.
-	for key in _overworld_mobs:
-		var m: Node2D = _overworld_mobs[key] as Node2D
-		if is_instance_valid(m):
-			m.queue_free()
-	_overworld_mobs.clear()
 	print("[HubWorld] _refresh_markers: %d total mobs in GameState, mob_layer valid=%s" % [all_mobs.size(), is_instance_valid(_mob_layer)])
 	for mob_key in all_mobs:
 		if not str(mob_key).begins_with("%d,%d|" % [_player_q, _player_r]):
@@ -1079,71 +1084,118 @@ func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cel
 func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob_data: Dictionary = {}) -> void:
 	if sprite_id.is_empty():
 		return
-	# v0.10.0: Use OverworldMob for AI (pathfinding + aggro).
-	# If mob_data is empty (legacy callers), fall back to plain MobVisual.
-	if mob_data.is_empty():
-		var mob_node: Node2D = MobVisualScript.new()
-		mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-		mob_node.z_index = 50
-		mob_node.set_mob_sprite(sprite_id)
-		if is_instance_valid(_mob_layer):
-			_mob_layer.add_child(mob_node)
-		elif is_instance_valid(_map_view):
-			_map_view.get_mob_layer().add_child(mob_node)
-		_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
-		return
+	# v0.10.1: Always use MobVisual (proven visible). Store AI state
+	# in a plain dictionary alongside the node — avoids OverworldMob
+	# tree-entry issues.
+	var mob_node: Node2D = MobVisualScript.new()
+	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+	mob_node.z_index = 50
+	mob_node.set_mob_sprite(sprite_id)
+	world_grid.add_child(mob_node)
 
-	var mob: Node2D = OverworldMobScript.new()
-	mob.name = "OverworldMob_%s" % sprite_id
-	mob.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	mob.z_index = 50
-	mob.setup(mob_data, cell_size, Callable(self, "_is_cell_walkable"), x, y)
-	mob.reached_player.connect(_on_overworld_mob_reached_player)
-	print("[HubWorld] Spawning OverworldMob '%s' at grid (%d,%d) pos=(%.0f,%.0f)" % [sprite_id, x, y, mob.position.x, mob.position.y])
-	if is_instance_valid(_mob_layer):
-		_mob_layer.add_child(mob)
-		print("[HubWorld]   -> added to _mob_layer (children: %d)" % _mob_layer.get_child_count())
-	elif is_instance_valid(_map_view):
-		_map_view.get_mob_layer().add_child(mob)
-		print("[HubWorld]   -> added to map_view.mob_layer")
-	_overworld_mobs["%d,%d" % [x, y]] = mob
-	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob
+	# Create AI state entry
+	var ai: OverworldMobAI = OverworldMobAIScript.new()
+	ai.set_grid_pos(x, y)
+	ai.seed_from_pos(x, y)
+	var mob_type: String = str(mob_data.get("mob_type", "aggressive"))
+	ai.aggro_range = int(mob_data.get("aggro_range", 5 if mob_type == "aggressive" else 3))
+	ai.mob_type = mob_type
+
+	var entry: Dictionary = {
+		"node": mob_node,
+		"ai": ai,
+		"grid_x": x,
+		"grid_y": y,
+		"moving": false,
+		"tween": null,
+		"data": mob_data,
+	}
+	_overworld_mobs["%d,%d" % [x, y]] = entry
+	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
 
 
-## v0.10.0: Tick all OverworldMob instances. Each mob runs its AI
-## (wander/aggro/pathfinding) and tweens toward its next cell. When a
-## mob reaches the player's cell, combat starts.
+## v0.10.1: Tick all mob AI instances. Each entry is a dictionary with
+## node (MobVisual), ai (OverworldMobAI), grid position, movement state.
+## When the mob reaches the player's cell, combat starts.
 func _tick_overworld_mobs(delta: float) -> void:
 	if _overworld_mobs.is_empty():
 		return
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if not is_instance_valid(gs):
 		return
+	var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
 
 	var to_remove: Array[String] = []
 	for pos_key in _overworld_mobs:
-		var mob: Node2D = _overworld_mobs[pos_key] as Node2D
-		if not is_instance_valid(mob):
+		var entry: Dictionary = _overworld_mobs[pos_key]
+		var ai: OverworldMobAI = entry.get("ai") as OverworldMobAI
+		var mob_node: Node2D = entry.get("node") as Node2D
+		if ai == null or not is_instance_valid(mob_node):
 			to_remove.append(pos_key)
 			continue
-		if not mob.has_method("tick_mob"):
+		if entry.get("moving", false):
 			continue
 
-		var old_x: int = mob.grid_x
-		var old_y: int = mob.grid_y
-		var _ai_state: int = mob.tick_mob(delta, _local_map, _local_x, _local_y)
+		var old_x: int = entry["grid_x"]
+		var old_y: int = entry["grid_y"]
+		ai.tick(delta, _local_map, _local_x, _local_y, Callable(self, "_is_cell_walkable"))
 
-		# If mob moved to a new cell, update GameState tracking
-		if mob.grid_x != old_x or mob.grid_y != old_y:
-			mob.update_game_state(gs, _player_q, _player_r, old_x, old_y)
-			# Update the dictionary key
-			to_remove.append(pos_key)
-			var new_key: String = "%d,%d" % [mob.grid_x, mob.grid_y]
-			if not _overworld_mobs.has(new_key):
-				_overworld_mobs[new_key] = mob
+		match ai.state:
+			OverworldMobAI.State.WANDER, OverworldMobAI.State.AGGRO:
+				var target: Vector2i = ai._wander_target
+				if target.x != old_x or target.y != old_y:
+					if _is_cell_walkable(target.x, target.y):
+						_start_mob_move(entry, target, cell_size, gs, _player_q, _player_r, old_x, old_y)
+					else:
+						ai.cancel_movement()
+			OverworldMobAI.State.ATTACK:
+				if ai.is_at_player(_local_x, _local_y):
+					_on_overworld_mob_reached_player(entry.get("data", {}))
 
+	# Clean up invalid entries
 	for key in to_remove:
 		_overworld_mobs.erase(key)
+
+
+## Tween a MobVisual node from its current position to a target cell.
+func _start_mob_move(entry: Dictionary, target: Vector2i, cell_size: int,
+		gs: GameState, hex_q: int, hex_r: int, old_x: int, old_y: int) -> void:
+	entry["moving"] = true
+	var mob_node: Node2D = entry["node"]
+	var target_pos: Vector2 = Vector2(
+		target.x * cell_size + cell_size * 0.5,
+		target.y * cell_size + cell_size * 0.5
+	)
+
+	# Kill old tween
+	var old_tween: Tween = entry.get("tween") as Tween
+	if old_tween != null and old_tween.is_valid():
+		old_tween.kill()
+
+	var tw: Tween = create_tween()
+	tw.tween_property(mob_node, "position", target_pos, 0.22).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tw.tween_callback(func() -> void:
+		entry["moving"] = false
+		entry["grid_x"] = target.x
+		entry["grid_y"] = target.y
+		var ai: OverworldMobAI = entry.get("ai") as OverworldMobAI
+		if ai != null:
+			if ai.state == OverworldMobAI.State.WANDER:
+				ai.confirm_arrival()
+			elif ai.state == OverworldMobAI.State.AGGRO:
+				ai.set_grid_pos(target.x, target.y)
+		# Update GameState
+		var new_key: String = gs.mob_key(hex_q, hex_r, target.x, target.y)
+		var old_key: String = gs.mob_key(hex_q, hex_r, old_x, old_y)
+		if old_key != new_key:
+			gs.remove_overworld_mob(old_key)
+			var updated: Dictionary = entry["data"].duplicate(true)
+			updated["local_x"] = target.x
+			updated["local_y"] = target.y
+			gs.set_overworld_mob(new_key, updated)
+			entry["data"] = updated
+	)
+	entry["tween"] = tw
 
 
 ## v0.10.0: Called when an OverworldMob reaches the player's cell.

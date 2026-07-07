@@ -65,7 +65,7 @@ func tick(delta: float, local_map: Dictionary, player_x: int, player_y: int, wal
 		State.AGGRO:
 			_tick_aggro(local_map, walkable_check, player_x, player_y)
 		State.ATTACK:
-			pass  # handled by OverworldMob
+			pass  # handled by HubWorld
 
 	return state
 
@@ -106,7 +106,7 @@ func _tick_wander(_delta: float, _local_map: Dictionary, walkable_check: Callabl
 		return
 
 	_wander_target = candidates[_rng.randi() % candidates.size()]
-	# Signal to OverworldMob to tween to _wander_target; we stay in WANDER
+	# Signal to HubWorld to tween to _wander_target; we stay in WANDER
 	# until the mob confirms arrival via confirm_arrival().
 	# If the mob can't move (e.g. something blocked), it'll call
 	# cancel_movement() which puts us back to IDLE.
