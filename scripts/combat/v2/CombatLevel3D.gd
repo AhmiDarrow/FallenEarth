@@ -219,14 +219,16 @@ func _character_to_unit(char_data: Dictionary, pos: Vector2i) -> Dictionary:
 
 
 func _template_to_unit(t: Dictionary, pos: Vector2i, is_boss: bool, idx: int) -> Dictionary:
-	# Mobs use "armor" in mobs.json; map it to defense for combat.
-	var mob_armor: int = int(t.get("armor", 0))
+	# Mobs define attack_damage and armor in mobs.json.
+	# generate_procedural_enemy copies these as "attack_damage"/"damage" and "armor".
 	var mob_level: int = int(t.get("level", 1))
-	# Mob attack: level-scaled base. Level 1 mobs hit for ~6, scaling
-	# up by ~2 per level. Armor adds a small bonus to damage.
-	var mob_attack: int = int(t.get("attack", 0))
+	var mob_attack: int = int(t.get("attack_damage", 0))
 	if mob_attack == 0:
-		mob_attack = 4 + mob_level * 2 + int(mob_armor * 0.3)
+		mob_attack = int(t.get("damage", 0))
+	if mob_attack == 0:
+		# Fallback: level-scaled base if neither field present
+		mob_attack = 4 + mob_level * 2
+	var mob_armor: int = int(t.get("armor", 0))
 	return {
 		"id": "enemy_%d" % idx,
 		"name": str(t.get("name", t.get("display_name", "Enemy"))),
@@ -529,6 +531,7 @@ func _on_unit_attacked(attacker_id: String, target_id: String, damage: int) -> v
 	var target_pawn: CombatPawn3D = _arena.get_pawn(target_id)
 	if target_pawn != null:
 		target_pawn.update_hp(target_pawn.res.current_hp)
+		target_pawn.show_damage_text(damage)
 
 
 func _on_encounter_ended(victory: bool) -> void:

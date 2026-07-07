@@ -115,6 +115,7 @@ func setup_from_data(data: Dictionary, arena: ArenaResource, arena_node_ref: Nod
 	res.gender = str(data.get("gender", "male"))
 	res.is_boss = bool(data.get("is_boss", false))
 	res.grid_pos = data.get("pos", Vector2i.ZERO)
+	res.level = int(data.get("level", 1))
 	res.max_hp = int(data.get("max_hp", 1))
 	res.current_hp = int(data.get("hp", res.max_hp))
 	res.max_mp = int(data.get("mp_max", 0))
@@ -122,7 +123,7 @@ func setup_from_data(data: Dictionary, arena: ArenaResource, arena_node_ref: Nod
 	res.attack = int(data.get("attack", 0)) + int(data.get("attack_bonus", 0))
 	res.defense = int(data.get("defense", 0)) + int(data.get("armor_bonus", 0))
 	res.speed = int(data.get("speed", 0))
-	res.move = int(data.get("move", 3)) + int(sqrt(float(int(data.get("level", 1))) / 25.0))
+	res.move = int(data.get("move", 3)) + int(sqrt(float(res.level) / 25.0))
 	res.jump = int(data.get("jump", 1))
 	res.attack_range = int(data.get("attack_range", 1))
 	res.sprite_id = str(data.get("sprite_id", res.unit_id))
@@ -224,6 +225,30 @@ func update_hp(new_hp: int) -> void:
 	_refresh_labels()
 	if res.current_hp <= 0:
 		_play_death()
+
+
+## Show a floating damage number (or "MISS") above the pawn.
+func show_damage_text(amount: int) -> void:
+	var lbl := Label3D.new()
+	lbl.pixel_size = 0.01
+	lbl.font_size = 32
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	if amount <= 0:
+		lbl.text = "MISS"
+		lbl.modulate = Color(1.0, 1.0, 1.0)
+	else:
+		lbl.text = str(amount)
+		lbl.modulate = Color(1.0, 0.3, 0.3)
+	lbl.position = Vector3(0, 1.2, 0)
+	add_child(lbl)
+	# Animate: float up and fade out
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(lbl, "position:y", 1.8, 0.8).set_ease(Tween.EASE_OUT)
+	tween.tween_property(lbl, "modulate:a", 0.0, 0.8).set_delay(0.3)
+	tween.set_parallel(false)
+	tween.tween_callback(lbl.queue_free)
 
 
 func _play_death() -> void:
