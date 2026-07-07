@@ -29,14 +29,14 @@ extends RefCounted
 ## enemy to get behind them — they have to attack first).
 func process_surrounding(arena_res: ArenaResource, root_x: int, y_root: int, max_distance: int, enemies_on_map: Array = []) -> void:
 	_reset_markers(arena_res)
-	var root: TileResource = arena_res.get_tile(root_x, y_root)
+	var root = arena_res.get_tile(root_x, y_root)
 	if root == null:
 		return
 	var queue: Array = [root]
 	root.pf_root = null  # explicit, since reset sets to null too
 	root.pf_distance = 0
 	while not queue.is_empty():
-		var current: TileResource = queue.pop_front()
+		var current = queue.pop_front()
 		if current.pf_distance >= max_distance:
 			continue
 		for neighbor in _get_neighbors(arena_res, current.grid_x, current.grid_y):
@@ -57,10 +57,10 @@ func process_surrounding(arena_res: ArenaResource, root_x: int, y_root: int, max
 ## v0.11.0: Get the 4 cardinal neighbours of (x, y). Wraps the
 ## standard 4-neighbour pattern (N/E/S/W) so we can change it
 ## later (e.g. add diagonals) in one place.
-func _get_neighbors(arena_res: ArenaResource, x: int, y: int) -> Array[TileResource]:
-	var out: Array[TileResource] = []
+func _get_neighbors(arena_res: ArenaResource, x: int, y: int) -> Array:
+	var out: Array = []
 	for offset in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
-		var t: TileResource = arena_res.get_tile(x + offset.x, y + offset.y)
+		var t = arena_res.get_tile(x + offset.x, y + offset.y)
 		if t != null:
 			out.append(t)
 	return out
@@ -72,7 +72,7 @@ func _get_neighbors(arena_res: ArenaResource, x: int, y: int) -> Array[TileResou
 ## the front of this list to step the unit along the path.
 func get_path(arena_res: ArenaResource, to_x: int, to_y: int) -> Array[Vector2i]:
 	var path: Array[Vector2i] = []
-	var current: TileResource = arena_res.get_tile(to_x, to_y)
+	var current = arena_res.get_tile(to_x, to_y)
 	while current != null:
 		path.push_front(Vector2i(current.grid_x, current.grid_y))
 		current = current.pf_root
@@ -85,7 +85,7 @@ func get_path(arena_res: ArenaResource, to_x: int, to_y: int) -> Array[Vector2i]
 ## leak into the new one.
 func _reset_markers(arena_res: ArenaResource) -> void:
 	for key in arena_res.tiles:
-		var t: TileResource = arena_res.tiles[key]
+		var t = arena_res.tiles[key]
 		t.pf_root = null
 		t.pf_distance = 0
 		t.reachable = false

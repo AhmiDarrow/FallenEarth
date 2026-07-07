@@ -37,7 +37,7 @@ func mark_tiles(arena: ArenaResource, pawn, enemies: Array) -> void:
 	var pawn_res: UnitResource = pawn.res
 	# Reset all tile highlights.
 	for key in arena.tiles:
-		var t: TileResource = arena.tiles[key]
+		var t = arena.tiles[key]
 		t.reachable = false
 		t.attackable = false
 		t.hover = false
@@ -46,7 +46,7 @@ func mark_tiles(arena: ArenaResource, pawn, enemies: Array) -> void:
 	path_serv.process_surrounding(arena, pawn_res.grid_pos.x, pawn_res.grid_pos.y, pawn_res.move, enemies)
 	# Mark reachable tiles + tile the pawn is standing on.
 	for key in arena.tiles:
-		var t: TileResource = arena.tiles[key]
+		var t = arena.tiles[key]
 		if t.pf_distance > 0 and t.pf_distance <= pawn_res.move and not t.is_taken():
 			t.reachable = true
 		elif t.grid_x == pawn_res.grid_pos.x and t.grid_y == pawn_res.grid_pos.y:
