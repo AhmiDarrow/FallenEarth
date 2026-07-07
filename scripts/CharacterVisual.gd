@@ -19,6 +19,7 @@ var current_frame: int = 0
 var _sprite_sheet: Texture2D = null
 var _frame_textures: Dictionary = {}
 var _sprite_node: Sprite2D = null
+var _equip_overlays: Dictionary = {}  # slot -> Sprite2D
 
 var _anim_timer: float = 0.0
 var _anim_speed: float = 0.18
@@ -132,7 +133,86 @@ func _draw() -> void:
 
 
 func update_equipment(equip: Dictionary = {}) -> void:
-	pass
+	# Clear previous overlays
+	for slot in _equip_overlays:
+		var overlay: Sprite2D = _equip_overlays[slot]
+		if is_instance_valid(overlay):
+			overlay.queue_free()
+	_equip_overlays.clear()
+
+	if equip.is_empty():
+		return
+
+	var equip_sprite_path: String = "res://assets/sprites/equipment/"
+	# Layer order: boots (back) -> legs -> chest -> head -> weapon (front)
+	var layer_order: Array = ["boots", "legs", "chest", "head", "mainhand"]
+	var z_offsets: Dictionary = {
+		"boots": -3, "legs": -2, "chest": -1,
+		"head": 1, "mainhand": 2,
+	}
+
+	for slot in layer_order:
+		var item_id: String = str(equip.get(slot, ""))
+		if item_id.is_empty():
+			continue
+		# Resolve sprite name from item_id
+		var sprite_name: String = _resolve_equip_sprite(item_id)
+		if sprite_name.is_empty():
+			continue
+		var tex_path: String = equip_sprite_path + sprite_name + ".png"
+		if not ResourceLoader.exists(tex_path):
+			continue
+		var tex: Texture2D = load(tex_path) as Texture2D
+		if tex == null:
+			continue
+		var overlay := Sprite2D.new()
+		overlay.texture = tex
+		overlay.centered = true
+		overlay.pixel_size = 0.01
+		overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		# Scale 32px sprite to fill 64px character cell
+		overlay.scale = Vector2(2.0, 2.0)
+		overlay.z_index = int(z_offsets.get(slot, 0))
+		add_child(overlay)
+		_equip_overlays[slot] = overlay
+
+
+## Resolve equipment sprite filename from an item_id.
+## weapon_scavenger_t1 -> weapon_scavenger  (tier 0 = base)
+## weapon_scavenger_t2 -> weapon_scavenger_ii (tier 1)
+## armor_scavenger_head_t1 -> armor_scavenger_head
+func _resolve_equip_sprite(item_id: String) -> String:
+	if item_id.begins_with("weapon_"):
+		# Format: weapon_<class>_t<num>
+		var rest: String = item_id.substr("weapon_".length())
+		var parts: PackedStringArray = rest.split("_t")
+		if parts.size() == 2:
+			var base: String = "weapon_" + parts[0]
+			var tier: int = int(parts[1]) - 1
+			if tier <= 0:
+				return base
+			# Tier 1+ uses roman numeral suffix
+			var suffixes: Array = ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x",
+				"_xi", "_xii", "_xiii", "_xiv", "_xv", "_xvi", "_xvii", "_xviii", "_xix", "_xx",
+				"_xxi", "_xxii", "_xxiii", "_xxiv", "_xxv", "_xxvi"]
+			if tier < suffixes.size():
+				return base + suffixes[tier]
+			return base
+	elif item_id.begins_with("armor_"):
+		# Format: armor_<class>_<slot>_t<num>
+		var rest: String = item_id.substr("armor_".length())
+		var parts: PackedStringArray = rest.split("_t")
+		if parts.size() == 2:
+			var base: String = "armor_" + parts[0]
+			var tier: int = int(parts[1]) - 1
+			if tier <= 0:
+				return base
+			var suffixes: Array = ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x",
+				"_xi", "_xii", "_xiii"]
+			if tier < suffixes.size():
+				return base + suffixes[tier]
+			return base
+	return ""
 
 
 func _race_color() -> Color:

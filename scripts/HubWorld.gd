@@ -202,6 +202,15 @@ func _ready() -> void:
 	if is_instance_valid(_map_view):
 		_map_view.configure(_local_map)
 	_setup_player_visual()
+	# Wire equipment changes to update player visual overlay
+	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
+	if is_instance_valid(em):
+		if not em.equipment_changed.is_connected(_on_equipment_changed):
+			em.equipment_changed.connect(_on_equipment_changed)
+		# Apply current equipment overlay immediately
+		if is_instance_valid(_player_visual):
+			var equip: Dictionary = em.get_equipment("player")
+			_player_visual.call("update_equipment", equip)
 	_setup_hover_tooltip()
 	_setup_hud()
 	_game_time = Time.get_ticks_msec() / 1000.0
@@ -1896,6 +1905,18 @@ func _save_to_autoslot_if_can() -> void:
 	# Trigger a save to autoslot (slot 0)
 	gs.save_game(0)
 	print("[HubWorld] Saved to autoslot on entry.")
+
+
+func _on_equipment_changed(npc_id: String, slot: String) -> void:
+	if npc_id != "player":
+		return
+	if not is_instance_valid(_player_visual):
+		return
+	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
+	if is_instance_valid(em):
+		var equip: Dictionary = em.get_equipment("player")
+		_player_visual.call("update_equipment", equip)
+
 
 func _on_save_pressed() -> void:
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState

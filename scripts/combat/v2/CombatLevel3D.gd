@@ -81,6 +81,8 @@ func _ready() -> void:
 
 	# Wire encounter ended
 	_arena.res.encounter_ended.connect(_on_encounter_ended)
+	# Wire attack damage to update HP visuals
+	_arena.res.unit_attacked.connect(_on_unit_attacked)
 
 	# Wire action bar buttons
 	if _action_bar != null and _action_bar.has_method("show_move_button"):
@@ -504,6 +506,12 @@ func _check_encounter_end() -> void:
 		_arena.res.is_ended = true
 		_arena.res.victory = any_enemy_alive == false
 		_arena.res.encounter_ended.emit(_arena.res.victory)
+
+
+func _on_unit_attacked(attacker_id: String, target_id: String, damage: int) -> void:
+	var target_pawn: CombatPawn3D = _arena.get_pawn(target_id)
+	if target_pawn != null:
+		target_pawn.update_hp(target_pawn.res.current_hp)
 
 
 func _on_encounter_ended(victory: bool) -> void:
