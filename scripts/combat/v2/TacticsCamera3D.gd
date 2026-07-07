@@ -14,12 +14,12 @@ extends Camera3D
 @export var boundary_radius: float = 10.0
 
 ## Isometric angles
-@export var pitch_angle: float = -35.0
+@export var pitch_angle: float = -30.0
 @export var yaw_angle: float = 45.0
 
 ## State
 var _target_position: Vector3 = Vector3.ZERO
-var _current_zoom: float = 7.0
+var _current_zoom: float = 10.0
 var _rotation_target: float = 0.0
 var _snap_next_frame: bool = true
 

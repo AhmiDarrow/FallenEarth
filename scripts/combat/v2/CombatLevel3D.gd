@@ -85,9 +85,9 @@ func _ready() -> void:
 	# Configure arena
 	_configure_from_encounter()
 
-	# Center camera on arena (arena is offset by _center_grid)
+	# Center camera on arena (offset toward back to keep pawns in frame)
 	var grid_size: int = _arena.res.grid_size
-	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.5)
+	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.35)
 	_camera.set_target(arena_center)
 	_camera._snap_next_frame = true
 
@@ -248,9 +248,9 @@ func _start_turn(side: String) -> void:
 	p.reset_turn()
 	_arena.res.turn_started.emit(side)
 	_arena.reset_all_tile_markers()
-	# Center camera on grid center
+	# Center camera on grid, offset slightly toward back to keep pawns in frame
 	var grid_size: int = _arena.res.grid_size
-	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.5)
+	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.35)
 	_camera.set_target(arena_center)
 
 
