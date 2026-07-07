@@ -65,7 +65,7 @@ func pick_move_target(arena: ArenaResource, pawn) -> Vector2i:
 	var best_dist: int = 999999
 	for key in arena.tiles:
 		var t = arena.tiles[key]
-		if not t.reachable:
+		if t.pf_distance <= 0:
 			continue
 		var dx: int = abs(t.grid_x - target.res.grid_pos.x)
 		var dy: int = abs(t.grid_y - target.res.grid_pos.y)
