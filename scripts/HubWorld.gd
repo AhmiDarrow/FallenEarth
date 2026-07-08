@@ -126,7 +126,6 @@ func _ready() -> void:
 	# Ensure world node tree is fully initialized before spawning
 	await get_tree().process_frame
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	print("[HubWorld] Local overworld map loading.")
 
 	_enter_btn = get_node_or_null("UI_Canvas/BottomBar/EnterRift") as Button
 	var menu_btn: Button = get_node_or_null("UI_Canvas/BottomBar/BackToMenu") as Button
@@ -251,16 +250,11 @@ func _ready() -> void:
 		for mk in diag_mobs:
 			if str(mk).begins_with(diag_prefix):
 				diag_count += 1
-		print("[HubWorld] DIAGNOSTIC: GameState has %d total mobs, %d for current hex (%d,%d)" % [
-			diag_mobs.size(), diag_count, _player_q, _player_r
-		])
 		if diag_count > 0:
 			for mk in diag_mobs:
 				if str(mk).begins_with(diag_prefix):
 					var md: Dictionary = diag_mobs[mk] as Dictionary
-					print("[HubWorld] DIAGNOSTIC: mob key=%s sprite_id=%s name=%s" % [
-						str(mk), str(md.get("sprite_id", "NONE")), str(md.get("name", "?"))
-					])
+					pass
 	# v0.9.1c: Mobs were just seeded — force marker refresh on the
 	# next _build_local_view call.
 	_mark_world_markers_dirty()
@@ -563,8 +557,6 @@ func _interact_building(building: Node2D) -> void:
 			var hex: String = _adjacent_settlement_hex()
 			if not hex.is_empty():
 				_try_enter_settlement(bld_id)
-			else:
-				print("[HubWorld] Building: %s (%s)" % [bld_id, bld_role])
 
 
 func _open_shop_interface() -> void:
@@ -601,14 +593,12 @@ func _open_cooking_table_ui() -> void:
 	_cooking_table_ui = CookingTableUIScene.instantiate()
 	add_child(_cooking_table_ui)
 	_cooking_table_ui.set_on_close(_on_cooking_table_closed)
-	print("[HubWorld] Opened CookingTableUI")
 
 
 func _on_cooking_table_closed() -> void:
 	if _cooking_table_ui != null and is_instance_valid(_cooking_table_ui):
 		_cooking_table_ui.queue_free()
 	_cooking_table_ui = null
-	print("[HubWorld] Closed CookingTableUI")
 
 
 ## Enter the settlement adjacent to the player (if any). Riftspire
@@ -626,7 +616,6 @@ func _try_enter_settlement(focus_building: String = "") -> void:
 		var level: int = int(prog.level) if prog != null else 1
 		if not sm.can_enter_riftspire(level):
 			var reason: String = sm.riftspire_block_reason(level)
-			print("[HubWorld] Riftspire entry blocked: %s" % reason)
 			_show_settlement_message(reason)
 			return
 	# Phase F: Fade transition
@@ -647,7 +636,6 @@ func _try_enter_settlement(focus_building: String = "") -> void:
 func _show_settlement_message(msg: String) -> void:
 	# In Phase 8 we'd add a proper toast. For now, surface via the
 	# tile info label or print.
-	print("[HubWorld] %s" % msg)
 
 
 # Phase 8: spawn a floating loot popup at the given world position
@@ -1040,7 +1028,6 @@ func _setup_player_visual() -> void:
 	_player_visual = CharacterVisualScript.new() as Node2D
 	_player_visual.name = "PlayerVisual"
 	world_grid.add_child(_player_visual)
-	print("[HubWorld] Player attached to world_grid_id=%d path=%s" % [world_grid.get_instance_id(), _player_visual.get_path()])
 
 	var race: String = str(char_data.get("race", "human"))
 	var gender: String = str(char_data.get("gender", "male"))
@@ -1054,13 +1041,11 @@ func _setup_player_visual() -> void:
 	var follow: FollowCamera = camera as FollowCamera
 	if follow != null and is_instance_valid(_player_visual):
 		follow.target = _player_visual
-	print("[HubWorld] Player visual set: race=%s gender=%s" % [race, gender])
 
 	# Phase 2: layered procedural 3D visual over the sprite.
 	var pv: Node = _attach_procedural_visual(_player_visual, char_data)
 	if pv != null:
 		pv.set_meta("entity_kind", "player")
-		print("[HubWorld] Player procedural visual attached.")
 
 
 func _build_local_view() -> void:
@@ -1111,7 +1096,6 @@ func _refresh_markers() -> void:
 
 	var all_mobs: Dictionary = gs.get_overworld_mobs()
 	var mob_count := 0
-	print("[HubWorld] _refresh_markers: %d total mobs in GameState, mob_layer valid=%s" % [all_mobs.size(), is_instance_valid(_mob_layer)])
 	for mob_key in all_mobs:
 		if not str(mob_key).begins_with("%d,%d|" % [_player_q, _player_r]):
 			continue
@@ -1127,11 +1111,6 @@ func _refresh_markers() -> void:
 		var sprite_id: String = str(mob_data.get("sprite_id", mob_data.get("type", "")))
 		_add_mob_sprite(mx, my, sprite_id, cell_size, mob_data)
 		mob_count += 1
-	print("[HubWorld] _refresh_markers: added %d mob sprites for hex %d,%d (mob_sprite_layer children=%d)" % [
-		mob_count, _player_q, _player_r,
-		_mob_sprite_layer.get_child_count() if is_instance_valid(_mob_sprite_layer) else -1
-	])
-
 	if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
 		for rift in _rift_runner.get_rifts_in_hex(_player_q, _player_r, _game_time):
 			if not rift is Dictionary:
@@ -1372,7 +1351,6 @@ func _try_collect_floor_pickup_at(x: int, y: int) -> Dictionary:
 	# v0.10.0: hide the MultiMesh visual for this pickup.
 	var cell: Vector2i = Vector2i(x, y)
 	_map_view.hide_pickup_visual(cell)
-	print("[HubWorld] Picked up %d x %s" % [qty, item_id])
 	return {"item_id": item_id, "qty": qty}
 
 
@@ -1430,7 +1408,6 @@ func _try_start_gather() -> void:
 	var candidates: Array = _map_view.get_resource_nodes_near(player_cell, GATHER_RANGE_CELLS)
 	if candidates.is_empty():
 		# Nothing to gather; show a brief message
-		print("[HubWorld] No resource nodes adjacent to gather.")
 		return
 	# Pick the closest one
 	candidates.sort_custom(func(a, b): return a["dist"] < b["dist"])
@@ -1453,7 +1430,6 @@ func _try_start_gather() -> void:
 	if not bool(result.get("ok", false)):
 		# Reason codes: "no_tool" / "wrong_tool" / "depleted" / "decoration"
 		var reason: String = str(result.get("reason", ""))
-		print("[HubWorld] Cannot gather %s: %s" % [node.get_node_id(), reason])
 		return
 
 	_gathering_node = node
@@ -1463,11 +1439,6 @@ func _try_start_gather() -> void:
 		"yield_item": str(result.get("yield_item", "")),
 		"yield_qty": int(result.get("yield_qty", 0)),
 	}
-	print("[HubWorld] Gathering %s... (%.1fs, will yield %d x %s)" % [
-		node.get_node_id(), _gather_total,
-		int(_gather_yield_preview.get("yield_qty", 0)),
-		str(_gather_yield_preview.get("yield_item", "")),
-	])
 
 
 func _tick_gather(delta: float) -> void:
@@ -1501,7 +1472,6 @@ func _tick_gather(delta: float) -> void:
 	# was queue_freed during the same frame (e.g. the player reloads).
 	if is_instance_valid(node) and not _active_respawn_nodes.has(node):
 		_active_respawn_nodes.append(node)
-	print("[HubWorld] Gathered %d x %s from %s" % [qty, item_id, node.get_node_id()])
 
 
 ## v0.9.1c: Tick only the small list of currently-depleted HarvestNodes.
@@ -1541,7 +1511,6 @@ func _try_cross_edge(dx: int, dy: int) -> void:
 	var neighbor: Vector2i = LocalMapGen.get_neighbor_hex(_player_q, _player_r, edge)
 	var nkey := LocalMapGen.hex_key(neighbor.x, neighbor.y)
 	if not _tile_map.has(nkey):
-		print("[HubWorld] No adjacent region at edge.")
 		return
 
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
@@ -1584,7 +1553,6 @@ func _try_cross_edge(dx: int, dy: int) -> void:
 	_update_mission_ui()
 	# Audio: re-evaluate ambient bed for the new biome.
 	_start_audio_for_current_region()
-	print("[HubWorld] Crossed to region (%d, %d) at local (%d, %d)" % [_player_q, _player_r, _local_x, _local_y])
 
 
 func _mark_explored(gs: GameState) -> void:
@@ -1658,9 +1626,7 @@ func _tick_rifts() -> void:
 	if not is_instance_valid(_rift_runner):
 		return
 	if _rift_runner.has_method("prune_expired_rifts"):
-		var removed: int = _rift_runner.prune_expired_rifts(_game_time)
-		if removed > 0:
-			print("[HubWorld] %d rift(s) collapsed." % removed)
+		_rift_runner.prune_expired_rifts(_game_time)
 
 	if _rift_runner.has_method("try_spawn_local_rift"):
 		var tile: Dictionary = _tile_map.get("%d,%d" % [_player_q, _player_r], {})
@@ -1668,7 +1634,6 @@ func _tick_rifts() -> void:
 			_player_q, _player_r, str(tile.get("name", "Ash Wastes")), _local_map, _game_time
 		)
 		if not spawned.is_empty():
-			print("[HubWorld] Rift spawned at local (%d,%d)" % [spawned.get("local_x", 0), spawned.get("local_y", 0)])
 			_mark_world_markers_dirty()
 
 	_build_local_view()
@@ -1937,9 +1902,6 @@ func get_random_spawn_point() -> Vector2:
 
 
 func _seed_local_mobs() -> void:
-	print("[HubWorld] _seed_local_mobs() called — q,r=%d,%d local=(%d,%d) seeded_hexes=%s" % [
-		_player_q, _player_r, _local_x, _local_y, str(_seeded_hexes)
-	])
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if not is_instance_valid(gs):
 		return
@@ -1947,12 +1909,6 @@ func _seed_local_mobs() -> void:
 	if _tile_map.is_empty():
 		push_warning("[HubWorld] _tile_map is empty — cannot seed mobs.")
 		return
-	# DIAGNOSTIC: test mob pool loading directly
-	var pool_test: Array = EncounterBuilder._get_mob_pool("upworld", str(_tile_map.get("%d,%d" % [_player_q, _player_r], {}).get("name", ""))) if true else []
-	print("[HubWorld] DIAGNOSTIC: EncounterBuilder mob pool size for biome='%s' = %d" % [
-		str(_tile_map.get("%d,%d" % [_player_q, _player_r], {}).get("name", "")), pool_test.size()
-	])
-
 	# Skip if this hex was already seeded (prevents killed mobs from
 	# re-appearing when HubWorld reloads — deterministic RNG would
 	# place them at the same positions).
@@ -2040,25 +1996,11 @@ func _seed_local_mobs() -> void:
 		)
 		if enemy.is_empty():
 			skipped_no_enemy += 1
-			# DIAGNOSTIC: log first few failures in detail
-			if skipped_no_enemy <= 3:
-				print("[HubWorld] SEED FAIL #%d: generate_procedural_enemy returned empty (biome=%s spawn_context=upworld diff=%s)" % [
-					skipped_no_enemy, biome, str(difficulty)
-				])
 			continue
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
 		seeded += 1
-		# DIAGNOSTIC: log first successful seed
-		if seeded <= 3:
-			print("[HubWorld] SEED OK #%d: sprite_id=%s cell=(%d,%d) name=%s" % [
-				seeded, str(enemy.get("sprite_id", "?")), lx, ly, str(enemy.get("name", "?"))
-			])
 
-	print("[HubWorld] Mob seed: biome=%s tier=%d danger=%.2f total_attempts=%d seeded=%d (blocked=%d near=%d dup=%d no_enemy=%d) at q,r=%d,%d" % [
-		biome, int(tile.get("difficulty_tier", 0)), danger, count + 2, seeded, skipped_blocked, skipped_near, skipped_duplicate, skipped_no_enemy,
-		_player_q, _player_r
-	])
 
 
 func _start_local_combat(lx: int, ly: int, mob: Dictionary, mission: Dictionary = {}) -> void:
@@ -2166,7 +2108,6 @@ func _save_to_autoslot_if_can() -> void:
 		return
 	# Trigger a save to autoslot (slot 0)
 	gs.save_game(0)
-	print("[HubWorld] Saved to autoslot on entry.")
 
 
 func _on_equipment_changed(npc_id: String, slot: String) -> void:

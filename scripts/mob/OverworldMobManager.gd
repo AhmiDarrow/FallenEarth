@@ -102,9 +102,6 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 				var target: Vector2i = ai._wander_target
 				if target.x != old_x or target.y != old_y:
 					if _is_cell_walkable.call(target.x, target.y):
-						print("[MobManager] Moving mob %s from (%d,%d) to (%d,%d) state=%s" % [
-							data.mob_type, old_x, old_y, target.x, target.y, ai.current_state
-						])
 						_start_move(entry, target)
 					else:
 						ai.cancel_movement()
