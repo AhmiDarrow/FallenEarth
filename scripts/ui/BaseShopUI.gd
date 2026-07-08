@@ -7,6 +7,7 @@
 class_name BaseShopUI
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const BASE_SHOP_PATH := "/root/BaseShopManager"
 const INVENTORY_PATH := "/root/InventoryManager"
 const PROGRESSION_PATH := "/root/ProgressionManager"
@@ -77,6 +78,7 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 	# Title
 	var title := Label.new()
 	title.name = "Title"
@@ -117,6 +119,7 @@ func _build_ui() -> void:
 	close.custom_minimum_size = Vector2(80, 40)
 	close.pressed.connect(_on_close_pressed)
 	add_child(close)
+	ButtonStyleHelper.apply_secondary(close)
 
 
 func _refresh() -> void:
@@ -153,6 +156,7 @@ func _refresh() -> void:
 		buy_btn.text = "Buy 1"
 		buy_btn.pressed.connect(_on_buy_pressed.bind(item_id, price))
 		row.add_child(buy_btn)
+		ButtonStyleHelper.apply_primary(buy_btn)
 
 
 func _on_buy_pressed(item_id: String, price: int) -> void:

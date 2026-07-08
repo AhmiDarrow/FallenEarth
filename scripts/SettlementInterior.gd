@@ -6,6 +6,7 @@
 class_name SettlementInterior
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const ROOMS_PATH := "res://data/settlement_rooms.json"
 const SETTLEMENT_PATH := "/root/SettlementManager"
 const CELL_SIZE := 24
@@ -97,6 +98,7 @@ func _build_frame() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 
 	# Room container (centered in the screen)
 	var container := Node2D.new()

@@ -5,6 +5,7 @@
 class_name LootWindow
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const CELL_SIZE := 40
 
@@ -27,6 +28,7 @@ func _ready() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 
 	var panel := PanelContainer.new()
 	panel.custom_minimum_size = Vector2(700, 460)
@@ -56,6 +58,7 @@ func _ready() -> void:
 	close_btn.text = "X"
 	close_btn.pressed.connect(_on_close)
 	top.add_child(close_btn)
+	ButtonStyleHelper.apply_ghost(close_btn)
 	vbox.add_child(top)
 
 	# Body: loot grid | player grid
@@ -80,11 +83,13 @@ func _ready() -> void:
 	take_all.text = "Take All"
 	take_all.pressed.connect(_on_take_all)
 	bottom.add_child(take_all)
+	ButtonStyleHelper.apply_primary(take_all)
 	bottom.add_spacer(true)
 	var close_btn2 := Button.new()
 	close_btn2.text = "Close"
 	close_btn2.pressed.connect(_on_close)
 	bottom.add_child(close_btn2)
+	ButtonStyleHelper.apply_secondary(close_btn2)
 	vbox.add_child(bottom)
 
 

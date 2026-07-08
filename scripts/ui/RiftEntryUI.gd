@@ -3,6 +3,8 @@
 class_name RiftEntryUI
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+
 signal proceed_requested(rift_data: Dictionary)
 signal cancelled
 
@@ -25,6 +27,7 @@ func _build_ui() -> void:
 	backdrop.color = Color(0, 0, 0, 0.65)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
+	UIBackgrounds.apply_modal_bg(backdrop)
 
 	_panel = PanelContainer.new()
 	_panel.offset_left = -200
@@ -116,12 +119,14 @@ func _build_ui() -> void:
 	proceed_btn.custom_minimum_size = Vector2(260, 42)
 	proceed_btn.pressed.connect(_on_proceed)
 	vbox.add_child(proceed_btn)
+	ButtonStyleHelper.apply_primary(proceed_btn)
 
 	var cancel_btn := Button.new()
 	cancel_btn.text = "Cancel"
 	cancel_btn.custom_minimum_size = Vector2(120, 32)
 	cancel_btn.pressed.connect(_on_cancel)
 	vbox.add_child(cancel_btn)
+	ButtonStyleHelper.apply_secondary(cancel_btn)
 
 
 func _on_proceed() -> void:

@@ -3,6 +3,7 @@
 class_name InventoryScreen
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const CELL_SIZE := 48
 
@@ -22,6 +23,7 @@ func _ready() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 
 	# Main window panel — 900x620, centered
 	var panel := PanelContainer.new()

@@ -27,6 +27,8 @@
 class_name CharacterMenu
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+
 signal closed
 
 const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
@@ -102,6 +104,7 @@ func _ensure_shell() -> void:
 		_background.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_background)
+		UIBackgrounds.apply_modal_bg(_background)
 	if _title_label == null:
 		_title_label = Label.new()
 		_title_label.name = "TitleLabel"
@@ -116,6 +119,7 @@ func _ensure_shell() -> void:
 		_close_btn.text = "X"
 		_close_btn.custom_minimum_size = Vector2(40, 40)
 		add_child(_close_btn)
+		ButtonStyleHelper.apply_ghost(_close_btn)
 	if _tab_bar == null:
 		_tab_bar = HBoxContainer.new()
 		_tab_bar.name = "TabBar"
