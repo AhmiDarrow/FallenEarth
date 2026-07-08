@@ -331,11 +331,9 @@ func _on_menu_pressed() -> void:
 ## The menu's own `open()` method handles sizing and z-order.
 func open_character_menu(initial_tab: String = "inventory") -> void:
 	if _character_menu != null and is_instance_valid(_character_menu):
-		# Already open. Toggle off if the same tab is requested.
 		if _character_menu.has_method("get_active_tab") and _character_menu.get_active_tab() == initial_tab:
 			_character_menu.close_menu()
 			return
-		# Otherwise switch to the new tab.
 		_character_menu.select_tab(initial_tab)
 		return
 	var scene: PackedScene = load("res://scenes/ui/CharacterMenu.tscn") as PackedScene
@@ -348,20 +346,30 @@ func open_character_menu(initial_tab: String = "inventory") -> void:
 		return
 	_character_menu.name = "CharacterMenu"
 	_character_menu.closed.connect(_on_character_menu_closed)
-	# Add to a dedicated CanvasLayer so the menu overlays the HUD
-	# and everything below it (including the pause menu, if open).
+
+	# Parent CanvasLayer to the root scene so the menu is independent of HUD.
+	# Same layer as UI_Canvas (100); added later so renders on top.
+	var root: Node = get_tree().current_scene
 	var layer := CanvasLayer.new()
 	layer.name = "CharacterMenuLayer"
-	layer.layer = 90  # below the pause menu's 100 so the pause can still
-	                  # be brought to the front if it opens after us
-	add_child(layer)
+	layer.layer = 100
+	root.add_child(layer)
+	_character_menu.set_meta(&"_menu_layer", layer)
 	layer.add_child(_character_menu)
 	_character_menu.open(initial_tab)
 
+	# Hide HUD elements while the menu is open.
+	visible = false
+
 
 func _on_character_menu_closed() -> void:
+	if _character_menu != null and _character_menu.has_meta(&"_menu_layer"):
+		var layer: CanvasLayer = _character_menu.get_meta(&"_menu_layer")
+		if is_instance_valid(layer):
+			layer.queue_free()
 	_character_menu = null
-	emit_signal("character_menu_closed")
+	visible = true
+	character_menu_closed.emit()
 
 
 # ---------------------------------------------------------------------------
