@@ -45,6 +45,7 @@ var _local_y: int = 256
 var _map_view: Node2D = null
 var _marker_layer: Node2D = null
 var _mob_layer: Node2D = null
+var _mob_sprite_layer: Node2D = null
 var _node_layer: Node2D = null
 var _pickup_layer: Node2D = null
 var _marker_nodes: Dictionary = {}
@@ -960,6 +961,15 @@ func _setup_map_view() -> void:
 	_node_layer = _map_view.get_node_layer()
 	_pickup_layer = _map_view.get_pickup_layer()
 
+	# Dedicated sprite layer for mobs — child of world_grid, NOT MobLayer
+	# (which has y_sort_enabled and broke _draw() rendering in Godot 4).
+	if _mob_sprite_layer != null and is_instance_valid(_mob_sprite_layer):
+		_mob_sprite_layer.queue_free()
+	_mob_sprite_layer = Node2D.new()
+	_mob_sprite_layer.name = "MobSpriteLayer"
+	_mob_sprite_layer.z_index = 50
+	world_grid.add_child(_mob_sprite_layer)
+
 
 ## Phase 2: attach a procedural EntityVisualComponent to an existing 2D entity
 ## node, resolving its visual from appearance.json. Each component owns a
@@ -1044,13 +1054,10 @@ func _refresh_markers() -> void:
 		if is_instance_valid(mob_node):
 			mob_node.queue_free()
 	_overworld_mobs.clear()
-	# Also clear any leftover mob entries in _marker_nodes
-	for mkey in _marker_nodes:
-		if mkey.begins_with("mob|"):
-			var mn: Node2D = _marker_nodes[mkey] as Node2D
-			if is_instance_valid(mn):
-				mn.queue_free()
-			_marker_nodes.erase(mkey)
+	# Clear mob sprites from dedicated sprite layer
+	if is_instance_valid(_mob_sprite_layer):
+		for child in _mob_sprite_layer.get_children():
+			child.queue_free()
 	var cell_size: int = _map_view.get_cell_size() if is_instance_valid(_map_view) else 24
 
 	# Player visual is handled by _player_visual node — skip circle marker
@@ -1085,9 +1092,9 @@ func _refresh_markers() -> void:
 		var sprite_id: String = str(mob_data.get("sprite_id", mob_data.get("type", "")))
 		_add_mob_sprite(mx, my, sprite_id, cell_size, mob_data)
 		mob_count += 1
-	print("[HubWorld] _refresh_markers: added %d mob sprites for hex %d,%d (mob_layer children=%d)" % [
+	print("[HubWorld] _refresh_markers: added %d mob sprites for hex %d,%d (mob_sprite_layer children=%d)" % [
 		mob_count, _player_q, _player_r,
-		_mob_layer.get_child_count() if is_instance_valid(_mob_layer) else -1
+		_mob_sprite_layer.get_child_count() if is_instance_valid(_mob_sprite_layer) else -1
 	])
 
 	if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
@@ -1201,13 +1208,14 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	# tree-entry issues.
 	var mob_node: Node2D = MobVisualScript.new()
 	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
-	mob_node.z_index = 1000  # high to escape any z-based covering; test only
-	# Add directly to world_grid (same parent as the player's CharacterVisual,
-	# which renders correctly via _draw()). MobLayer's y_sort_enabled was
-	# preventing CanvasItem _draw() children from rendering even though the
-	# node was valid, visible, and had a loaded texture.
-	world_grid.add_child(mob_node)
+	mob_node.z_index = 0
 	mob_node.set_mob_sprite(sprite_id)
+	# Add to dedicated _mob_sprite_layer (child of world_grid, no
+	# y_sort_enabled) to avoid Godot 4 _draw() issues with y-sorted
+	# parents. The layer itself has z_index=50 so mobs render above
+	# the ground tiles and below the marker layer.
+	if is_instance_valid(_mob_sprite_layer):
+		_mob_sprite_layer.add_child(mob_node)
 	# Phase 2: layered procedural 3D visual.
 	var pv: Node = _attach_procedural_visual(mob_node, mob_data)
 	if pv != null:
