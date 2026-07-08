@@ -193,14 +193,16 @@ func select_tab(tab_id: String) -> void:
 	# Deactivate old tab
 	if _active_tab != "" and _tab_controllers.has(_active_tab):
 		var old_screen: Control = _tab_controllers[_active_tab]
-		old_screen.visible = false
+		if is_instance_valid(old_screen):
+			old_screen.visible = false
 	if _tab_buttons.has(_active_tab):
 		_tab_buttons[_active_tab].button_pressed = false
 	# Activate new tab
 	_active_tab = tab_id
-	if not _tab_controllers.has(tab_id):
+	if not _tab_controllers.has(tab_id) or not is_instance_valid(_tab_controllers.get(tab_id)):
 		_lazy_load_tab(tab_id)
-	_tab_controllers[tab_id].visible = true
+	if _tab_controllers.has(tab_id) and is_instance_valid(_tab_controllers[tab_id]):
+		_tab_controllers[tab_id].visible = true
 	_tab_buttons[tab_id].button_pressed = true
 
 
@@ -237,6 +239,7 @@ func get_active_tab() -> String:
 
 func close_menu() -> void:
 	emit_signal("closed")
+	_tab_controllers.clear()
 	queue_free()
 
 
