@@ -5,8 +5,8 @@
 class_name MinimapOverhaul
 extends Control
 
-const SIZE := 120.0
-const ICON_SIZE := 2.0
+const SIZE := 160.0
+const ICON_SIZE := 3.0
 const BG_COLOR := Color(0.04, 0.04, 0.06, 0.85)
 const PLAYER_COLOR := Color(0.4, 0.85, 1.0)
 const NPC_COLOR := Color(0.3, 0.6, 1.0)

@@ -31,6 +31,7 @@ var _mp_bar: ProgressBar
 var _xp_bar: ProgressBar
 var _minimap: Minimap
 var _hotbar: Hotbar
+var _region_info_label: Label
 var _character_menu: Control = null
 
 # Character display data (synced from GameState on _ready + on level_up)
@@ -85,12 +86,12 @@ func _notification(what: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_top_bar() -> void:
-	# Top bar background — anchored to fill top portion
+	# Top bar background — limited to left 45% to prevent bleed into center
 	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.05, 0.07, 0.75)
+	bg.color = Color(0.05, 0.05, 0.07, 0.85)
 	bg.anchor_left = 0.0
 	bg.anchor_top = 0.0
-	bg.anchor_right = 1.0
+	bg.anchor_right = 0.45
 	bg.anchor_bottom = 0.0
 	bg.offset_bottom = TOP_BAR_H
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -118,14 +119,14 @@ func _build_top_bar() -> void:
 	_class_label.offset_top = 30
 	add_child(_class_label)
 
-	# Level (left-center)
+	# Level (left-center, adjusted for region text space)
 	_level_label = Label.new()
 	_level_label.text = "Lv. 1"
 	_level_label.add_theme_color_override("font_color", Color(1, 0.95, 0.6))
 	_level_label.add_theme_font_size_override("font_size", 16)
 	_level_label.anchor_left = 0.0
 	_level_label.anchor_top = 0.0
-	_level_label.offset_left = 360
+	_level_label.offset_left = 280
 	_level_label.offset_top = 16
 	add_child(_level_label)
 
@@ -136,13 +137,25 @@ func _build_top_bar() -> void:
 	_ec_label.add_theme_font_size_override("font_size", 16)
 	_ec_label.anchor_left = 0.0
 	_ec_label.anchor_top = 0.0
-	_ec_label.offset_left = 440
+	_ec_label.offset_left = 380
 	_ec_label.offset_top = 16
 	add_child(_ec_label)
 
 
 func _build_resource_bars() -> void:
-	var bar_y: float = TOP_BAR_H + 8
+	# Region info label (dynamically updated via set_region_info)
+	_region_info_label = Label.new()
+	_region_info_label.text = ""
+	_region_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_region_info_label.anchor_left = 0.0
+	_region_info_label.anchor_top = 0.0
+	_region_info_label.offset_left = 16
+	_region_info_label.offset_top = TOP_BAR_H + 4
+	_region_info_label.add_theme_font_size_override("font_size", 12)
+	_region_info_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85))
+	add_child(_region_info_label)
+
+	var bar_y: float = TOP_BAR_H + 70
 	# HP
 	var hp_label := Label.new()
 	hp_label.text = "HP"
@@ -180,14 +193,14 @@ func _build_resource_bars() -> void:
 	add_child(_xp_bar)
 
 
-func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_color: Color) -> ProgressBar:
+func _make_bar(offset_left: float, offset_top: float, _bar_width: float, fill_color: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.anchor_left = 0.0
 	bar.anchor_top = 0.0
 	bar.offset_left = offset_left
 	bar.offset_top = offset_top
 	bar.anchor_right = 0.0
-	bar.offset_right = offset_left + bar_width
+	bar.offset_right = offset_left + 300
 	bar.custom_minimum_size = Vector2(100, BAR_H)
 	bar.max_value = 100
 	bar.value = 100
@@ -209,6 +222,14 @@ func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_col
 func _build_minimap() -> void:
 	_minimap = Minimap.new()
 	_minimap.name = "Minimap"
+	_minimap.anchor_left = 1.0
+	_minimap.anchor_top = 0.0
+	_minimap.anchor_right = 1.0
+	_minimap.anchor_bottom = 0.0
+	_minimap.offset_left = -220
+	_minimap.offset_top = 20
+	_minimap.offset_right = -20
+	_minimap.offset_bottom = 220
 	# Try to parent inside MinimapPanel (sibling under UI_Canvas)
 	var parent_ctrl := get_parent()  # UI_Canvas
 	if parent_ctrl != null:
@@ -363,6 +384,13 @@ func _on_character_menu_closed() -> void:
 ## Called by HubWorld on cell change so the minimap highlights correctly.
 func notify_cell_changed() -> void:
 	_refresh_minimap()
+
+
+## Called by HubWorld to update the region info text (biome, mob count, etc.)
+## shown between the top bar and resource bars.
+func set_region_info(text: String) -> void:
+	if is_instance_valid(_region_info_label):
+		_region_info_label.text = text
 
 
 ## Returns the hotbar (or null if not yet ready).

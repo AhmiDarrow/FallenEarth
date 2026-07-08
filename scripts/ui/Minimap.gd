@@ -21,9 +21,9 @@
 class_name Minimap
 extends Control
 
-const HEIGHT_PX := 180.0
-const WIDTH_PX := 180.0
-const HEX_SIZE_PX := 6.0  # radius of each hex on the minimap
+const HEIGHT_PX := 200.0
+const WIDTH_PX := 200.0
+const HEX_SIZE_PX := 7.0  # radius of each hex on the minimap
 const BG_COLOR := Color(0.04, 0.04, 0.06, 0.85)
 const GRID_LINE_COLOR := Color(0.2, 0.2, 0.22, 0.5)
 const DISCOVERED_COLOR := Color(0.45, 0.5, 0.42)
