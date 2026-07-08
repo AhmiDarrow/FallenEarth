@@ -17,7 +17,8 @@ class_name HUD
 extends Control
 
 const TOP_BAR_H := 56.0
-const BAR_H := 12.0
+const BAR_H := 18.0
+const BAR_W := 260.0
 const HOTBAR_H := 80.0
 
 signal character_menu_closed
@@ -143,79 +144,117 @@ func _build_top_bar() -> void:
 
 
 func _build_resource_bars() -> void:
-	# Region info label (dynamically updated via set_region_info)
+	# Container background for the bar group — centered in the top-left area
+	var bar_group := PanelContainer.new()
+	bar_group.anchor_left = 0.0
+	bar_group.anchor_top = 0.0
+	bar_group.anchor_right = 0.0
+	bar_group.anchor_bottom = 0.0
+	bar_group.offset_left = 12
+	bar_group.offset_top = TOP_BAR_H + 6
+	bar_group.offset_right = 12 + BAR_W + 40
+	bar_group.offset_bottom = TOP_BAR_H + 6 + BAR_H * 3 + 20
+	bar_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.04, 0.04, 0.06, 0.75)
+	bg_style.corner_radius_top_left = 6
+	bg_style.corner_radius_top_right = 6
+	bg_style.corner_radius_bottom_left = 6
+	bg_style.corner_radius_bottom_right = 6
+	bar_group.add_theme_stylebox_override("panel", bg_style)
+	add_child(bar_group)
+
+	# Region info label (inside bar group, top)
 	_region_info_label = Label.new()
 	_region_info_label.text = ""
 	_region_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	_region_info_label.anchor_left = 0.0
 	_region_info_label.anchor_top = 0.0
 	_region_info_label.offset_left = 16
-	_region_info_label.offset_top = TOP_BAR_H + 4
-	_region_info_label.add_theme_font_size_override("font_size", 12)
-	_region_info_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.85))
+	_region_info_label.offset_top = TOP_BAR_H + 10
+	_region_info_label.add_theme_font_size_override("font_size", 11)
+	_region_info_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	add_child(_region_info_label)
 
-	var bar_y: float = TOP_BAR_H + 70
+	var bar_x := 20
+	var bar_y: float = TOP_BAR_H + 30
+
 	# HP
 	var hp_label := Label.new()
 	hp_label.text = "HP"
 	hp_label.add_theme_color_override("font_color", Color(0.95, 0.4, 0.4))
+	hp_label.add_theme_font_size_override("font_size", 11)
 	hp_label.anchor_left = 0.0
 	hp_label.anchor_top = 0.0
-	hp_label.offset_left = 16
-	hp_label.offset_top = bar_y - 2
+	hp_label.offset_left = bar_x
+	hp_label.offset_top = bar_y + 1
 	add_child(hp_label)
-	_hp_bar = _make_bar(16 + 28, bar_y, 332.0, Color(0.7, 0.2, 0.2))
+	_hp_bar = _make_bar(bar_x + 26, bar_y, BAR_W, Color(0.75, 0.2, 0.2))
 	add_child(_hp_bar)
 	bar_y += BAR_H + 4
+
 	# MP
 	var mp_label := Label.new()
 	mp_label.text = "MP"
 	mp_label.add_theme_color_override("font_color", Color(0.5, 0.65, 0.95))
+	mp_label.add_theme_font_size_override("font_size", 11)
 	mp_label.anchor_left = 0.0
 	mp_label.anchor_top = 0.0
-	mp_label.offset_left = 16
-	mp_label.offset_top = bar_y - 2
+	mp_label.offset_left = bar_x
+	mp_label.offset_top = bar_y + 1
 	add_child(mp_label)
-	_mp_bar = _make_bar(16 + 28, bar_y, 332.0, Color(0.25, 0.4, 0.85))
+	_mp_bar = _make_bar(bar_x + 26, bar_y, BAR_W, Color(0.3, 0.45, 0.9))
 	add_child(_mp_bar)
 	bar_y += BAR_H + 4
+
 	# XP
 	var xp_label := Label.new()
 	xp_label.text = "XP"
 	xp_label.add_theme_color_override("font_color", Color(0.6, 0.95, 0.5))
+	xp_label.add_theme_font_size_override("font_size", 11)
 	xp_label.anchor_left = 0.0
 	xp_label.anchor_top = 0.0
-	xp_label.offset_left = 16
-	xp_label.offset_top = bar_y - 2
+	xp_label.offset_left = bar_x
+	xp_label.offset_top = bar_y + 1
 	add_child(xp_label)
-	_xp_bar = _make_bar(16 + 28, bar_y, 332.0, Color(0.3, 0.65, 0.25))
+	_xp_bar = _make_bar(bar_x + 26, bar_y, BAR_W, Color(0.35, 0.7, 0.25))
 	add_child(_xp_bar)
 
 
-func _make_bar(offset_left: float, offset_top: float, _bar_width: float, fill_color: Color) -> ProgressBar:
+func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_color: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
 	bar.anchor_left = 0.0
 	bar.anchor_top = 0.0
 	bar.offset_left = offset_left
 	bar.offset_top = offset_top
 	bar.anchor_right = 0.0
-	bar.offset_right = offset_left + 300
-	bar.custom_minimum_size = Vector2(100, BAR_H)
+	bar.offset_right = offset_left + bar_width
+	bar.custom_minimum_size = Vector2(80, BAR_H)
 	bar.max_value = 100
 	bar.value = 100
 	bar.show_percentage = false
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.12, 0.14, 0.85)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.border_color = Color(0, 0, 0, 0.6)
-	bar.add_theme_stylebox_override("background", style)
+
+	var bg_style := StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.08, 0.08, 0.1, 0.9)
+	bg_style.border_width_left = 1
+	bg_style.border_width_right = 1
+	bg_style.border_width_top = 1
+	bg_style.border_width_bottom = 1
+	bg_style.border_color = Color(0.2, 0.2, 0.22, 0.8)
+	bg_style.corner_radius_top_left = 3
+	bg_style.corner_radius_top_right = 3
+	bg_style.corner_radius_bottom_left = 3
+	bg_style.corner_radius_bottom_right = 3
+	bar.add_theme_stylebox_override("background", bg_style)
+
 	var fill_style := StyleBoxFlat.new()
 	fill_style.bg_color = fill_color
+	fill_style.corner_radius_top_left = 2
+	fill_style.corner_radius_top_right = 2
+	fill_style.corner_radius_bottom_left = 2
+	fill_style.corner_radius_bottom_right = 2
 	bar.add_theme_stylebox_override("fill", fill_style)
+
 	return bar
 
 

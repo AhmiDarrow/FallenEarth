@@ -1768,12 +1768,7 @@ func _setup_npc_ui() -> void:
 	if not is_instance_valid(panel):
 		return
 	_npc_info_label = RichTextLabel.new()
-	_npc_info_label.name = "NpcInfoLabel"
-	_npc_info_label.bbcode_enabled = true
-	_npc_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_npc_info_label.fit_content = true
-	_npc_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.add_child(_npc_info_label)
+	_npc_info_label.visible = false
 
 
 
@@ -1822,7 +1817,6 @@ func _update_npc_ui() -> void:
 		return
 	var npc: Dictionary = _get_npc_at_hex()
 	if npc.is_empty() or not _is_near_npc():
-		_npc_info_label.text = ""
 		if is_instance_valid(_recruit_btn):
 			_recruit_btn.disabled = true
 		if is_instance_valid(_mission_btn):
@@ -1837,12 +1831,6 @@ func _update_npc_ui() -> void:
 	if is_instance_valid(_npc_manager) and _npc_manager.has_method("can_recruit"):
 		check = _npc_manager.call("can_recruit", str(npc.get("id", "")), char_data) as Dictionary
 
-	_npc_info_label.text = (
-		"[color=#ffe082][b]★ %s[/b][/color] — %s (%s)\n[i]%s[/i]\n[color=#90caf9][Press F to talk][/color]" % [
-			npc.get("name", "?"), npc.get("role", "?"), npc.get("faction", "?"),
-			npc.get("personality_summary", ""),
-		]
-	)
 	_update_mission_offer_button(npc)
 
 
