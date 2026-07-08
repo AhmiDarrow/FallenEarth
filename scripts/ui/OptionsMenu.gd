@@ -4,6 +4,7 @@
 class_name OptionsMenu
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const SETTINGS_PATH := "user://options.cfg"
 
 var _music_slider: HSlider = null
@@ -64,6 +65,7 @@ func _build_ui() -> void:
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
+	UIBackgrounds.apply_modal_bg(backdrop)
 
 	# Panel (centered)
 	var panel := PanelContainer.new()

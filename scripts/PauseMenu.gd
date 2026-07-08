@@ -3,6 +3,8 @@
 class_name PauseMenu
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+
 signal resumed()
 signal save_requested()
 signal load_requested()
@@ -15,6 +17,18 @@ var _load_popup: Window = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Background texture behind overlay
+	var overlay := $Overlay as ColorRect
+	if overlay != null:
+		UIBackgrounds.apply_modal_bg(overlay)
+	# Style buttons with design system
+	ButtonStyleHelper.apply_primary($VBoxContainer/ResumeBtn)
+	ButtonStyleHelper.apply_secondary($VBoxContainer/SaveBtn)
+	ButtonStyleHelper.apply_secondary($VBoxContainer/LoadBtn)
+	ButtonStyleHelper.apply_secondary($VBoxContainer/OptionsBtn)
+	ButtonStyleHelper.apply_danger($VBoxContainer/ExitMenuBtn)
+	ButtonStyleHelper.apply_danger($VBoxContainer/ExitDesktopBtn)
+	# Wire signals
 	$VBoxContainer/ResumeBtn.pressed.connect(_on_resume)
 	$VBoxContainer/SaveBtn.pressed.connect(_on_save)
 	$VBoxContainer/LoadBtn.pressed.connect(_on_load)
