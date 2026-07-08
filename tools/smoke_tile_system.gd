@@ -5,7 +5,8 @@ extends SceneTree
 
 const LocalMapViewScript = preload("res://scripts/LocalMapView.gd")
 const LocalMapViewScene = preload("res://scenes/LocalMapView.tscn")
-const MobVisualScript = preload("res://scripts/MobVisual.gd")
+const MobInstanceScript = preload("res://scripts/mob/MobInstance.gd")
+const MobDataScript = preload("res://scripts/mob/MobData.gd")
 const TileSetSvc = preload("res://scripts/TileSetService.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 
@@ -109,21 +110,19 @@ func _test_local_map_view() -> void:
 	_ok("LocalMapView: 4x4 map painted, blocked cell present, marker added")
 
 
-func _test_mob_visual() -> void:
-	print("[smoke] test: MobVisual.set_mob_sprite")
-	var mob: Node2D = MobVisualScript.new()
-	root.add_child(mob)
-	# Use a known-existing mob from assets/mobs/
-	mob.set_mob_sprite("void_stalker")
-	# The first child should be a Sprite2D with a non-null texture.
-	if mob.get_child_count() == 0:
-		_fail("MobVisual: no child Sprite2D after set_mob_sprite")
+func _test_mob_instance() -> void:
+	print("[smoke] test: MobInstance loads sprite")
+	var data := MobData.new()
+	data.sprite_id = "void_stalker"
+	data.grid_x = 10
+	data.grid_y = 10
+	var inst := MobInstance.new()
+	root.add_child(inst)
+	inst.setup(data)
+	if inst._sprite == null or inst._sprite.texture == null:
+		_fail("MobInstance: sprite has no texture")
 		return
-	var spr := mob.get_child(0) as Sprite2D
-	if spr == null or spr.texture == null:
-		_fail("MobVisual: sprite has no texture")
-		return
-	_ok("MobVisual: void_stalker sprite loaded (%dx%d)" % [spr.texture.get_width(), spr.texture.get_height()])
+	_ok("MobInstance: void_stalker sprite loaded (%dx%d)" % [inst._sprite.texture.get_width(), inst._sprite.texture.get_height()])
 
 
 func _test_hub_world_loading() -> void:

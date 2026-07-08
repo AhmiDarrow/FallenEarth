@@ -29,13 +29,12 @@ func setup(walkable_check: Callable, hex_q: int = 0, hex_r: int = 0, game_state:
 func add_mob(data: MobData, mob_node: Node2D) -> void:
 	var key := "%d,%d" % [data.grid_x, data.grid_y]
 	if _entries.has(key):
-		# Remove old entry at same cell
 		_remove_entry(key)
-	var ai := OverworldMobAI.new()
-	ai.set_grid_pos(data.grid_x, data.grid_y)
-	ai.seed_from_pos(data.grid_x, data.grid_y)
+	var ai := MobAIController.new()
+	ai.setup(data.grid_x, data.grid_y, _is_cell_walkable, Callable())
 	ai.aggro_range = data.aggro_range
 	ai.mob_type = data.mob_type
+	add_child(ai)
 	_entries[key] = {
 		"data": data,
 		"node": mob_node,
@@ -84,7 +83,7 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 		if entry.is_empty():
 			to_remove.append(pos_key)
 			continue
-		var ai: OverworldMobAI = entry.get("ai") as OverworldMobAI
+		var ai: MobAIController = entry.get("ai") as MobAIController
 		var mob_node: Node2D = entry.get("node") as Node2D
 		if ai == null or not is_instance_valid(mob_node):
 			to_remove.append(pos_key)
@@ -97,19 +96,19 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 			continue
 		var old_x: int = data.grid_x
 		var old_y: int = data.grid_y
-		ai.tick(delta, {}, player_x, player_y, _is_cell_walkable)
-		match ai.state:
-			OverworldMobAI.State.WANDER, OverworldMobAI.State.AGGRO:
+		ai.tick(delta, player_x, player_y)
+		match ai.current_state:
+			MobAIController.State.WANDER, MobAIController.State.AGGRO:
 				var target: Vector2i = ai._wander_target
 				if target.x != old_x or target.y != old_y:
 					if _is_cell_walkable.call(target.x, target.y):
 						_start_move(entry, target)
 					else:
 						ai.cancel_movement()
-			OverworldMobAI.State.ATTACK:
+			MobAIController.State.ATTACK:
 				if ai.is_at_player(player_x, player_y):
-					var data: MobData = entry.get("data") as MobData
-					mob_reached_player.emit(data)
+					var mob_data: MobData = entry.get("data") as MobData
+					mob_reached_player.emit(mob_data)
 					to_remove.append(pos_key)
 	for key in to_remove:
 		_remove_entry(key)
@@ -131,12 +130,13 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 		entry["moving"] = false
 		data.grid_x = target.x
 		data.grid_y = target.y
-		var ai: OverworldMobAI = entry.get("ai") as OverworldMobAI
+		var ai: MobAIController = entry.get("ai") as MobAIController
 		if ai != null:
-			if ai.state == OverworldMobAI.State.WANDER:
+			if ai.current_state == MobAIController.State.WANDER:
 				ai.confirm_arrival()
-			elif ai.state == OverworldMobAI.State.AGGRO:
-				ai.set_grid_pos(target.x, target.y)
+			elif ai.current_state == MobAIController.State.AGGRO:
+				ai.grid_x = target.x
+				ai.grid_y = target.y
 		# Update GameState position so persistence + combat work correctly
 		if _game_state != null and is_instance_valid(_game_state) and _mob_key_fn.is_valid():
 			var new_key: String = _mob_key_fn.call(_hex_q, _hex_r, target.x, target.y)
