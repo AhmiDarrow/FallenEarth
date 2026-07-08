@@ -4,6 +4,7 @@ extends Control
 ## victory, or a defeat message on loss. A "Continue" button dismisses
 ## the panel and triggers a callback.
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const COLOR_BG := Color(0.04, 0.04, 0.08, 0.94)
 const COLOR_BORDER_WIN := Color(0.85, 0.75, 0.30, 1.0)
 const COLOR_BORDER_LOSS := Color(0.75, 0.25, 0.25, 1.0)
@@ -43,6 +44,13 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	var bg_sb := StyleBoxFlat.new()
 	bg_sb.bg_color = Color(0.0, 0.0, 0.0, 0.6)
 	bg_panel.add_theme_stylebox_override("panel", bg_sb)
+	# Add modal texture behind the dark panel
+	var bg_rect := ColorRect.new()
+	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg_rect.color = Color(0, 0, 0, 0.001)
+	add_child(bg_rect)
+	move_child(bg_rect, 0)
+	UIBackgrounds.apply_modal_bg(bg_rect)
 
 	# Center results box
 	var panel_w: float = min(440.0, vp_size.x * 0.4)
@@ -144,28 +152,10 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	var btn := Button.new()
 	btn.text = "Continue"
 	btn.custom_minimum_size = Vector2(160, 40)
-	btn.add_theme_font_size_override("font_size", 18)
-	btn.add_theme_color_override("font_color", COLOR_BUTTON)
-	btn.add_theme_color_override("font_outline_color", Color.BLACK)
-	btn.add_theme_constant_override("outline_size", 3)
-	var btn_sb := StyleBoxFlat.new()
-	btn_sb.bg_color = Color(0.12, 0.10, 0.16, 0.92)
-	btn_sb.border_width_left = 2
-	btn_sb.border_width_top = 2
-	btn_sb.border_width_right = 2
-	btn_sb.border_width_bottom = 2
-	btn_sb.border_color = COLOR_BUTTON_BORDER
-	btn_sb.corner_radius_top_left = 4
-	btn_sb.corner_radius_top_right = 4
-	btn_sb.corner_radius_bottom_left = 4
-	btn_sb.corner_radius_bottom_right = 4
-	btn.add_theme_stylebox_override("normal", btn_sb)
-	var btn_hover := btn_sb.duplicate()
-	btn_hover.bg_color = Color(0.22, 0.20, 0.28, 0.95)
-	btn_hover.border_color = COLOR_BUTTON
-	btn.add_theme_stylebox_override("hover", btn_hover)
 	btn.pressed.connect(_on_continue_pressed)
 	btn_container.add_child(btn)
+	ButtonStyleHelper.apply_primary(btn)
+	btn.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
 
 
 func _make_row(label_text: String, value_text: String) -> HBoxContainer:

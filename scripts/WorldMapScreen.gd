@@ -5,6 +5,7 @@ class_name WorldMapScreen extends Control
 signal return_to_local_requested()
 signal travel_to_hex_requested(q: int, r: int)
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
 
@@ -31,12 +32,19 @@ func _ready() -> void:
 	print("[WorldMapScreen] Strategic world map loading.")
 	_game_time = Time.get_ticks_msec() / 1000.0
 
+	# Background texture
+	var bg := $BackgroundColor as ColorRect
+	if bg != null:
+		UIBackgrounds.apply_modal_bg(bg)
+
 	var travel_btn: Button = $BottomBar/TravelHere as Button
 	var local_btn: Button = $BottomBar/ReturnLocal as Button
 	if is_instance_valid(travel_btn):
 		travel_btn.pressed.connect(_on_travel_pressed)
+		ButtonStyleHelper.apply_primary(travel_btn)
 	if is_instance_valid(local_btn):
 		local_btn.pressed.connect(_on_return_local_pressed)
+		ButtonStyleHelper.apply_secondary(local_btn)
 
 	_rift_runner = get_node_or_null("/root/RiftRunner")
 	_npc_manager = get_node_or_null("/root/NPCManager")
@@ -93,6 +101,9 @@ func _build_world_view() -> void:
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
+		btn.add_theme_stylebox_override("normal", StyleBoxHelper.button("ghost", "normal"))
+		btn.add_theme_stylebox_override("hover", StyleBoxHelper.button("ghost", "hover"))
+		btn.add_theme_stylebox_override("pressed", StyleBoxHelper.button("ghost", "pressed"))
 		btn.text = _hex_marker(q, r, tile, gs)
 		btn.tooltip_text = _tile_tooltip(tile, gs, q, r)
 		btn.modulate = _biome_color(str(tile.get("name", "")))
