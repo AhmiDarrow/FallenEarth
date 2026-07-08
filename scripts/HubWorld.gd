@@ -32,9 +32,9 @@ const EntityVisualComponentScript = preload("res://scripts/procedural/EntityVisu
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
 
-@onready var char_label: RichTextLabel = $CharInfoBar/CharLabel as RichTextLabel
-@onready var tile_info_label: RichTextLabel = $TileInfoPanel/TileInfoLabel as RichTextLabel
-@onready var rift_info_label: RichTextLabel = $TileInfoPanel/RiftInfoLabel as RichTextLabel
+@onready var char_label: RichTextLabel = get_node_or_null("UI_Layer/CharInfoBar/CharLabel") as RichTextLabel
+@onready var tile_info_label: RichTextLabel = get_node_or_null("UI_Layer/TileInfoPanel/TileInfoLabel") as RichTextLabel
+@onready var rift_info_label: RichTextLabel = get_node_or_null("UI_Layer/TileInfoPanel/RiftInfoLabel") as RichTextLabel
 @onready var world_grid: Node2D = $World as Node2D
 @onready var camera: Camera2D = $Camera2D as Camera2D
 
@@ -125,9 +125,9 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[HubWorld] Local overworld map loading.")
 
-	_enter_btn = $BottomBar/EnterRift as Button
-	var menu_btn: Button = $BottomBar/BackToMenu as Button
-	_map_btn = $BottomBar/WorldMap as Button
+	_enter_btn = get_node_or_null("UI_Layer/BottomBar/EnterRift") as Button
+	var menu_btn: Button = get_node_or_null("UI_Layer/BottomBar/BackToMenu") as Button
+	_map_btn = get_node_or_null("UI_Layer/BottomBar/WorldMap") as Button
 	if is_instance_valid(_enter_btn):
 		_enter_btn.pressed.connect(_on_enter_rift_pressed)
 		_enter_btn.disabled = true
@@ -143,7 +143,9 @@ func _ready() -> void:
 		_save_btn.text = "SAVE"
 		_save_btn.disabled = true
 		_save_btn.pressed.connect(_on_save_pressed)
-		$BottomBar.add_child(_save_btn)
+		var bottom_bar := get_node_or_null("UI_Layer/BottomBar") as HBoxContainer
+		if bottom_bar != null:
+			bottom_bar.add_child(_save_btn)
 
 	_rift_runner = get_node_or_null("/root/RiftRunner")
 	_npc_manager = get_node_or_null("/root/NPCManager")
@@ -1266,9 +1268,18 @@ func _on_mob_reached_player(mob_data: MobData) -> void:
 
 
 func _update_camera() -> void:
-	# FollowCamera handles following the player via _process.
-	# This function left as a no-op hook for any future camera logic.
-	pass
+	# Update FollowCamera target (in case player visual wasn't ready)
+	var follow: FollowCamera = camera as FollowCamera
+	if follow != null and follow.target == null and is_instance_valid(_player_visual):
+		follow.target = _player_visual
+	# Fallback: snap camera if FollowCamera has no target yet
+	if follow == null or follow.target == null:
+		if is_instance_valid(camera) and is_instance_valid(_map_view):
+			var cell_size: int = _map_view.get_cell_size()
+			camera.position = Vector2(
+				_local_x * cell_size + cell_size * 0.5,
+				_local_y * cell_size + cell_size * 0.5,
+			)
 
 
 func _try_move_local(dx: int, dy: int) -> void:
@@ -1733,7 +1744,9 @@ func _append_start_info(start: Dictionary) -> void:
 	extra.bbcode_enabled = true
 	extra.fit_content = true
 	extra.text = "[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?")]
-	$CharInfoBar.add_child(extra)
+	var char_bar := get_node_or_null("UI_Layer/CharInfoBar") as HBoxContainer
+	if char_bar != null:
+		char_bar.add_child(extra)
 
 
 func _on_enter_rift_pressed() -> void:
@@ -1769,7 +1782,7 @@ func _on_world_map_pressed() -> void:
 
 
 func _setup_mission_ui() -> void:
-	var panel: VBoxContainer = $TileInfoPanel as VBoxContainer
+	var panel: VBoxContainer = get_node_or_null("UI_Layer/TileInfoPanel") as VBoxContainer
 	if not is_instance_valid(panel):
 		return
 	_mission_info_label = RichTextLabel.new()
@@ -1780,7 +1793,7 @@ func _setup_mission_ui() -> void:
 	_mission_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_mission_info_label)
 
-	var bottom: HBoxContainer = $BottomBar as HBoxContainer
+	var bottom: HBoxContainer = get_node_or_null("UI_Layer/BottomBar") as HBoxContainer
 	if is_instance_valid(bottom):
 		_mission_btn = Button.new()
 		_mission_btn.name = "AcceptMission"
@@ -1793,7 +1806,7 @@ func _setup_mission_ui() -> void:
 
 
 func _setup_npc_ui() -> void:
-	var panel: VBoxContainer = $TileInfoPanel as VBoxContainer
+	var panel: VBoxContainer = get_node_or_null("UI_Layer/TileInfoPanel") as VBoxContainer
 	if not is_instance_valid(panel):
 		return
 	_npc_info_label = RichTextLabel.new()
@@ -1804,7 +1817,7 @@ func _setup_npc_ui() -> void:
 	_npc_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_npc_info_label)
 
-	var bottom: HBoxContainer = $BottomBar as HBoxContainer
+	var bottom: HBoxContainer = get_node_or_null("UI_Layer/BottomBar") as HBoxContainer
 	if is_instance_valid(bottom):
 		_recruit_btn = Button.new()
 		_recruit_btn.name = "RecruitNpc"
