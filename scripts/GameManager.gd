@@ -29,7 +29,8 @@ var _hub_character_data: Dictionary = {}
 
 func _ready() -> void:
 	print("[GameManager] Initialized. (Main scene should be Splash.tscn which drives the initial flow)")
-	# Apply the centralized UI Theme to the scene tree root
+	# Apply the centralized UI Theme to the root Window.
+	# This cascades to all Controls globally, including new scenes.
 	UI_Theme.apply_to(get_tree().root)
 	# Note: We no longer force-load Splash here because project.godot sets
 	# run/main_scene to Splash.tscn. The Splash scene itself handles the timer

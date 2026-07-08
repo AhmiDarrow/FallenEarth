@@ -1,19 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://70btn0pv2gki"]
+[gd_scene load_steps=3 format=3 uid="uid://70btn0pv2gki"]
 
 [ext_resource type="Script" path="res://scripts/WorldGeneration.gd" id="1_wg"]
 [ext_resource type="Texture2D" uid="uid://dxl8l8xqfea4u" path="res://assets/backgrounds/worldgenbg.png" id="2_bg"]
-
-[sub_resource type="StyleBoxFlat" id="info_panel"]
-bg_color = Color(0.08, 0.06, 0.12, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.3, 0.25, 0.4, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [node name="WorldGeneration" type="Control"]
 layout_mode = 3
@@ -134,7 +122,6 @@ custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("info_panel")
 
 [node name="Margin" type="MarginContainer" parent="VBox/ContentHBox/PreviewPanel"]
 layout_mode = 0
@@ -161,7 +148,6 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("info_panel")
 
 [node name="WorldInfoLabel" type="RichTextLabel" parent="VBox/ContentHBox/SideVBox/WorldInfoPanel"]
 layout_mode = 0
@@ -176,7 +162,6 @@ text = "[i]World info will appear here after generation.[/i]"
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("info_panel")
 
 [node name="SelectedInfoLabel" type="RichTextLabel" parent="VBox/ContentHBox/SideVBox/SelectedInfoPanel"]
 layout_mode = 0

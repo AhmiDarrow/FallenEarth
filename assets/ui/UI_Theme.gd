@@ -12,13 +12,12 @@ const UI := preload("res://assets/ui/UI_Colors.gd")
 const SB := preload("res://scripts/StyleBoxHelper.gd")
 
 
-## Build the centralized Theme and apply it to `node` and its children.
-static func apply_to(node: Node) -> void:
+## Build the centralized Theme and apply it to the root Window.
+## In Godot 4, setting theme on the Window cascades to all Controls
+## globally, including new scenes loaded after this call.
+static func apply_to(window: Window) -> void:
 	var theme := _build()
-	if node is Control:
-		(node as Control).theme = theme
-	for child in node.get_children():
-		apply_to(child)
+	window.theme = theme
 
 
 ## Build the complete Theme resource.
