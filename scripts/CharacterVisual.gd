@@ -147,18 +147,27 @@ func update_equipment(equip: Dictionary = {}) -> void:
 		return
 
 	var equip_sprite_path: String = "res://assets/sprites/equipment/"
-	# Layer order: boots (back) -> legs -> chest -> head -> weapon (front)
-	var layer_order: Array = ["boots", "legs", "chest", "head", "mainhand"]
+	# Layer order: boots (back) -> legs -> chest -> head -> offhand -> mainhand (front)
+	var layer_order: Array = ["boots", "legs", "chest", "head", "offhand", "mainhand"]
 	var z_offsets: Dictionary = {
 		"boots": -3, "legs": -2, "chest": -1,
-		"head": 1, "mainhand": 2,
+		"head": 1, "offhand": 1, "mainhand": 2,
+	}
+	# Position offsets in game units (character cell ~0.64 units)
+	# Positive x = right, positive y = down (top-down)
+	var slot_offsets: Dictionary = {
+		"head": Vector2(0, -0.28),
+		"chest": Vector2(0, 0),
+		"legs": Vector2(0, 0.16),
+		"boots": Vector2(0, 0.28),
+		"mainhand": Vector2(0.28, 0.08),
+		"offhand": Vector2(-0.28, 0.08),
 	}
 
 	for slot in layer_order:
 		var item_id: String = str(equip.get(slot, ""))
 		if item_id.is_empty():
 			continue
-		# Resolve sprite name from item_id
 		var sprite_name: String = _resolve_equip_sprite(item_id)
 		if sprite_name.is_empty():
 			continue
@@ -173,9 +182,9 @@ func update_equipment(equip: Dictionary = {}) -> void:
 		overlay.centered = true
 		overlay.pixel_size = 0.01
 		overlay.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		# Scale 32px sprite to fill 64px character cell
 		overlay.scale = Vector2(2.0, 2.0)
 		overlay.z_index = int(z_offsets.get(slot, 0))
+		overlay.position = slot_offsets.get(slot, Vector2.ZERO)
 		add_child(overlay)
 		_equip_overlays[slot] = overlay
 
