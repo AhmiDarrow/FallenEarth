@@ -26,7 +26,7 @@ func _initialize() -> void:
 	print("[smoke] v0.3.0 tile system smoke test")
 	_test_tileset_build()
 	_test_local_map_view()
-	_test_mob_visual()
+	_test_mob_instance()
 	_test_hub_world_loading()
 
 	if failures.is_empty():
