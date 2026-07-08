@@ -59,6 +59,7 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 	# populates _wander_target (avoids stale Vector2i.ZERO bug).
 	if current_state != State.AGGRO and current_state != State.ATTACK and current_state != State.FLEE:
 		if dist_to_player <= aggro_range and mob_type == "aggressive":
+			print("[MobAI] AGGRO at (%d,%d) → player (%d,%d)" % [grid_x, grid_y, player_x, player_y])
 			_set_state(State.AGGRO)
 			_repath(player_x, player_y)
 
