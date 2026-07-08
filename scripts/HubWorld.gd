@@ -1,6 +1,6 @@
 ## HubWorld — Local 512×512 playfield for the current sphere hex region.
 ## Walk the local map; cross edges to adjacent hex regions; open World Map for strategic travel.
-class_name HubWorld extends Control
+class_name HubWorld extends Node2D
 
 signal enter_rift_requested(rift_id: String)
 signal back_to_menu_requested()
@@ -32,9 +32,9 @@ const EntityVisualComponentScript = preload("res://scripts/procedural/EntityVisu
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
 
-@onready var char_label: RichTextLabel = get_node_or_null("UI_Layer/CharInfoBar/CharLabel") as RichTextLabel
-@onready var tile_info_label: RichTextLabel = get_node_or_null("UI_Layer/TileInfoPanel/TileInfoLabel") as RichTextLabel
-@onready var rift_info_label: RichTextLabel = get_node_or_null("UI_Layer/TileInfoPanel/RiftInfoLabel") as RichTextLabel
+@onready var char_label: RichTextLabel = get_node_or_null("UI_Canvas/CharInfoBar/CharLabel") as RichTextLabel
+@onready var tile_info_label: RichTextLabel = get_node_or_null("UI_Canvas/TileInfoPanel/TileInfoLabel") as RichTextLabel
+@onready var rift_info_label: RichTextLabel = get_node_or_null("UI_Canvas/TileInfoPanel/RiftInfoLabel") as RichTextLabel
 @onready var world_grid: Node2D = $World as Node2D
 @onready var camera: Camera2D = $World/Camera2D as Camera2D
 
@@ -125,9 +125,9 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[HubWorld] Local overworld map loading.")
 
-	_enter_btn = get_node_or_null("UI_Layer/BottomBar/EnterRift") as Button
-	var menu_btn: Button = get_node_or_null("UI_Layer/BottomBar/BackToMenu") as Button
-	_map_btn = get_node_or_null("UI_Layer/BottomBar/WorldMap") as Button
+	_enter_btn = get_node_or_null("UI_Canvas/BottomBar/EnterRift") as Button
+	var menu_btn: Button = get_node_or_null("UI_Canvas/BottomBar/BackToMenu") as Button
+	_map_btn = get_node_or_null("UI_Canvas/BottomBar/WorldMap") as Button
 	if is_instance_valid(_enter_btn):
 		_enter_btn.pressed.connect(_on_enter_rift_pressed)
 		_enter_btn.disabled = true
@@ -143,7 +143,7 @@ func _ready() -> void:
 		_save_btn.text = "SAVE"
 		_save_btn.disabled = true
 		_save_btn.pressed.connect(_on_save_pressed)
-		var bottom_bar := get_node_or_null("UI_Layer/BottomBar") as HBoxContainer
+		var bottom_bar := get_node_or_null("UI_Canvas/BottomBar") as HBoxContainer
 		if bottom_bar != null:
 			bottom_bar.add_child(_save_btn)
 
@@ -775,14 +775,14 @@ func _setup_hud() -> void:
 	_hud = HUDScript.new()
 	_hud.name = "HUD"
 	_hud.menu_requested.connect(_open_character_menu)
-	var ui_layer := get_node_or_null("UI_Layer") as CanvasLayer
+	var ui_layer := get_node_or_null("UI_Canvas") as CanvasLayer
 	if ui_layer != null:
 		ui_layer.add_child(_hud)
 	else:
 		add_child(_hud)
 	# The new HUD has its own top bar / HP/MP/XP / minimap / hotbar. Hide
 	# the old CharInfoBar so we don't show the same info twice.
-	var old_bar := get_node_or_null("UI_Layer/CharInfoBar") as CanvasItem
+	var old_bar := get_node_or_null("UI_Canvas/CharInfoBar") as CanvasItem
 	if old_bar == null:
 		old_bar = get_node_or_null("CharInfoBar") as CanvasItem
 	if old_bar != null:
@@ -813,14 +813,17 @@ func open_character_tab(tab_id: String) -> void:
 # ---------------------------------------------------------------------------
 
 func _setup_hover_tooltip() -> void:
-	# The tooltip is a Control that renders a small Label. It's added to
-	# the HubWorld tree (Control) so it renders on top of the world.
 	_hover_tooltip = HoverTooltipScript.new()
 	_hover_tooltip.name = "HoverTooltip"
 	_hover_tooltip.set_anchors_preset(Control.PRESET_TOP_LEFT)
 	_hover_tooltip.position = Vector2.ZERO
 	_hover_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_hover_tooltip)
+	# Reparent to UI_Canvas so the tooltip renders as a screen-space overlay
+	var ui_canvas := get_node_or_null("UI_Canvas") as CanvasLayer
+	if ui_canvas != null:
+		ui_canvas.add_child(_hover_tooltip)
+	else:
+		add_child(_hover_tooltip)
 
 
 func _tick_hover_tooltip() -> void:
@@ -828,12 +831,10 @@ func _tick_hover_tooltip() -> void:
 		return
 	if not is_instance_valid(_map_view):
 		return
-	# Convert mouse position (in screen coords) to local coords of the
-	# HubWorld Control. The _map_view sits at world_grid; for the cursor
-	# hit-test we want the position inside the map view's coordinate space.
-	# The world_grid is at (0, 0) within HubWorld (Control), and the
-	# map_view sits at (0, 0) within world_grid. So the mouse position
-	# relative to the map_view equals the local mouse position.
+	# Convert mouse position to local coords of HubWorld for hit-testing.
+	# world_grid (Node2D) is at (0,0) within HubWorld (Node2D), and
+	# _map_view sits at (0,0) within world_grid. So get_local_mouse_position()
+	# on HubWorld maps directly to map_view's coordinate space.
 	var mouse_local: Vector2 = get_local_mouse_position()
 	var target_text: String = _hit_test_at_world(mouse_local)
 	_hover_tooltip.update(mouse_local, target_text)
@@ -1745,7 +1746,7 @@ func _append_start_info(start: Dictionary) -> void:
 	extra.bbcode_enabled = true
 	extra.fit_content = true
 	extra.text = "[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?")]
-	var char_bar := get_node_or_null("UI_Layer/CharInfoBar") as HBoxContainer
+	var char_bar := get_node_or_null("UI_Canvas/CharInfoBar") as HBoxContainer
 	if char_bar != null:
 		char_bar.add_child(extra)
 
@@ -1783,7 +1784,7 @@ func _on_world_map_pressed() -> void:
 
 
 func _setup_mission_ui() -> void:
-	var panel: VBoxContainer = get_node_or_null("UI_Layer/TileInfoPanel") as VBoxContainer
+	var panel: VBoxContainer = get_node_or_null("UI_Canvas/TileInfoPanel") as VBoxContainer
 	if not is_instance_valid(panel):
 		return
 	_mission_info_label = RichTextLabel.new()
@@ -1794,7 +1795,7 @@ func _setup_mission_ui() -> void:
 	_mission_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_mission_info_label)
 
-	var bottom: HBoxContainer = get_node_or_null("UI_Layer/BottomBar") as HBoxContainer
+	var bottom: HBoxContainer = get_node_or_null("UI_Canvas/BottomBar") as HBoxContainer
 	if is_instance_valid(bottom):
 		_mission_btn = Button.new()
 		_mission_btn.name = "AcceptMission"
@@ -1807,7 +1808,7 @@ func _setup_mission_ui() -> void:
 
 
 func _setup_npc_ui() -> void:
-	var panel: VBoxContainer = get_node_or_null("UI_Layer/TileInfoPanel") as VBoxContainer
+	var panel: VBoxContainer = get_node_or_null("UI_Canvas/TileInfoPanel") as VBoxContainer
 	if not is_instance_valid(panel):
 		return
 	_npc_info_label = RichTextLabel.new()
@@ -1818,7 +1819,7 @@ func _setup_npc_ui() -> void:
 	_npc_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_npc_info_label)
 
-	var bottom: HBoxContainer = get_node_or_null("UI_Layer/BottomBar") as HBoxContainer
+	var bottom: HBoxContainer = get_node_or_null("UI_Canvas/BottomBar") as HBoxContainer
 	if is_instance_valid(bottom):
 		_recruit_btn = Button.new()
 		_recruit_btn.name = "RecruitNpc"
