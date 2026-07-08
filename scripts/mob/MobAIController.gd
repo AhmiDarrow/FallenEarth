@@ -164,12 +164,15 @@ func _tick_flee(player_x: int, player_y: int) -> void:
 		_set_state(State.IDLE)
 		_idle_timer = _rng.randf_range(1.0, 2.0)
 		return
-	var opposite_dir := Vector2i(grid_x - player_x, grid_y - player_y)
+	var opposite_dir: Vector2i = Vector2i(grid_x - player_x, grid_y - player_y)
 	var candidates: Array[Vector2i] = []
-	for offset in [Vector2i(clamp(opposite_dir.x, -1, 1), clamp(opposite_dir.y, -1, 1)),
-			Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
-		var nx := grid_x + offset.x
-		var ny := grid_y + offset.y
+	var flee_offsets: Array[Vector2i] = [
+		Vector2i(clamp(opposite_dir.x, -1, 1), clamp(opposite_dir.y, -1, 1)),
+		Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)
+	]
+	for offset: Vector2i in flee_offsets:
+		var nx: int = grid_x + offset.x
+		var ny: int = grid_y + offset.y
 		if _is_cell_walkable.call(nx, ny):
 			candidates.append(Vector2i(nx, ny))
 	if candidates.is_empty():
@@ -218,12 +221,13 @@ static func bfs_path(from_x: int, from_y: int, to_x: int, to_y: int, walkable_ch
 			var node_key: String = "%d,%d" % [node.x, node.y]
 			while parent.has(node_key):
 				path.push_front(node)
-				node = parent[node_key]
+				node = parent.get(node_key, node) as Vector2i
 				node_key = "%d,%d" % [node.x, node.y]
 			path.push_front(Vector2i(from_x, from_y))
 			return path
-		for offset in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
-			var neighbor := Vector2i(current.x + offset.x, current.y + offset.y)
+		var bfs_offsets: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+		for offset: Vector2i in bfs_offsets:
+			var neighbor: Vector2i = Vector2i(current.x + offset.x, current.y + offset.y)
 			var nkey := "%d,%d" % [neighbor.x, neighbor.y]
 			if visited.has(nkey):
 				continue
@@ -237,9 +241,10 @@ static func bfs_path(from_x: int, from_y: int, to_x: int, to_y: int, walkable_ch
 
 func _walkable_neighbors(x: int, y: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	for offset in [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]:
-		var nx := x + offset.x
-		var ny := y + offset.y
+	var neighbor_offsets: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+	for offset: Vector2i in neighbor_offsets:
+		var nx: int = x + offset.x
+		var ny: int = y + offset.y
 		if _is_cell_walkable.call(nx, ny):
 			out.append(Vector2i(nx, ny))
 	return out

@@ -55,9 +55,9 @@ func has_mob_at(local_x: int, local_y: int) -> bool:
 
 
 func get_data_at(local_x: int, local_y: int) -> MobData:
-	var entry := _entries.get("%d,%d" % [local_x, local_y])
+	var entry: Variant = _entries.get("%d,%d" % [local_x, local_y])
 	if entry != null:
-		return entry.get("data") as MobData
+		return (entry as Dictionary).get("data", null) as MobData
 	return null
 
 
@@ -80,7 +80,10 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 		return
 	var to_remove: Array[String] = []
 	for pos_key in _entries:
-		var entry := _entries[pos_key]
+		var entry: Dictionary = _entries[pos_key] as Dictionary
+		if entry.is_empty():
+			to_remove.append(pos_key)
+			continue
 		var ai: OverworldMobAI = entry.get("ai") as OverworldMobAI
 		var mob_node: Node2D = entry.get("node") as Node2D
 		if ai == null or not is_instance_valid(mob_node):
@@ -88,8 +91,12 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 			continue
 		if entry.get("moving", false):
 			continue
-		var old_x := entry["data"].grid_x
-		var old_y := entry["data"].grid_y
+		var data: MobData = entry.get("data") as MobData
+		if data == null:
+			to_remove.append(pos_key)
+			continue
+		var old_x: int = data.grid_x
+		var old_y: int = data.grid_y
 		ai.tick(delta, {}, player_x, player_y, _is_cell_walkable)
 		match ai.state:
 			OverworldMobAI.State.WANDER, OverworldMobAI.State.AGGRO:
@@ -112,9 +119,9 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 	entry["moving"] = true
 	var mob_node: Node2D = entry["node"]
 	var data: MobData = entry["data"]
-	var old_x := data.grid_x
-	var old_y := data.grid_y
-	var target_pos := Vector2(target.x * CELL_SIZE + CELL_SIZE * 0.5, target.y * CELL_SIZE + CELL_SIZE * 0.5)
+	var old_x: int = data.grid_x
+	var old_y: int = data.grid_y
+	var target_pos: Vector2 = Vector2(target.x * CELL_SIZE + CELL_SIZE * 0.5, target.y * CELL_SIZE + CELL_SIZE * 0.5)
 	var old_tween: Tween = entry.get("tween") as Tween
 	if old_tween != null and old_tween.is_valid():
 		old_tween.kill()
@@ -136,15 +143,14 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 			var old_key: String = _mob_key_fn.call(_hex_q, _hex_r, old_x, old_y)
 			if old_key != new_key:
 				_game_state.remove_overworld_mob(old_key)
-				var updated := data.to_enemy_dict()
+				var updated: Dictionary = data.to_enemy_dict()
 				_game_state.set_overworld_mob(new_key, updated)
 	)
 	entry["tween"] = tw
 
 
 func _remove_entry(key: String) -> void:
-	var entry := _entries.get(key)
-	if entry == null:
+	if not _entries.has(key):
 		return
 	# Node lifecycle managed by pool — just remove the tracking entry
 	_entries.erase(key)
