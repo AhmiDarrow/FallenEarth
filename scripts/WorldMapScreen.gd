@@ -32,11 +32,6 @@ func _ready() -> void:
 	print("[WorldMapScreen] Strategic world map loading.")
 	_game_time = Time.get_ticks_msec() / 1000.0
 
-	# Background texture
-	var bg := $BackgroundColor as ColorRect
-	if bg != null:
-		UIBackgrounds.apply_modal_bg(bg)
-
 	var travel_btn: Button = $BottomBar/TravelHere as Button
 	var local_btn: Button = $BottomBar/ReturnLocal as Button
 	if is_instance_valid(travel_btn):

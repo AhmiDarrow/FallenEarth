@@ -159,11 +159,11 @@ func _build_resource_bars() -> void:
 	bar_group.offset_bottom = TOP_BAR_H + 4 + BAR_H * 3 + 16
 	bar_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.04, 0.04, 0.06, 0.75)
-	bg_style.corner_radius_top_left = 6
-	bg_style.corner_radius_top_right = 6
-	bg_style.corner_radius_bottom_left = 6
-	bg_style.corner_radius_bottom_right = 6
+	bg_style.bg_color = Color(0.04, 0.04, 0.06, 0.45)
+	bg_style.corner_radius_top_left = 4
+	bg_style.corner_radius_top_right = 4
+	bg_style.corner_radius_bottom_left = 4
+	bg_style.corner_radius_bottom_right = 4
 	bar_group.add_theme_stylebox_override("panel", bg_style)
 	add_child(bar_group)
 
