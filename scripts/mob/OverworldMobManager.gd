@@ -32,7 +32,7 @@ func add_mob(data: MobData, mob_node: Node2D) -> void:
 		_remove_entry(key)
 	var ai := MobAIController.new()
 	ai.setup(data.grid_x, data.grid_y, _is_cell_walkable, Callable())
-	ai.aggro_range = data.aggro_range
+	ai.aggro_range = mini(data.aggro_range, 3)
 	ai.mob_type = data.mob_type
 	add_child(ai)
 	_entries[key] = {

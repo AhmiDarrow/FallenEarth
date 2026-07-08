@@ -32,7 +32,7 @@ static func from_enemy_dict(enemy: Dictionary, local_x: int, local_y: int) -> Mo
 	d.max_hp = int(enemy.get("max_hp", d.hp))
 	d.attack_damage = int(enemy.get("attack_damage", 6))
 	d.armor = int(enemy.get("armor", 0))
-	d.aggro_range = int(enemy.get("aggro_range", 5))
+	d.aggro_range = mini(int(enemy.get("aggro_range", 3)), 3)
 	d.mob_type = str(enemy.get("mob_type", enemy.get("ai_archetype", "aggressive")))
 	d.threat_mult = float(enemy.get("threat_mult", 1.0))
 	d.grid_x = local_x

@@ -14,7 +14,7 @@ var grid_x: int = 0
 var grid_y: int = 0
 var spawn_x: int = 0
 var spawn_y: int = 0
-var aggro_range: int = 5
+var aggro_range: int = 3
 var mob_type: String = "aggressive"
 var patrol_radius: int = 8
 
