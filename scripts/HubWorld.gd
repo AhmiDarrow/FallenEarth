@@ -1230,7 +1230,7 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	var data := MobDataScript.from_enemy_dict(mob_data, x, y)
 	data.sprite_id = sprite_id
 	var mob_node := _mob_pool.borrow() as MobInstance
-	mob_node.position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+	mob_node.global_position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
 	mob_node.z_index = 0
 	mob_node.setup(data)
 	if is_instance_valid(_mob_sprite_layer):
