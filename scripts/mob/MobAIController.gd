@@ -24,6 +24,7 @@ var _path: Array[Vector2i] = []
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _flee_target: Vector2i = Vector2i.ZERO
 var _move_callback: Callable
+var _spawn_grace: float = 0.0
 
 
 func _init() -> void:
@@ -39,6 +40,7 @@ func setup(pos_x: int, pos_y: int, walkable_check: Callable, move_callback: Call
 	_move_callback = move_callback
 	_rng.seed = abs((pos_x * 73856093) ^ (pos_y * 19349663))
 	_idle_timer = _rng.randf_range(0.5, 2.0)
+	_spawn_grace = 3.0
 
 
 var _is_cell_walkable: Callable = func(_x, _y): return true
@@ -48,7 +50,12 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 	var dist_to_player := maxi(abs(grid_x - player_x), abs(grid_y - player_y))
 	var dist_to_spawn := maxi(abs(grid_x - spawn_x), abs(grid_y - spawn_y))
 
-	# Aggro check (always first)
+	# Spawn grace period — mob stands still for a few seconds before any action
+	if _spawn_grace > 0.0:
+		_spawn_grace -= delta
+		return
+
+	# Aggro check (always first after grace)
 	if current_state != State.AGGRO and current_state != State.ATTACK and current_state != State.FLEE:
 		if dist_to_player <= aggro_range and mob_type == "aggressive":
 			_set_state(State.AGGRO)
