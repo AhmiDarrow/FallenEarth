@@ -103,7 +103,6 @@ var _base_placement_open: bool = false
 var _rift_runner: Node = null
 var _game_time: float = 0.0
 var _rift_check_timer: float = 0.0
-var _enter_btn: Button = null
 var _recruit_btn: Button = null
 var _mission_btn: Button = null
 var _npc_info_label: RichTextLabel = null
@@ -124,11 +123,6 @@ func _ready() -> void:
 	# Ensure world node tree is fully initialized before spawning
 	await get_tree().process_frame
 	process_mode = Node.PROCESS_MODE_ALWAYS
-
-	_enter_btn = get_node_or_null("UI_Canvas/BottomBar/EnterRift") as Button
-	if is_instance_valid(_enter_btn):
-		_enter_btn.pressed.connect(_on_enter_rift_pressed)
-		_enter_btn.disabled = true
 
 	_rift_runner = get_node_or_null("/root/RiftRunner")
 	_npc_manager = get_node_or_null("/root/NPCManager")
@@ -355,6 +349,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		var adj_bld: Node2D = _adjacent_building()
 		if adj_bld != null:
 			_interact_building(adj_bld)
+			return
+		if not _get_rift_at_player().is_empty():
+			_open_rift_entry_ui()
 			return
 		if _is_near_npc():
 			_open_npc_dialogue()
@@ -1586,7 +1583,7 @@ func _update_tile_info() -> void:
 		"Local pos: (%d, %d) | Terrain: %s | Explored: %.0f%%%s\n" % [
 			_local_x, _local_y, LocalMapGen.terrain_label(terrain), explored, mob_line,
 		] +
-		"[i]WASD to walk. Step onto a mob to fight. ⚡ = rift entrance. [b]M[/b] = World Map.[/i]"
+		"[i]WASD to walk. Step onto a mob to fight. ⚡ = rift — press E to enter. [b]M[/b] = World Map.[/i]"
 	)
 
 
@@ -1668,15 +1665,11 @@ func _update_rift_ui() -> void:
 	var rift: Dictionary = _get_rift_at_player()
 	var on_rift := not rift.is_empty()
 
-	if is_instance_valid(_enter_btn):
-		_enter_btn.disabled = not on_rift
-		_enter_btn.text = "▶ ENTER RIFT" if on_rift else "▶ NO RIFT HERE"
-
 	if on_rift:
 		var remaining: float = float(rift.get("duration", 0.0)) - (_game_time - float(rift.get("spawn_time", 0.0)))
 		rift_info_label.text = (
 			"[color=#e1bee7][b]RIFT TUNNEL ACTIVE[/b][/color] — %s\n" % rift.get("rift_id", "?") +
-			"Local (%d,%d) | ~%d min left" % [
+			"Local (%d,%d) | ~%d min left\n[color=#90caf9][Press E to enter][/color]" % [
 				int(rift.get("local_x", 0)), int(rift.get("local_y", 0)),
 				maxi(0, int(remaining / 60.0)),
 			]
@@ -1685,7 +1678,7 @@ func _update_rift_ui() -> void:
 		var count := 0
 		if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
 			count = (_rift_runner.get_rifts_in_hex(_player_q, _player_r, _game_time) as Array).size()
-		rift_info_label.text = "[i]%d rift(s) in this region. Walk onto ⚡ to enter.[/i]" % count
+		rift_info_label.text = "[i]%d rift(s) in this region. Walk onto ⚡ and press E to enter.[/i]" % count
 
 
 func _update_char_info(data: Dictionary) -> void:
@@ -1711,27 +1704,39 @@ func _append_start_info(start: Dictionary) -> void:
 		char_bar.add_child(extra)
 
 
-func _on_enter_rift_pressed() -> void:
+func _open_rift_entry_ui() -> void:
+	if has_node("RiftEntryUI"):
+		return
 	var rift: Dictionary = _get_rift_at_player()
 	if rift.is_empty():
 		return
+	rift["entry_q"] = _player_q
+	rift["entry_r"] = _player_r
+	rift["entry_local_x"] = _local_x
+	rift["entry_local_y"] = _local_y
+
+	var ui_script: GDScript = load("res://scripts/ui/RiftEntryUI.gd")
+	if ui_script == null:
+		return
+	var ui: Control = ui_script.new()
+	ui.name = "RiftEntryUI"
+	ui.setup(rift)
+	ui.proceed_requested.connect(_on_rift_proceed)
+	ui.cancelled.connect(func(): if is_instance_valid(ui): ui.queue_free())
+	var ui_canvas := get_node_or_null("UI_Canvas") as CanvasLayer
+	(ui_canvas if ui_canvas else self).add_child(ui)
+	_world_markers_dirty = false
+
+
+func _on_rift_proceed(rift: Dictionary) -> void:
 	var rift_id: String = str(rift.get("rift_id", "rift_0001"))
 	var biome: String = str(rift.get("biome_key", "Ash Wastes"))
 	enter_rift_requested.emit(rift_id)
 	var gm: GameManager = get_node_or_null("/root/GameManager") as GameManager
 	if is_instance_valid(gm):
-		rift["entry_q"] = _player_q
-		rift["entry_r"] = _player_r
-		rift["entry_local_x"] = _local_x
-		rift["entry_local_y"] = _local_y
-		# Phase F: Fade transition
 		if is_instance_valid(_transition_screen):
 			await _transition_screen.fade_out(0.4)
 		gm.go_to_rift(rift_id, biome, rift)
-	# v0.9.1c: leaving for the rift scene — markers will be rebuilt
-	# when we return. No dirty flag needed here since we're swapping
-	# scenes, but we clear the dirty bit to keep state clean.
-	_world_markers_dirty = false
 
 
 func _on_world_map_pressed() -> void:

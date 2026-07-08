@@ -93,10 +93,6 @@ theme_override_constants/separation = 16
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="EnterRift" type="Button" parent="UI_Canvas/BottomBar"]
-custom_minimum_size = Vector2(160, 45)
-text = "▶ENTER RIFT"
-
 [node name="MinimapPanel" type="Control" parent="UI_Canvas"]
 anchors_preset = 12
 anchor_left = 1.0
