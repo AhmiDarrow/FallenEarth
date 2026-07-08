@@ -114,6 +114,7 @@ func _tick_idle(delta: float) -> void:
 	if _idle_timer <= 0.0:
 		_set_state(State.WANDER)
 		_idle_timer = 0.0
+		_tick_wander()  # populate _wander_target now, before tick_all reads it
 
 
 func _tick_wander() -> void:
