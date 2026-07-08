@@ -55,19 +55,18 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 		_spawn_grace -= delta
 		return
 
-	# Aggro check (always first after grace)
+	# Aggro check — sets state + path, then falls through so _tick_aggro
+	# populates _wander_target (avoids stale Vector2i.ZERO bug).
 	if current_state != State.AGGRO and current_state != State.ATTACK and current_state != State.FLEE:
 		if dist_to_player <= aggro_range and mob_type == "aggressive":
 			_set_state(State.AGGRO)
 			_repath(player_x, player_y)
-			return
 
 	# Flee if too far from spawn (only for non-aggressive)
 	if current_state != State.FLEE and current_state != State.RETURN_TO_SPAWN:
 		if dist_to_spawn > patrol_radius * 2 and mob_type != "aggressive":
 			_set_state(State.RETURN_TO_SPAWN)
 			_repath(spawn_x, spawn_y)
-			return
 
 	# Hysteresis: drop aggro
 	if current_state == State.AGGRO and dist_to_player > aggro_range + 2:

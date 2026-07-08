@@ -125,7 +125,7 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 	if old_tween != null and old_tween.is_valid():
 		old_tween.kill()
 	var tw: Tween = create_tween()
-	tw.tween_property(mob_node, "position", target_pos, 0.22).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(mob_node, "position", target_pos, 0.6).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 	tw.tween_callback(func() -> void:
 		entry["moving"] = false
 		data.grid_x = target.x
