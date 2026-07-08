@@ -93,17 +93,9 @@ theme_override_constants/separation = 16
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="WorldMap" type="Button" parent="UI_Canvas/BottomBar"]
-custom_minimum_size = Vector2(160, 45)
-text = "🗺 WORLD MAP"
-
 [node name="EnterRift" type="Button" parent="UI_Canvas/BottomBar"]
 custom_minimum_size = Vector2(160, 45)
 text = "▶ENTER RIFT"
-
-[node name="BackToMenu" type="Button" parent="UI_Canvas/BottomBar"]
-custom_minimum_size = Vector2(160, 45)
-text = "🏠 MENU"
 
 [node name="MinimapPanel" type="Control" parent="UI_Canvas"]
 anchors_preset = 12

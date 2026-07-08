@@ -8,18 +8,21 @@ extends Control
 signal dialogue_finished
 signal choice_made(choice_index: int)
 signal action_triggered(action: String)
+signal invite_requested(npc_id: String)
 
 var _role: String = ""
 var _current_node: Dictionary = {}
 var _npc_name: String = ""
 var _npc_race: String = ""
 var _npc_gender: String = ""
+var _npc_id: String = ""
 
 var _panel: PanelContainer = null
 var _speaker_label: Label = null
 var _text_label: RichTextLabel = null
 var _choices_container: VBoxContainer = null
 var _close_button: Button = null
+var _invite_button: Button = null
 
 
 func _ready() -> void:
@@ -96,12 +99,23 @@ func _build_ui() -> void:
 	_close_button.visible = false
 	vbox.add_child(_close_button)
 
+	# Invite button (shown when NPC is recruitable)
+	_invite_button = Button.new()
+	_invite_button.name = "InviteButton"
+	_invite_button.text = "Invite to Party"
+	_invite_button.custom_minimum_size = Vector2(140, 28)
+	_invite_button.pressed.connect(_on_invite_pressed)
+	_invite_button.visible = false
+	vbox.add_child(_invite_button)
 
-func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_gender: String = "") -> void:
+
+func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_gender: String = "", npc_id: String = "") -> void:
 	_role = role
 	_npc_name = npc_name
 	_npc_race = npc_race
 	_npc_gender = npc_gender
+	_npc_id = npc_id
+	_check_invite_eligibility()
 
 	var dm: Node = get_node_or_null("/root/DialogueManager")
 	if dm == null:
@@ -116,6 +130,18 @@ func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_g
 
 	_show_node(greeting)
 	visible = true
+
+
+func _check_invite_eligibility() -> void:
+	if _npc_id.is_empty() or not is_instance_valid(_invite_button):
+		return
+	var pm: Node = get_node_or_null("/root/PartyNPCManager")
+	if pm == null or not pm.has_method("can_invite"):
+		return
+	if pm.has_method("can_invite") and pm.call("can_invite", _npc_id):
+		_invite_button.visible = true
+	else:
+		_invite_button.visible = false
 
 
 func _fallback_greeting(npc_name: String, role: String) -> void:
@@ -176,6 +202,13 @@ func _on_choice_pressed(index: int) -> void:
 		return
 
 	_show_node(next_node)
+
+
+func _on_invite_pressed() -> void:
+	invite_requested.emit(_npc_id)
+	visible = false
+	dialogue_finished.emit()
+	queue_free()
 
 
 func _on_close_pressed() -> void:

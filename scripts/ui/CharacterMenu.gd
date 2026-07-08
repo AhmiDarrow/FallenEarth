@@ -1,13 +1,13 @@
 ## CharacterMenu — Tabbed shell for all character screens.
 ##
-## Hosts the Inventory, Equipment, Crafting, Party, and Stats tabs.
-## A single instance is opened by the HUD "≡ Menu" button or by the
-## keyboard hotkeys (I, E, C, P, S). Tab buttons at the top swap the
-## content area beneath. Tab state is preserved when switching (e.g.
-## Inventory's selected item is not lost when you peek at the Party tab).
+## Hosts the Inventory, Equipment, Crafting, Jobs, Party, and Stats tabs.
+## A single instance is opened by the keyboard hotkeys (I, E, C, J, P, S).
+## Tab buttons at the top swap the content area beneath. Tab state is
+## preserved when switching (e.g. Inventory's selected item is not lost
+## when you peek at the Party tab).
 ##
 ## Keyboard:
-##   - I, E, C, P, S: open the corresponding tab (or close the menu if
+##   - I, E, C, J, P, S: open the corresponding tab (or close the menu if
 ##     that tab is already active)
 ##   - Tab / Shift+Tab: cycle forward / backward through tabs
 ##   - Escape: close the menu
@@ -33,6 +33,7 @@ const TABS := [
 	{"id": "inventory", "label": "Inventory", "key": KEY_I},
 	{"id": "equipment", "label": "Equipment", "key": KEY_E},
 	{"id": "crafting",  "label": "Crafting",  "key": KEY_C},
+	{"id": "jobs",      "label": "Jobs",      "key": KEY_J},
 	{"id": "party",     "label": "Party",     "key": KEY_P},
 	{"id": "stats",     "label": "Stats",     "key": KEY_S},
 ]
@@ -41,6 +42,7 @@ const SCREEN_PATHS := {
 	"inventory": "res://scripts/ui/InventoryScreen.gd",
 	"equipment": "res://scripts/ui/EquipmentScreen.gd",
 	"crafting":  "res://scripts/ui/CraftingScreen.gd",
+	"jobs":      "res://scripts/ui/JobsScreen.gd",
 	"party":     "res://scripts/ui/PartyScreen.gd",
 	"stats":     "res://scripts/ui/StatsScreen.gd",
 }
@@ -275,6 +277,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			return
 		if km.is_action_pressed("party", event):
 			select_tab("party")
+			get_viewport().set_input_as_handled()
+			return
+		if km.is_action_pressed("jobs", event):
+			select_tab("jobs")
 			get_viewport().set_input_as_handled()
 			return
 		if km.is_action_pressed("stats", event):

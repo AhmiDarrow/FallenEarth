@@ -104,11 +104,9 @@ var _rift_runner: Node = null
 var _game_time: float = 0.0
 var _rift_check_timer: float = 0.0
 var _enter_btn: Button = null
-var _map_btn: Button = null
 var _recruit_btn: Button = null
 var _mission_btn: Button = null
 var _npc_info_label: RichTextLabel = null
-var _save_btn: Button = null
 var _mission_info_label: RichTextLabel = null
 var _npc_manager: Node = null
 var _mission_manager: Node = null
@@ -128,26 +126,9 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
 	_enter_btn = get_node_or_null("UI_Canvas/BottomBar/EnterRift") as Button
-	var menu_btn: Button = get_node_or_null("UI_Canvas/BottomBar/BackToMenu") as Button
-	_map_btn = get_node_or_null("UI_Canvas/BottomBar/WorldMap") as Button
 	if is_instance_valid(_enter_btn):
 		_enter_btn.pressed.connect(_on_enter_rift_pressed)
 		_enter_btn.disabled = true
-	if is_instance_valid(menu_btn):
-		menu_btn.pressed.connect(_on_back_to_menu_pressed)
-	if is_instance_valid(_map_btn):
-		_map_btn.pressed.connect(_on_world_map_pressed)
-
-		# Manual save button
-		_save_btn = Button.new()
-		_save_btn.name = "SaveGame"
-		_save_btn.custom_minimum_size = Vector2(160, 45)
-		_save_btn.text = "SAVE"
-		_save_btn.disabled = true
-		_save_btn.pressed.connect(_on_save_pressed)
-		var bottom_bar := get_node_or_null("UI_Canvas/BottomBar") as HBoxContainer
-		if bottom_bar != null:
-			bottom_bar.add_child(_save_btn)
 
 	_rift_runner = get_node_or_null("/root/RiftRunner")
 	_npc_manager = get_node_or_null("/root/NPCManager")
@@ -175,7 +156,6 @@ func _ready() -> void:
 		var char_data: Dictionary = gs.get_party_character_data()
 		if not char_data.is_empty():
 			_update_char_info(char_data)
-			_save_btn.disabled = false
 
 		_tile_map = gs.get_tile_map()
 		if _tile_map.is_empty() and gs.has_world():
@@ -337,6 +317,9 @@ func _unhandled_input(event: InputEvent) -> void:
 	if km.is_action_pressed("party", event):
 		open_character_tab("party")
 		return
+	if km.is_action_pressed("jobs", event):
+		open_character_tab("jobs")
+		return
 	# S is shared between `move_down` and `stats` (see KeybindManager).
 	# Per the original Phase 3 design: S only opens the Stats tab when
 	# the CharacterMenu is already open — otherwise S is left to fall
@@ -372,6 +355,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		var adj_bld: Node2D = _adjacent_building()
 		if adj_bld != null:
 			_interact_building(adj_bld)
+			return
+		if _is_near_npc():
+			_open_npc_dialogue()
 			return
 		_try_start_gather()
 		return
@@ -414,6 +400,9 @@ func _fallback_unhandled_input(event: InputEvent) -> void:
 			return
 		KEY_P:
 			open_character_tab("party")
+			return
+		KEY_J:
+			open_character_tab("jobs")
 			return
 		KEY_S:
 			# S is shared with movement. Only open Stats when the
@@ -764,7 +753,6 @@ func _leave_base() -> void:
 func _setup_hud() -> void:
 	_hud = HUDScript.new()
 	_hud.name = "HUD"
-	_hud.menu_requested.connect(_open_character_menu)
 	var ui_layer := get_node_or_null("UI_Canvas") as CanvasLayer
 	if ui_layer != null:
 		ui_layer.add_child(_hud)
@@ -1767,16 +1755,7 @@ func _setup_mission_ui() -> void:
 	_mission_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_mission_info_label)
 
-	var bottom: HBoxContainer = get_node_or_null("UI_Canvas/BottomBar") as HBoxContainer
-	if is_instance_valid(bottom):
-		_mission_btn = Button.new()
-		_mission_btn.name = "AcceptMission"
-		_mission_btn.custom_minimum_size = Vector2(170, 45)
-		_mission_btn.text = "◆ ACCEPT JOB"
-		_mission_btn.disabled = true
-		_mission_btn.pressed.connect(_on_accept_mission_pressed)
-		bottom.add_child(_mission_btn)
-		bottom.move_child(_mission_btn, 0)
+
 
 
 func _setup_npc_ui() -> void:
@@ -1791,16 +1770,7 @@ func _setup_npc_ui() -> void:
 	_npc_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_npc_info_label)
 
-	var bottom: HBoxContainer = get_node_or_null("UI_Canvas/BottomBar") as HBoxContainer
-	if is_instance_valid(bottom):
-		_recruit_btn = Button.new()
-		_recruit_btn.name = "RecruitNpc"
-		_recruit_btn.custom_minimum_size = Vector2(160, 45)
-		_recruit_btn.text = "★ RECRUIT"
-		_recruit_btn.disabled = true
-		_recruit_btn.pressed.connect(_on_recruit_pressed)
-		bottom.add_child(_recruit_btn)
-		bottom.move_child(_recruit_btn, 0)
+
 
 
 func _ensure_world_npcs() -> void:
@@ -1863,29 +1833,80 @@ func _update_npc_ui() -> void:
 		check = _npc_manager.call("can_recruit", str(npc.get("id", "")), char_data) as Dictionary
 
 	_npc_info_label.text = (
-		"[color=#ffe082][b]★ %s[/b][/color] — %s (%s)\n[i]%s[/i]" % [
+		"[color=#ffe082][b]★ %s[/b][/color] — %s (%s)\n[i]%s[/i]\n[color=#90caf9][Press E to talk][/color]" % [
 			npc.get("name", "?"), npc.get("role", "?"), npc.get("faction", "?"),
 			npc.get("personality_summary", ""),
 		]
 	)
-	if is_instance_valid(_recruit_btn):
-		_recruit_btn.disabled = not bool(check.get("ok", false))
-		_recruit_btn.text = "★ RECRUIT" if bool(check.get("ok", false)) else "★ LOCKED"
 	_update_mission_offer_button(npc)
 
 
-func _on_recruit_pressed() -> void:
+func _open_npc_dialogue() -> void:
+	if has_node("OverworldNpcDialogue"):
+		return
 	var npc: Dictionary = _get_npc_at_hex()
-	if npc.is_empty() or not is_instance_valid(_npc_manager):
+	if npc.is_empty():
 		return
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
-	if is_instance_valid(_npc_manager) and _npc_manager.has_method("recruit_npc"):
-		if _npc_manager.call("recruit_npc", str(npc.get("id", "")), gs.get_character_data()):
-			if is_instance_valid(gs):
-				gs.sync_party_companions()
-			_build_local_view()
-			_update_npc_ui()
-			_update_char_info(gs.get_party_character_data())
+	var char_data: Dictionary = gs.get_character_data() if is_instance_valid(gs) else {}
+	var can_recruit: bool = false
+	if is_instance_valid(_npc_manager) and _npc_manager.has_method("can_recruit"):
+		var check: Dictionary = _npc_manager.call("can_recruit", str(npc.get("id", "")), char_data) as Dictionary
+		can_recruit = bool(check.get("ok", false))
+
+	var panel := PanelContainer.new()
+	panel.name = "OverworldNpcDialogue"
+	panel.offset_left = 60
+	panel.offset_right = -60
+	panel.offset_top = -200
+	panel.offset_bottom = -40
+	panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	var ui_canvas := get_node_or_null("UI_Canvas") as CanvasLayer
+	(ui_canvas if ui_canvas else self).add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 8)
+	panel.add_child(vbox)
+
+	var name_label := Label.new()
+	name_label.text = "%s (%s)" % [npc.get("name", "?"), npc.get("role", "?")]
+	name_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
+	name_label.add_theme_font_size_override("font_size", 16)
+	vbox.add_child(name_label)
+
+	var desc_label := Label.new()
+	desc_label.text = str(npc.get("personality_summary", "A traveler in the wastes."))
+	desc_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(desc_label)
+
+	if can_recruit:
+		var invite_btn := Button.new()
+		invite_btn.text = "Invite to Party"
+		invite_btn.custom_minimum_size = Vector2(200, 36)
+		var npc_id := str(npc.get("id", ""))
+		invite_btn.pressed.connect(func():
+			if is_instance_valid(_npc_manager) and _npc_manager.has_method("recruit_npc"):
+				if _npc_manager.call("recruit_npc", npc_id, char_data):
+					if is_instance_valid(gs):
+						gs.sync_party_companions()
+					_build_local_view()
+					_update_npc_ui()
+					_update_char_info(gs.get_party_character_data())
+			panel.queue_free()
+		)
+		vbox.add_child(invite_btn)
+
+	var close_btn := Button.new()
+	close_btn.text = "Goodbye"
+	close_btn.custom_minimum_size = Vector2(200, 36)
+	close_btn.pressed.connect(panel.queue_free)
+	vbox.add_child(close_btn)
+
+
+func _on_recruit_pressed() -> void:
+	if is_instance_valid(_recruit_btn):
+		_open_npc_dialogue()
 
 
 # v0.9.1c: Helper called whenever the mob/rift/NPC set changes.
@@ -2118,19 +2139,6 @@ func _on_equipment_changed(npc_id: String, slot: String) -> void:
 	if is_instance_valid(em):
 		var equip: Dictionary = em.get_equipment("player")
 		_player_visual.call("update_equipment", equip)
-
-
-func _on_save_pressed() -> void:
-	var gs: GameState = get_node_or_null("/root/GameState") as GameState
-	if not is_instance_valid(gs) or not _save_btn:
-		return
-	var success: bool = gs.save_game(0)
-	_save_btn.text = "SAVED!" if success else "FAILED"
-	_save_btn.disabled = true
-	await get_tree().create_timer(1.5).timeout
-	if _save_btn:
-		_save_btn.text = "SAVE"
-		_save_btn.disabled = false
 
 
 func _toggle_pause_menu() -> void:

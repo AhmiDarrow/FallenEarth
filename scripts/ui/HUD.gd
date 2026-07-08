@@ -5,7 +5,10 @@
 ##   - HP / MP / XP bars (below top bar)
 ##   - Minimap (top-right)
 ##   - Hotbar (bottom)
-##   - "Menu" button (opens inventory, etc.)
+##
+## The character menu is opened via keyboard hotkeys (I/E/C/P/S/J).
+## Menu and Save are accessed from the pause menu (Escape).
+## World map has a dedicated hotkey (M).
 ##
 ## Listens to InventoryManager (inventory_changed), ProgressionManager
 ## (xp_changed, level_up, ec_changed), and HubWorld (cell_changed for
@@ -17,7 +20,6 @@ const TOP_BAR_H := 56.0
 const BAR_H := 12.0
 const HOTBAR_H := 80.0
 
-signal menu_requested  # emitted when the user clicks "≡ Menu"
 signal character_menu_closed
 
 var _name_label: Label
@@ -27,7 +29,6 @@ var _ec_label: Label
 var _hp_bar: ProgressBar
 var _mp_bar: ProgressBar
 var _xp_bar: ProgressBar
-var _menu_button: Button
 var _minimap: Minimap
 var _hotbar: Hotbar
 var _character_menu: Control = null
@@ -46,7 +47,6 @@ func _ready() -> void:
 	_build_resource_bars()
 	_build_minimap()
 	_build_hotbar()
-	_build_menu_button()
 	# Connect to parent resized so we resize when the viewport changes
 	var parent := get_parent()
 	if parent is Control:
@@ -226,17 +226,7 @@ func _build_hotbar() -> void:
 	add_child(_hotbar)
 
 
-func _build_menu_button() -> void:
-	_menu_button = Button.new()
-	_menu_button.name = "MenuButton"
-	_menu_button.text = "≡ Menu"
-	_menu_button.anchor_left = 1.0
-	_menu_button.anchor_top = 0.0
-	_menu_button.offset_left = -80
-	_menu_button.offset_top = 8
-	_menu_button.custom_minimum_size = Vector2(64, 40)
-	_menu_button.pressed.connect(_on_menu_pressed)
-	add_child(_menu_button)
+
 
 
 # ---------------------------------------------------------------------------
@@ -315,15 +305,9 @@ func _on_inventory_changed() -> void:
 		_hotbar.refresh()
 
 
-func _on_menu_pressed() -> void:
-	emit_signal("menu_requested")
-	open_character_menu()
-
-
-## Open the CharacterMenu (tabbed shell). Called by HubWorld when the
-## "≡ Menu" button is clicked or when a character-screen hotkey fires
-## (I/E/C/P/S). Idempotent: a second open of the same tab closes
-## the menu.
+## Open the CharacterMenu (tabbed shell). Called by HubWorld when a
+## character-screen hotkey fires (I/E/C/P/S/J). Idempotent: a second
+## open of the same tab closes the menu.
 ##
 ## Mirrors the `PauseMenu` pattern: the menu is loaded from its
 ## dedicated scene (`scenes/ui/CharacterMenu.tscn`) and added to a
