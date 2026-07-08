@@ -55,10 +55,11 @@ static func _build() -> Theme:
 	t.set_constant("ProgressBar", "outline_size", 1)
 
 	# ---- Styles ----
-	# Panel / PanelContainer
-	var panel_style := SB.panel()
-	t.set_stylebox("Panel", "panel", panel_style)
-	t.set_stylebox("PanelContainer", "panel", panel_style)
+	# Panel / PanelContainer — transparent default; panels override explicitly
+	var panel_transparent := StyleBoxFlat.new()
+	panel_transparent.bg_color = Color.TRANSPARENT
+	t.set_stylebox("Panel", "panel", panel_transparent)
+	t.set_stylebox("PanelContainer", "panel", panel_transparent)
 
 	# Button default
 	var btn_normal := SB.button("primary", "normal")

@@ -71,12 +71,12 @@ static func apply_modal_bg(rect: ColorRect) -> void:
 	var parent := rect.get_parent()
 	if parent == null:
 		return
-	# Add tiled texture overlay behind the ColorRect
-	var tr := add_texture_overlay(parent, "bg_modal", Color(0.5, 0.5, 0.55, 0.6))
+	# Add tiled texture overlay behind the ColorRect — very subtle
+	var tr := add_texture_overlay(parent, "bg_modal", Color(0.5, 0.5, 0.55, 0.15))
 	if tr != null:
 		parent.move_child(tr, rect.get_index())
-		# Reduce ColorRect opacity so texture is visible beneath it
-		rect.color.a = min(rect.color.a, 0.35)
+		# Keep ColorRect mostly opaque so the dark overlay dominates
+		rect.color.a = min(rect.color.a, 0.55)
 
 
 ## Apply HUD bar texture. If `rect` is a TextureRect, sets its texture directly.

@@ -48,7 +48,7 @@ custom_minimum_size = Vector2(400, 50)
 layout_mode = 2
 size_flags_horizontal = 4
 bbcode_enabled = true
-text = "[center][b]FALLEN EARTH[/b][br]Create Your Character[/br][/center]"
+text = "[center][b]FALLEN EARTH[/b][br]Create Your Character[/center]"
 autowrap_mode = 4
 
 [node name="BackRow" type="HBoxContainer" parent="MainVBox"]
