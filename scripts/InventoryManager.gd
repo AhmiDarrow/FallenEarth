@@ -76,6 +76,10 @@ func _make_item_type(item_id: String, meta: Dictionary) -> void:
     t.max_stack_count = meta.get("max_stack", 1)
     t.description = meta.get("description", "")
     t.slot_flags = ItemType.SlotFlags.SMALL
+    # Load item icon from sprites
+    var icon_path := "res://assets/sprites/items/%s.png" % item_id
+    if ResourceLoader.exists(icon_path):
+        t.texture = load(icon_path) as Texture2D
     # Store the item_id as metadata (reversible)
     t.set_meta("item_id", item_id)
     _item_type_map[item_id] = t
