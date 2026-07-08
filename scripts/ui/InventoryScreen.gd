@@ -25,18 +25,18 @@ func _ready() -> void:
 	add_child(bg)
 	UIBackgrounds.apply_modal_bg(bg)
 
-	# Main window panel — 900x620, centered
+	# Main window panel — 800x560, centered
 	var panel := PanelContainer.new()
 	panel.name = "WindowPanel"
-	panel.custom_minimum_size = Vector2(900, 620)
+	panel.custom_minimum_size = Vector2(800, 560)
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -450
-	panel.offset_top = -310
-	panel.offset_right = 450
-	panel.offset_bottom = 310
+	panel.offset_left = -400
+	panel.offset_top = -280
+	panel.offset_right = 400
+	panel.offset_bottom = 280
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()
@@ -109,7 +109,7 @@ func _make_top_bar() -> Control:
 
 func _make_equipment_panel() -> Control:
 	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(160, 0)
+	panel.custom_minimum_size = Vector2(140, 0)
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var title := Label.new()
@@ -160,7 +160,7 @@ func _make_weight_label() -> Label:
 
 func _make_stats_panel() -> Control:
 	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(160, 0)
+	panel.custom_minimum_size = Vector2(140, 0)
 	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var title := Label.new()

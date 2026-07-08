@@ -18,9 +18,9 @@ extends Control
 
 const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 
-const TOP_BAR_H := 56.0
-const BAR_H := 18.0
-const BAR_W := 260.0
+const TOP_BAR_H := 48.0
+const BAR_H := 16.0
+const BAR_W := 220.0
 const HOTBAR_H := 80.0
 
 signal character_menu_closed
@@ -123,26 +123,26 @@ func _build_top_bar() -> void:
 	_class_label.offset_top = 30
 	add_child(_class_label)
 
-	# Level (left-center, adjusted for region text space)
+	# Level (right of name in top bar)
 	_level_label = Label.new()
 	_level_label.text = "Lv. 1"
 	_level_label.add_theme_color_override("font_color", Color(1, 0.95, 0.6))
-	_level_label.add_theme_font_size_override("font_size", 16)
+	_level_label.add_theme_font_size_override("font_size", 14)
 	_level_label.anchor_left = 0.0
 	_level_label.anchor_top = 0.0
-	_level_label.offset_left = 280
-	_level_label.offset_top = 16
+	_level_label.offset_left = 180
+	_level_label.offset_top = 8
 	add_child(_level_label)
 
-	# EC (right of level)
+	# EC (right of level in top bar)
 	_ec_label = Label.new()
 	_ec_label.text = "0 EC"
 	_ec_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
-	_ec_label.add_theme_font_size_override("font_size", 16)
+	_ec_label.add_theme_font_size_override("font_size", 14)
 	_ec_label.anchor_left = 0.0
 	_ec_label.anchor_top = 0.0
-	_ec_label.offset_left = 380
-	_ec_label.offset_top = 16
+	_ec_label.offset_left = 260
+	_ec_label.offset_top = 8
 	add_child(_ec_label)
 
 
@@ -154,9 +154,9 @@ func _build_resource_bars() -> void:
 	bar_group.anchor_right = 0.0
 	bar_group.anchor_bottom = 0.0
 	bar_group.offset_left = 12
-	bar_group.offset_top = TOP_BAR_H + 6
-	bar_group.offset_right = 12 + BAR_W + 40
-	bar_group.offset_bottom = TOP_BAR_H + 6 + BAR_H * 3 + 20
+	bar_group.offset_top = TOP_BAR_H + 4
+	bar_group.offset_right = 12 + BAR_W + 20
+	bar_group.offset_bottom = TOP_BAR_H + 4 + BAR_H * 3 + 16
 	bar_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var bg_style := StyleBoxFlat.new()
 	bg_style.bg_color = Color(0.04, 0.04, 0.06, 0.75)
@@ -174,19 +174,19 @@ func _build_resource_bars() -> void:
 	_region_info_label.anchor_left = 0.0
 	_region_info_label.anchor_top = 0.0
 	_region_info_label.offset_left = 16
-	_region_info_label.offset_top = TOP_BAR_H + 10
-	_region_info_label.add_theme_font_size_override("font_size", 11)
+	_region_info_label.offset_top = TOP_BAR_H + 6
+	_region_info_label.add_theme_font_size_override("font_size", 10)
 	_region_info_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
 	add_child(_region_info_label)
 
 	var bar_x := 20
-	var bar_y: float = TOP_BAR_H + 30
+	var bar_y: float = TOP_BAR_H + 22
 
 	# HP
 	var hp_label := Label.new()
 	hp_label.text = "HP"
 	hp_label.add_theme_color_override("font_color", Color(0.95, 0.4, 0.4))
-	hp_label.add_theme_font_size_override("font_size", 11)
+	hp_label.add_theme_font_size_override("font_size", 10)
 	hp_label.anchor_left = 0.0
 	hp_label.anchor_top = 0.0
 	hp_label.offset_left = bar_x
@@ -200,7 +200,7 @@ func _build_resource_bars() -> void:
 	var mp_label := Label.new()
 	mp_label.text = "MP"
 	mp_label.add_theme_color_override("font_color", Color(0.5, 0.65, 0.95))
-	mp_label.add_theme_font_size_override("font_size", 11)
+	mp_label.add_theme_font_size_override("font_size", 10)
 	mp_label.anchor_left = 0.0
 	mp_label.anchor_top = 0.0
 	mp_label.offset_left = bar_x
@@ -214,7 +214,7 @@ func _build_resource_bars() -> void:
 	var xp_label := Label.new()
 	xp_label.text = "XP"
 	xp_label.add_theme_color_override("font_color", Color(0.6, 0.95, 0.5))
-	xp_label.add_theme_font_size_override("font_size", 11)
+	xp_label.add_theme_font_size_override("font_size", 10)
 	xp_label.anchor_left = 0.0
 	xp_label.anchor_top = 0.0
 	xp_label.offset_left = bar_x

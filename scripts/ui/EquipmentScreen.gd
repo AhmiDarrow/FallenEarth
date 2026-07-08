@@ -52,7 +52,7 @@ func _build_ui() -> void:
 	add_child(hbox)
 	# Left: equipment grid
 	var left_panel := PanelContainer.new()
-	left_panel.custom_minimum_size = Vector2(360, 0)
+	left_panel.custom_minimum_size = Vector2(300, 0)
 	left_panel.add_theme_stylebox_override("panel", SB.panel(UI.BG_SURFACE, UI.BORDER_SUBTLE, UI.RADIUS_MD))
 	hbox.add_child(left_panel)
 	var left_vbox := VBoxContainer.new()
@@ -70,7 +70,7 @@ func _build_ui() -> void:
 	for slot in EQUIP_SLOTS:
 		var slot_box := PanelContainer.new()
 		slot_box.name = "Slot_%s" % slot
-		slot_box.custom_minimum_size = Vector2(110, 96)
+		slot_box.custom_minimum_size = Vector2(90, 80)
 		slot_box.add_theme_stylebox_override("panel", SB.panel(UI.BG_ELEVATED, UI.BORDER_SUBTLE, UI.RADIUS_SM))
 		grid.add_child(slot_box)
 		_slot_panels[slot] = slot_box
@@ -130,11 +130,11 @@ func _refresh_slots() -> void:
 			item_label.add_theme_color_override("font_color", UI.TEXT_PRIMARY)
 			item_label.add_theme_font_size_override("font_size", UI.FS_TINY)
 			item_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			item_label.custom_minimum_size = Vector2(96, 32)
+			item_label.custom_minimum_size = Vector2(80, 24)
 			slot_vbox.add_child(item_label)
 			var unequip_btn := Button.new()
 			unequip_btn.text = "Unequip"
-			unequip_btn.custom_minimum_size = Vector2(96, 24)
+			unequip_btn.custom_minimum_size = Vector2(80, 22)
 			unequip_btn.pressed.connect(_on_unequip_pressed.bind(slot))
 			slot_vbox.add_child(unequip_btn)
 			ButtonStyleHelper.apply_danger(unequip_btn)

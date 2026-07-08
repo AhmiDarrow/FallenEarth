@@ -14,6 +14,7 @@ class_name StatsScreen
 extends Control
 
 const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
+const UI = preload("res://assets/ui/UI_Colors.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 const PARTY_PATH := "/root/PartyNPCManager"
@@ -39,14 +40,14 @@ func _build_ui() -> void:
 	add_child(hbox)
 	# Left: member list
 	var left_panel := PanelContainer.new()
-	left_panel.custom_minimum_size = Vector2(240, 0)
+	left_panel.custom_minimum_size = Vector2(200, 0)
 	hbox.add_child(left_panel)
 	var left_vbox := VBoxContainer.new()
 	left_panel.add_child(left_vbox)
 	var title := Label.new()
 	title.text = "[ Stats — Select Member ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", UI.TEXT_ACCENT)
+	title.add_theme_font_size_override("font_size", UI.FS_H2)
 	left_vbox.add_child(title)
 	_list_vbox = VBoxContainer.new()
 	_list_vbox.add_theme_constant_override("separation", 4)
@@ -59,10 +60,10 @@ func _build_ui() -> void:
 	right_panel.add_child(right_vbox)
 	_stats_label = Label.new()
 	_stats_label.text = ""
-	_stats_label.add_theme_color_override("font_color", Color.WHITE)
+	_stats_label.add_theme_color_override("font_color", UI.TEXT_PRIMARY)
 	_stats_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	_stats_label.add_theme_constant_override("outline_size", 2)
-	_stats_label.add_theme_font_size_override("font_size", 16)
+	_stats_label.add_theme_font_size_override("font_size", UI.FS_STAT)
 	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right_vbox.add_child(_stats_label)
 

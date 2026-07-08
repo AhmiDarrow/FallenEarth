@@ -7,7 +7,7 @@ extends Control
 
 const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
-const CELL_SIZE := 40
+const CELL_SIZE := 48
 
 signal closed
 
@@ -31,15 +31,15 @@ func _ready() -> void:
 	UIBackgrounds.apply_modal_bg(bg)
 
 	var panel := PanelContainer.new()
-	panel.custom_minimum_size = Vector2(700, 460)
+	panel.custom_minimum_size = Vector2(740, 480)
 	panel.anchor_left = 0.5
 	panel.anchor_top = 0.5
 	panel.anchor_right = 0.5
 	panel.anchor_bottom = 0.5
-	panel.offset_left = -350
-	panel.offset_top = -230
-	panel.offset_right = 350
-	panel.offset_bottom = 230
+	panel.offset_left = -370
+	panel.offset_top = -240
+	panel.offset_right = 370
+	panel.offset_bottom = 240
 	add_child(panel)
 
 	var vbox := VBoxContainer.new()

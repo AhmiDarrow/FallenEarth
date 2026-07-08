@@ -27,42 +27,10 @@ const DEFAULT_STOCK := [
 
 
 func _ready() -> void:
-	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
-	# to avoid Godot's "size overridden after _ready" warning — see
-	# BaseShopUI for the full explanation.
 	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# Sync our size to the parent BEFORE building children — otherwise
-	# `_build_ui()` reads `size = (0, 0)` and places the status label
-	# and close button off-screen.
-	_sync_size_to_parent()
 	_build_ui()
 	_refresh()
-	# Stay in lockstep with the parent if it ever resizes.
-	var parent := get_parent()
-	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
-		(parent as Control).resized.connect(_on_parent_resized)
-
-
-## Snap our `size` to the parent Control's rect. Required because we
-## are added as a child of a non-Container Control and the engine
-## doesn't auto-size us from anchors alone.
-func _sync_size_to_parent() -> void:
-	var parent := get_parent()
-	if parent is Control:
-		var p: Control = parent as Control
-		if p.size.x > 0 and p.size.y > 0:
-			size = p.size
-			position = Vector2.ZERO
-
-
-## Re-sync our size and re-layout when the parent Control is resized.
-func _on_parent_resized() -> void:
-	_sync_size_to_parent()
-	if has_node("StatusLabel"):
-		$StatusLabel.position = Vector2(20, size.y - 70)
-	if has_node("Close"):
-		$Close.position = Vector2(size.x - 100, size.y - 50)
 
 
 func _build_ui() -> void:
@@ -72,68 +40,89 @@ func _build_ui() -> void:
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	UIBackgrounds.apply_modal_bg(bg)
-	# Title
+
+	var root_vbox := VBoxContainer.new()
+	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_vbox.add_theme_constant_override("separation", 8)
+	add_child(root_vbox)
+
+	# Top bar: title + EC readout
+	var top_bar := HBoxContainer.new()
+	top_bar.custom_minimum_size = Vector2(0, 32)
+	root_vbox.add_child(top_bar)
 	var title := Label.new()
 	title.text = "[ Shop — Buy / Sell ]"
 	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 24)
-	title.position = Vector2(20, 12)
-	add_child(title)
-	# EC readout
+	title.add_theme_font_size_override("font_size", 22)
+	top_bar.add_child(title)
+	top_bar.add_spacer(true)
 	var ec_label := Label.new()
 	ec_label.name = "EcLabel"
 	ec_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	ec_label.add_theme_font_size_override("font_size", 14)
-	ec_label.position = Vector2(20, 50)
-	add_child(ec_label)
-	# Stock
+	top_bar.add_child(ec_label)
+
+	# Body: stock list | inventory list
+	var body := HBoxContainer.new()
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 12)
+	root_vbox.add_child(body)
+
+	# Stock column
+	var stock_vbox := VBoxContainer.new()
+	stock_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(stock_vbox)
 	var stock_label := Label.new()
 	stock_label.text = "For sale:"
 	stock_label.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
-	stock_label.add_theme_font_size_override("font_size", 16)
-	stock_label.position = Vector2(20, 90)
-	add_child(stock_label)
+	stock_label.add_theme_font_size_override("font_size", 14)
+	stock_vbox.add_child(stock_label)
 	var stock_scroll := ScrollContainer.new()
 	stock_scroll.name = "StockScroll"
-	stock_scroll.position = Vector2(20, 116)
-	stock_scroll.size = Vector2(360, 480)
+	stock_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	stock_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	stock_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(stock_scroll)
-	var stock_vbox := VBoxContainer.new()
-	stock_vbox.name = "StockList"
-	stock_scroll.add_child(stock_vbox)
-	# Inventory
+	stock_vbox.add_child(stock_scroll)
+	var stock_list := VBoxContainer.new()
+	stock_list.name = "StockList"
+	stock_scroll.add_child(stock_list)
+
+	# Inventory column
+	var inv_vbox := VBoxContainer.new()
+	inv_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_child(inv_vbox)
 	var inv_label := Label.new()
 	inv_label.text = "Your inventory (sell):"
 	inv_label.add_theme_color_override("font_color", Color(1, 0.85, 0.85))
-	inv_label.add_theme_font_size_override("font_size", 16)
-	inv_label.position = Vector2(400, 90)
-	add_child(inv_label)
+	inv_label.add_theme_font_size_override("font_size", 14)
+	inv_vbox.add_child(inv_label)
 	var inv_scroll := ScrollContainer.new()
 	inv_scroll.name = "InvScroll"
-	inv_scroll.position = Vector2(400, 116)
-	inv_scroll.size = Vector2(360, 480)
+	inv_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	inv_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	inv_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(inv_scroll)
-	var inv_vbox := VBoxContainer.new()
-	inv_vbox.name = "InvList"
-	inv_scroll.add_child(inv_vbox)
-	# Status / messages
+	inv_vbox.add_child(inv_scroll)
+	var inv_list := VBoxContainer.new()
+	inv_list.name = "InvList"
+	inv_scroll.add_child(inv_list)
+
+	# Bottom bar: status + close
+	var bottom := HBoxContainer.new()
+	bottom.custom_minimum_size = Vector2(0, 32)
+	root_vbox.add_child(bottom)
 	var status_label := Label.new()
 	status_label.name = "StatusLabel"
 	status_label.text = ""
 	status_label.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
-	status_label.add_theme_font_size_override("font_size", 14)
-	status_label.position = Vector2(20, size.y - 70)
-	status_label.size = Vector2(740, 30)
-	add_child(status_label)
-	# Close button
+	status_label.add_theme_font_size_override("font_size", 13)
+	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom.add_child(status_label)
 	var close := Button.new()
 	close.text = "Close"
-	close.position = Vector2(size.x - 100, size.y - 50)
-	close.custom_minimum_size = Vector2(80, 36)
+	close.custom_minimum_size = Vector2(80, 32)
 	close.pressed.connect(_on_close_pressed)
-	add_child(close)
+	bottom.add_child(close)
+	ButtonStyleHelper.apply_secondary(close)
 
 
 func _refresh() -> void:

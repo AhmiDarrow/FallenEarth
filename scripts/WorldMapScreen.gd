@@ -9,7 +9,7 @@ const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
 
-const HEX_SIZE := 22.0
+const HEX_SIZE := 30.0
 
 @onready var char_label: RichTextLabel = $CharInfoBar/CharLabel as RichTextLabel
 @onready var info_label: RichTextLabel = $InfoPanel/InfoLabel as RichTextLabel
@@ -97,7 +97,7 @@ func _build_world_view() -> void:
 		var r := int(parts[1])
 		var tile: Dictionary = _tile_map[key]
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(40, 36)
+		btn.custom_minimum_size = Vector2(50, 44)
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
@@ -114,7 +114,7 @@ func _build_world_view() -> void:
 			btn.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 
 		var pos := WorldGenerator.axial_to_pixel(q, r, HEX_SIZE)
-		btn.position = pos - Vector2(20, 18)
+		btn.position = pos - Vector2(25, 22)
 		btn.pressed.connect(_on_hex_pressed.bind(q, r))
 		world_grid.add_child(btn)
 		_hex_cells[key] = btn
