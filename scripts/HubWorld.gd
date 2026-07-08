@@ -36,7 +36,7 @@ const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile a
 @onready var tile_info_label: RichTextLabel = get_node_or_null("UI_Layer/TileInfoPanel/TileInfoLabel") as RichTextLabel
 @onready var rift_info_label: RichTextLabel = get_node_or_null("UI_Layer/TileInfoPanel/RiftInfoLabel") as RichTextLabel
 @onready var world_grid: Node2D = $World as Node2D
-@onready var camera: Camera2D = $Camera2D as Camera2D
+@onready var camera: Camera2D = $World/Camera2D as Camera2D
 
 var _world_gen: WorldGenerator = null
 var _tile_map: Dictionary = {}
@@ -229,6 +229,7 @@ func _ready() -> void:
 			_player_visual.call("update_equipment", equip)
 	_setup_hover_tooltip()
 	_setup_hud()
+	_setup_ui_scaling()
 	_game_time = Time.get_ticks_msec() / 1000.0
 	_build_local_view()
 	_update_tile_info()
@@ -2126,6 +2127,14 @@ func _tick_missions() -> void:
 	if is_instance_valid(_mission_manager) and _mission_manager.has_method("tick_expired"):
 		if int(_mission_manager.call("tick_expired", _game_time)) > 0:
 			_update_mission_ui()
+
+
+func _setup_ui_scaling() -> void:
+	# Force HUD to re-sync its size to the (now viewport-scaled) parent
+	if is_instance_valid(_hud):
+		_hud.set_anchors_preset(Control.PRESET_FULL_RECT)
+		_hud.size = Vector2.ZERO
+		_hud.call_deferred("_sync_size_to_parent")
 
 
 func _on_back_to_menu_pressed() -> void:

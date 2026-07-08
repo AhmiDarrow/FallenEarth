@@ -13,8 +13,8 @@ script = ExtResource("1_hb")
 
 [node name="World" type="Node2D" parent="."]
 
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(640, 360)
+[node name="Camera2D" type="Camera2D" parent="World"]
+position = Vector2(0, 0)
 zoom = Vector2(1, 1)
 current = true
 script = ExtResource("2_fc")
@@ -23,7 +23,7 @@ smoothing_speed = 8.0
 
 [node name="UI_Layer" type="CanvasLayer" parent="."]
 layer = 10
-follow_viewport_enabled = false
+follow_viewport_enabled = true
 
 [node name="BackgroundColor" type="ColorRect" parent="UI_Layer"]
 anchors_preset = 15
@@ -32,7 +32,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.03, 0.02, 0.04, 1)
+color = Color(0.03, 0.02, 0.04, 0)
 
 [node name="Vignette" type="ColorRect" parent="UI_Layer"]
 anchors_preset = 15

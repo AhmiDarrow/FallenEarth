@@ -71,12 +71,9 @@ func _sync_size_to_parent() -> void:
 			position = Vector2.ZERO
 
 
-## Re-sync our size and re-place any children whose position depends on `size`.
+## Re-sync our size when the parent resizes.
 func _on_parent_resized() -> void:
 	_sync_size_to_parent()
-	# Re-place the menu button if it's at an absolute position
-	if is_instance_valid(_menu_button):
-		_menu_button.position = Vector2(size.x - 80, 8)
 
 
 func _notification(what: int) -> void:
@@ -89,11 +86,14 @@ func _notification(what: int) -> void:
 # ---------------------------------------------------------------------------
 
 func _build_top_bar() -> void:
-	# Top bar background
+	# Top bar background — anchored to fill top portion
 	var bg := ColorRect.new()
 	bg.color = Color(0.05, 0.05, 0.07, 0.75)
+	bg.anchor_left = 0.0
+	bg.anchor_top = 0.0
 	bg.anchor_right = 1.0
-	bg.custom_minimum_size = Vector2(0, TOP_BAR_H)
+	bg.anchor_bottom = 0.0
+	bg.offset_bottom = TOP_BAR_H
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -102,7 +102,10 @@ func _build_top_bar() -> void:
 	_name_label.text = _display_name
 	_name_label.add_theme_color_override("font_color", Color.WHITE)
 	_name_label.add_theme_font_size_override("font_size", 18)
-	_name_label.position = Vector2(16, 8)
+	_name_label.anchor_left = 0.0
+	_name_label.anchor_top = 0.0
+	_name_label.offset_left = 16
+	_name_label.offset_top = 8
 	add_child(_name_label)
 
 	# Race / Class (under name)
@@ -110,7 +113,10 @@ func _build_top_bar() -> void:
 	_class_label.text = "%s · %s" % [_display_race, _display_class]
 	_class_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 	_class_label.add_theme_font_size_override("font_size", 12)
-	_class_label.position = Vector2(16, 30)
+	_class_label.anchor_left = 0.0
+	_class_label.anchor_top = 0.0
+	_class_label.offset_left = 16
+	_class_label.offset_top = 30
 	add_child(_class_label)
 
 	# Level (left-center)
@@ -118,7 +124,10 @@ func _build_top_bar() -> void:
 	_level_label.text = "Lv. 1"
 	_level_label.add_theme_color_override("font_color", Color(1, 0.95, 0.6))
 	_level_label.add_theme_font_size_override("font_size", 16)
-	_level_label.position = Vector2(360, 16)
+	_level_label.anchor_left = 0.0
+	_level_label.anchor_top = 0.0
+	_level_label.offset_left = 360
+	_level_label.offset_top = 16
 	add_child(_level_label)
 
 	# EC (right of level)
@@ -126,46 +135,61 @@ func _build_top_bar() -> void:
 	_ec_label.text = "0 EC"
 	_ec_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	_ec_label.add_theme_font_size_override("font_size", 16)
-	_ec_label.position = Vector2(440, 16)
+	_ec_label.anchor_left = 0.0
+	_ec_label.anchor_top = 0.0
+	_ec_label.offset_left = 440
+	_ec_label.offset_top = 16
 	add_child(_ec_label)
 
 
 func _build_resource_bars() -> void:
-	var bar_x: float = 16
 	var bar_y: float = TOP_BAR_H + 8
-	var bar_w: float = 360
 	# HP
 	var hp_label := Label.new()
 	hp_label.text = "HP"
 	hp_label.add_theme_color_override("font_color", Color(0.95, 0.4, 0.4))
-	hp_label.position = Vector2(bar_x, bar_y - 2)
+	hp_label.anchor_left = 0.0
+	hp_label.anchor_top = 0.0
+	hp_label.offset_left = 16
+	hp_label.offset_top = bar_y - 2
 	add_child(hp_label)
-	_hp_bar = _make_bar(bar_x + 28, bar_y, bar_w - 28, Color(0.7, 0.2, 0.2))
+	_hp_bar = _make_bar(16 + 28, bar_y, 332.0, Color(0.7, 0.2, 0.2))
 	add_child(_hp_bar)
 	bar_y += BAR_H + 4
 	# MP
 	var mp_label := Label.new()
 	mp_label.text = "MP"
 	mp_label.add_theme_color_override("font_color", Color(0.5, 0.65, 0.95))
-	mp_label.position = Vector2(bar_x, bar_y - 2)
+	mp_label.anchor_left = 0.0
+	mp_label.anchor_top = 0.0
+	mp_label.offset_left = 16
+	mp_label.offset_top = bar_y - 2
 	add_child(mp_label)
-	_mp_bar = _make_bar(bar_x + 28, bar_y, bar_w - 28, Color(0.25, 0.4, 0.85))
+	_mp_bar = _make_bar(16 + 28, bar_y, 332.0, Color(0.25, 0.4, 0.85))
 	add_child(_mp_bar)
 	bar_y += BAR_H + 4
 	# XP
 	var xp_label := Label.new()
 	xp_label.text = "XP"
 	xp_label.add_theme_color_override("font_color", Color(0.6, 0.95, 0.5))
-	xp_label.position = Vector2(bar_x, bar_y - 2)
+	xp_label.anchor_left = 0.0
+	xp_label.anchor_top = 0.0
+	xp_label.offset_left = 16
+	xp_label.offset_top = bar_y - 2
 	add_child(xp_label)
-	_xp_bar = _make_bar(bar_x + 28, bar_y, bar_w - 28, Color(0.3, 0.65, 0.25))
+	_xp_bar = _make_bar(16 + 28, bar_y, 332.0, Color(0.3, 0.65, 0.25))
 	add_child(_xp_bar)
 
 
-func _make_bar(x: float, y: float, w: float, fill_color: Color) -> ProgressBar:
+func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_color: Color) -> ProgressBar:
 	var bar := ProgressBar.new()
-	bar.position = Vector2(x, y)
-	bar.custom_minimum_size = Vector2(w, BAR_H)
+	bar.anchor_left = 0.0
+	bar.anchor_top = 0.0
+	bar.offset_left = offset_left
+	bar.offset_top = offset_top
+	bar.anchor_right = 0.0
+	bar.offset_right = offset_left + bar_width
+	bar.custom_minimum_size = Vector2(100, BAR_H)
 	bar.max_value = 100
 	bar.value = 100
 	bar.show_percentage = false
@@ -199,7 +223,10 @@ func _build_menu_button() -> void:
 	_menu_button = Button.new()
 	_menu_button.name = "MenuButton"
 	_menu_button.text = "≡ Menu"
-	_menu_button.position = Vector2(size.x - 80, 8)
+	_menu_button.anchor_left = 1.0
+	_menu_button.anchor_top = 0.0
+	_menu_button.offset_left = -80
+	_menu_button.offset_top = 8
 	_menu_button.custom_minimum_size = Vector2(64, 40)
 	_menu_button.pressed.connect(_on_menu_pressed)
 	add_child(_menu_button)
