@@ -11,9 +11,9 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_hb")
 
-[node name="WorldGrid" type="Node2D" parent="."]
+[node name="World" type="Node2D" parent="."]
 
-[node name="Camera2D" type="Camera2D" parent="WorldGrid"]
+[node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(640, 360)
 zoom = Vector2(1, 1)
 current = true

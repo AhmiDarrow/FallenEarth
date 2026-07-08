@@ -1,6 +1,6 @@
 ## OverworldMobManager — Owns all active overworld mobs.
 ## Replaces HubWorld's _overworld_mobs dict + _tick_overworld_mobs + _start_mob_move.
-## Child of world_grid. Each managed mob = { data: MobData, node: MobInstance, ai: MobAIController }.
+## Child of the World node. Each managed mob = { data: MobData, node: MobInstance, ai: MobAIController }.
 class_name OverworldMobManager
 extends Node2D
 

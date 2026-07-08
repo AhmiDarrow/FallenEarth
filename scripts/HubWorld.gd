@@ -35,8 +35,8 @@ const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile a
 @onready var char_label: RichTextLabel = $CharInfoBar/CharLabel as RichTextLabel
 @onready var tile_info_label: RichTextLabel = $TileInfoPanel/TileInfoLabel as RichTextLabel
 @onready var rift_info_label: RichTextLabel = $TileInfoPanel/RiftInfoLabel as RichTextLabel
-@onready var world_grid: Node2D = $WorldGrid as Node2D
-@onready var camera: Camera2D = $WorldGrid/Camera2D as Camera2D
+@onready var world_grid: Node2D = $World as Node2D
+@onready var camera: Camera2D = $Camera2D as Camera2D
 
 var _world_gen: WorldGenerator = null
 var _tile_map: Dictionary = {}
@@ -730,9 +730,9 @@ func _spawn_base_node(hex_key: String, lx: int, ly: int) -> void:
 	var snap: Dictionary = bm.get_snapshot() if bm != null else {}
 	_base_node.setup({"placement": snap.get("placement", {}), "level": int(snap.get("level", 1))})
 	_base_node.position = Vector2(lx * 24 + 12, ly * 24 + 12)
-	if has_node("WorldGrid"):
+	if has_node("World"):
 		# Place on the world_grid so it renders with the world
-		var wg: Node = get_node("WorldGrid")
+		var wg: Node = get_node("World")
 		wg.add_child(_base_node)
 	# Add to map_view's settlement layer for hit-test parity
 	if is_instance_valid(_map_view) and _map_view.has_method("get_settlement_layer"):
