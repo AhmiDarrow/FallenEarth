@@ -27,10 +27,10 @@ func _load_texture() -> void:
 	_texture = null
 	if _mob_id.is_empty():
 		return
-	# Convert underscores in mob_id to hyphens for the PNG filename
-	var path := "%s%s.png" % [SPRITE_DIR, _mob_id.replace("_", "-")]
+	# Normalize any hyphens in mob_id to underscores to match filenames
+	var path := "%s%s.png" % [SPRITE_DIR, _mob_id.replace("-", "_")]
 	if not ResourceLoader.exists(path):
-		push_warning("[MobVisual] No sprite for '%s' (looked in %s)" % [_mob_id, path])
+		push_warning("[MobVisual] No sprite for \'%s\' (looked in %s)" % [_mob_id, path])
 		return
 	var tex: Texture2D = load(path) as Texture2D
 	if tex == null:
@@ -46,6 +46,7 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	if _texture != null:
 		var offset := Vector2(-_texture.get_width() * 0.5, -_texture.get_height() * 0.5)
+		# Match player sprite size (draw at default size 128x128, same as player's visual node)
 		draw_texture(_texture, offset)
 	else:
 		# Fallback marker only when the sprite is genuinely missing.
