@@ -45,6 +45,14 @@ AmbientAudio="*res://scripts/AmbientAudio.gd"
 MusicManager="*res://scripts/MusicManager.gd"
 KeybindManager="*res://scripts/KeybindManager.gd"
 
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/wyvernbox/editor/plugin.cfg")
+
+[gui]
+
+common/drop_mouse_on_gui_input_disabled=true
+
 [display]
 
 window/size/viewport_width=1280

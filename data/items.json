@@ -1,195 +1,24 @@
 {
-  "_comment": "Canonical item registry. Every item referenced by resource_nodes, recipes, loot tables, mob drops, and shop inventories lives here. Items are referenced by id from all other data files. Phase 1 seeds the basic materials; later phases will add consumables, components, ammo, and equipment.",
+  "_comment": "Canonical item registry. Every item referenced by resource_nodes, recipes, loot tables, mob drops, and shop inventories lives here. Items are referenced by id from all other data files.",
   "items": [
-    {
-      "id": "stick",
-      "name": "Stick",
-      "category": "material",
-      "stackable": true,
-      "max_stack": 50,
-      "sell_value_ec": 1,
-      "icon": "item_stick",
-      "description": "A small stick. Floor pickup, found everywhere. Combine with stones to make a Stone Axe or Stone Pickaxe."
-    },
-    {
-      "id": "stone",
-      "name": "Stone",
-      "category": "material",
-      "stackable": true,
-      "max_stack": 50,
-      "sell_value_ec": 1,
-      "icon": "item_stone",
-      "description": "A loose stone. Floor pickup, found everywhere. Combine with a stick to make a Stone Axe or Stone Pickaxe."
-    },
-    {
-      "id": "withered_branch",
-      "name": "Withered Branch",
-      "category": "material",
-      "stackable": true,
-      "max_stack": 50,
-      "sell_value_ec": 2,
-      "icon": "item_branch",
-      "description": "A dry, twisted branch. Chopped from trees in any biome. Basic crafting ingredient."
-    },
-    {
-      "id": "raw_meat",
-      "name": "Raw Meat",
-      "category": "raw_material",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 3,
-      "icon": "item_raw_meat",
-      "description": "Uncooked flesh from a beast. Dropped by predatory mobs. Cook at a Cooking Table to make Cooked Meat."
-    },
-    {
-      "id": "kelp_fibre",
-      "name": "Kelp Fibre",
-      "category": "material",
-      "stackable": true,
-      "max_stack": 50,
-      "sell_value_ec": 2,
-      "icon": "item_fibre",
-      "description": "Slimy fibrous strands from Neon Bogs kelp. Used in crafting bandages and rope items."
-    },
-    {
-      "id": "ironwood_bark",
-      "name": "Ironwood Bark",
-      "category": "material",
-      "stackable": true,
-      "max_stack": 30,
-      "sell_value_ec": 5,
-      "icon": "item_bark",
-      "description": "Bark stripped from an ironwood tree. Metallic and dense. Component for reinforced tools."
-    },
-    {
-      "id": "living_metal_sample",
-      "name": "Living Metal Sample",
-      "category": "material",
-      "stackable": true,
-      "max_stack": 10,
-      "sell_value_ec": 25,
-      "icon": "item_metal",
-      "description": "A chunk of living metal harvested from Ironwood. Pulses faintly. Rare crafting component."
-    },
-    {
-      "id": "rusted_scrap",
-      "name": "Rusted Scrap",
-      "category": "scrap",
-      "stackable": true,
-      "max_stack": 99,
-      "sell_value_ec": 3,
-      "icon": "item_scrap",
-      "description": "Crumbling metal bits. Salvage material for weapon/armor recipes."
-    },
-    {
-      "id": "iron_ore",
-      "name": "Iron Ore",
-      "category": "ore",
-      "stackable": true,
-      "max_stack": 50,
-      "sell_value_ec": 5,
-      "icon": "item_iron_ore",
-      "description": "A chunk of iron-bearing stone. Mined from iron outcrops. Used in iron-tier crafting."
-    },
-    {
-      "id": "copper_ore",
-      "name": "Copper Ore",
-      "category": "ore",
-      "stackable": true,
-      "max_stack": 30,
-      "sell_value_ec": 15,
-      "icon": "item_copper_ore",
-      "description": "A greenish copper ore. Mined from copper outcrops. Used in copper-tier crafting."
-    },
-    {
-      "id": "starmetal_ore",
-      "name": "Starmetal Ore",
-      "category": "ore",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 60,
-      "icon": "item_starmetal_ore",
-      "description": "A glittering starmetal ore. Mined from starmetal outcrops. Used in starmetal-tier crafting."
-    },
-    {
-      "id": "teal_crystal",
-      "name": "Teal Crystal",
-      "category": "crystal",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 30,
-      "icon": "item_teal_crystal",
-      "description": "A pale teal crystal. Found in Neon Bogs geode nodes. Used in tech crafting."
-    },
-    {
-      "id": "void_shard",
-      "name": "Void Shard",
-      "category": "crystal",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 50,
-      "icon": "item_void_shard",
-      "description": "A jagged black shard that drinks the light. Found in Stormspire crystal nodes. Used in rift-related crafting."
-    },
-    {
-      "id": "ember_crystal",
-      "name": "Ember Crystal",
-      "category": "crystal",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 80,
-      "icon": "item_ember_crystal",
-      "description": "A warm crystal that radiates heat. Found in Toxin Marshes geode nodes. Used in starmetal-tier crafting."
-    },
-    {
-      "id": "bandage",
-      "name": "Bandage",
-      "category": "consumable",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 5,
-      "icon": "item_bandage",
-      "description": "Heals 30 HP on use. Craftable from withered_branch at L1."
-    },
-    {
-      "id": "mana_potion",
-      "name": "Mana Potion",
-      "category": "consumable",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 25,
-      "icon": "item_mana_potion",
-      "description": "Restores 25 MP on use. v0.6.0 consumable."
-    },
-    {
-      "id": "cooked_meat",
-      "name": "Cooked Meat",
-      "category": "consumable",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 8,
-      "icon": "item_cooked_meat",
-      "description": "Heals 15 HP and grants +1 attack for 3 turns on use. v0.6.0 consumable."
-    },
-    {
-      "id": "antidote",
-      "name": "Antidote",
-      "category": "consumable",
-      "stackable": true,
-      "max_stack": 20,
-      "sell_value_ec": 12,
-      "icon": "item_antidote",
-      "description": "Heals 10 HP on use. Will cure status effects when those land in v0.6.0+. v0.6.0 consumable."
-    },
-    {
-      "id": "cooking_table",
-      "name": "Cooking Table",
-      "category": "station",
-      "stackable": false,
-      "max_stack": 1,
-      "sell_value_ec": 50,
-      "icon": "item_cooking_table",
-      "description": "A portable cooking table. Place on the local map to cook raw_meat, brew mana potions, and mix antidotes. Recipe unlocked at L5."
-    }
+    {"id": "stick", "name": "Stick", "category": "material", "stackable": true, "max_stack": 50, "sell_value_ec": 1, "weight": 0.2, "icon": "item_stick", "description": "A small stick. Floor pickup, found everywhere. Combine with stones to make a Stone Axe or Stone Pickaxe."},
+    {"id": "stone", "name": "Stone", "category": "material", "stackable": true, "max_stack": 50, "sell_value_ec": 1, "weight": 0.3, "icon": "item_stone", "description": "A loose stone. Floor pickup, found everywhere. Combine with a stick to make a Stone Axe or Stone Pickaxe."},
+    {"id": "withered_branch", "name": "Withered Branch", "category": "material", "stackable": true, "max_stack": 50, "sell_value_ec": 2, "weight": 0.2, "icon": "item_branch", "description": "A dry, twisted branch. Chopped from trees in any biome. Basic crafting ingredient."},
+    {"id": "raw_meat", "name": "Raw Meat", "category": "raw_material", "stackable": true, "max_stack": 20, "sell_value_ec": 3, "weight": 0.1, "icon": "item_raw_meat", "description": "Uncooked flesh from a beast. Dropped by predatory mobs. Cook at a Cooking Table to make Cooked Meat."},
+    {"id": "kelp_fibre", "name": "Kelp Fibre", "category": "material", "stackable": true, "max_stack": 50, "sell_value_ec": 2, "weight": 0.05, "icon": "item_fibre", "description": "Slimy fibrous strands from Neon Bogs kelp. Used in crafting bandages and rope items."},
+    {"id": "ironwood_bark", "name": "Ironwood Bark", "category": "material", "stackable": true, "max_stack": 30, "sell_value_ec": 5, "weight": 0.3, "icon": "item_bark", "description": "Bark stripped from an ironwood tree. Metallic and dense. Component for reinforced tools."},
+    {"id": "living_metal_sample", "name": "Living Metal Sample", "category": "material", "stackable": true, "max_stack": 10, "sell_value_ec": 25, "weight": 0.5, "icon": "item_metal", "description": "A chunk of living metal harvested from Ironwood. Pulses faintly. Rare crafting component."},
+    {"id": "rusted_scrap", "name": "Rusted Scrap", "category": "scrap", "stackable": true, "max_stack": 99, "sell_value_ec": 3, "weight": 0.3, "icon": "item_scrap", "description": "Crumbling metal bits. Salvage material for weapon/armor recipes."},
+    {"id": "iron_ore", "name": "Iron Ore", "category": "ore", "stackable": true, "max_stack": 50, "sell_value_ec": 5, "weight": 0.5, "icon": "item_iron_ore", "description": "A chunk of iron-bearing stone. Mined from iron outcrops. Used in iron-tier crafting."},
+    {"id": "copper_ore", "name": "Copper Ore", "category": "ore", "stackable": true, "max_stack": 30, "sell_value_ec": 15, "weight": 0.5, "icon": "item_copper_ore", "description": "A greenish copper ore. Mined from copper outcrops. Used in copper-tier crafting."},
+    {"id": "starmetal_ore", "name": "Starmetal Ore", "category": "ore", "stackable": true, "max_stack": 20, "sell_value_ec": 60, "weight": 1.0, "icon": "item_starmetal_ore", "description": "A glittering starmetal ore. Mined from starmetal outcrops. Used in starmetal-tier crafting."},
+    {"id": "teal_crystal", "name": "Teal Crystal", "category": "crystal", "stackable": true, "max_stack": 20, "sell_value_ec": 30, "weight": 0.2, "icon": "item_teal_crystal", "description": "A pale teal crystal. Found in Neon Bogs geode nodes. Used in tech crafting."},
+    {"id": "void_shard", "name": "Void Shard", "category": "crystal", "stackable": true, "max_stack": 20, "sell_value_ec": 50, "weight": 0.2, "icon": "item_void_shard", "description": "A jagged black shard that drinks the light. Found in Stormspire crystal nodes. Used in rift-related crafting."},
+    {"id": "ember_crystal", "name": "Ember Crystal", "category": "crystal", "stackable": true, "max_stack": 20, "sell_value_ec": 80, "weight": 0.2, "icon": "item_ember_crystal", "description": "A warm crystal that radiates heat. Found in Toxin Marshes geode nodes. Used in starmetal-tier crafting."},
+    {"id": "bandage", "name": "Bandage", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 5, "weight": 0.1, "icon": "item_bandage", "description": "Heals 30 HP on use. Craftable from withered_branch at L1."},
+    {"id": "mana_potion", "name": "Mana Potion", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 25, "weight": 0.1, "icon": "item_mana_potion", "description": "Restores 25 MP on use."},
+    {"id": "cooked_meat", "name": "Cooked Meat", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 8, "weight": 0.1, "icon": "item_cooked_meat", "description": "Heals 15 HP and grants +1 attack for 3 turns on use."},
+    {"id": "antidote", "name": "Antidote", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 12, "weight": 0.1, "icon": "item_antidote", "description": "Heals 10 HP on use. Will cure status effects when those land in v0.6.0+."},
+    {"id": "cooking_table", "name": "Cooking Table", "category": "station", "stackable": false, "max_stack": 1, "sell_value_ec": 50, "weight": 5.0, "icon": "item_cooking_table", "description": "A portable cooking table. Place on the local map to cook raw_meat, brew mana potions, and mix antidotes. Recipe unlocked at L5."}
   ]
 }

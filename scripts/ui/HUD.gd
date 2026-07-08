@@ -311,9 +311,8 @@ func _on_ec_changed(current_ec: int) -> void:
 
 
 func _on_inventory_changed() -> void:
-	# Hotbar will re-read on its own; we just trigger a redraw of the
-	# top bar / minimap etc.
-	pass
+	if is_instance_valid(_hotbar) and _hotbar.has_method("refresh"):
+		_hotbar.refresh()
 
 
 func _on_menu_pressed() -> void:
