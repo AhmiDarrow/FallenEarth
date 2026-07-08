@@ -3,6 +3,7 @@
 
 class_name CharacterSelection extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 
 signal character_selected(race_key: String, class_key: String)
 signal character_created_and_ready(race_key: String, class_key: String, origin: String, character_id: String)
@@ -22,6 +23,15 @@ var _race_info_cache: Dictionary = {}
 
 
 func _ready() -> void:
+	# Background texture
+	var bg := $BackgroundColor as ColorRect
+	if bg != null:
+		UIBackgrounds.apply_modal_bg(bg)
+	# Style buttons
+	ButtonStyleHelper.apply_secondary($MainVBox/BackRow/BackButton)
+	ButtonStyleHelper.apply_primary($MainVBox/BottomBar/ConfirmButton)
+	ButtonStyleHelper.apply_ghost($MainVBox/BottomBar/ResetButton)
+	# Wire signals
 	$MainVBox/BackRow/BackButton.pressed.connect(_on_back_pressed)
 	$MainVBox/BottomBar/ConfirmButton.pressed.connect(_on_confirm_pressed)
 	$MainVBox/BottomBar/ResetButton.pressed.connect(reset_selection)

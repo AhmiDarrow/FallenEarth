@@ -28,6 +28,7 @@ var _cursor_r: int = 0
 var _preview_focused: bool = false
 var _selected_glow: Polygon2D = null
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const DEFAULT_SEED := "UNDEREARTH_001"
 const SIZE_RADII := {"small": 8, "medium": 15, "large": 23}
 
@@ -49,6 +50,18 @@ const SETTLEMENT_COLOR := Color(0.9, 0.9, 0.95)
 
 
 func _ready() -> void:
+	# Background texture
+	var bg_tex := get_node_or_null("Background") as TextureRect
+	if bg_tex == null:
+		var bg_col := get_node_or_null("BG") as ColorRect
+		if bg_col != null:
+			UIBackgrounds.apply_modal_bg(bg_col)
+	# Style buttons
+	ButtonStyleHelper.apply_secondary(back_btn)
+	ButtonStyleHelper.apply_primary(generate_btn)
+	ButtonStyleHelper.apply_primary(continue_btn)
+	ButtonStyleHelper.apply_ghost(random_btn)
+	# Wire signals
 	back_btn.pressed.connect(_on_back_pressed)
 	random_btn.pressed.connect(_on_random_seed_pressed)
 	generate_btn.pressed.connect(_on_generate_pressed)
