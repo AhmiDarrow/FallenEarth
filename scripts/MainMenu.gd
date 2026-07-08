@@ -1,6 +1,8 @@
 ## MainMenu — Main menu screen with functional navigation via GameManager autoload
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+
 @onready var new_game_btn: Button = $VBoxContainer/NewGameButton as Button
 @onready var load_game_btn: Button = $VBoxContainer/LoadGameButton as Button
 @onready var options_btn: Button = $VBoxContainer/OptionsButton as Button
@@ -11,6 +13,16 @@ var _load_popup: Window = null
 
 
 func _ready() -> void:
+	# Apply background texture behind the existing ColorRect
+	var bg := get_node_or_null("Background") as ColorRect
+	if bg != null:
+		UIBackgrounds.apply_modal_bg(bg)
+	# Style buttons with design system
+	ButtonStyleHelper.apply_primary(new_game_btn)
+	ButtonStyleHelper.apply_secondary(load_game_btn)
+	ButtonStyleHelper.apply_secondary(options_btn)
+	ButtonStyleHelper.apply_danger(exit_btn)
+	# Wire signals
 	new_game_btn.pressed.connect(_on_new_game)
 	load_game_btn.pressed.connect(_on_load_game)
 	options_btn.pressed.connect(_on_options)
