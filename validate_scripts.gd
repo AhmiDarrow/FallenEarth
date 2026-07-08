@@ -112,6 +112,12 @@ const SCRIPTS := [
 	"res://scripts/combat/ui/TopPromptV110.gd",
 	"res://scripts/combat/ui/ActionBarV110.gd",
 	"res://scripts/ResourceVisualManager.gd",
+	"res://assets/ui/UI_Colors.gd",
+	"res://assets/ui/UI_Theme.gd",
+	"res://scripts/StyleBoxHelper.gd",
+	"res://scripts/StyleBoxHelper.gd",
+	"res://scripts/ButtonStyleHelper.gd",
+	"res://scripts/UIBackgrounds.gd",
 ]
 
 func _initialize() -> void:

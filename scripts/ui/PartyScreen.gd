@@ -45,8 +45,7 @@ func _ready() -> void:
 func _build_ui() -> void:
 	# Layout: HBoxContainer splits the screen into list (left) and detail (right)
 	var hbox := HBoxContainer.new()
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 8)
 	add_child(hbox)
 
@@ -125,8 +124,7 @@ func _refresh_detail() -> void:
 		ph.add_theme_color_override("font_color", Color(0.5, 0.5, 0.55))
 		ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		ph.anchor_right = 1.0
-		ph.anchor_bottom = 1.0
+		ph.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_detail_panel.add_child(ph)
 		return
 	var pm: Node = get_node_or_null(PARTY_PATH)

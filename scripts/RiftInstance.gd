@@ -116,7 +116,7 @@ func _setup_grid() -> void:
 		for x in range(_dungeon_w):
 			var cell := Button.new()
 			cell.custom_minimum_size = Vector2(28, 26)
-			cell.focus_mode = Control.FOCUS_NONE
+			cell.focus_mode = Control.FOCUS_ALL
 			cell.pressed.connect(_on_cell_pressed.bind(x, y))
 			var style := StyleBoxFlat.new()
 			style.bg_color = Color(0.08, 0.06, 0.1)
@@ -126,6 +126,13 @@ func _setup_grid() -> void:
 			style.border_width_bottom = 1
 			style.border_color = Color(0.25, 0.2, 0.35)
 			cell.add_theme_stylebox_override("normal", style)
+			var focus_style := StyleBoxFlat.new()
+			focus_style.border_width_left = 2
+			focus_style.border_width_top = 2
+			focus_style.border_width_right = 2
+			focus_style.border_width_bottom = 2
+			focus_style.border_color = Color.WHITE
+			cell.add_theme_stylebox_override("focus", focus_style)
 			grid_container.add_child(cell)
 			_grid_cells.append(cell)
 

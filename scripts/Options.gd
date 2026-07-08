@@ -1,5 +1,7 @@
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+
 var _tab_container: TabContainer
 var _displays: Array[Dictionary] = []
 var _resolutions: Array[Vector2i] = []
@@ -28,9 +30,9 @@ func _build_ui() -> void:
 	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.02, 0.06, 1)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 
 	# Main VBox
 	var vbox := VBoxContainer.new()

@@ -22,8 +22,7 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_right", 8)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_bottom", 8)
-	margin.anchor_right = 1.0
-	margin.anchor_bottom = 1.0
+	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(margin)
 
 	var vbox := VBoxContainer.new()

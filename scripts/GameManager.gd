@@ -5,6 +5,8 @@ extends Node
 signal scene_changed(scene_path: String)
 signal character_ready(race_key: String, class_key: String, origin: String, character_id: String)
 
+const UI_Theme = preload("res://assets/ui/UI_Theme.gd")
+
 # Scene paths
 const SPLASH_SCENE := "res://scenes/ui/Splash.tscn"
 const MAIN_MENU_SCENE := "res://scenes/ui/MainMenu.tscn"
@@ -27,6 +29,8 @@ var _hub_character_data: Dictionary = {}
 
 func _ready() -> void:
 	print("[GameManager] Initialized. (Main scene should be Splash.tscn which drives the initial flow)")
+	# Apply the centralized UI Theme to the scene tree root
+	UI_Theme.apply_to(get_tree().root)
 	# Note: We no longer force-load Splash here because project.godot sets
 	# run/main_scene to Splash.tscn. The Splash scene itself handles the timer
 	# and calls on_splash_complete() to transition.

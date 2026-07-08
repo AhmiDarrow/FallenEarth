@@ -6,6 +6,7 @@ signal return_to_local_requested()
 signal travel_to_hex_requested(q: int, r: int)
 
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
+const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
 
 const HEX_SIZE := 22.0
 
@@ -89,7 +90,9 @@ func _build_world_view() -> void:
 		var tile: Dictionary = _tile_map[key]
 		var btn := Button.new()
 		btn.custom_minimum_size = Vector2(40, 36)
-		btn.focus_mode = Control.FOCUS_NONE
+		btn.focus_mode = Control.FOCUS_ALL
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 		btn.text = _hex_marker(q, r, tile, gs)
 		btn.tooltip_text = _tile_tooltip(tile, gs, q, r)
 		btn.modulate = _biome_color(str(tile.get("name", "")))

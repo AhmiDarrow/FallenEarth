@@ -14,6 +14,7 @@
 class_name CraftingScreen
 extends Control
 
+const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const CRAFTING_PATH := "/root/CraftingManager"
 
@@ -32,8 +33,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var vbox := VBoxContainer.new()
-	vbox.anchor_right = 1.0
-	vbox.anchor_bottom = 1.0
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	vbox.add_theme_constant_override("separation", 6)
 	add_child(vbox)
 	# Filter bar
@@ -44,7 +44,8 @@ func _build_ui() -> void:
 		var b := Button.new()
 		b.text = cat.capitalize()
 		b.toggle_mode = true
-		b.focus_mode = Control.FOCUS_NONE
+		b.focus_mode = Control.FOCUS_ALL
+		b.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 		b.pressed.connect(_on_filter_pressed.bind(cat))
 		filters.add_child(b)
 		if cat == "all":

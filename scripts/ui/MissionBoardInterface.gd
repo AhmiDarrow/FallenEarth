@@ -8,6 +8,7 @@
 class_name MissionBoardInterface
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const MISSION_PATH := "/root/MissionManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const HUB_PATH := "/root/HubWorld"
@@ -59,10 +60,10 @@ func _on_parent_resized() -> void:
 func _build_ui() -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 	# Title
 	var title := Label.new()
 	title.text = "[ Mission Board ]"

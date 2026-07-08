@@ -29,6 +29,8 @@ extends Control
 
 signal closed
 
+const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
+
 const TABS := [
 	{"id": "inventory", "label": "Inventory", "key": KEY_I},
 	{"id": "equipment", "label": "Equipment", "key": KEY_E},
@@ -158,8 +160,9 @@ func _build_tab_bar() -> void:
 		btn.text = "%s [%s]" % [tab.label, OS.get_keycode_string(tab.key).replace("KEY_", "")]
 		btn.custom_minimum_size = Vector2(140, 28)
 		btn.toggle_mode = true
-		btn.focus_mode = Control.FOCUS_NONE
+		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
 		_tab_bar.add_child(btn)
 		_tab_buttons[tab.id] = btn
@@ -208,8 +211,7 @@ func _lazy_load_tab(tab_id: String) -> void:
 		ph.add_theme_font_size_override("font_size", 18)
 		ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		ph.anchor_right = 1.0
-		ph.anchor_bottom = 1.0
+		ph.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_content.add_child(ph)
 		_tab_controllers[tab_id] = ph
 		return
@@ -218,8 +220,7 @@ func _lazy_load_tab(tab_id: String) -> void:
 		push_error("[CharacterMenu] Failed to load tab script: %s" % path)
 		return
 	var screen = script.new()
-	screen.anchor_right = 1.0
-	screen.anchor_bottom = 1.0
+	screen.set_anchors_preset(Control.PRESET_FULL_RECT)
 	screen.name = "Screen_" + tab_id
 	screen.mouse_filter = Control.MOUSE_FILTER_PASS
 	_content.add_child(screen)

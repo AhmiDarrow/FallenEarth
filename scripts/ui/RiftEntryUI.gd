@@ -11,8 +11,7 @@ var _panel: PanelContainer
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
 
@@ -24,8 +23,7 @@ func setup(rift: Dictionary) -> void:
 func _build_ui() -> void:
 	var backdrop := ColorRect.new()
 	backdrop.color = Color(0, 0, 0, 0.65)
-	backdrop.anchor_right = 1.0
-	backdrop.anchor_bottom = 1.0
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
 
 	_panel = PanelContainer.new()

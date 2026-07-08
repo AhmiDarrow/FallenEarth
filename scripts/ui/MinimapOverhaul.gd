@@ -25,10 +25,7 @@ var _view_range: float = 100.0
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(SIZE, SIZE)
-	anchor_left = 1.0
-	anchor_top = 0.0
-	anchor_right = 1.0
-	anchor_bottom = 0.0
+	set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	offset_left = -SIZE - 12
 	offset_top = 12
 	offset_right = -12

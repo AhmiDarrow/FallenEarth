@@ -77,8 +77,7 @@ func _build_ui() -> void:
 	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Title

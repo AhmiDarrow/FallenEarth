@@ -13,6 +13,7 @@
 class_name StatsScreen
 extends Control
 
+const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 const PARTY_PATH := "/root/PartyNPCManager"
@@ -33,8 +34,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var hbox := HBoxContainer.new()
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 12)
 	add_child(hbox)
 	# Left: member list
@@ -81,7 +81,8 @@ func _refresh_member_list() -> void:
 	var pm_btn := Button.new()
 	pm_btn.text = "Player"
 	pm_btn.toggle_mode = true
-	pm_btn.focus_mode = Control.FOCUS_NONE
+	pm_btn.focus_mode = Control.FOCUS_ALL
+	pm_btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 	pm_btn.button_pressed = (_selected_id == PLAYER_ID)
 	pm_btn.pressed.connect(_on_member_pressed.bind(PLAYER_ID))
 	_list_vbox.add_child(pm_btn)
@@ -96,7 +97,8 @@ func _refresh_member_list() -> void:
 		var row := Button.new()
 		row.text = "%s (%s · Lv.%d)" % [member_name, member_class, level]
 		row.toggle_mode = true
-		row.focus_mode = Control.FOCUS_NONE
+		row.focus_mode = Control.FOCUS_ALL
+		row.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 		row.button_pressed = (_selected_id == str(n.get("id", "")))
 		row.pressed.connect(_on_member_pressed.bind(str(n.get("id", ""))))
 		_list_vbox.add_child(row)

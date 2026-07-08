@@ -1,9 +1,13 @@
 ## ButtonStyleHelper — Applies pixel art button textures to UI buttons.
 ##
 ## Provides static methods to style Godot Button nodes with the
-## post-apocalyptic button asset set.
+## post-apocalyptic button asset set from the UI Design System.
+## All four states (normal, hover, pressed, disabled, focus) are set.
 class_name ButtonStyleHelper
 extends RefCounted
+
+const UI := preload("res://assets/ui/UI_Colors.gd")
+const SB := preload("res://scripts/StyleBoxHelper.gd")
 
 # Button texture paths
 const TEXTURES := {
@@ -13,29 +17,9 @@ const TEXTURES := {
 	"success":   "res://assets/sprites/ui/buttons/button_success.png",
 }
 
-# StyleBoxFlat for each button type (fallback if textures fail)
-const STYLES := {
-	"primary": {
-		"bg_color": Color(0.2, 0.15, 0.3, 1),
-		"border_color": Color(0.8, 0.5, 0.2, 1),
-	},
-	"secondary": {
-		"bg_color": Color(0.15, 0.15, 0.18, 1),
-		"border_color": Color(0.3, 0.5, 0.7, 1),
-	},
-	"danger": {
-		"bg_color": Color(0.4, 0.1, 0.1, 1),
-		"border_color": Color(0.6, 0.2, 0.2, 1),
-	},
-	"success": {
-		"bg_color": Color(0.1, 0.3, 0.15, 1),
-		"border_color": Color(0.2, 0.6, 0.3, 1),
-	},
-}
-
 
 ## Apply a button style to a Button node.
-## style_key: "primary", "secondary", "danger", or "success"
+## style_key: "primary", "secondary", "danger", "success", "ghost"
 static func apply_style(btn: Button, style_key: String = "primary") -> void:
 	if btn == null:
 		return
@@ -46,76 +30,63 @@ static func apply_style(btn: Button, style_key: String = "primary") -> void:
 	if ResourceLoader.exists(tex_path):
 		tex = load(tex_path)
 
+	var text_color := UI.TEXT_PRIMARY
 	if tex != null:
-		# Create StyleBoxTexture with the button texture
-		var style_normal := StyleBoxTexture.new()
-		style_normal.texture = tex
-		style_normal.texture_margin_left = 8
-		style_normal.texture_margin_top = 8
-		style_normal.texture_margin_right = 8
-		style_normal.texture_margin_bottom = 8
-		btn.add_theme_stylebox_override("normal", style_normal)
-
-		# Create pressed style (slightly darker)
-		var style_pressed := StyleBoxTexture.new()
-		style_pressed.texture = tex
-		style_pressed.texture_margin_left = 8
-		style_pressed.texture_margin_top = 8
-		style_pressed.texture_margin_right = 8
-		style_pressed.texture_margin_bottom = 8
-		btn.add_theme_stylebox_override("pressed", style_pressed)
-
-		# Create hover style
-		var style_hover := StyleBoxTexture.new()
-		style_hover.texture = tex
-		style_hover.texture_margin_left = 8
-		style_hover.texture_margin_top = 8
-		style_hover.texture_margin_right = 8
-		style_hover.texture_margin_bottom = 8
-		btn.add_theme_stylebox_override("hover", style_hover)
+		var margin := 8
+		for state_name in ["normal", "hover", "pressed", "disabled", "focus"]:
+			var style_tex := StyleBoxTexture.new()
+			style_tex.texture = tex
+			style_tex.texture_margin_left = margin
+			style_tex.texture_margin_top = margin
+			style_tex.texture_margin_right = margin
+			style_tex.texture_margin_bottom = margin
+			if state_name == "disabled":
+				style_tex.modulate_color = Color(0.4, 0.4, 0.4, 0.5)
+			btn.add_theme_stylebox_override(state_name, style_tex)
+		var style_data: Dictionary = UI.button_style(style_key)
+		text_color = style_data.get("text", UI.TEXT_PRIMARY)
 	else:
-		# Fallback to StyleBoxFlat
-		var style_data: Dictionary = STYLES.get(style_key, STYLES["primary"])
-		var style_normal := StyleBoxFlat.new()
-		style_normal.bg_color = style_data.get("bg_color", Color(0.2, 0.15, 0.3, 1))
-		style_normal.border_color = style_data.get("border_color", Color(0.6, 0.5, 0.8, 1))
-		style_normal.set_border_width_all(2)
-		style_normal.set_corner_radius_all(4)
-		btn.add_theme_stylebox_override("normal", style_normal)
+		var style_data: Dictionary = UI.button_style(style_key)
+		text_color = style_data.get("text", UI.TEXT_PRIMARY)
+		btn.add_theme_stylebox_override("normal", SB.button(style_key, "normal"))
+		btn.add_theme_stylebox_override("hover", SB.button(style_key, "hover"))
+		btn.add_theme_stylebox_override("pressed", SB.button(style_key, "pressed"))
+		btn.add_theme_stylebox_override("disabled", SB.button(style_key, "disabled"))
+		btn.add_theme_stylebox_override("focus", SB.button(style_key, "focus"))
 
-	# Set font color based on style
-	match style_key:
-		"primary":
-			btn.add_theme_color_override("font_color", Color(1, 0.95, 0.8))
-		"secondary":
-			btn.add_theme_color_override("font_color", Color(0.8, 0.85, 1))
-		"danger":
-			btn.add_theme_color_override("font_color", Color(1, 0.9, 0.9))
-		"success":
-			btn.add_theme_color_override("font_color", Color(0.9, 1, 0.9))
+	btn.add_theme_color_override("font_color", text_color)
+	btn.add_theme_color_override("font_hover_color", Color.WHITE)
+	btn.add_theme_color_override("font_focus_color", Color.WHITE)
+	btn.add_theme_color_override("font_disabled_color", UI.TEXT_MUTED)
+	btn.add_theme_font_size_override("font_size", UI.FS_BUTTON)
 
 
-## Apply primary style (default)
+## Apply primary style (default).
 static func apply_primary(btn: Button) -> void:
 	apply_style(btn, "primary")
 
 
-## Apply secondary style
+## Apply secondary style.
 static func apply_secondary(btn: Button) -> void:
 	apply_style(btn, "secondary")
 
 
-## Apply danger style
+## Apply danger style.
 static func apply_danger(btn: Button) -> void:
 	apply_style(btn, "danger")
 
 
-## Apply success style
+## Apply success style.
 static func apply_success(btn: Button) -> void:
 	apply_style(btn, "success")
 
 
-## Check if button textures exist
+## Apply ghost style (no background, text only).
+static func apply_ghost(btn: Button) -> void:
+	apply_style(btn, "ghost")
+
+
+## Check if button textures exist.
 static func textures_exist() -> bool:
 	for path in TEXTURES.values():
 		if not ResourceLoader.exists(path):
@@ -123,6 +94,16 @@ static func textures_exist() -> bool:
 	return true
 
 
-## Get list of available button styles
+## Get list of available button styles.
 static func get_available_styles() -> Array[String]:
-	return ["primary", "secondary", "danger", "success"]
+	return ["primary", "secondary", "danger", "success", "ghost"]
+
+
+## Apply focus stylebox to any Control node.
+static func apply_focus(control: Control) -> void:
+	control.add_theme_stylebox_override("focus", SB.focus_ring())
+
+
+## Convenience: set all five states on a Button using the same variant.
+static func apply_all_states(btn: Button, variant: String) -> void:
+	apply_style(btn, variant)

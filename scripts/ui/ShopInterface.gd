@@ -8,6 +8,7 @@
 class_name ShopInterface
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const PROGRESSION_PATH := "/root/ProgressionManager"
 const ITEMS_PATH := "res://data/items.json"
@@ -67,10 +68,10 @@ func _on_parent_resized() -> void:
 func _build_ui() -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_modal_bg(bg)
 	# Title
 	var title := Label.new()
 	title.text = "[ Shop — Buy / Sell ]"

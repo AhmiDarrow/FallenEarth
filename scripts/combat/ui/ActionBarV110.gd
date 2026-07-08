@@ -3,6 +3,9 @@ extends Control
 ## Bottom-center combat action bar with Move, Attack, End Turn, and Retreat.
 ## Adapted from the v0.10.1 _build_bottom_action_bar() for the v0.11.0 arch.
 
+const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
+const UI_Colors = preload("res://assets/ui/UI_Colors.gd")
+
 const BUTTON_WIDTH := 140
 const BUTTON_HEIGHT := 36
 
@@ -24,8 +27,7 @@ func _ready() -> void:
 func _build_children() -> void:
 	var hbox := HBoxContainer.new()
 	hbox.name = "Buttons"
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	hbox.add_theme_constant_override("separation", 12)
 	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -55,26 +57,14 @@ func _build_children() -> void:
 func _make_button(label_text: String, accent: Color) -> Button:
 	var btn := Button.new()
 	btn.text = label_text
-	btn.add_theme_font_size_override("font_size", 16)
 	btn.add_theme_color_override("font_color", accent)
 	btn.add_theme_color_override("font_outline_color", Color.BLACK)
 	btn.add_theme_constant_override("outline_size", 3)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.10, 0.08, 0.12, 0.85)
-	sb.border_width_left = 2
-	sb.border_width_top = 2
-	sb.border_width_right = 2
-	sb.border_width_bottom = 2
-	sb.border_color = Color(0.45, 0.45, 0.55, 1.0)
-	sb.corner_radius_top_left = 4
-	sb.corner_radius_top_right = 4
-	sb.corner_radius_bottom_left = 4
-	sb.corner_radius_bottom_right = 4
-	btn.add_theme_stylebox_override("normal", sb)
-	var sb_hover := sb.duplicate()
-	sb_hover.bg_color = Color(0.20, 0.18, 0.25, 0.92)
-	sb_hover.border_color = Color(0.95, 0.80, 0.35, 1.0)
-	btn.add_theme_stylebox_override("hover", sb_hover)
+	btn.add_theme_stylebox_override("normal", StyleBoxHelper.button("primary", "normal"))
+	btn.add_theme_stylebox_override("hover", StyleBoxHelper.button("primary", "hover"))
+	btn.add_theme_stylebox_override("pressed", StyleBoxHelper.button("primary", "pressed"))
+	btn.add_theme_stylebox_override("disabled", StyleBoxHelper.button("primary", "disabled"))
+	btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 	return btn
 
 

@@ -5,6 +5,8 @@
 class_name Hotbar
 extends Control
 
+const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const SLOT_COUNT := 10
 const SLOT_SIZE := 48
 const INVENTORY_PATH := "/root/InventoryManager"
@@ -23,6 +25,7 @@ func _ready() -> void:
 	anchor_top = 1.0
 	anchor_right = 0.5
 	anchor_bottom = 1.0
+	grow_vertical = Control.GROW_DIRECTION_BEGIN
 	offset_left = -SLOT_SIZE * SLOT_COUNT / 2.0 - (SLOT_COUNT - 1) * 4 / 2.0
 	offset_top = -SLOT_SIZE - 16
 	offset_right = SLOT_SIZE * SLOT_COUNT / 2.0 + (SLOT_COUNT - 1) * 4 / 2.0
@@ -43,18 +46,19 @@ func _build_buttons() -> void:
 	var bg := ColorRect.new()
 	bg.name = "BG"
 	bg.color = Color(0.05, 0.05, 0.07, 0.85)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_hud_bar(bg)
 
 	for i in SLOT_COUNT:
 		var btn := Button.new()
 		btn.name = "Slot_%d" % (i + 1)
 		btn.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
 		btn.position = Vector2(i * (SLOT_SIZE + 4), 4)
-		btn.focus_mode = Control.FOCUS_NONE
+		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		add_child(btn)
 		_slot_buttons.append(btn)

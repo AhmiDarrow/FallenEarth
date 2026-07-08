@@ -45,8 +45,7 @@ func _ready() -> void:
 func _build_ui() -> void:
 	# Layout: HBoxContainer splits into slots (left) and inventory (right).
 	var hbox := HBoxContainer.new()
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 12)
 	add_child(hbox)
 	# Left: equipment grid

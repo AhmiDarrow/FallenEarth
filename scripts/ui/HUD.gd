@@ -16,6 +16,8 @@
 class_name HUD
 extends Control
 
+const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+
 const TOP_BAR_H := 56.0
 const BAR_H := 18.0
 const BAR_W := 260.0
@@ -97,6 +99,7 @@ func _build_top_bar() -> void:
 	bg.offset_bottom = TOP_BAR_H
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+	UIBackgrounds.apply_hud_bar(bg)
 
 	# Name (left)
 	_name_label = Label.new()
@@ -232,7 +235,7 @@ func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_col
 	bar.custom_minimum_size = Vector2(80, BAR_H)
 	bar.max_value = 100
 	bar.value = 100
-	bar.show_percentage = false
+	bar.show_percentage = true
 
 	var bg_style := StyleBoxFlat.new()
 	bg_style.bg_color = Color(0.08, 0.08, 0.1, 0.9)
@@ -261,10 +264,7 @@ func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_col
 func _build_minimap() -> void:
 	_minimap = Minimap.new()
 	_minimap.name = "Minimap"
-	_minimap.anchor_left = 1.0
-	_minimap.anchor_top = 0.0
-	_minimap.anchor_right = 1.0
-	_minimap.anchor_bottom = 0.0
+	_minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_minimap.offset_left = -220
 	_minimap.offset_top = 20
 	_minimap.offset_right = -20
