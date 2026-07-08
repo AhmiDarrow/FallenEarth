@@ -1583,7 +1583,7 @@ func _update_tile_info() -> void:
 		"Local pos: (%d, %d) | Terrain: %s | Explored: %.0f%%%s\n" % [
 			_local_x, _local_y, LocalMapGen.terrain_label(terrain), explored, mob_line,
 		] +
-		"[i]WASD to walk. Step onto a mob to fight. ⚡ = rift — press E to enter. [b]M[/b] = World Map.[/i]"
+		"[i]WASD to walk. Step onto a mob to fight. ⚡ = rift — press F to enter. [b]M[/b] = World Map.[/i]"
 	)
 
 
@@ -1669,7 +1669,7 @@ func _update_rift_ui() -> void:
 		var remaining: float = float(rift.get("duration", 0.0)) - (_game_time - float(rift.get("spawn_time", 0.0)))
 		rift_info_label.text = (
 			"[color=#e1bee7][b]RIFT TUNNEL ACTIVE[/b][/color] — %s\n" % rift.get("rift_id", "?") +
-			"Local (%d,%d) | ~%d min left\n[color=#90caf9][Press E to enter][/color]" % [
+			"Local (%d,%d) | ~%d min left\n[color=#90caf9][Press F to enter][/color]" % [
 				int(rift.get("local_x", 0)), int(rift.get("local_y", 0)),
 				maxi(0, int(remaining / 60.0)),
 			]
@@ -1678,7 +1678,7 @@ func _update_rift_ui() -> void:
 		var count := 0
 		if is_instance_valid(_rift_runner) and _rift_runner.has_method("get_rifts_in_hex"):
 			count = (_rift_runner.get_rifts_in_hex(_player_q, _player_r, _game_time) as Array).size()
-		rift_info_label.text = "[i]%d rift(s) in this region. Walk onto ⚡ and press E to enter.[/i]" % count
+		rift_info_label.text = "[i]%d rift(s) in this region. Walk onto ⚡ and press F to enter.[/i]" % count
 
 
 func _update_char_info(data: Dictionary) -> void:
@@ -1838,7 +1838,7 @@ func _update_npc_ui() -> void:
 		check = _npc_manager.call("can_recruit", str(npc.get("id", "")), char_data) as Dictionary
 
 	_npc_info_label.text = (
-		"[color=#ffe082][b]★ %s[/b][/color] — %s (%s)\n[i]%s[/i]\n[color=#90caf9][Press E to talk][/color]" % [
+		"[color=#ffe082][b]★ %s[/b][/color] — %s (%s)\n[i]%s[/i]\n[color=#90caf9][Press F to talk][/color]" % [
 			npc.get("name", "?"), npc.get("role", "?"), npc.get("faction", "?"),
 			npc.get("personality_summary", ""),
 		]

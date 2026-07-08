@@ -15,7 +15,7 @@ var _defaults: Dictionary = {
 	"move_down":    KEY_S,
 	"move_left":    KEY_A,
 	"move_right":   KEY_D,
-	"interact":     KEY_E,
+	"interact":     KEY_F,
 	"inventory":    KEY_I,
 	"equipment":    KEY_E,
 	"crafting":     KEY_C,
