@@ -21,8 +21,10 @@ const TEX_PATHS := {
 static func _tex(key: String) -> Texture2D:
 	var path := str(TEX_PATHS.get(key, ""))
 	if path.is_empty():
+		push_error("[UIBackgrounds] Unknown texture key: %s" % key)
 		return null
 	if not ResourceLoader.exists(path):
+		push_warning("[UIBackgrounds] Texture not found: %s" % path)
 		return null
 	return load(path) as Texture2D
 
@@ -64,18 +66,21 @@ static func make_stylebox(texture_key: String, margin: int = 16,
 
 
 ## Apply modal background behind a ColorRect.
+## Makes the ColorRect semi-transparent so the texture shows through.
 static func apply_modal_bg(rect: ColorRect) -> void:
 	var parent := rect.get_parent()
 	if parent == null:
 		return
-	var tr := add_texture_overlay(parent, "bg_modal", Color(0.5, 0.5, 0.55, 0.4))
+	# Add tiled texture overlay behind the ColorRect
+	var tr := add_texture_overlay(parent, "bg_modal", Color(0.5, 0.5, 0.55, 0.6))
 	if tr != null:
 		parent.move_child(tr, rect.get_index())
+		# Reduce ColorRect opacity so texture is visible beneath it
+		rect.color.a = min(rect.color.a, 0.35)
 
 
-## Apply HUD bar texture. If `rect` is a ColorRect, creates a TextureRect
-## overlay with matching anchors/offsets and hides the ColorRect color.
-## If `rect` is already a TextureRect, sets its texture directly.
+## Apply HUD bar texture. If `rect` is a TextureRect, sets its texture directly.
+## If `rect` is a ColorRect, creates a TextureRect sibling with matching layout.
 static func apply_hud_bar(rect: Control) -> void:
 	var tex := _tex("bg_hud_bar")
 	if tex == null:
@@ -106,7 +111,7 @@ static func apply_hud_bar(rect: Control) -> void:
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(tr)
 	parent.move_child(tr, cr.get_index())
-	# Make the ColorRect transparent — the TextureRect provides the visual
+	# Hide the ColorRect — TextureRect provides the visual
 	cr.color = Color.TRANSPARENT
 
 
@@ -114,6 +119,7 @@ static func apply_hud_bar(rect: Control) -> void:
 static func apply_side_panel(control: Control) -> void:
 	var sb := make_stylebox("bg_side_panel", 12, Color(0.7, 0.7, 0.75, 0.7))
 	if sb == null:
+		push_warning("[UIBackgrounds] apply_side_panel failed — no texture")
 		return
 	if control is PanelContainer:
 		control.add_theme_stylebox_override("panel", sb)
