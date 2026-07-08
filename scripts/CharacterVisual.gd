@@ -52,17 +52,20 @@ func set_base_sprite(race: String, gender: String) -> void:
 		_sprite_node.queue_free()
 		_sprite_node = null
 
-	# Try full spritesheet first
-	var sheet_path: String = "res://assets/characters/%s_%s/%s_%s_spritesheet.png" % [
-		current_race, current_gender, current_race, current_gender
+	# Try full spritesheet first (check both naming conventions)
+	var sheet_paths: Array[String] = [
+		"res://assets/characters/%s_%s/%s_%s_spritesheet.png",
+		"res://assets/characters/%s_%s/%s_%s_sheet.png",
 	]
-	if ResourceLoader.exists(sheet_path):
-		_sprite_sheet = load(sheet_path) as Texture2D
-		if _sprite_sheet != null:
-			_build_frame_atlases()
-			print("[CharacterVisual] Loaded sprite sheet: ", sheet_path)
-			queue_redraw()
-			return
+	for fmt in sheet_paths:
+		var sheet_path: String = fmt % [current_race, current_gender, current_race, current_gender]
+		if ResourceLoader.exists(sheet_path):
+			_sprite_sheet = load(sheet_path) as Texture2D
+			if _sprite_sheet != null:
+				_build_frame_atlases()
+				print("[CharacterVisual] Loaded sprite sheet: ", sheet_path)
+				queue_redraw()
+				return
 
 	# Fallback: single base sprite via Sprite2D node
 	var base_path: String = "res://assets/characters/%s_%s/%s_%s_base.png" % [

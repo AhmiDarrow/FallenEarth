@@ -18,6 +18,8 @@
 class_name EquipmentScreen
 extends Control
 
+const UI = preload("res://assets/ui/UI_Colors.gd")
+const SB = preload("res://scripts/StyleBoxHelper.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 
@@ -51,32 +53,37 @@ func _build_ui() -> void:
 	# Left: equipment grid
 	var left_panel := PanelContainer.new()
 	left_panel.custom_minimum_size = Vector2(360, 0)
+	left_panel.add_theme_stylebox_override("panel", SB.panel(UI.BG_SURFACE, UI.BORDER_SUBTLE, UI.RADIUS_MD))
 	hbox.add_child(left_panel)
 	var left_vbox := VBoxContainer.new()
 	left_panel.add_child(left_vbox)
 	var title := Label.new()
 	title.text = "[ Equipment ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", UI.TEXT_ACCENT)
+	title.add_theme_font_size_override("font_size", UI.FS_H2)
 	left_vbox.add_child(title)
 	var grid := GridContainer.new()
 	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
 	left_vbox.add_child(grid)
 	for slot in EQUIP_SLOTS:
 		var slot_box := PanelContainer.new()
 		slot_box.name = "Slot_%s" % slot
 		slot_box.custom_minimum_size = Vector2(110, 96)
+		slot_box.add_theme_stylebox_override("panel", SB.panel(UI.BG_ELEVATED, UI.BORDER_SUBTLE, UI.RADIUS_SM))
 		grid.add_child(slot_box)
 		_slot_panels[slot] = slot_box
 	# Right: inventory list
 	var right_panel := PanelContainer.new()
 	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_panel.add_theme_stylebox_override("panel", SB.panel(UI.BG_SURFACE, UI.BORDER_SUBTLE, UI.RADIUS_MD))
 	hbox.add_child(right_panel)
 	var right_vbox := VBoxContainer.new()
 	right_panel.add_child(right_vbox)
 	var inv_title := Label.new()
 	inv_title.text = "Inventory (click Equip to auto-slot)"
-	inv_title.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
+	inv_title.add_theme_color_override("font_color", UI.TEXT_LINK)
 	right_vbox.add_child(inv_title)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -88,8 +95,8 @@ func _build_ui() -> void:
 	# Bottom: stats label
 	_stats_label = Label.new()
 	_stats_label.text = ""
-	_stats_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
-	_stats_label.add_theme_font_size_override("font_size", 14)
+	_stats_label.add_theme_color_override("font_color", UI.TEXT_SECONDARY)
+	_stats_label.add_theme_font_size_override("font_size", UI.FS_BODY)
 	left_vbox.add_child(_stats_label)
 
 
@@ -115,13 +122,13 @@ func _refresh_slots() -> void:
 		slot_box.add_child(slot_vbox)
 		var label := Label.new()
 		label.text = "%s" % SLOT_LABELS.get(slot, slot)
-		label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+		label.add_theme_color_override("font_color", UI.TEXT_SECONDARY)
 		slot_vbox.add_child(label)
 		if not item_id.is_empty():
 			var item_label := Label.new()
 			item_label.text = _short_id(item_id)
-			item_label.add_theme_color_override("font_color", Color.WHITE)
-			item_label.add_theme_font_size_override("font_size", 11)
+			item_label.add_theme_color_override("font_color", UI.TEXT_PRIMARY)
+			item_label.add_theme_font_size_override("font_size", UI.FS_TINY)
 			item_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 			item_label.custom_minimum_size = Vector2(96, 32)
 			slot_vbox.add_child(item_label)
@@ -130,10 +137,11 @@ func _refresh_slots() -> void:
 			unequip_btn.custom_minimum_size = Vector2(96, 24)
 			unequip_btn.pressed.connect(_on_unequip_pressed.bind(slot))
 			slot_vbox.add_child(unequip_btn)
+			ButtonStyleHelper.apply_danger(unequip_btn)
 		else:
 			var empty := Label.new()
 			empty.text = "(empty)"
-			empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.55))
+			empty.add_theme_color_override("font_color", UI.TEXT_MUTED)
 			slot_vbox.add_child(empty)
 
 
@@ -164,6 +172,7 @@ func _refresh_inventory() -> void:
 		equip_btn.text = "Equip"
 		equip_btn.pressed.connect(_on_equip_pressed.bind(item_id))
 		row.add_child(equip_btn)
+		ButtonStyleHelper.apply_success(equip_btn)
 
 
 func _refresh_stats() -> void:
