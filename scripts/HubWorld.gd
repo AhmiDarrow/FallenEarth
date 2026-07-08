@@ -119,9 +119,12 @@ var _transition_screen: CanvasLayer = null
 # v0.10.1: Mob AI managed by OverworldMobManager child node.
 var _mob_manager: OverworldMobManager = null
 var _mob_pool: OverworldMobPool = null
+var _mobs_container: Node2D = null
 
 
 func _ready() -> void:
+	# Ensure world node tree is fully initialized before spawning
+	await get_tree().process_frame
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	print("[HubWorld] Local overworld map loading.")
 
@@ -999,6 +1002,11 @@ func _setup_map_view() -> void:
 	_mob_pool.warm(20)
 	_mob_sprite_layer.add_child(_mob_pool)
 
+	# Dedicated World/Mobs container for active mobs — prevents teleport-to-origin
+	_mobs_container = Node2D.new()
+	_mobs_container.name = "Mobs"
+	world_grid.add_child(_mobs_container)
+
 
 ## Phase 2: attach a procedural EntityVisualComponent to an existing 2D entity
 ## node, resolving its visual from appearance.json. Each component owns a
@@ -1234,12 +1242,12 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob
 	var data := MobDataScript.from_enemy_dict(mob_data, x, y)
 	data.sprite_id = sprite_id
 	var mob_node := _mob_pool.borrow() as MobInstance
+	# Reparent from pool to World/Mobs so local position == global position
+	if is_instance_valid(_mobs_container):
+		_mobs_container.add_child(mob_node)
 	mob_node.global_position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
 	mob_node.z_index = 0
 	mob_node.setup(data)
-	if is_instance_valid(_mob_sprite_layer):
-		# Already parented to pool (child of _mob_sprite_layer)
-		pass
 	_mob_manager.add_mob(data, mob_node)
 	_marker_nodes["mob|%s" % LocalMapGen.local_key(x, y)] = mob_node
 
@@ -1920,6 +1928,12 @@ func _on_recruit_pressed() -> void:
 # Skips the per-move marker rebuild unless something actually moved.
 func _mark_world_markers_dirty() -> void:
 	_world_markers_dirty = true
+
+
+func get_random_spawn_point() -> Vector2:
+	if is_instance_valid(_player_visual):
+		return _player_visual.global_position + Vector2(randf_range(-300, 300), randf_range(-300, 300))
+	return Vector2(256 * 24 + 12, 256 * 24 + 12)
 
 
 func _seed_local_mobs() -> void:
