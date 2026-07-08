@@ -772,13 +772,18 @@ func _setup_hud() -> void:
 	_hud = HUDScript.new()
 	_hud.name = "HUD"
 	_hud.menu_requested.connect(_open_character_menu)
-	add_child(_hud)
+	var ui_layer := get_node_or_null("UI_Layer") as CanvasLayer
+	if ui_layer != null:
+		ui_layer.add_child(_hud)
+	else:
+		add_child(_hud)
 	# The new HUD has its own top bar / HP/MP/XP / minimap / hotbar. Hide
 	# the old CharInfoBar so we don't show the same info twice.
-	if has_node("CharInfoBar"):
-		var old_bar := get_node("CharInfoBar") as CanvasItem
-		if old_bar != null:
-			old_bar.visible = false
+	var old_bar := get_node_or_null("UI_Layer/CharInfoBar") as CanvasItem
+	if old_bar == null:
+		old_bar = get_node_or_null("CharInfoBar") as CanvasItem
+	if old_bar != null:
+		old_bar.visible = false
 
 
 ## Called by the HUD's menu button. Opens the CharacterMenu (tabbed
@@ -1033,6 +1038,10 @@ func _setup_player_visual() -> void:
 		_local_y * _map_view.get_cell_size() + _map_view.get_cell_size() * 0.5
 	)
 	_player_visual.z_index = 10
+	# Point follow camera at the player visual
+	var follow: FollowCamera = camera as FollowCamera
+	if follow != null and is_instance_valid(_player_visual):
+		follow.target = _player_visual
 	print("[HubWorld] Player visual set: race=%s gender=%s" % [race, gender])
 
 	# Phase 2: layered procedural 3D visual over the sprite.
@@ -1257,12 +1266,9 @@ func _on_mob_reached_player(mob_data: MobData) -> void:
 
 
 func _update_camera() -> void:
-	if is_instance_valid(camera) and is_instance_valid(_map_view):
-		var cell_size: int = _map_view.get_cell_size()
-		camera.position = Vector2(
-			_local_x * cell_size + cell_size * 0.5,
-			_local_y * cell_size + cell_size * 0.5,
-		)
+	# FollowCamera handles following the player via _process.
+	# This function left as a no-op hook for any future camera logic.
+	pass
 
 
 func _try_move_local(dx: int, dy: int) -> void:
