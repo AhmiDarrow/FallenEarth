@@ -39,9 +39,8 @@ var _display_class: String = "?"
 
 
 func _ready() -> void:
-	# Anchor to fill parent, then sync size after first layout pass
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	# Anchor to fill parent (Full Rect), then sync size after first layout pass
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	_build_top_bar()
 	_build_resource_bars()
@@ -210,6 +209,14 @@ func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_col
 func _build_minimap() -> void:
 	_minimap = Minimap.new()
 	_minimap.name = "Minimap"
+	# Try to parent inside MinimapPanel (sibling under UI_Canvas)
+	var parent_ctrl := get_parent()  # UI_Canvas
+	if parent_ctrl != null:
+		var panel := parent_ctrl.get_node_or_null("MinimapPanel") as Control
+		if panel != null:
+			panel.add_child(_minimap)
+			return
+	# Fallback: add directly to HUD
 	add_child(_minimap)
 
 

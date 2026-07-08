@@ -46,15 +46,12 @@ var _local_player_y: int = 0
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(WIDTH_PX, HEIGHT_PX)
-	# Anchor top-right of the viewport
-	anchor_left = 1.0
-	anchor_top = 0.0
-	anchor_right = 1.0
-	anchor_bottom = 0.0
-	offset_left = -WIDTH_PX - 12
-	offset_top = 12
-	offset_right = -12
-	offset_bottom = HEIGHT_PX + 12
+	# Fill parent container (MinimapPanel) completely
+	set_anchors_preset(Control.PRESET_FULL_RECT)
+	offset_left = 0
+	offset_top = 0
+	offset_right = 0
+	offset_bottom = 0
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# Ensure size propagates after parent layout
 	size = Vector2(WIDTH_PX, HEIGHT_PX)
