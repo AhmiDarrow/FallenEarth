@@ -184,14 +184,16 @@ func _make_tooltip() -> PanelContainer:
 
 
 func _on_item_selected(item_view: Node) -> void:
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv == null:
+	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
+	if inv_mgr == null:
 		return
-	var grid = inv.get_main_grid()
-	var cell_pos := _main_view.selected_cell
+	var grid: GridInventory = inv_mgr.get_main_grid() if inv_mgr.has_method("get_main_grid") else null
+	if grid == null:
+		return
+	var cell_pos: Vector2 = _main_view.selected_cell
 	if cell_pos.x < 0 or cell_pos.y < 0:
 		return
-	var stack := grid.get_item_at_position(cell_pos.x, cell_pos.y)
+	var stack: ItemStack = grid.get_item_at_position(cell_pos.x, cell_pos.y)
 	if stack == null:
 		return
 	_tooltip.display_item(stack, item_view)
@@ -204,13 +206,13 @@ func _on_item_deselected(_item_view: Node) -> void:
 
 
 func _refresh_weight() -> void:
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv == null:
+	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
+	if inv_mgr == null:
 		return
-	var lbl := find_child("WeightLabel", true, false) as Label
+	var lbl: Label = find_child("WeightLabel", true, false) as Label
 	if lbl == null:
 		return
-	var cur := inv.current_weight if "current_weight" in inv else 0.0
-	var max_w := inv.max_weight if "max_weight" in inv else 50.0
+	var cur: float = inv_mgr.get("current_weight") if inv_mgr != null else 0.0
+	var max_w: float = inv_mgr.get("max_weight") if inv_mgr != null else 50.0
 	lbl.text = "Weight: %.1f / %.1f kg" % [cur, max_w]
 

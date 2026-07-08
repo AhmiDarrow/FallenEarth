@@ -275,10 +275,12 @@ func close_loot_inventory() -> void:
 
 func transfer_loot_to_main() -> int:
     var moved := 0
-    for stack in loot_inventory.items.duplicate():
-        var remaining := stack.count
-        var copy := stack.duplicate_with_count(remaining)
-        var deposited := main_inventory.try_add_item(copy)
+    for stack_ref in loot_inventory.items.duplicate():
+        var stack: ItemStack = stack_ref as ItemStack
+        if stack == null: continue
+        var remaining: int = stack.count
+        var copy: ItemStack = stack.duplicate_with_count(remaining)
+        var deposited: int = main_inventory.try_add_item(copy)
         if deposited > 0:
             stack.count -= deposited
             moved += deposited

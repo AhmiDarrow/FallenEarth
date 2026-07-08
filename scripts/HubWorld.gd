@@ -633,9 +633,8 @@ func _try_enter_settlement(focus_building: String = "") -> void:
 
 
 ## Show a transient message in the bottom bar (Phase 3 stub: just print).
-func _show_settlement_message(msg: String) -> void:
-	# In Phase 8 we'd add a proper toast. For now, surface via the
-	# tile info label or print.
+func _show_settlement_message(_msg: String) -> void:
+	pass
 
 
 # Phase 8: spawn a floating loot popup at the given world position
