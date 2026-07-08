@@ -39,25 +39,22 @@ var _display_class: String = "?"
 
 
 func _ready() -> void:
-	# Anchor with `anchor_right = 1.0, anchor_bottom = 1.0` (not the
-	# `anchors_preset` property) so the engine auto-propagates the
-	# parent rect into our `size`. The `anchors_preset` setter does
-	# NOT trigger this propagation in Godot 4.3, which left the HUD
-	# at size (0, 0) and broke the CharacterMenu (which is added as
-	# our child and inherits our 0 size). The "size overridden after
-	# _ready" warning is benign in this case.
+	# Anchor to fill parent, then sync size after first layout pass
 	anchor_right = 1.0
 	anchor_bottom = 1.0
-	mouse_filter = Control.MOUSE_FILTER_PASS  # let clicks fall through except on UI
-	# Defensive: also explicitly sync our size in case the parent
-	# hasn't been laid out yet. Same anti-pattern as CharacterMenu /
-	# BaseShopUI — see there for the full writeup.
-	_sync_size_to_parent()
+	mouse_filter = Control.MOUSE_FILTER_PASS
 	_build_top_bar()
 	_build_resource_bars()
 	_build_minimap()
 	_build_hotbar()
 	_build_menu_button()
+	# Connect to parent resized so we resize when the viewport changes
+	var parent := get_parent()
+	if parent is Control:
+		if not (parent as Control).resized.is_connected(_on_parent_resized):
+			(parent as Control).resized.connect(_on_parent_resized)
+	# Defer size sync so the parent Control has completed its layout
+	_sync_size_to_parent.call_deferred()
 	_connect_signals()
 	_refresh_from_gamestate()
 
@@ -80,10 +77,11 @@ func _on_parent_resized() -> void:
 	# Re-place the menu button if it's at an absolute position
 	if is_instance_valid(_menu_button):
 		_menu_button.position = Vector2(size.x - 80, 8)
-	# Keep lockstep with the parent
-	var parent := get_parent()
-	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
-		(parent as Control).resized.connect(_on_parent_resized)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_sync_size_to_parent()
 
 
 # ---------------------------------------------------------------------------

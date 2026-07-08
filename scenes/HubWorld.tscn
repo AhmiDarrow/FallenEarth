@@ -23,6 +23,7 @@ color = Color(0.03, 0.02, 0.04, 1)
 [node name="Camera2D" type="Camera2D" parent="WorldGrid"]
 position = Vector2(640, 360)
 zoom = Vector2(1, 1)
+current = true
 
 [node name="Vignette" type="ColorRect" parent="."]
 anchors_preset = 15

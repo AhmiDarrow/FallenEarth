@@ -56,8 +56,10 @@ func _ready() -> void:
 	offset_right = -12
 	offset_bottom = HEIGHT_PX + 12
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_refresh_from_gamestate()
-	queue_redraw()
+	# Ensure size propagates after parent layout
+	size = Vector2(WIDTH_PX, HEIGHT_PX)
+	call_deferred("_refresh_from_gamestate")
+	call_deferred("queue_redraw")
 
 
 ## Pull current data from GameState and refresh the cache.
