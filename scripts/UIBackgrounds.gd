@@ -73,13 +73,41 @@ static func apply_modal_bg(rect: ColorRect) -> void:
 		parent.move_child(tr, rect.get_index())
 
 
-## Apply HUD bar texture to a ColorRect.
-static func apply_hud_bar(rect: ColorRect) -> void:
+## Apply HUD bar texture. If `rect` is a ColorRect, creates a TextureRect
+## overlay with matching anchors/offsets and hides the ColorRect color.
+## If `rect` is already a TextureRect, sets its texture directly.
+static func apply_hud_bar(rect: Control) -> void:
 	var tex := _tex("bg_hud_bar")
 	if tex == null:
 		return
-	rect.texture = tex
-	rect.color = Color(1, 1, 1, 1)
+	if rect is TextureRect:
+		(rect as TextureRect).texture = tex
+		return
+	if not (rect is ColorRect):
+		return
+	var cr := rect as ColorRect
+	var parent := cr.get_parent()
+	if parent == null:
+		return
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_TILE
+	tr.anchor_left = cr.anchor_left
+	tr.anchor_top = cr.anchor_top
+	tr.anchor_right = cr.anchor_right
+	tr.anchor_bottom = cr.anchor_bottom
+	tr.offset_left = cr.offset_left
+	tr.offset_top = cr.offset_top
+	tr.offset_right = cr.offset_right
+	tr.offset_bottom = cr.offset_bottom
+	tr.grow_horizontal = cr.grow_horizontal
+	tr.grow_vertical = cr.grow_vertical
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	parent.add_child(tr)
+	parent.move_child(tr, cr.get_index())
+	# Make the ColorRect transparent — the TextureRect provides the visual
+	cr.color = Color.TRANSPARENT
 
 
 ## Apply side panel background to a Control.
