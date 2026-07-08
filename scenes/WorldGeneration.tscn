@@ -1,19 +1,7 @@
-[gd_scene load_steps=5 format=3 uid="uid://70btn0pv2gki"]
+[gd_scene load_steps=4 format=3 uid="uid://70btn0pv2gki"]
 
 [ext_resource type="Script" path="res://scripts/WorldGeneration.gd" id="1_wg"]
 [ext_resource type="Texture2D" uid="uid://dxl8l8xqfea4u" path="res://assets/backgrounds/worldgenbg.png" id="2_bg"]
-
-[sub_resource type="StyleBoxFlat" id="button_normal"]
-bg_color = Color(0.2, 0.15, 0.3, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.5, 0.8, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [sub_resource type="StyleBoxFlat" id="info_panel"]
 bg_color = Color(0.08, 0.06, 0.12, 1)
@@ -63,7 +51,6 @@ layout_mode = 2
 [node name="BackBtn" type="Button" parent="VBox/TopRow"]
 custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 text = "Back"
 
 [node name="Spacer" type="Control" parent="VBox/TopRow"]
@@ -101,7 +88,6 @@ placeholder_text = "Enter world seed"
 [node name="RandomButton" type="Button" parent="VBox/TopBar/SeedHBox"]
 custom_minimum_size = Vector2(80, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 text = "Random"
 
 [node name="SizeHBox" type="HBoxContainer" parent="VBox/TopBar"]
@@ -117,14 +103,12 @@ vertical_alignment = 1
 [node name="SmallBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
 custom_minimum_size = Vector2(70, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 toggle_mode = true
 text = "Small"
 
 [node name="MediumBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
 custom_minimum_size = Vector2(70, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 toggle_mode = true
 button_pressed = true
 text = "Medium"
@@ -132,14 +116,12 @@ text = "Medium"
 [node name="LargeBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
 custom_minimum_size = Vector2(70, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 toggle_mode = true
 text = "Large"
 
 [node name="GenerateBtn" type="Button" parent="VBox/TopBar"]
 custom_minimum_size = Vector2(140, 40)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 text = "Generate World"
 
 [node name="ContentHBox" type="HBoxContainer" parent="VBox"]
@@ -209,6 +191,5 @@ text = "[i]Click a hex to see tile info.[/i]"
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("button_normal")
 disabled = true
 text = "Continue to Character"

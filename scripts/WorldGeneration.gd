@@ -61,6 +61,9 @@ func _ready() -> void:
 	ButtonStyleHelper.apply_primary(generate_btn)
 	ButtonStyleHelper.apply_primary(continue_btn)
 	ButtonStyleHelper.apply_ghost(random_btn)
+	ButtonStyleHelper.apply_ghost(small_btn)
+	ButtonStyleHelper.apply_primary(medium_btn)
+	ButtonStyleHelper.apply_ghost(large_btn)
 	# Wire signals
 	back_btn.pressed.connect(_on_back_pressed)
 	random_btn.pressed.connect(_on_random_seed_pressed)
