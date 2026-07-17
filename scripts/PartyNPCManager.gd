@@ -32,10 +32,6 @@ const INVENTORY_PATH := "/root/InventoryManager"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 const PROGRESSION_PATH := "/root/ProgressionManager"
 const FACTION_PATH := "/root/GameState"
-const TEMPLATES_PATH := "res://data/joinable_npc_templates.json"
-const NAME_PARTS_PATH := "res://data/npc_name_parts.json"
-const CLASSES_PATH := "res://data/character_classes.json"
-const RACES_PATH := "res://data/races.json"
 
 signal available_changed
 signal party_changed
@@ -59,12 +55,14 @@ var _biome_themes: Dictionary = {}
 # joinable_npc_templates.json's `_faction_themes` section. Used to flavor
 # NPCs spawned in faction-owned settlements.
 var _faction_themes: Dictionary = {}
+var _rng: RandomNumberGenerator
 
 var available_npcs: Array = []
 var party_members: Array = []
 
 
 func _ready() -> void:
+	_rng = RandomNumberGenerator.new()
 	_load_data()
 	_load_faction_names()
 	_seed_phase3_test_npcs()  # Phase 3 placeholder; if a save is loaded
@@ -80,40 +78,36 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 func _load_data() -> void:
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[PartyNPCManager] DataRegistry not available")
+		return
 	# Templates
-	if ResourceLoader.exists(TEMPLATES_PATH):
-		var raw = load(TEMPLATES_PATH)
-		var data = raw.data if "data" in raw else raw
-		if data is Dictionary:
-			_templates = data.get("templates", [])
-			_spawn_rules = data.get("_spawn_rules", {})
-			# v0.7.0: per-biome + per-faction themes
-			_biome_themes = data.get("_biome_themes", {})
-			_faction_themes = data.get("_faction_themes", {})
+	var templates_data: Variant = dr.get_data("joinable_npc_templates")
+	if templates_data is Dictionary:
+		_templates = templates_data.get("templates", [])
+		_spawn_rules = templates_data.get("_spawn_rules", {})
+		# v0.7.0: per-biome + per-faction themes
+		_biome_themes = templates_data.get("_biome_themes", {})
+		_faction_themes = templates_data.get("_faction_themes", {})
 	# Name parts
-	if ResourceLoader.exists(NAME_PARTS_PATH):
-		var raw2 = load(NAME_PARTS_PATH)
-		var data2 = raw2.data if "data" in raw2 else raw2
-		if data2 is Dictionary:
-			_name_parts = data2
+	var name_data: Variant = dr.get_data("npc_name_parts")
+	if name_data is Dictionary:
+		_name_parts = name_data
 	# Classes
-	if ResourceLoader.exists(CLASSES_PATH):
-		var raw3 = load(CLASSES_PATH)
-		var data3 = raw3
-		if data3 is Array:
-			_classes = data3
+	var classes_data: Variant = dr.get_data("classes")
+	if classes_data is Array:
+		_classes = classes_data
 	# Races
-	if ResourceLoader.exists(RACES_PATH):
-		var raw4 = load(RACES_PATH)
-		var data4 = raw4.data if "data" in raw4 else raw4
-		if data4 is Dictionary:
-			_races = []
-			for origin in ["upworld", "underworld"]:
-				for race_name in data4.get(origin, {}):
-					_races.append({
-						"name": race_name,
-						"origin": origin.capitalize(),
-					})
+	var races_data: Variant = dr.get_data("races")
+	if races_data is Dictionary:
+		_races = []
+		for origin in ["upworld", "underworld"]:
+			for race_name in races_data.get(origin, {}):
+				_races.append({
+					"name": race_name,
+					"origin": origin.capitalize(),
+				})
 
 
 func _load_faction_names() -> void:
@@ -201,9 +195,9 @@ func invite(npc_id: String) -> bool:
 			var npc: Dictionary = available_npcs[i]
 			available_npcs.remove_at(i)
 			party_members.append(npc)
-			emit_signal("npc_invited", npc_id)
-			emit_signal("available_changed")
-			emit_signal("party_changed")
+			npc_invited.emit(npc_id)
+			available_changed.emit()
+			party_changed.emit()
 			print("[PartyNPCManager] Invited %s to party" % npc_id)
 			return true
 	return false
@@ -215,9 +209,9 @@ func dismiss(npc_id: String) -> bool:
 			var npc: Dictionary = party_members[i]
 			party_members.remove_at(i)
 			available_npcs.append(npc)
-			emit_signal("npc_dismissed", npc_id)
-			emit_signal("available_changed")
-			emit_signal("party_changed")
+			npc_dismissed.emit(npc_id)
+			available_changed.emit()
+			party_changed.emit()
 			print("[PartyNPCManager] Dismissed %s" % npc_id)
 			return true
 	return false
@@ -237,8 +231,8 @@ func restore_from_snapshot(snap: Dictionary) -> void:
 		available_npcs.append(n)
 	for n in snap.get("party_members", []):
 		party_members.append(n)
-	emit_signal("available_changed")
-	emit_signal("party_changed")
+	available_changed.emit()
+	party_changed.emit()
 
 
 func get_town_npcs(hex_key: String) -> Array:
@@ -273,7 +267,7 @@ func spawn_for_hex(hex_key: String, biome: String = "") -> Array:
 	var npc: Dictionary = _generate_npc_from_template(tpl, player_level, biome)
 	npc["spawn_hex"] = hex_key
 	available_npcs.append(npc)
-	emit_signal("available_changed")
+	available_changed.emit()
 	print("[PartyNPCManager] Spawned %s in %s (template=%s)" % [npc.get("name", "?"), hex_key, tpl.get("id", "?")])
 	return [npc]
 
@@ -408,11 +402,10 @@ func spawn_for_settlement(hex_key: String, biome: String, faction: String, town_
 		"medium": max_residents = 2
 		"large": max_residents = 3
 	# Deterministic seed for the settlement spawn (so the same hex always
-	# shows the same NPCs). We use the global RNG's seed() to make
-	# every randf() / randi() deterministic for the duration of the
-	# generation loop.
+	# shows the same NPCs). Uses a local RandomNumberGenerator instance.
 	var seed_val: int = _hash_hex_key(hex_key + "|" + biome + "|" + faction)
-	seed(seed_val)
+	_rng = RandomNumberGenerator.new()
+	_rng.seed = seed_val
 	# Read player level for level scaling
 	var prog: Node = get_node_or_null(PROGRESSION_PATH)
 	var player_level: int = int(prog.level) if prog != null else 1
@@ -437,8 +430,7 @@ func spawn_for_settlement(hex_key: String, biome: String, faction: String, town_
 ## AND faction themes. Faction theme takes priority (faction identity
 ## is stronger than biome identity for naming/race).
 func _generate_npc_for_settlement(tpl: Dictionary, player_level: int, biome: String, faction: String, hex_key: String, idx: int) -> Dictionary:
-	# All randf() / randi() calls below are deterministic because the
-	# parent (spawn_for_settlement) called seed() with the hex_key hash.
+	# All rand* calls below use the local _rng instance set by the caller.
 	var biome_theme: Dictionary = _biome_themes.get(biome, {})
 	var faction_theme: Dictionary = _faction_themes.get(faction, {})
 	# Faction theme takes priority for name_prefix + origin_pref.
@@ -455,7 +447,7 @@ func _generate_npc_for_settlement(tpl: Dictionary, player_level: int, biome: Str
 	var gender: String = "male" if randf() < 0.5 else "female"
 	var level_lo: int = int(_spawn_rules.get("level_range", [-10, 10])[0])
 	var level_hi: int = int(_spawn_rules.get("level_range", [-10, 10])[1])
-	var npc_level: int = clampi(player_level + randi_range(level_lo, level_hi), 1, 256)
+	var npc_level: int = clampi(player_level + _rng.randi_range(level_lo, level_hi), 1, 256)
 	# Build a flavor-aware name: prefix + random first + random last
 	var bucket: String = "upworld" if origin == "Upworld" else "underworld"
 	var parts: Dictionary = _name_parts.get(bucket, _name_parts.get("neutral", {}))
@@ -566,7 +558,7 @@ func _generate_npc_from_template(tpl: Dictionary, player_level: int, biome: Stri
 	var gender: String = "male" if randf() < 0.5 else "female"
 	var level_lo: int = int(_spawn_rules.get("level_range", [-10, 10])[0])
 	var level_hi: int = int(_spawn_rules.get("level_range", [-10, 10])[1])
-	var npc_level: int = clampi(player_level + randi_range(level_lo, level_hi), 1, 256)
+	var npc_level: int = clampi(player_level + _rng.randi_range(level_lo, level_hi), 1, 256)
 	var npc_name: String = _generate_name(origin, class_data.get("name", "wanderer"), gender)
 	var tier: int = int(tpl.get("tier", 0))
 	# Equipment: T{tier} weapon + T{tier} armor (best-effort)

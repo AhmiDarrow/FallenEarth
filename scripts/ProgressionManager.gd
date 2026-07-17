@@ -16,7 +16,7 @@ extends Node
 const STARTING_LEVEL := 1
 const STARTING_XP := 0
 const STARTING_EC := 50
-const MAX_LEVEL := 256  # matches ClassProgression.max_level
+const MAX_LEVEL := ClassProgression.MAX_LEVEL
 
 signal xp_changed(current_xp: int, xp_to_next: int)
 signal level_up(new_level: int, levels_gained: int)
@@ -54,9 +54,9 @@ func add_xp(amount: int) -> int:
 		xp -= xp_to_next(level)
 		level += 1
 		levels_gained += 1
-	emit_signal("xp_changed", xp, xp_to_next(level))
+	xp_changed.emit(xp, xp_to_next(level))
 	if levels_gained > 0:
-		emit_signal("level_up", level, levels_gained)
+		level_up.emit(level, levels_gained)
 		print("[ProgressionManager] Level up! Now L%d (gained %d)" % [level, levels_gained])
 	return levels_gained
 
@@ -69,7 +69,7 @@ func add_ec(amount: int) -> void:
 	if amount <= 0:
 		return
 	ec += amount
-	emit_signal("ec_changed", ec)
+	ec_changed.emit(ec)
 
 
 ## Spend `amount` EC. Returns true on success, false if insufficient.
@@ -79,8 +79,28 @@ func spend_ec(amount: int) -> bool:
 	if ec < amount:
 		return false
 	ec -= amount
-	emit_signal("ec_changed", ec)
+	ec_changed.emit(ec)
 	return true
+
+
+## Remove `pct` (0.0–1.0) of current XP. Returns amount removed.
+func remove_xp_pct(pct: float) -> int:
+	var loss: int = floori(float(xp) * clampf(pct, 0.0, 1.0))
+	if loss <= 0:
+		return 0
+	xp = maxi(0, xp - loss)
+	xp_changed.emit(xp, xp_to_next(level))
+	return loss
+
+
+## Spend `pct` (0.0–1.0) of current EC. Returns amount spent.
+func spend_ec_pct(pct: float) -> int:
+	var loss: int = floori(float(ec) * clampf(pct, 0.0, 1.0))
+	if loss <= 0:
+		return 0
+	ec = maxi(0, ec - loss)
+	ec_changed.emit(ec)
+	return loss
 
 
 # ---------------------------------------------------------------------------
@@ -99,5 +119,5 @@ func restore_from_snapshot(snap: Dictionary) -> void:
 	level = int(snap.get("level", STARTING_LEVEL))
 	xp = int(snap.get("xp", STARTING_XP))
 	ec = int(snap.get("ec", STARTING_EC))
-	emit_signal("xp_changed", xp, xp_to_next(level))
-	emit_signal("ec_changed", ec)
+	xp_changed.emit(xp, xp_to_next(level))
+	ec_changed.emit(ec)

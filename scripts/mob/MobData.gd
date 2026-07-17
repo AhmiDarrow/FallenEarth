@@ -59,4 +59,4 @@ func to_enemy_dict() -> Dictionary:
 	return out
 
 func sprite_path() -> String:
-	return "res://assets/mobs/%s.png" % sprite_id.replace("-", "_")
+	return "res://assets/mobs/%s.png" % sprite_id

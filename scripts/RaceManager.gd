@@ -7,8 +7,6 @@ extends Node
 signal races_loaded()
 
 
-const RACES_DATA_PATH := "res://data/races.json"
-
 var _all_races: Dictionary = {"upworld": [], "underworld": []}
 var _race_lookup: Dictionary = {}  # key -> race data for fast lookups
 
@@ -17,18 +15,15 @@ func _ready() -> void:
 	load_races_from_json()
 
 
-## Load the canonical races table from JSON at res://data/races.json
+## Load the canonical races table from DataRegistry
 func load_races_from_json() -> bool:
-	var file := FileAccess.open(RACES_DATA_PATH, FileAccess.READ)
-	if not is_instance_valid(file):
-		push_error("[RaceManager] Failed to open %s" % RACES_DATA_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[RaceManager] DataRegistry not available")
 		return false
 
-	var text := file.get_as_text()
-	file.close()
-
-	var json_result: Variant = JSON.parse_string(text)
-	if not (json_result is Dictionary):
+	var json_result: Variant = dr.get_data("races")
+	if json_result == null or not (json_result is Dictionary):
 		push_error("[RaceManager] races.json did not produce a dictionary at top level.")
 		return false
 

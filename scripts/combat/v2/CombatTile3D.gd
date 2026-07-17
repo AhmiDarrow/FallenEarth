@@ -14,11 +14,27 @@ const TILE_INSET: float = 0.05
 const TILE_HEIGHT: float = 0.3
 const RAYCAST_REACH: float = 1.5
 
-## Visual state flags (read by _process for material swap)
-var reachable: bool = false
-var attackable: bool = false
-var hover: bool = false
-var blocked: bool = false
+## Visual state flags (setters trigger material refresh — no per-frame work)
+var reachable: bool = false:
+	set(value):
+		if reachable != value:
+			reachable = value
+			_refresh_material()
+var attackable: bool = false:
+	set(value):
+		if attackable != value:
+			attackable = value
+			_refresh_material()
+var hover: bool = false:
+	set(value):
+		if hover != value:
+			hover = value
+			_refresh_material()
+var blocked: bool = false:
+	set(value):
+		if blocked != value:
+			blocked = value
+			_refresh_material()
 
 ## Pathfinding metadata
 var pf_root: CombatTile3D = null
@@ -46,11 +62,17 @@ var _mesh: MeshInstance3D
 var _collision: CollisionShape3D
 var _raycast: RayCast3D
 
+## Hover animation
+var _hover_tween: Tween = null
+var _was_hovered: bool = false
+
 
 func _ready() -> void:
 	_build_mesh()
 	_build_collision()
 	_build_raycast()
+	_build_hover_tween()
+	_refresh_material()
 
 
 func _build_mesh() -> void:
@@ -84,6 +106,12 @@ func _build_raycast() -> void:
 	add_child(_raycast)
 
 
+func _build_hover_tween() -> void:
+	_hover_tween = create_tween()
+	_hover_tween.set_loops()
+	_hover_tween.stop()
+
+
 func setup(gx: int, gy: int, terrain: int, materials: Dictionary) -> void:
 	grid_x = gx
 	grid_y = gy
@@ -101,18 +129,12 @@ func setup(gx: int, gy: int, terrain: int, materials: Dictionary) -> void:
 	_refresh_material()
 
 
-func _process(_delta: float) -> void:
-	if _mesh == null:
-		return
-	_mesh.visible = true
-	_refresh_material()
-
-
 func _refresh_material() -> void:
 	if _mesh == null:
 		return
 	if blocked and mat_blocked != null:
 		_mesh.material_override = mat_blocked
+		_stop_hover_anim()
 		return
 	match hover:
 		true:
@@ -122,13 +144,38 @@ func _refresh_material() -> void:
 				_mesh.material_override = mat_hover_attackable
 			elif mat_hover:
 				_mesh.material_override = mat_hover
+			_start_hover_anim()
 		false:
+			_stop_hover_anim()
+			_was_hovered = false
 			if reachable and mat_reachable:
 				_mesh.material_override = mat_reachable
 			elif attackable and mat_attackable:
 				_mesh.material_override = mat_attackable
 			elif mat_default:
 				_mesh.material_override = mat_default
+
+
+func _start_hover_anim() -> void:
+	if _was_hovered:
+		return
+	_was_hovered = true
+	if _hover_tween and _hover_tween.is_valid():
+		_hover_tween.kill()
+	_hover_tween = create_tween()
+	_hover_tween.set_loops()
+	_hover_tween.tween_method(_hover_scale, 1.0, 1.04, 0.6).set_ease(Tween.EASE_IN_OUT)
+	_hover_tween.tween_method(_hover_scale, 1.04, 1.0, 0.6).set_ease(Tween.EASE_IN_OUT)
+
+
+func _stop_hover_anim() -> void:
+	if _hover_tween and _hover_tween.is_valid():
+		_hover_tween.kill()
+	scale = Vector3(1.0, 1.0, 1.0)
+
+
+func _hover_scale(s: float) -> void:
+	scale = Vector3(s, 1.0, s)
 
 
 func get_neighbors(height: float) -> Array[CombatTile3D]:
@@ -154,6 +201,8 @@ func get_tile_occupier() -> Node3D:
 
 
 func is_taken() -> bool:
+	if occupier != null and is_instance_valid(occupier):
+		return true
 	return get_tile_occupier() != null
 
 

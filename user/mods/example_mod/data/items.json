@@ -1,0 +1,18 @@
+{
+  "strategy": "append",
+  "data": {
+    "items": [
+      {
+        "id": "example_mod_test_sword",
+        "name": "Example Mod Sword",
+        "description": "A test sword added by the Example Mod.",
+        "type": "weapon",
+        "subtype": "sword",
+        "damage": 15,
+        "weight": 3.0,
+        "value": 50,
+        "max_stack": 1
+      }
+    ]
+  }
+}

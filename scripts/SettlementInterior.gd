@@ -6,7 +6,7 @@
 class_name SettlementInterior
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const ROOMS_PATH := "res://data/settlement_rooms.json"
 const SETTLEMENT_PATH := "/root/SettlementManager"
 const CELL_SIZE := 24
@@ -91,14 +91,12 @@ func setup(town: Dictionary, hub: Node, focus_building: String = "") -> void:
 
 
 func _build_frame() -> void:
-	# Dark background
 	var bg := ColorRect.new()
 	bg.name = "BG"
 	bg.color = Color(0.03, 0.02, 0.04, 0.98)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 
 	# Room container (centered in the screen)
 	var container := Node2D.new()
@@ -559,10 +557,10 @@ func _tick_wanderers(delta: float) -> void:
 		# Show mood emoji if player is nearby
 		if _room_view != null and is_instance_valid(_room_view):
 			var is_near: bool = _room_view.is_player_nearby(wanderer.current_x, wanderer.current_y, 3)
-			var dm: Node = get_node_or_null("/root/DialogueManager")
+			var nm: Node = get_node_or_null("/root/NPCManager")
 			var rep: int = 0
-			if dm != null:
-				rep = dm.call("get_faction_rep", _faction) if _faction != "" else 0
+			if nm != null:
+				rep = nm.call("get_faction_rep", _faction) if _faction != "" else 0
 			var mood: String = wanderer.get_display_mood(is_near, rep)
 			var emoji: String = wanderer.get_mood_emoji(mood)
 			_room_view.show_mood_emoji(wanderer.npc_id, emoji)

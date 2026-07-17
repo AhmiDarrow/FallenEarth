@@ -8,7 +8,7 @@
 class_name ShopInterface
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const PROGRESSION_PATH := "/root/ProgressionManager"
 const ITEMS_PATH := "res://data/items.json"
@@ -39,7 +39,6 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 
 	var root_vbox := VBoxContainer.new()
 	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -249,5 +248,5 @@ func _set_status(msg: String) -> void:
 
 
 func _on_close_pressed() -> void:
-	emit_signal("closed")
+	closed.emit()
 	queue_free()

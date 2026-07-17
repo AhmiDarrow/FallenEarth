@@ -16,8 +16,6 @@
 ## extended in Phase 8 to include the unlocked-recipe list.
 extends Node
 
-const RECIPES_PATH := "res://data/recipes.json"
-
 signal recipe_unlocked(recipe_id: String)
 signal recipe_crafted(recipe_id: String)
 signal recipe_craft_failed(recipe_id: String, reason: String)
@@ -38,14 +36,13 @@ func _ready() -> void:
 
 
 func _load_recipes() -> void:
-	if not ResourceLoader.exists(RECIPES_PATH):
-		push_error("[CraftingManager] %s missing" % RECIPES_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[CraftingManager] DataRegistry not available")
 		return
-	var raw = load(RECIPES_PATH)
-	if raw == null:
-		return
-	var data = raw.data if "data" in raw else raw
-	if not (data is Dictionary):
+	var data: Variant = dr.get_data("recipes")
+	if data == null or not (data is Dictionary):
+		push_error("[CraftingManager] recipes.json missing or invalid")
 		return
 	for r in data.get("recipes", []):
 		if not (r is Dictionary):
@@ -96,7 +93,7 @@ func refresh_unlocked(player_level: int) -> void:
 	# Emit for newly unlocked
 	for rid in _unlocked_recipes:
 		if not prev.has(rid):
-			emit_signal("recipe_unlocked", rid)
+			recipe_unlocked.emit(rid)
 
 
 ## Returns true if the player can craft this recipe (has all
@@ -125,15 +122,15 @@ func can_craft(recipe_id: String, inv: Node = null) -> bool:
 func craft(recipe_id: String, inv: Node = null) -> bool:
 	var r: Dictionary = _recipes.get(recipe_id, {})
 	if r.is_empty():
-		emit_signal("recipe_craft_failed", recipe_id, "unknown_recipe")
+		recipe_craft_failed.emit(recipe_id, "unknown_recipe")
 		return false
 	if inv == null:
 		inv = get_node_or_null("/root/InventoryManager")
 	if inv == null:
-		emit_signal("recipe_craft_failed", recipe_id, "no_inventory")
+		recipe_craft_failed.emit(recipe_id, "no_inventory")
 		return false
 	if not can_craft(recipe_id, inv):
-		emit_signal("recipe_craft_failed", recipe_id, "missing_ingredients")
+		recipe_craft_failed.emit(recipe_id, "missing_ingredients")
 		return false
 	# Consume ingredients
 	for ing in r.get("ingredients", []):
@@ -144,7 +141,7 @@ func craft(recipe_id: String, inv: Node = null) -> bool:
 	var result_qty: int = int(result.get("qty", 1))
 	if not result_item.is_empty() and result_qty > 0:
 		inv.add_item(result_item, result_qty)
-	emit_signal("recipe_crafted", recipe_id)
+	recipe_crafted.emit(recipe_id)
 	return true
 
 

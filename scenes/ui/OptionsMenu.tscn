@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://detlhbfm2fbmu"]
 
 [ext_resource type="Script" path="res://scripts/ui/OptionsMenu.gd" id="1"]
 

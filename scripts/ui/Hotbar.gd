@@ -5,8 +5,7 @@
 class_name Hotbar
 extends Control
 
-const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const SLOT_COUNT := 10
 const SLOT_SIZE := 48
 const INVENTORY_PATH := "/root/InventoryManager"
@@ -49,7 +48,6 @@ func _build_buttons() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_hud_bar(bg)
 
 	for i in SLOT_COUNT:
 		var btn := Button.new()
@@ -58,7 +56,7 @@ func _build_buttons() -> void:
 		btn.position = Vector2(i * (SLOT_SIZE + 4), 4)
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
+		btn.add_theme_stylebox_override("focus", MT.focus_ring())
 		btn.pressed.connect(_on_slot_pressed.bind(i))
 		add_child(btn)
 		_slot_buttons.append(btn)

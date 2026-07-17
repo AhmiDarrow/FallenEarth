@@ -83,6 +83,19 @@
       ],
       "result": {"item": "cooking_table", "qty": 1},
       "category": "station"
+    },
+    {
+      "id": "sleeping_bag",
+      "name": "Sleeping Bag",
+      "station": "none",
+      "level_required": 1,
+      "ingredients": [
+        {"item": "kelp_fibre", "qty": 5},
+        {"item": "withered_branch", "qty": 3},
+        {"item": "stone", "qty": 2}
+      ],
+      "result": {"item": "sleeping_bag", "qty": 1},
+      "category": "utility"
     }
   ]
 }

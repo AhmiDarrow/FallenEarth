@@ -16,14 +16,14 @@ func start_move(pawn: CombatPawn3D, path: Array) -> void:
 		return
 	var unit_res: UnitResource = pawn.res
 	unit_res.move_path = []
-	# Convert Vector3 positions to Vector2i grid coords for the resource
 	for pos in path:
 		if pos is Vector3:
-			var gx: int = int(pos.x / CombatPawn3D.CELL_SIZE)
-			var gy: int = int(pos.z / CombatPawn3D.CELL_SIZE)
+			var gx: int = int(pos.x / CombatTile3D.CELL_SIZE)
+			var gy: int = int(pos.z / CombatTile3D.CELL_SIZE)
 			unit_res.move_path.append(Vector2i(gx, gy))
 	unit_res.has_moved = true
 	pawn.is_moving = true
+	pawn.play_anim("walk")
 
 
 func step(pawn: CombatPawn3D, delta: float) -> bool:
@@ -36,9 +36,9 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 
 	var next_grid: Vector2i = unit_res.move_path[0]
 	var target_pos := Vector3(
-		next_grid.x * CombatPawn3D.CELL_SIZE,
+		next_grid.x * CombatTile3D.CELL_SIZE,
 		0.0,
-		next_grid.y * CombatPawn3D.CELL_SIZE
+		next_grid.y * CombatTile3D.CELL_SIZE
 	)
 
 	var current_pos: Vector3 = pawn.position
@@ -46,17 +46,16 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 	var dist_to_target: float = Vector2(current_pos.x, current_pos.z).distance_to(Vector2(flat_target.x, flat_target.z))
 
 	if dist_to_target < 0.05:
-		# Arrived at this tile
 		pawn.position = flat_target
 		unit_res.move_path.pop_front()
 		unit_res.grid_pos = next_grid
-		# Update tile occupancy
 		if pawn.arena_node:
 			var tile = pawn.arena_node.get_tile(next_grid.x, next_grid.y)
 			if tile and tile is CombatTile3D:
 				tile.occupier = pawn
 		if unit_res.move_path.is_empty():
 			pawn.is_moving = false
+			pawn.play_anim("idle")
 			return false
 		return true
 
@@ -71,13 +70,8 @@ func step(pawn: CombatPawn3D, delta: float) -> bool:
 		new_flat = flat_target
 	pawn.position = Vector3(new_flat.x, jump_y, new_flat.z)
 
+	# Force upright — no physical rotation should ever happen
+	pawn.rotation = Vector3.ZERO
+
 	pawn.is_moving = true
 	return true
-
-
-func look_at_direction(pawn: CombatPawn3D, direction: Vector3) -> void:
-	if pawn == null or direction.length_squared() < 0.001:
-		return
-	var flat_dir := Vector3(direction.x, 0, direction.z).normalized()
-	if flat_dir.length_squared() > 0.001:
-		pawn.look_at(pawn.global_position + flat_dir, Vector3.UP)

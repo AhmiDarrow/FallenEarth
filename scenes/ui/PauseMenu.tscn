@@ -30,47 +30,53 @@ offset_right = 160.0
 offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="TitleLabel" type="RichTextLabel" parent="VBoxContainer"]
-custom_minimum_size = Vector2(320, 48)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 bbcode_enabled = true
 text = "[center][b]PAUSED[/b][/center]"
 
+[node name="TitleUnderline" type="ColorRect" parent="VBoxContainer"]
+custom_minimum_size = Vector2(80, 2)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.788, 0.722, 0.588, 0.6)
+
 [node name="ResumeBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Resume"
 
 [node name="SaveBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Save Game"
 
 [node name="LoadBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Load Game"
 
 [node name="OptionsBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Options"
 
 [node name="ExitMenuBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Exit to Menu"
 
 [node name="ExitDesktopBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Exit to Desktop"

@@ -27,28 +27,30 @@
 class_name CharacterMenu
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 signal closed
 
-const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
 
-const TABS := [
+
+var TABS: Array = [
 	{"id": "inventory", "label": "Inventory", "key": KEY_I},
 	{"id": "equipment", "label": "Equipment", "key": KEY_E},
 	{"id": "crafting",  "label": "Crafting",  "key": KEY_C},
 	{"id": "jobs",      "label": "Jobs",      "key": KEY_J},
 	{"id": "party",     "label": "Party",     "key": KEY_P},
 	{"id": "stats",     "label": "Stats",     "key": KEY_S},
+	{"id": "mounts",    "label": "Mounts",    "key": KEY_H},
 ]
 
-const SCREEN_PATHS := {
+var SCREEN_PATHS: Dictionary = {
 	"inventory": "res://scripts/ui/InventoryScreen.gd",
 	"equipment": "res://scripts/ui/EquipmentScreen.gd",
 	"crafting":  "res://scripts/ui/CraftingScreen.gd",
 	"jobs":      "res://scripts/ui/JobsScreen.gd",
 	"party":     "res://scripts/ui/PartyScreen.gd",
 	"stats":     "res://scripts/ui/StatsScreen.gd",
+	"mounts":    "res://scripts/ui/MountScreen.gd",
 }
 
 # Scene references (resolved by Godot from the .tscn at load time).
@@ -104,7 +106,6 @@ func _ensure_shell() -> void:
 		_background.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_background)
-		UIBackgrounds.apply_modal_bg(_background)
 	if _title_label == null:
 		_title_label = Label.new()
 		_title_label.name = "TitleLabel"
@@ -166,10 +167,12 @@ func _build_tab_bar() -> void:
 		btn.toggle_mode = true
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
+		btn.add_theme_stylebox_override("focus", MT.focus_ring())
 		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
 		_tab_bar.add_child(btn)
 		_tab_buttons[tab.id] = btn
+	# Apply mod-registered tabs
+	_apply_mod_tabs()
 
 
 func _on_tab_button_pressed(tab_id: String) -> void:
@@ -207,6 +210,10 @@ func select_tab(tab_id: String) -> void:
 
 
 func _lazy_load_tab(tab_id: String) -> void:
+	var existing := _content.get_node_or_null("Screen_" + tab_id)
+	if existing:
+		existing.queue_free()
+		_tab_controllers.erase(tab_id)
 	var path: String = SCREEN_PATHS.get(tab_id, "")
 	if path.is_empty() or not ResourceLoader.exists(path):
 		# Placeholder for tabs that don't have a screen yet (e.g. Equipment
@@ -238,7 +245,7 @@ func get_active_tab() -> String:
 
 
 func close_menu() -> void:
-	emit_signal("closed")
+	closed.emit()
 	_tab_controllers.clear()
 	queue_free()
 
@@ -300,4 +307,28 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.keycode == tab.key:
 			select_tab(tab.id)
 			get_viewport().set_input_as_handled()
-			return
+
+
+## Add mod-registered tabs to the tab bar
+func _apply_mod_tabs() -> void:
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api == null:
+		return
+	var mod_tabs: Array = mod_api.get_extensions("character_menu_tabs")
+	if mod_tabs.is_empty():
+		return
+	for tab in mod_tabs:
+		TABS.append({"id": tab.id, "label": tab.label, "key": KEY_NONE})
+		SCREEN_PATHS[tab.id] = tab.scene_path
+		# Add button to tab bar
+		var btn := Button.new()
+		btn.name = "Tab_%s" % tab.id
+		btn.text = tab.label
+		btn.custom_minimum_size = Vector2(140, 28)
+		btn.toggle_mode = true
+		btn.focus_mode = Control.FOCUS_ALL
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", MT.focus_ring())
+		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
+		_tab_bar.add_child(btn)
+		_tab_buttons[tab.id] = btn

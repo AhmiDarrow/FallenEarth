@@ -1,27 +1,24 @@
-[gd_scene load_steps=7 format=3 uid="uid://combat_level_v2"]
+[gd_scene load_steps=8 format=3 uid="uid://bw15mook2psgj"]
 
 [ext_resource type="Script" path="res://scripts/combat/v2/CombatLevel3D.gd" id="1_level"]
 [ext_resource type="Script" path="res://scripts/combat/v2/CombatArena3D.gd" id="2_arena"]
 [ext_resource type="Script" path="res://scripts/combat/v2/TacticsCamera3D.gd" id="3_camera"]
 [ext_resource type="Script" path="res://scripts/combat/v2/TacticsInput3D.gd" id="4_input"]
 [ext_resource type="Script" path="res://scripts/combat/ui/TopPromptV110.gd" id="5_prompt"]
-[ext_resource type="Script" path="res://scripts/combat/ui/ActionBarV110.gd" id="6_actionbar"]
+[ext_resource type="Script" path="res://scripts/combat/ui/CombatActionPanel.gd" id="6_actionbar"]
 
 [sub_resource type="Environment" id="env_combat"]
-background_mode = 1
+background_mode = 5
 background_color = Color(0.12, 0.14, 0.16, 1)
 ambient_light_source = 2
 ambient_light_color = Color(0.8, 0.8, 0.85, 1)
-ambient_light_energy = 1.0
 tonemap_mode = 2
-glow_enabled = false
-ssao_enabled = false
 
 [node name="CombatLevel3D" type="Node3D"]
 script = ExtResource("1_level")
 
 [node name="TacticsCamera" type="Camera3D" parent="."]
-transform = Transform3D(0.707107, -0.408248, 0.57735, 0, 0.816497, 0.57735, -0.707107, -0.408248, 0.57735, 4.5, 7.0, 4.5)
+transform = Transform3D(0.707107, -0.408248, 0.57735, 0, 0.816497, 0.57735, -0.707107, -0.408248, 0.57735, 4.5, 7, 4.5)
 script = ExtResource("3_camera")
 
 [node name="TacticsInput" type="Node3D" parent="."]
@@ -43,26 +40,27 @@ environment = SubResource("env_combat")
 layer = 10
 
 [node name="TopPrompt" type="Control" parent="HUDLayer"]
+layout_mode = 3
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -180.0
-offset_top = 124.0
+offset_top = 72.0
 offset_right = 180.0
-offset_bottom = 172.0
+offset_bottom = 136.0
 grow_horizontal = 2
 script = ExtResource("5_prompt")
 
 [node name="ActionBar" type="Control" parent="HUDLayer"]
+layout_mode = 3
 anchors_preset = 7
 anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -180.0
-offset_top = -160.0
-offset_right = 180.0
-offset_bottom = -124.0
+offset_left = -300.0
+offset_top = -36.0
+offset_right = 300.0
 grow_horizontal = 2
 grow_vertical = 0
 script = ExtResource("6_actionbar")

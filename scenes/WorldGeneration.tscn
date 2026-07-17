@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://70btn0pv2gki"]
+[gd_scene load_steps=2 format=3 uid="uid://70btn0pv2gki"]
 
 [ext_resource type="Script" path="res://scripts/WorldGeneration.gd" id="1_wg"]
-[ext_resource type="Texture2D" uid="uid://dxl8l8xqfea4u" path="res://assets/backgrounds/worldgenbg.png" id="2_bg"]
 
 [node name="WorldGeneration" type="Control"]
 layout_mode = 3
@@ -17,7 +16,6 @@ layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-texture = ExtResource("2_bg")
 stretch_mode = 3
 
 [node name="VBox" type="VBoxContainer" parent="."]
@@ -117,26 +115,19 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="PreviewPanel" type="Panel" parent="VBox/ContentHBox"]
+[node name="HexMargin" type="MarginContainer" parent="VBox/ContentHBox"]
 custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-
-[node name="Margin" type="MarginContainer" parent="VBox/ContentHBox/PreviewPanel"]
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="HexGrid" type="Node2D" parent="VBox/ContentHBox/PreviewPanel/Margin"]
+[node name="HexGrid" type="Node2D" parent="VBox/ContentHBox/HexMargin"]
 
-[node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/PreviewPanel/Margin/HexGrid"]
+[node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/HexMargin/HexGrid"]
 enabled = false
 
 [node name="SideVBox" type="VBoxContainer" parent="VBox/ContentHBox"]

@@ -16,7 +16,6 @@ var _hex_radius: int = 12  # Size of hex "sphere" patch (axial); set via generat
 var _seed: String = ""
 var _tile_map: Dictionary = {}  # key "q,r" -> tile dict
 var _biome_definitions: Array[Dictionary] = []
-var _active_rift_nodes: Array[Dictionary] = []
 
 
 ## Town and Riftspire data populated by _place_towns (called from generate()).
@@ -27,9 +26,11 @@ var _faction_names: Array = []  # cached from data/factions.json
 var _town_templates: Dictionary = {}  # cached from data/towns.json
 
 
-## Deterministic seed from string for Godot's rand
+## Deterministic seed from string using local RNG (avoids global seed() mutation).
 func randseed_from_string(s: String) -> void:
-	seed(s.hash())
+	_rng = RandomNumberGenerator.new()
+	_rng.seed = s.hash()
+var _rng: RandomNumberGenerator
 
 
 func initialize() -> bool:
@@ -111,7 +112,7 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 			var abs_lat = abs(lat)
 
 			# Elevation noise (RimWorld hilliness/elev)
-			var elev_noise = (randf() - 0.5) * 2.0 + sin(lat * 0.05) * 0.3
+			var elev_noise = (_rng.randf() - 0.5) * 2.0 + sin(lat * 0.05) * 0.3
 			var elevation = clamp(0.5 + elev_noise * 0.5, 0.0, 1.0)
 
 			# Temperature bias (colder poles)
@@ -119,7 +120,7 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 			temp = clamp(temp, 0.0, 1.0)
 
 			# Rainfall / moisture noise (RimWorld rain)
-			var rain = clamp(0.5 + (randf() - 0.5) * 1.2 - (elevation - 0.5) * 0.6, 0.0, 1.0)
+			var rain = clamp(0.5 + (_rng.randf() - 0.5) * 1.2 - (elevation - 0.5) * 0.6, 0.0, 1.0)
 
 			# Count adjacent hexes by biome for clustering bonus
 			var neighbor_bonus: Dictionary = {}
@@ -192,7 +193,7 @@ func _pick_biome_by_climate(temp: float, rain: float, elev: float, biomes: Array
 		score += neighbor_bonus.get(name, 0.0)
 
 		# Small random jitter to break ties
-		score += randf_range(-0.2, 0.2)
+		score += _rng.randf_range(-0.2, 0.2)
 
 		if score > best_score:
 			best_score = score
@@ -343,7 +344,7 @@ func _place_towns() -> void:
 	var candidates: Array = get_starting_candidates(_tile_map.size())
 	if candidates.is_empty():
 		return
-	var rift_idx: int = randi() % candidates.size()
+	var rift_idx: int = _rng.randi() % candidates.size()
 	var rift_entry: Dictionary = candidates[rift_idx]
 	_riftspire_hex_key = str(rift_entry.get("key", ""))
 	# Tag the tile with a "riftspire" feature and a special marker.
@@ -495,12 +496,6 @@ func get_towns_seeded() -> Array:
 
 func get_riftspire_hex_key() -> String:
 	return _riftspire_hex_key
-
-
-# TODO Methods -- not yet implemented
-
-func add_rift_node(x: int, y: int, is_active: bool = true) -> void:
-	_active_rift_nodes.append({"x": x, "y": y, "active": is_active})
 
 
 ## get_visual_tile / get_tile_visual removed in v0.3.0 — tile rendering is now

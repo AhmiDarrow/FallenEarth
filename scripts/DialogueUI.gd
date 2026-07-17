@@ -24,7 +24,7 @@ var _choices_container: VBoxContainer = null
 var _close_button: Button = null
 var _invite_button: Button = null
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -34,14 +34,12 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	# Semi-transparent backdrop
 	var backdrop := ColorRect.new()
 	backdrop.name = "Backdrop"
-	backdrop.color = Color(0, 0, 0, 0.6)
+	backdrop.color = Color(0, 0, 0, 0.75)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
-	UIBackgrounds.apply_modal_bg(backdrop)
 
 	# Panel container (centered at bottom)
 	_panel = PanelContainer.new()

@@ -6,15 +6,14 @@ extends Control
 ## and shows the prompt based on the current participant's
 ## stage.
 
-const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
-const PANEL_BG_PATH := "res://assets/battle_ui/top_prompt_panel.png"
 const DEFAULT_BG := Color(0.05, 0.05, 0.10, 0.92)
 const COLOR_BORDER := Color(0.40, 0.55, 0.75, 1.0)
 const COLOR_TEXT := Color(1.0, 0.97, 0.92)
 const COLOR_DIM := Color(0.85, 0.85, 0.95)
 const WIDTH := 360
-const HEIGHT := 48
+const HEIGHT := 64
 
 var _label: Label
 var _sub: Label
@@ -25,7 +24,6 @@ func _ready() -> void:
 	# v0.11.0: Anchors and offsets are set by CombatLevel._apply_layout()
 	# which reads the actual viewport size from DisplayManager. Do not
 	# hardcode positions here — the orchestrator handles it.
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_build_children()
 	visible = false
 
@@ -35,7 +33,7 @@ func _build_children() -> void:
 	_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_panel)
-	_panel.add_theme_stylebox_override("panel", StyleBoxHelper.panel(DEFAULT_BG, COLOR_BORDER, 6, 2))
+	_panel.add_theme_stylebox_override("panel", MT.panel(DEFAULT_BG, COLOR_BORDER, 6, 2))
 	var vbox := VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -49,6 +47,7 @@ func _build_children() -> void:
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 3)
 	_label.add_theme_font_size_override("font_size", 16)
+	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_label)
 	_sub = Label.new()
 	_sub.name = "Sub"
@@ -56,7 +55,8 @@ func _build_children() -> void:
 	_sub.add_theme_color_override("font_color", COLOR_DIM)
 	_sub.add_theme_color_override("font_outline_color", Color.BLACK)
 	_sub.add_theme_constant_override("outline_size", 2)
-	_sub.add_theme_font_size_override("font_size", 10)
+	_sub.add_theme_font_size_override("font_size", 12)
+	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_sub.visible = false
 	vbox.add_child(_sub)
 

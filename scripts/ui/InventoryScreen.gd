@@ -1,9 +1,9 @@
-## InventoryScreen — Wyvernbox-powered grid inventory with equipment panel,
-## hotbar row, drag & drop, and tooltip.
+## InventoryScreen — Wyvernbox-powered grid inventory with drag & drop,
+## weight display, stats panel, and tooltip.
 class_name InventoryScreen
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const CELL_SIZE := 48
 
@@ -17,13 +17,11 @@ func _ready() -> void:
 	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	# Dark overlay
 	var bg := ColorRect.new()
 	bg.color = Color(0.02, 0.02, 0.04, 0.92)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 
 	# Main window panel — fills parent with margins
 	var panel := PanelContainer.new()
@@ -42,14 +40,11 @@ func _ready() -> void:
 	var top_bar := _make_top_bar()
 	vbox.add_child(top_bar)
 
-	# Main body: equipment | grid+hotbar
+	# Main body: grid | stats
 	var body := HBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(body)
-
-	var equip_panel := _make_equipment_panel()
-	body.add_child(equip_panel)
 
 	var grid_vbox := VBoxContainer.new()
 	grid_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -103,30 +98,6 @@ func _make_top_bar() -> Control:
 	return hb
 
 
-func _make_equipment_panel() -> Control:
-	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(140, 0)
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-
-	var title := Label.new()
-	title.text = "EQUIPMENT"
-	title.add_theme_color_override("font_color", Color(0.95, 0.6, 0.1))
-	panel.add_child(title)
-
-	var equip_slots := ["Main Hand", "Off Hand", "Head", "Chest", "Belt", "Hands", "Feet", "Ring", "Neck"]
-	for slot_name in equip_slots:
-		var slot := _make_equip_slot(slot_name)
-		panel.add_child(slot)
-	return panel
-
-
-func _make_equip_slot(_slot_name: String) -> Control:
-	var c := ColorRect.new()
-	c.custom_minimum_size = Vector2(CELL_SIZE + 8, CELL_SIZE + 8)
-	c.color = Color(0.15, 0.15, 0.2, 0.8)
-	return c
-
-
 func _make_grid_view() -> InventoryView:
 	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
 	if inv_mgr == null or not inv_mgr.has_method("get_main_grid"):
@@ -144,6 +115,15 @@ func _make_grid_view() -> InventoryView:
 	view.custom_minimum_size = Vector2(CELL_SIZE * 10, CELL_SIZE * 3)
 	view.show_backgrounds = true
 	view.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Visible grid background so the 10x3 area is obvious
+	var grid_bg := ColorRect.new()
+	grid_bg.name = "GridBg"
+	grid_bg.color = Color(0.07, 0.07, 0.11, 0.95)
+	grid_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_child(grid_bg)
+	view.grid_background = NodePath("GridBg")
+
 	return view
 
 

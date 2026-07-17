@@ -19,6 +19,7 @@
     {"id": "mana_potion", "name": "Mana Potion", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 25, "weight": 0.1, "icon": "item_mana_potion", "description": "Restores 25 MP on use."},
     {"id": "cooked_meat", "name": "Cooked Meat", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 8, "weight": 0.1, "icon": "item_cooked_meat", "description": "Heals 15 HP and grants +1 attack for 3 turns on use."},
     {"id": "antidote", "name": "Antidote", "category": "consumable", "stackable": true, "max_stack": 20, "sell_value_ec": 12, "weight": 0.1, "icon": "item_antidote", "description": "Heals 10 HP on use. Will cure status effects when those land in v0.6.0+."},
-    {"id": "cooking_table", "name": "Cooking Table", "category": "station", "stackable": false, "max_stack": 1, "sell_value_ec": 50, "weight": 5.0, "icon": "item_cooking_table", "description": "A portable cooking table. Place on the local map to cook raw_meat, brew mana potions, and mix antidotes. Recipe unlocked at L5."}
+    {"id": "cooking_table", "name": "Cooking Table", "category": "station", "stackable": false, "max_stack": 1, "sell_value_ec": 50, "weight": 5.0, "icon": "item_cooking_table", "description": "A portable cooking table. Place on the local map to cook raw_meat, brew mana potions, and mix antidotes. Recipe unlocked at L5."},
+    {"id": "sleeping_bag", "name": "Sleeping Bag", "category": "utility", "stackable": false, "max_stack": 1, "sell_value_ec": 25, "weight": 2.0, "icon": "item_sleeping_bag", "description": "A portable bedroll. Press E in the overworld to place it and set your respawn point. Press E again on a placed bag to activate it."}
   ]
 }

@@ -142,4 +142,54 @@ POST /v1/generate-image-pixflux  → base 128 + base 64
 POST /v1/rotate                  → ×7 (skip S)
 POST /v1/animate-with-text       → ×8 (4 frames each)
 ```
-Per combo: ~17 generations. 23 remaining × 17 ≈ 391 generations (budget ≈ 1968 remaining → fits).
+Per combo: ~17 generations. 23 remaining × 17 ≈ 391 generations (budget ≈ 1640 remaining → fits).
+
+---
+
+## UI Design System (2026-07-07)
+
+### Architecture
+- **Design Tokens:** `assets/ui/UI_Colors.gd` — 50+ constants (palette, spacing, font sizes, bar dimensions, cell sizes)
+- **Theme Builder:** `assets/ui/UI_Theme.gd` — Programmatic Godot Theme, applied globally in `GameManager._ready()`
+- **StyleBox Factories:** `scripts/StyleBoxHelper.gd` — 10 static methods for creating StyleBoxFlat instances
+- **Background Textures:** `scripts/UIBackgrounds.gd` — Texture overlay system (modal, panel, tooltip, hud_bar, inventory_cell, side_panel)
+- **Button Styling:** `scripts/ButtonStyleHelper.gd` — 5 states × 5 variants, design system palette
+
+### Key Design Decisions
+- PanelContainer default theme is **transparent** (not `SB.panel(BG_DEEP)` — was causing dark squares)
+- Modal overlay texture alpha = 0.15 (subtle, not overpowering — was 0.6)
+- HUD bar background alpha = 0.45 (was 0.75)
+- Container-based layouts preferred over absolute positioning in .tscn files
+- `set_anchors_preset()` preferred over manual `anchor_right`/`anchor_bottom` values
+
+### Files
+```
+assets/ui/
+├── UI_Colors.gd
+├── UI_Theme.gd
+├── bg_modal.png
+├── bg_panel.png
+├── bg_tooltip.png
+├── bg_hud_bar.png
+├── bg_inventory_cell.png
+└── bg_side_panel.png
+
+scripts/
+├── StyleBoxHelper.gd
+├── UIBackgrounds.gd
+└── ButtonStyleHelper.gd
+```
+
+---
+
+## PixelLab API (validated)
+
+### Tool sprites (6 of 8 generated via PixelLab MCP)
+- crowbar, pickaxe, mining_drill, laser_cutter, wrench, knife
+- Remaining: chainsaw, welder
+
+### Character sprite pipeline
+- `tools/pixellab_test_sprite.py` — raw REST calls, idempotent
+- Output: `assets/characters/{race}_{gender}_test/`
+- `.gdignore` in output folder during generation (prevents Godot editor interference)
+- Human male complete: 42 PNGs + contact sheets

@@ -14,8 +14,7 @@
 class_name CraftingScreen
 extends Control
 
-const UI = preload("res://assets/ui/UI_Colors.gd")
-const StyleBoxHelper = preload("res://scripts/StyleBoxHelper.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const CRAFTING_PATH := "/root/CraftingManager"
 
@@ -46,8 +45,8 @@ func _build_ui() -> void:
 		b.text = cat.capitalize()
 		b.toggle_mode = true
 		b.focus_mode = Control.FOCUS_ALL
-		b.add_theme_stylebox_override("focus", StyleBoxHelper.focus_ring())
-		ButtonStyleHelper.apply_ghost(b)
+		b.add_theme_stylebox_override("focus", MT.focus_ring())
+		MT.apply_ghost(b)
 		b.pressed.connect(_on_filter_pressed.bind(cat))
 		filters.add_child(b)
 		if cat == "all":
@@ -64,7 +63,7 @@ func _build_ui() -> void:
 	# Status line
 	_status_label = Label.new()
 	_status_label.text = ""
-	_status_label.add_theme_color_override("font_color", UI.TEXT_SECONDARY)
+	_status_label.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
 	vbox.add_child(_status_label)
 
 
@@ -83,14 +82,14 @@ func _refresh() -> void:
 		# a "loading" message.
 		var ph := Label.new()
 		ph.text = "(CraftingManager loading...)"
-		ph.add_theme_color_override("font_color", UI.TEXT_MUTED)
+		ph.add_theme_color_override("font_color", MT.TEXT_MUTED)
 		_list_vbox.add_child(ph)
 		return
 	var recipes: Array = cm.unlocked_recipes() if cm.has_method("unlocked_recipes") else []
 	if recipes.is_empty():
 		var ph := Label.new()
 		ph.text = "(no recipes unlocked — level up to see more)"
-		ph.add_theme_color_override("font_color", UI.TEXT_MUTED)
+		ph.add_theme_color_override("font_color", MT.TEXT_MUTED)
 		_list_vbox.add_child(ph)
 		return
 	for rid in recipes:
@@ -105,7 +104,7 @@ func _refresh() -> void:
 func _make_recipe_row(rid: String, recipe: Dictionary, cm: Node) -> Control:
 	var row := PanelContainer.new()
 	row.custom_minimum_size = Vector2(0, 44)
-	row.add_theme_stylebox_override("panel", StyleBoxHelper.panel(UI.BG_SURFACE, UI.BORDER_SUBTLE, UI.RADIUS_SM, 1))
+	row.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_SUBTLE, MT.RADIUS_SM, 1))
 	var hbox := HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 8)
 	row.add_child(hbox)
@@ -114,7 +113,7 @@ func _make_recipe_row(rid: String, recipe: Dictionary, cm: Node) -> Control:
 	hbox.add_child(info)
 	var name := Label.new()
 	name.text = "%s%s" % [recipe.get("name", rid), "" if str(recipe.get("station", "none")) == "none" else "  [station: %s]" % recipe.get("station", "?")]
-	name.add_theme_color_override("font_color", UI.TEXT_PRIMARY)
+	name.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
 	info.add_child(name)
 	var ing_text: String = ""
 	for ing in recipe.get("ingredients", []):
@@ -129,15 +128,15 @@ func _make_recipe_row(rid: String, recipe: Dictionary, cm: Node) -> Control:
 		ing_text,
 		recipe.get("category", "?"),
 	]
-	meta.add_theme_color_override("font_color", UI.TEXT_SECONDARY)
-	meta.add_theme_font_size_override("font_size", UI.FS_SMALL)
+	meta.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
+	meta.add_theme_font_size_override("font_size", MT.FS_SMALL)
 	info.add_child(meta)
 	var craft_btn := Button.new()
 	craft_btn.text = "Craft"
 	craft_btn.disabled = not bool(cm.can_craft(rid) if cm.has_method("can_craft") else false)
 	craft_btn.pressed.connect(_on_craft_pressed.bind(rid, cm))
 	hbox.add_child(craft_btn)
-	ButtonStyleHelper.apply_primary(craft_btn)
+	MT.apply_primary(craft_btn)
 	return row
 
 

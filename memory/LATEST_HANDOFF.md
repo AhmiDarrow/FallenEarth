@@ -1,180 +1,115 @@
 ---
-name: v110-combat-architecture-rewrite
-description: v0.11.0 Combat system rebuilt on the Resource/Service/Module architecture from ramaureirac/godot-tactical-rpg.
+name: ui-design-system
+description: Full UI design system implementation — tokens, theme, backgrounds, component library, wiring across all screens.
 ---
-# v0.11.0 Combat Architecture Rewrite
+# UI Design System
 
 ## User request
-"LET'S TRY BUILDING THE COMBAT SYSTEM OVER WE KEEP HAVING
-PROBLEMS, USE THIS PROJECT AS THE REFERENCE
-https://github.com/ramaureirac/godot-tactical-rpg"
-
-Three rounds of polish (v0.10.5 → v0.10.10 → v0.10.11) hadn't fixed
-the visual quality issues, and the god-class architecture
-(`TacticalCombat.gd` 800+ lines, `CombatManager.gd` 1500+ lines)
-made the system hard to maintain. A clean rebuild using the
-reference project's architecture was the right move.
+Build a comprehensive UI Design System for the Fallen Earth Godot 4 project. The goal was consistency, maintainability, and visual polish across all UI screens.
 
 ## What shipped
 
-### Three-tier architecture: Resources / Services / Modules
-Adapted directly from `ramaureirac/godot-tactical-rpg`:
+### Design System Foundation (5 new files)
+- `assets/ui/UI_Colors.gd` — 50+ design tokens: palette (BG_DEEP, BG_PANEL, BG_HUD, ACCENT_PRIMARY, etc.), spacing (XS/S/M/L/XL), font sizes (FS_CAPTION through FS_HERO), bar dimensions (BAR_HEIGHT_SM/MD/LG), cell sizes (CELL_SM/MD/LG)
+- `assets/ui/UI_Theme.gd` — Programmatic Godot Theme builder. Applied globally via `UI_Theme.apply_to(get_tree().root)` in `GameManager._ready()`. Covers Panel, Button, LineEdit, ItemList, ProgressBar, RichTextLabel, Label, ScrollBar, TabContainer
+- `scripts/StyleBoxHelper.gd` — 10 static factory methods for StyleBoxFlat (panel_flat, panel_rounded, button_normal, button_hover, button_pressed, button_focus, tooltip, hud_bar, inventory_cell, side_panel)
+- `scripts/UIBackgrounds.gd` — Texture overlay system with `apply_modal_bg`, `apply_hud_bar`, `apply_side_panel`, `apply_panel_bg`, `apply_tooltip_bg` functions
+- `scripts/ButtonStyleHelper.gd` — Rewritten: 5 states (normal/hover/pressed/focus/disabled), 5 variants (primary/secondary/danger/success/ghost), design system palette
 
-| Tier | What | Where | Extends |
-|------|------|-------|---------|
-| **Resource** | data + state + signals | `models/*.gd` | `Resource` |
-| **Service** | business logic, no scene tree | `services/*.gd` | `RefCounted` |
-| **Module** | scene tree node, renders + dispatches input | `*.gd` (root) | `Node2D` / `Control` |
+### UI Background Textures (6 files via PixelLab MCP)
+- `assets/ui/bg_modal.png` — Dark with subtle tech pattern
+- `assets/ui/bg_panel.png` — Slightly lighter panel background
+- `assets/ui/bg_tooltip.png` — Small tooltip texture
+- `assets/ui/bg_hud_bar.png` — Horizontal bar texture for HUD
+- `assets/ui/bg_inventory_cell.png` — Inventory cell background
+- `assets/ui/bg_side_panel.png` — Side panel texture
 
-### Resources created (4 files, ~280 lines)
-- `TileResource` — one tile's state (reachable/attackable/hover/blocked/
-  pf_root/pf_distance/terrain/occupier)
-- `UnitResource` — one unit's stats (HP/MP/attack/defense/speed/move/
-  jump/attack_range/facing) + per-turn state (has_moved/has_acted) +
-  damage/heal/spend_mp helpers
-- `ParticipantResource` — turn state machine with 10 explicit stages
-  (SELECT_PAWN → SHOW_ACTIONS → SHOW_MOVEMENTS → SELECT_LOCATION →
-  MOVE_UNIT → DISPLAY_TARGETS → SELECT_ATTACK_TARGET → ATTACK →
-  END_TURN → DONE)
-- `ArenaResource` — grid config + units/tiles dicts + signal emitters
-  (unit_moved / unit_attacked / turn_started / turn_ended /
-  encounter_ended) + lookup helpers
+### Screens Wired (20+)
+All major screens updated with design system backgrounds, styled buttons, and consistent typography:
+- MainMenu, WorldGeneration, CharacterSelection, PauseMenu, Options, OptionsMenu
+- CharacterMenu, DialogueUI, ShopInterface, MissionBoardInterface, RiftEntryUI
+- LootWindow, BaseShopUI, InventoryScreen, Settlement, SettlementInterior
+- Base, WorldMapScreen, CookingTableUI, BattleResultsUI, HUD, Hotbar
+- QuestTrackerUI, EquipmentScreen, CraftingScreen, StatsScreen
 
-### Services created (6 files, ~340 lines)
-- `PathfindingService` — BFS on the grid (4-neighbour), populates
-  `pf_root` / `pf_distance`, returns the path to any target tile
-- `TurnService` — pure dispatcher: `tick(participant, combat_level)`
-  returns the next stage. The combat level owns all the stage
-  handlers, the service just routes to the right one
-- `UnitMovementService` — tween-based path animation, snaps to
-  cell center when close enough, updates tile occupancy
-- `UnitCombatService` — range check + back/side/front multiplier
-  (1.5x / 1.2x / 1.0x, the FFT convention) + resolve_attack
-- `PlayerService` — picks the next pawn to act + marks reachable
-  tiles via pathfinding
-- `OpponentService` — AI brain picks nearest player + picks
-  destination tile to chase them
+### Cleanup
+- All inline StyleBoxFlat removed from MainMenu.tscn, PauseMenu.tscn, WorldGeneration.tscn
+- 25+ sites migrated from `anchor_right=1.0` to `set_anchors_preset()`
+- 6 scripts fixed: FOCUS_NONE → FOCUS_ALL (visible focus rings)
 
-### Modules created (4 files, ~520 lines)
-- `CombatTile` — the visual; reads its state from `TileResource`,
-  refreshes in `_process` based on reachable/attackable/hover flags
-- `CombatUnit` — the visual; reads its stats from `UnitResource`,
-  size-aware sprite scaling (32px target on 40px cell)
-- `CombatArena` — owns the 7x7 grid of `CombatTile` + the units;
-  public API: `configure(biome, grid_size, height_seed)`,
-  `add_unit(dict)`, `get_tile(x, y)`, `get_unit(id)`
-- `CombatLevel` — the entry point. Owns the arena + participants +
-  services. `_process` ticks the state machine, the stage handlers
-  call the services to do the actual work. Public API:
-  `set_encounter(dict)` is called BEFORE the scene enters the
-  tree so `_ready` sees the encounter.
+### UI Layout Fixes (this session)
+- ShopInterface: absolute positions → VBoxContainer/HBoxContainer responsive layout
+- MissionBoardInterface: absolute positions → container layout
+- BaseShopUI: absolute positions → container layout
+- InventoryScreen: center-anchored panel → full-rect (fixes overlap with CharacterMenu header)
+- EquipmentScreen: slots 110x96→90x80, left panel 360→300
+- InventoryScreen: panel 900x620→800x560, side panels 160→140
+- WorldMapScreen: HEX_SIZE 22→30, hex buttons 40x36→50x44
+- HUD: top bar 56→48, bars 260x18→220x16, level/EC labels moved into top bar
+- LootWindow: CELL_SIZE 40→48 (matches InventoryScreen)
+- StatsScreen: hardcoded fonts → design tokens, left panel 240→200
 
-### UI ported (2 of 5)
-- `TopPromptV110` — top-center instruction banner ("Select a
-  white tile to move"). Shows different text per stage.
-- `ActionBarV110` — bottom-center End Turn + Retreat buttons.
+### UI Graphical Fixes (this session)
+- CharacterSelection: removed invalid `[/br]` BBCode closing tag
+- UI_Theme: PanelContainer default `SB.panel(BG_DEEP)` → transparent (was causing dark squares)
+- UIBackgrounds: `apply_modal_bg` texture overlay 0.6→0.15 alpha, ColorRect alpha cap 0.35→0.55
+- WorldMapScreen: removed `apply_modal_bg` (was reducing bg alpha, letting HubWorld tiles bleed through)
+- HUD bar group: background alpha 0.75→0.45, corner radius 6→4
 
-The other 3 (TurnOrderBar, UnitInfoCard, SkillBar) are deferred to
-v0.11.1 — the core combat works without them.
+### Bug Fixes (this session)
+- CharacterMenu: use-after-free in `select_tab()` — added `is_instance_valid()` checks
+- HoverTooltip: `add_theme_constant_override` → `add_theme_font_size_override` (font_size bug)
+- HUD: `bar.show_percentage = false` → `true`
+- InventoryManager: item icon loading via `load("res://assets/sprites/items/<item_id>.png")`
+- ResourceVisualManager: SPRITE_FOLDER → `assets/sprites/resource_nodes/`, PICKUP_FOLDER → `assets/sprites/items/`
+- CharacterVisual: sprite loading fallback for `_spritesheet.png` / `_sheet.png`; renamed `human_female_sheet.png` → `human_female_spritesheet.png`
+- CharacterVisual: `slot_offsets` dictionary in `update_equipment()`, added offhand to `layer_order`
 
-### Files created
+### Character Sprites (this session)
+- Human male complete: 128px base, 64px animation ref, 8 idle rotations, 4-frame walk × 8 dirs = 42 PNGs
+- Tool sprites: 6 of 8 generated (crowbar, pickaxe, mining_drill, laser_cutter, wrench, knife)
+
+## Files created
 ```
-scripts/combat/
-├── models/
-│   ├── arena/arena_resource.gd
-│   ├── participant/participant_resource.gd
-│   ├── tile/tile_resource.gd
-│   └── unit/unit_resource.gd
-├── services/
-│   ├── opponent/opponent_service.gd
-│   ├── pathfinding/pathfinding_service.gd
-│   ├── player/player_service.gd
-│   ├── turn/turn_service.gd
-│   └── unit/
-│       ├── unit_combat_service.gd
-│       └── unit_movement_service.gd
-├── ui/
-│   ├── ActionBarV110.gd
-│   └── TopPromptV110.gd
-├── CombatArena.gd
-├── CombatLevel.gd
-├── CombatTile.gd
-└── CombatUnit.gd
+assets/ui/
+├── UI_Colors.gd
+├── UI_Theme.gd
+├── bg_modal.png
+├── bg_panel.png
+├── bg_tooltip.png
+├── bg_hud_bar.png
+├── bg_inventory_cell.png
+└── bg_side_panel.png
 
-scenes/
-└── CombatLevel.tscn
+scripts/
+├── StyleBoxHelper.gd
+├── UIBackgrounds.gd
+└── ButtonStyleHelper.gd (rewritten)
 
-tools/
-├── boot_combat_v110.gd
-└── smoke_combat_v110.gd
+assets/characters/human_male_test/
+├── human_male_test_base_128.png
+├── human_male_test_base_64.png
+├── human_male_test_{S,SE,E,NE,N,NW,W,SW}.png (8 rotations)
+└── human_male_test_walk_{dir}_{0..3}.png (32 walk frames)
+
+assets/sprites/tools/
+├── crowbar.png, pickaxe.png, mining_drill.png
+├── laser_cutter.png, wrench.png, knife.png
 ```
 
 ## Verification
+- All existing smoke tests pass (no regression)
+- `validate_scripts.gd` — All scripts and scenes OK
 
-| File | Checks | Status |
-|------|--------|--------|
-| `validate_scripts.gd` | All | All OK |
-| `tools/smoke_combat_v110.gd` | 50+ (new architecture) | All pass |
-| `tools/boot_combat_v110.gd` | 5 (boot test) | All pass |
-| `tools/smoke_combat_v100.gd` | 27 (old v1.0.0) | All pass (no regression) |
-| `tools/boot_combat.gd` | 8 (old boot test) | All pass (no regression) |
-| `tools/smoke_combat_polish.gd` | 30 (polish tests) | All pass (no regression) |
+## Lessons learned
+- PanelContainer default theme should be transparent — programmatic themes should not add unexpected backgrounds
+- `apply_modal_bg` alpha should be subtle (0.15) — too high (0.6) causes texture to overpower background content
+- Container-based layouts are more maintainable than absolute positioning in .tscn files
+- `set_anchors_preset()` is safer than manual anchor_right/anchor_bottom values
+- `.gdignore` files prevent Godot editor filesystem watcher from interfering with file generation
 
-## Architecture constraints held
-
-1. **Single CELL_SIZE constant** — 40px, propagated from
-   `BattleGridView` (old) and `CombatArena` (new). Bumping it
-   cascades through grid + tile + unit + UI positions.
-2. **Pure data Resources** — `TileResource` and `UnitResource`
-   have no Node references except `occupier` / `current_pawn`
-   (which the modules set). The Resources can be saved as .tres
-   for class templates (Recruit.tres, Skeleton.tres, etc.) when
-   we want to ship pre-made classes.
-3. **State machine in the Resource** — `ParticipantResource.stage`
-   is the single source of truth. The combat level's `_process`
-   reads it, dispatches to the right stage handler, and writes
-   the next stage. No stage-to-stage logic lives in the modules
-   (CombatLevel just calls the services).
-4. **Signal-based arena** — `ArenaResource` emits
-   `unit_moved` / `unit_attacked` / `turn_started` / `turn_ended`
-   / `encounter_ended` so UI overlays + AI + HUD can listen
-   without coupling to the level.
-
-## Backward compatibility
-
-The old `BattleCell` / `BattleGridView` / `BattleUnit` (v0.10.5+)
-still exist in `scripts/combat/` — the new `CombatTile` /
-`CombatArena` / `CombatUnit` are separate class_names with
-parallel structure. The old `TacticalCombat.tscn` scene still
-works (its smoke tests pass), and the old encounter format
-(`character_data` + `enemy_templates` + `player_start`) is
-handled transparently by `_configure_from_encounter()` in
-`CombatLevel`. So the rebuild is purely additive — nothing
-existing is broken.
-
-To switch the game to use the new system, replace the
-`TacticalCombat.tscn` reference with `CombatLevel.tscn` in
-wherever it's instantiated (the splash → world → combat flow).
-
-## What's next (P2)
-- Port the remaining 3 UI panels (TurnOrderBar, UnitInfoCard,
-  SkillBar) — straightforward, just need to read from
-  ArenaResource instead of the old CombatManager.
-- Add the `CombatAI` brain — reuse the existing
-  `scripts/ai/CombatAI.gd` and have OpponentService consult it
-  via a callback.
-- Wire the encounter data into a `.tres` template so the test
-  scenes can declare "Recruit.tres vs Skeleton.tres" in the
-  editor.
-- Take a screenshot of the running scene to confirm the
-  visuals are right (cell borders, move highlights, sprites).
-
-## Lessons learned from the reference
-- The `signal called_X` pattern in the reference is overkill for
-  a 2D project — the ArenaResource just emits standard signals
-  directly. We simplified by skipping the resource-as-relay.
-- The reference's 8-direction camera + panning service is 3D-
-  specific; our 2D version has no camera (the grid is just
-  centered in the viewport). Skipped.
-- The reference's `StaticBody3D` + raycast for tile occupancy
-  was overkill — we use simple `occupier` field lookups instead.
+## What's next
+1. Remaining 23 character sprites (human_female + 22 race×gender combos)
+2. Remaining 2 tool sprites (chainsaw, welder)
+3. Idle + attack animation frames for characters
+4. v0.11.1 combat UI panels (TurnOrderBar, UnitInfoCard, SkillBar)

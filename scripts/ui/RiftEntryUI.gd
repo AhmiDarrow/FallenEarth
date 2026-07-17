@@ -3,7 +3,7 @@
 class_name RiftEntryUI
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 signal proceed_requested(rift_data: Dictionary)
 signal cancelled
@@ -24,21 +24,15 @@ func setup(rift: Dictionary) -> void:
 
 func _build_ui() -> void:
 	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.65)
+	backdrop.color = Color(0, 0, 0, 0.75)
 	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(backdrop)
-	UIBackgrounds.apply_modal_bg(backdrop)
 
+	var _center := CenterContainer.new()
+	_center.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_center)
 	_panel = PanelContainer.new()
-	_panel.offset_left = -200
-	_panel.offset_right = 200
-	_panel.offset_top = -160
-	_panel.offset_bottom = 160
-	_panel.anchor_left = 0.5
-	_panel.anchor_top = 0.5
-	_panel.anchor_right = 0.5
-	_panel.anchor_bottom = 0.5
-	add_child(_panel)
+	_center.add_child(_panel)
 
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 16)

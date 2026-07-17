@@ -17,8 +17,6 @@
 ## include the open_shops list in save/load.
 extends Node
 
-const SHOPS_PATH := "res://data/base_shops.json"
-
 signal shop_opened(shop_type: String, npc_id: String)
 signal shop_closed(shop_type: String, npc_id: String)
 
@@ -38,13 +36,13 @@ func _ready() -> void:
 
 
 func _load_data() -> void:
-	if not ResourceLoader.exists(SHOPS_PATH):
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[BaseShopManager] DataRegistry not available")
 		return
-	var raw = load(SHOPS_PATH)
-	if raw == null:
-		return
-	var data = raw.data if "data" in raw else raw
-	if not (data is Dictionary):
+	var data: Variant = dr.get_data("base_shops")
+	if data == null or not (data is Dictionary):
+		push_error("[BaseShopManager] base_shops.json missing or invalid")
 		return
 	_shop_types = {}
 	for s in data.get("shop_types", []):
@@ -158,7 +156,7 @@ func open_shop_for_npc(npc_id: String, archetype: String) -> bool:
 		"archetype": archetype,
 		"opened_at": Time.get_unix_time_from_system(),
 	})
-	emit_signal("shop_opened", shop_type, npc_id)
+	shop_opened.emit(shop_type, npc_id)
 	print("[BaseShopManager] Opened shop %s for NPC %s" % [shop_type, npc_id])
 	return true
 

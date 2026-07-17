@@ -19,7 +19,7 @@
 class_name Settlement
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const ENTRANCE_TILE := Vector2i(0, 0)
 const SETTLEMENT_PATH := "/root/SettlementManager"
 const PARTY_PATH := "/root/PartyNPCManager"
@@ -73,13 +73,11 @@ func setup(town: Dictionary, hub: Node) -> void:
 
 
 func _build_ui() -> void:
-	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.05, 0.04, 0.06, 0.95)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 	# Title
 	var title := Label.new()
 	title.name = "Title"

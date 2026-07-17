@@ -7,6 +7,9 @@ extends Node
 
 enum State { IDLE, WANDER, AGGRO, ATTACK, FLEE, PATROL, RETURN_TO_SPAWN }
 
+const GRID_OFFSETS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
+const BFS_MAX_VISITED: int = 4096
+
 signal state_changed(old_state: int, new_state: int)
 
 var current_state: int = State.IDLE
@@ -92,6 +95,10 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 
 func is_at_player(player_x: int, player_y: int) -> bool:
 	return grid_x == player_x and grid_y == player_y
+
+
+func get_wander_target() -> Vector2i:
+	return _wander_target
 
 
 func confirm_arrival() -> void:
@@ -215,41 +222,43 @@ func _repath(to_x: int, to_y: int) -> void:
 static func bfs_path(from_x: int, from_y: int, to_x: int, to_y: int, walkable_check: Callable) -> Array[Vector2i]:
 	if from_x == to_x and from_y == to_y:
 		return [Vector2i(from_x, from_y)]
+	var start := Vector2i(from_x, from_y)
+	var goal := Vector2i(to_x, to_y)
+	# Vector2i keys hash natively — no per-node string allocation.
 	var visited: Dictionary = {}
 	var parent: Dictionary = {}
-	var queue: Array[Vector2i] = [Vector2i(from_x, from_y)]
-	var start_key := "%d,%d" % [from_x, from_y]
-	visited[start_key] = true
-	while not queue.is_empty():
-		var current: Vector2i = queue.pop_front()
-		if current.x == to_x and current.y == to_y:
+	var queue: Array[Vector2i] = [start]
+	visited[start] = true
+	var head: int = 0
+	while head < queue.size():
+		var current: Vector2i = queue[head]
+		head += 1
+		if current == goal:
 			var path: Array[Vector2i] = []
 			var node: Vector2i = current
-			var node_key: String = "%d,%d" % [node.x, node.y]
-			while parent.has(node_key):
-				path.push_front(node)
-				node = parent.get(node_key, node) as Vector2i
-				node_key = "%d,%d" % [node.x, node.y]
-			path.push_front(Vector2i(from_x, from_y))
+			while parent.has(node):
+				path.append(node)
+				node = parent[node] as Vector2i
+			path.append(start)
+			path.reverse()
 			return path
-		var bfs_offsets: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
-		for offset: Vector2i in bfs_offsets:
-			var neighbor: Vector2i = Vector2i(current.x + offset.x, current.y + offset.y)
-			var nkey := "%d,%d" % [neighbor.x, neighbor.y]
-			if visited.has(nkey):
+		if visited.size() >= BFS_MAX_VISITED:
+			break
+		for offset: Vector2i in GRID_OFFSETS:
+			var neighbor: Vector2i = current + offset
+			if visited.has(neighbor):
 				continue
 			if not walkable_check.call(neighbor.x, neighbor.y):
 				continue
-			visited[nkey] = true
-			parent[nkey] = current
+			visited[neighbor] = true
+			parent[neighbor] = current
 			queue.append(neighbor)
 	return []
 
 
 func _walkable_neighbors(x: int, y: int) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []
-	var neighbor_offsets: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
-	for offset: Vector2i in neighbor_offsets:
+	for offset: Vector2i in GRID_OFFSETS:
 		var nx: int = x + offset.x
 		var ny: int = y + offset.y
 		if _is_cell_walkable.call(nx, ny):

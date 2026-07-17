@@ -25,7 +25,6 @@
 ## include the base dict).
 extends Node
 
-const BASE_PATH := "res://data/base.json"
 const PROGRESSION_PATH := "/root/ProgressionManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 
@@ -58,14 +57,13 @@ func _ready() -> void:
 
 
 func _load_config() -> void:
-	if not ResourceLoader.exists(BASE_PATH):
-		push_error("[BaseManager] %s missing" % BASE_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[BaseManager] DataRegistry not available")
 		return
-	var raw = load(BASE_PATH)
-	if raw == null:
-		return
-	var data = raw.data if "data" in raw else raw
-	if not (data is Dictionary):
+	var data: Variant = dr.get_data("base")
+	if data == null or not (data is Dictionary):
+		push_error("[BaseManager] base.json missing or invalid")
 		return
 	_config = data
 	_upgrades = data.get("upgrades", [])
@@ -93,9 +91,9 @@ func is_unplaced() -> bool:
 ## (at least 50 tiles from any edge of the 512x512 map).
 func is_valid_placement_cell(cell: Vector2i) -> bool:
 	var buffer: int = int(_config.get("placement_buffer_tiles", 50))
-	if cell.x < buffer or cell.x >= 512 - buffer:
+	if cell.x < buffer or cell.x >= Constants.MAP_SIZE - buffer:
 		return false
-	if cell.y < buffer or cell.y >= 512 - buffer:
+	if cell.y < buffer or cell.y >= Constants.MAP_SIZE - buffer:
 		return false
 	return true
 
@@ -115,7 +113,7 @@ func place(hex_key: String, local_x: int, local_y: int) -> bool:
 		"placed_at": Time.get_unix_time_from_system(),
 	}
 	level = 1
-	emit_signal("base_placed", hex_key, local_x, local_y)
+	base_placed.emit(hex_key, local_x, local_y)
 	print("[BaseManager] Base placed at %s (%d, %d) — level 1, capacity %d" % [hex_key, local_x, local_y, get_capacity()])
 	return true
 
@@ -196,7 +194,7 @@ func upgrade() -> bool:
 		if inv != null:
 			inv.remove_item(str(ing.get("item", "")), int(ing.get("qty", 1)))
 	level = int(next.get("level", level + 1))
-	emit_signal("base_upgraded", level, get_capacity())
+	base_upgraded.emit(level, get_capacity())
 	print("[BaseManager] Upgraded to level %d, capacity %d" % [level, get_capacity()])
 	return true
 
@@ -220,7 +218,7 @@ func add_resident(npc_id: String) -> bool:
 	if npc_id in residents:
 		return false
 	residents.append(npc_id)
-	emit_signal("resident_added", npc_id)
+	resident_added.emit(npc_id)
 	# If residents >= 20 and no name yet, the UI prompts for a name.
 	if residents.size() >= RESIDENT_THRESHOLD_FOR_NAMING and settlement_name.is_empty():
 		print("[BaseManager] 20+ residents — ready for settlement naming")
@@ -232,7 +230,7 @@ func remove_resident(npc_id: String) -> bool:
 	for i in residents.size():
 		if str(residents[i]) == npc_id:
 			residents.remove_at(i)
-			emit_signal("resident_removed", npc_id)
+			resident_removed.emit(npc_id)
 			return true
 	return false
 
@@ -245,7 +243,7 @@ func set_settlement_name(name: String) -> bool:
 	if name.is_empty():
 		return false
 	settlement_name = name
-	emit_signal("settlement_named", name)
+	settlement_named.emit(name)
 	print("[BaseManager] Settlement named: %s" % name)
 	return true
 
@@ -292,4 +290,4 @@ func restore_from_snapshot(snap: Dictionary) -> void:
 			residents.erase(r)
 	settlement_name = str(snap.get("settlement_name", ""))
 	if not placement.is_empty():
-		emit_signal("base_placed", str(placement.get("hex_key", "")), int(placement.get("local_x", 0)), int(placement.get("local_y", 0)))
+		base_placed.emit(str(placement.get("hex_key", "")), int(placement.get("local_x", 0)), int(placement.get("local_y", 0)))

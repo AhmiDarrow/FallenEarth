@@ -4,7 +4,6 @@ extends Control
 ## victory, or a defeat message on loss. A "Continue" button dismisses
 ## the panel and triggers a callback.
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
 const COLOR_BG := Color(0.04, 0.04, 0.08, 0.94)
 const COLOR_BORDER_WIN := Color(0.85, 0.75, 0.30, 1.0)
 const COLOR_BORDER_LOSS := Color(0.75, 0.25, 0.25, 1.0)
@@ -44,13 +43,7 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	var bg_sb := StyleBoxFlat.new()
 	bg_sb.bg_color = Color(0.0, 0.0, 0.0, 0.6)
 	bg_panel.add_theme_stylebox_override("panel", bg_sb)
-	# Add modal texture behind the dark panel
-	var bg_rect := ColorRect.new()
-	bg_rect.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bg_rect.color = Color(0, 0, 0, 0.001)
-	add_child(bg_rect)
-	move_child(bg_rect, 0)
-	UIBackgrounds.apply_modal_bg(bg_rect)
+	# Dark backdrop
 
 	# Center results box
 	var panel_w: float = min(440.0, vp_size.x * 0.4)

@@ -14,7 +14,7 @@
 class_name Base
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const BASE_PATH := "/root/BaseManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const EQUIP_PATH := "/root/EquipmentManager"
@@ -75,13 +75,11 @@ func setup(base_state: Dictionary, hub: Node) -> void:
 
 
 func _build_ui() -> void:
-	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.04, 0.06, 0.95)
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 	# Title
 	var title := Label.new()
 	title.name = "Title"

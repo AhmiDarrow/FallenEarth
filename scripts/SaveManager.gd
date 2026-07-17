@@ -11,7 +11,7 @@ signal save_completed(slot_id: int)
 signal save_load_failed(slot_id: int, reason: String)
 signal auto_save_triggered()
 
-const VERSION := "0.4.0"
+const VERSION := "0.5.0"
 const SAVE_DIR := "user://saves/"
 const AUTOSAVE_SLOT := 0
 const MAX_SLOTS := 9
@@ -27,27 +27,6 @@ func initialize() -> void:
 		DirAccess.make_dir_absolute(SAVE_DIR)
 
 
-func autosave(game_state: Variant, appearance_data: Variant = null, equipment_data: Variant = null) -> bool:
-	var save_data := {"version": VERSION, "autosave": true, "slot": AUTOSAVE_SLOT}
-	# Normalize: support full payload or bare game_state
-	if game_state is Dictionary:
-		var gs_dict: Dictionary = game_state
-		if gs_dict.has("character"):
-			save_data["character"] = gs_dict.get("character", {})
-			if gs_dict.has("appearance"): save_data["appearance"] = gs_dict["appearance"]
-			if gs_dict.has("equipment"): save_data["equipment"] = gs_dict["equipment"]
-			if gs_dict.has("game_state"): save_data["game_state"] = gs_dict["game_state"]
-		else:
-			save_data["character"] = gs_dict
-	if appearance_data != null:
-		save_data["appearance"] = appearance_data
-	if equipment_data != null:
-		save_data["equipment"] = equipment_data
-	save_data["save_name"] = "Autosave"
-
-	return _write_slot(AUTOSAVE_SLOT, save_data)
-
-
 func save_to_game_file(payload: Variant, slot_id: int, save_name: String = "Untitled") -> bool:
 	var save_data := {"version": VERSION, "autosave": false, "slot": slot_id, "save_name": save_name}
 	# Normalize payload: if it already has top-level "character" use it; else treat payload as the character dict.
@@ -61,7 +40,7 @@ func save_to_game_file(payload: Variant, slot_id: int, save_name: String = "Unti
 			for extra_key in [
 				"world_data", "player_position", "hex_states", "discovered_hexes",
 				"overworld_mobs", "rift_state",
-				"world_npcs", "faction_rep", "recruited_npc_ids", "missions", "version",
+				"world_npcs", "faction_rep", "recruited_npc_ids", "missions",
 			]:
 				if p.has(extra_key):
 					save_data[extra_key] = p[extra_key]
@@ -95,14 +74,8 @@ func load_from_slot(slot_id: int) -> Dictionary:
 		save_load_failed.emit(slot_id, "Parse failed")
 		return {}
 
-	# parse_result is guaranteed to be a Dictionary by the check above
-	var json_result: Dictionary = parse_result as Dictionary
-	if not json_result.is_empty():
-		return json_result
-	else:
-		push_warning("[SaveManager] Corrupt data detected in slot %d (%s)" % [slot_id, path])
-		recover_from_corruption(slot_id)
-		return {}
+	# parse_result is guaranteed to be a non-empty Dictionary by the check above
+	return parse_result as Dictionary
 
 
 func has_save_in_slot(slot_id: int) -> bool:
@@ -116,6 +89,9 @@ func list_all_slots() -> Array[Dictionary]:
 		var path := SAVE_DIR + "slot_%d.json" % i
 		if FileAccess.file_exists(path):
 			var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+			if not file:
+				slots.append({"slot": i, "name": "", "autosave": false})
+				continue
 			var parsed: Variant = JSON.parse_string(file.get_as_text())
 			file.close()  # Close after reading to avoid resource leak
 			var data: Dictionary = parsed if (parsed is Dictionary) else {}
@@ -173,7 +149,8 @@ func full_autosave(char_data: Dictionary, appearance: Dictionary, equipment: Dic
 					hex_states: Dictionary = {}, discovered_hexes: Array = [],
 					overworld_mobs: Dictionary = {}, rift_state: Dictionary = {},
 					world_npcs: Dictionary = {}, faction_rep: Dictionary = {},
-					recruited_npc_ids: Array = [], missions: Dictionary = {}) -> bool:
+					recruited_npc_ids: Array = [], missions: Dictionary = {},
+					active_scene: String = "") -> bool:
 	var save_data := {"version": VERSION, "autosave": true, "slot": AUTOSAVE_SLOT}
 
 	if char_data is Dictionary and not char_data.is_empty():
@@ -182,7 +159,7 @@ func full_autosave(char_data: Dictionary, appearance: Dictionary, equipment: Dic
 		save_data["character"] = {}
 	save_data["appearance"] = appearance if appearance is Dictionary else {}
 	save_data["equipment"] = equipment if equipment is Dictionary else {}
-	save_data["game_state"] = {"active_scene": "", "save_slot": AUTOSAVE_SLOT}
+	save_data["game_state"] = {"active_scene": active_scene, "save_slot": AUTOSAVE_SLOT}
 
 	if world_data is Dictionary and not world_data.is_empty():
 		save_data["world_data"] = world_data.duplicate(true)
@@ -213,6 +190,7 @@ func full_autosave(char_data: Dictionary, appearance: Dictionary, equipment: Dic
 		save_data["missions"] = missions.duplicate(true)
 
 	save_data["save_name"] = "Autosave"
+	populate_payload_with_managers(save_data)
 	return _write_slot(AUTOSAVE_SLOT, save_data)
 
 
@@ -221,7 +199,14 @@ func recover_from_corruption(slot_id: int) -> void:
 	var primary_path := SAVE_DIR + "slot_%d.json" % slot_id
 	if FileAccess.file_exists(backup_path):
 		var backup_file: FileAccess = FileAccess.open(backup_path, FileAccess.READ)
+		if not backup_file:
+			push_warning("[SaveManager] Could not open backup for slot %d" % slot_id)
+			return
 		var primary_file: FileAccess = FileAccess.open(primary_path, FileAccess.WRITE)
+		if not primary_file:
+			push_warning("[SaveManager] Could not open primary for slot %d recovery" % slot_id)
+			backup_file.close()
+			return
 		primary_file.store_string(backup_file.get_as_text())
 		backup_file.close()
 		primary_file.close()
@@ -232,11 +217,11 @@ func recover_from_corruption(slot_id: int) -> void:
 # Phase 8: aggregate snapshot / restore
 # ---------------------------------------------------------------------------
 
-## Returns a dict of {manager_name: snapshot} for every Phase 1-7
-## manager that exposes get_snapshot(). Safe to call when managers
-## are not yet instantiated (returns an empty dict in that case).
+## Returns a dict of {manager_name: snapshot} for every manager
+## that exposes get_snapshot(). Includes core managers and mod-registered managers.
 func aggregate_snapshot() -> Dictionary:
 	var out: Dictionary = {}
+	# Core managers (always present)
 	for entry in [
 		["inventory", "/root/InventoryManager"],
 		["progression", "/root/ProgressionManager"],
@@ -244,19 +229,26 @@ func aggregate_snapshot() -> Dictionary:
 		["equipment", "/root/EquipmentManager"],
 		["base", "/root/BaseManager"],
 		["base_shops", "/root/BaseShopManager"],
+		["tamed_mobs", "/root/TamedMobManager"],
 	]:
 		var mgr: Node = get_node_or_null(entry[1])
 		if mgr == null or not mgr.has_method("get_snapshot"):
 			continue
 		out[entry[0]] = mgr.get_snapshot()
+	# Mod-registered managers
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api != null and mod_api.has_method("get_snapshot_managers"):
+		for mod_entry in mod_api.get_snapshot_managers():
+			var mgr: Node = get_node_or_null(mod_entry.path)
+			if mgr != null and mgr.has_method("get_snapshot"):
+				out[mod_entry.key] = mgr.get_snapshot()
 	return out
 
 
 ## Restores each manager's state from the dict produced by
-## aggregate_snapshot. Skips managers that aren't present or don't
-## have restore_from_snapshot. Handles per-manager wrapper formats
-## (e.g. InventoryManager wraps its slots in a dict).
+## aggregate_snapshot. Handles core managers and mod-registered managers.
 func restore_all(snap: Dictionary) -> void:
+	# Core managers
 	for entry in [
 		["inventory", "/root/InventoryManager", "slots"],
 		["progression", "/root/ProgressionManager", null],
@@ -264,6 +256,7 @@ func restore_all(snap: Dictionary) -> void:
 		["equipment", "/root/EquipmentManager", null],
 		["base", "/root/BaseManager", null],
 		["base_shops", "/root/BaseShopManager", null],
+		["tamed_mobs", "/root/TamedMobManager", null],
 	]:
 		if not snap.has(entry[0]):
 			continue
@@ -275,6 +268,19 @@ func restore_all(snap: Dictionary) -> void:
 		if entry[2] != null and data is Dictionary and data.has(entry[2]):
 			data = data[entry[2]]
 		mgr.restore_from_snapshot(data)
+	# Mod-registered managers
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api != null and mod_api.has_method("get_snapshot_managers"):
+		for mod_entry in mod_api.get_snapshot_managers():
+			if not snap.has(mod_entry.key):
+				continue
+			var mgr: Node = get_node_or_null(mod_entry.path)
+			if mgr == null or not mgr.has_method("restore_from_snapshot"):
+				continue
+			var data: Variant = snap[mod_entry.key]
+			if mod_entry.wrapper_key != "" and data is Dictionary and data.has(mod_entry.wrapper_key):
+				data = data[mod_entry.wrapper_key]
+			mgr.restore_from_snapshot(data)
 
 
 ## Aggregates all manager state and writes it into the given save
@@ -287,15 +293,19 @@ func populate_payload_with_managers(save_data: Dictionary) -> void:
 
 
 ## Pulls manager state out of the loaded payload dict and routes it
-## to each manager's restore_from_snapshot. Safe to call after
-## load_from_slot.
+## to each manager's restore_from_snapshot. Handles both old (0.4.0)
+## and new (0.5.0) save formats.
 func apply_managers_from_payload(save_data: Dictionary) -> void:
 	var manager_state: Dictionary = {}
-	for k in ["inventory", "progression", "party", "equipment", "base", "base_shops"]:
+	for k in ["inventory", "progression", "party", "equipment", "base", "base_shops", "tamed_mobs"]:
 		if save_data.has(k):
 			manager_state[k] = save_data[k]
 	restore_all(manager_state)
+	# Restore mod save data (0.5.0+ saves)
+	var mod_data: Dictionary = save_data.get("mod_data", {})
+	if not mod_data.is_empty():
+		var mod_api := get_node_or_null("/root/ModAPI")
+		if mod_api != null and mod_api.has_method("apply_mod_save_data"):
+			mod_api.apply_mod_save_data(mod_data)
 
 
-func _auto_save() -> void:
-	auto_save_triggered.emit()

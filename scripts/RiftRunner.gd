@@ -52,7 +52,7 @@ func get_random_loot(biome_key: String = "Ash Wastes", max_items: int = 3) -> Ar
 	# Simple selection: take up to max_items, biased to higher weight
 	var picked: Array[Dictionary] = []
 	var sorted_table := table.duplicate()
-	sorted_table.sort_custom(func(a, b): return (a.get("drop_weight", 0) as int) > (b.get("drop_weight", 0) as int))
+	sorted_table.sort_custom(func(a, b): return (a.get("drop_weight", 0.0) as float) > (b.get("drop_weight", 0.0) as float))
 	for i in range(min(max_items, sorted_table.size())):
 		var item: Dictionary = (sorted_table[i] as Dictionary).duplicate(true)
 		item["qty"] = 1  # default

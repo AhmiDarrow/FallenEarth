@@ -73,7 +73,7 @@ func decide(state: Dictionary) -> Dictionary:
 
 func _closest_enemy(from_pos: Vector2i, enemies: Array) -> Dictionary:
 	var best: Dictionary = {}
-	var best_d: int = 1000
+	var best_d: int = INF_DISTANCE
 	for e in enemies:
 		if int(e.get("hp", 0)) <= 0:
 			continue

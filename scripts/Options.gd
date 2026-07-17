@@ -1,6 +1,6 @@
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 var _tab_container: TabContainer
 var _displays: Array[Dictionary] = []
@@ -27,12 +27,10 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	# Background
 	var bg := ColorRect.new()
-	bg.color = Color(0.04, 0.02, 0.06, 1)
+	bg.color = MT.BG_DEEP
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 
 	# Main VBox
 	var vbox := VBoxContainer.new()
@@ -72,12 +70,14 @@ func _build_ui() -> void:
 	apply_btn.text = "Apply"
 	apply_btn.custom_minimum_size = Vector2(140, 40)
 	apply_btn.pressed.connect(_on_apply)
+	MT.apply_primary(apply_btn)
 	btn_hbox.add_child(apply_btn)
 
 	var back_btn := Button.new()
 	back_btn.text = "Back"
 	back_btn.custom_minimum_size = Vector2(140, 40)
 	back_btn.pressed.connect(_on_back)
+	MT.apply_secondary(back_btn)
 	btn_hbox.add_child(back_btn)
 
 
@@ -215,7 +215,7 @@ func _build_audio_tab() -> void:
 	# Music volume
 	_music_label = Label.new()
 	_music_label.text = "Music: %d%%" % int(music_vol * 100)
-	_music_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	_music_label.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
 	inner.add_child(_music_label)
 
 	_music_slider = HSlider.new()
@@ -231,7 +231,7 @@ func _build_audio_tab() -> void:
 	# SFX volume
 	_sfx_label = Label.new()
 	_sfx_label.text = "SFX: %d%%" % int(sfx_vol * 100)
-	_sfx_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	_sfx_label.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
 	inner.add_child(_sfx_label)
 
 	_sfx_slider = HSlider.new()

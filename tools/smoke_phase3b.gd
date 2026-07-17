@@ -128,7 +128,7 @@ func _test_shop_buy_sell() -> void:
 		return
 	# Set EC to 50 (default) for this test
 	prog.ec = 50
-	prog.emit_signal("ec_changed", prog.ec)
+	prog.ec_changed.emit(prog.ec)
 	var inv: Node = root.get_node_or_null("InventoryManager")
 	if inv == null:
 		_fail("Shop: InventoryManager autoload not available")

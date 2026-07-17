@@ -9,8 +9,8 @@ extends Control
 @onready var generate_btn: Button = $VBox/TopBar/GenerateBtn
 @onready var back_btn: Button = $VBox/TopRow/BackBtn
 @onready var continue_btn: Button = $VBox/ContentHBox/SideVBox/ContinueBtn
-@onready var hex_grid: Node2D = $VBox/ContentHBox/PreviewPanel/Margin/HexGrid
-@onready var preview_panel: Panel = $VBox/ContentHBox/PreviewPanel
+@onready var hex_grid: Node2D = $VBox/ContentHBox/HexMargin/HexGrid
+@onready var hex_margin: MarginContainer = $VBox/ContentHBox/HexMargin
 @onready var world_info_label: RichTextLabel = $VBox/ContentHBox/SideVBox/WorldInfoPanel/WorldInfoLabel
 @onready var selected_info_label: RichTextLabel = $VBox/ContentHBox/SideVBox/SelectedInfoPanel/SelectedInfoLabel
 
@@ -28,8 +28,7 @@ var _cursor_r: int = 0
 var _preview_focused: bool = false
 var _selected_glow: Polygon2D = null
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
-const DEFAULT_SEED := "UNDEREARTH_001"
+const DEFAULT_SEED := "FallenEarth"
 const SIZE_RADII := {"small": 8, "medium": 15, "large": 23}
 
 const BIOME_COLORS := {
@@ -50,12 +49,10 @@ const SETTLEMENT_COLOR := Color(0.9, 0.9, 0.95)
 
 
 func _ready() -> void:
-	# Background texture
-	var bg_tex := get_node_or_null("Background") as TextureRect
-	if bg_tex == null:
-		var bg_col := get_node_or_null("BG") as ColorRect
-		if bg_col != null:
-			UIBackgrounds.apply_modal_bg(bg_col)
+	# Background
+	var bg_col := get_node_or_null("BG") as ColorRect
+	if bg_col != null:
+		bg_col.color = Color(0.04, 0.04, 0.07, 0.85)
 	# Style buttons
 	ButtonStyleHelper.apply_secondary(back_btn)
 	ButtonStyleHelper.apply_primary(generate_btn)
@@ -74,11 +71,7 @@ func _ready() -> void:
 	medium_btn.toggled.connect(_on_size_toggled.bind("medium"))
 	large_btn.toggled.connect(_on_size_toggled.bind("large"))
 
-	# Allow mouse clicks to pass through to _unhandled_input
-	preview_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var margin := preview_panel.get_node("Margin") as Control
-	if is_instance_valid(margin):
-		margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hex_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	seed_edit.text = DEFAULT_SEED
 	continue_btn.disabled = true

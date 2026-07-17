@@ -16,7 +16,7 @@
 class_name HUD
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 const TOP_BAR_H := 48.0
 const BAR_H := 16.0
@@ -99,7 +99,6 @@ func _build_top_bar() -> void:
 	bg.offset_bottom = TOP_BAR_H
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_hud_bar(bg)
 
 	# Name (left)
 	_name_label = Label.new()
@@ -284,6 +283,8 @@ func _build_hotbar() -> void:
 	_hotbar = Hotbar.new()
 	_hotbar.name = "Hotbar"
 	add_child(_hotbar)
+	# Apply mod-registered HUD overlays
+	_apply_mod_overlays()
 
 
 
@@ -440,3 +441,27 @@ func get_hotbar() -> Hotbar:
 ## Returns true if the character menu is currently open.
 func is_character_menu_open() -> bool:
 	return _character_menu != null and is_instance_valid(_character_menu)
+
+
+## Add mod-registered overlay scenes to the HUD
+func _apply_mod_overlays() -> void:
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api == null:
+		return
+	var overlays: Array = mod_api.get_extensions("hud_overlays")
+	for overlay in overlays:
+		if not ResourceLoader.exists(overlay.scene_path):
+			push_warning("[HUD] Mod overlay scene not found: %s" % overlay.scene_path)
+			continue
+		var scene = load(overlay.scene_path).instantiate()
+		scene.name = "ModOverlay_%s" % overlay.id
+		match overlay.anchor:
+			"top_right":
+				scene.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+			"bottom_left":
+				scene.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+			"bottom_right":
+				scene.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+			"center":
+				scene.set_anchors_preset(Control.PRESET_CENTER)
+		add_child(scene)

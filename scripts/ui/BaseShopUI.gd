@@ -7,7 +7,7 @@
 class_name BaseShopUI
 extends Control
 
-const UIBackgrounds = preload("res://scripts/UIBackgrounds.gd")
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const BASE_SHOP_PATH := "/root/BaseShopManager"
 const INVENTORY_PATH := "/root/InventoryManager"
 const PROGRESSION_PATH := "/root/ProgressionManager"
@@ -36,7 +36,6 @@ func _build_ui() -> void:
 	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	UIBackgrounds.apply_modal_bg(bg)
 
 	var root_vbox := VBoxContainer.new()
 	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -140,7 +139,7 @@ func _on_buy_pressed(item_id: String, price: int) -> void:
 
 
 func _on_close_pressed() -> void:
-	emit_signal("closed")
+	closed.emit()
 	queue_free()
 
 

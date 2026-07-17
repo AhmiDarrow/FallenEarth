@@ -73,8 +73,8 @@ func _refresh_from_gamestate() -> void:
 	_cached_current = pos
 	# Rifts: read from the active rift runner
 	var rr: Node = get_node_or_null("/root/RiftRunner")
-	if rr != null and rr.has_method("get_rifts_for_world"):
-		_cached_rifts = rr.get_rifts_for_world(pos)
+	if rr != null and rr.has_method("get_rifts_in_hex"):
+		_cached_rifts = rr.get_rifts_in_hex(pos.x, pos.y, Time.get_unix_time_from_system())
 	else:
 		_cached_rifts = []
 	# Riftspire: from world_data.riftspire_hex_key

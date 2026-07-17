@@ -8,7 +8,6 @@
 ## Row 0 (y=0) is synced as the hotbar.
 extends Node
 
-const ITEMS_PATH := "res://data/items.json"
 const GRID_WIDTH := 10
 const GRID_HEIGHT := 3
 
@@ -31,6 +30,9 @@ var _items: Dictionary = {}       # item_id -> metadata dict from items.json
 var _item_type_map: Dictionary = {}  # item_id -> ItemType instance
 var _item_id_map: Dictionary = {}    # ItemType instance -> item_id
 
+# --- Cached item counts for O(1) get_count() lookups ---
+var _count_cache: Dictionary = {}  # item_id -> int
+
 # --- Weight / encumbrance ---
 var current_weight: float = 0.0
 var max_weight: float = 50.0
@@ -47,21 +49,13 @@ func _ready() -> void:
 # ---------------------------------------------------------------------------
 
 func _load_items() -> void:
-    if not ResourceLoader.exists(ITEMS_PATH):
-        push_error("[InventoryManager] %s not found" % ITEMS_PATH)
+    var dr := get_node_or_null("/root/DataRegistry")
+    if dr == null:
+        push_error("[InventoryManager] DataRegistry not available")
         return
-    var raw = load(ITEMS_PATH)
-    if raw == null:
-        return
-    var data: Dictionary = {}
-    if raw is Dictionary:
-        data = raw
-    elif "data" in raw:
-        var d = raw.data
-        if d is Dictionary:
-            data = d
-    if data.is_empty():
-        push_error("[InventoryManager] %s did not parse as Dictionary" % ITEMS_PATH)
+    var data: Variant = dr.get_data("items")
+    if data == null or not (data is Dictionary):
+        push_error("[InventoryManager] items.json missing or invalid")
         return
     for item in data.get("items", []):
         if item is Dictionary:
@@ -106,6 +100,7 @@ func _init_inventories() -> void:
 
 func _on_main_inv_mutated(_stack = null, _delta = 0) -> void:
     _recalc_weight()
+    _rebuild_count_cache()
     inventory_changed.emit()
 
 
@@ -127,6 +122,14 @@ func _recalc_weight() -> void:
         var w: float = float(_items.get(_get_item_id(s), {}).get("weight", 0.1))
         total += w * s.count
     current_weight = total
+
+
+func _rebuild_count_cache() -> void:
+    _count_cache.clear()
+    for stack in main_inventory.items:
+        var item_id := _get_item_id(stack)
+        if item_id != "":
+            _count_cache[item_id] = _count_cache.get(item_id, 0) + stack.count
 
 
 # ---------------------------------------------------------------------------
@@ -154,11 +157,7 @@ func get_inventory() -> Array:
 # ---------------------------------------------------------------------------
 
 func get_count(item_id: String) -> int:
-    var total := 0
-    for stack in main_inventory.items:
-        if _get_item_id(stack) == item_id:
-            total += stack.count
-    return total
+    return _count_cache.get(item_id, 0)
 
 
 func has_item(item_id: String, qty: int = 1) -> bool:
@@ -211,9 +210,14 @@ func get_inventory_snapshot() -> Array:
     return snap
 
 
-func restore_from_snapshot(snap: Array) -> void:
+func restore_from_snapshot(snap: Variant) -> void:
+    var slots: Array = []
+    if snap is Dictionary:
+        slots = snap.get("slots", [])
+    elif snap is Array:
+        slots = snap
     main_inventory.clear()
-    for s in snap:
+    for s in slots:
         var item_id := str(s.get("item_id", ""))
         var qty := int(s.get("qty", 0))
         if item_id == "" or qty <= 0:
@@ -321,7 +325,7 @@ func get_condition(stack: ItemStack) -> float:
 
 
 func get_max_condition(stack: ItemStack) -> float:
-    return stack.extra_properties.get("max_condition", stack.item_type.max_stack_count)
+    return stack.extra_properties.get("max_condition", 100.0)
 
 
 func set_condition(stack: ItemStack, value: float) -> void:

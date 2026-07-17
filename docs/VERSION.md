@@ -6,17 +6,20 @@ Single source of truth for release version, save format, and development phase a
 
 | Field | Value |
 |-------|-------|
-| **Game version** | `0.9.0` |
+| **Game version** | `0.11.0` |
 | **Save format version** | `0.2.0` |
 | **Godot** | 4.3 |
-| **Last updated** | 2026-07-05 |
-| **Development phase** | Phase 7 (settlement life + combat polish) |
+| **Last updated** | 2026-07-07 |
+| **Development phase** | UI Design System COMPLETE |
 
 ## Version History (summary)
 
 | Version | Date | Milestone |
 |---------|------|-----------|
-| `0.9.0` | 2026-07-05 | Settlement Life & Combat Polish (Phase A-F) — IN PROGRESS |
+| `0.11.0` | 2026-07-06 | Combat Architecture Rewrite (R/S/M) + UI Design System |
+| `0.10.10` | 2026-07-06 | Square grid fix, decor polish, legacy UI cleanup |
+| `0.10.1` | 2026-07-06 | FFT-style combat UI (arrow, prompt, plates, buttons) |
+| `0.9.0` | 2026-07-05 | Settlement Life & Combat Polish (Phases A-F) |
 | `0.8.0` | 2026-07-05 | Settlement interiors, NPC sprites, furniture, button assets, riftspire travel, save/load wiring |
 | `0.2.0` | 2026-07-01 | Two-layer world (planet + local maps), FFT combat, missions, NPCs, rift loop, chunk renderer |
 | `0.0.1` | 2026-06-30 | Core flow: Splash → Menu → Character Select → Hub stub; memory/handoff system |
@@ -41,8 +44,9 @@ world_npcs, faction_rep, recruited_npc_ids, missions
 | 4 | World gen + two-layer maps | ✅ Complete |
 | 5 | Rifts as tunnels + dungeons | ✅ Complete |
 | 6 | Local perf + settlement + tile overlay | ✅ Complete |
-| 7 | Settlement life + combat polish | 🔄 In progress (v0.9.0) |
-| 8+ | Riftspire content, economy, party expansion | ⏳ Planned |
+| 7 | Settlement life + combat polish | ✅ Complete (v0.9.0) |
+| 8 | UI Design System | ✅ Complete (v0.11.0) |
+| 9+ | Riftspire content, economy, party expansion | ⏳ Planned |
 
 ## Files That Must Match `0.2.0`
 
@@ -55,5 +59,5 @@ world_npcs, faction_rep, recruited_npc_ids, missions
 ## Validation Command
 
 ```powershell
-& "C:\Users\Administrator\godot\Godot_v4.3-stable_win64.exe" --headless --path "C:\Users\Administrator\FallenEarth" -s validate_scripts.gd
+& "C:\Program Files\godot\Godot_v4.3-stable_win64_console.exe" --headless --path "C:\Users\Administrator\FallenEarth" -s tools/validate_scripts.gd
 ```
