@@ -20,6 +20,9 @@ const HOTBAR_H := 80.0
 signal menu_requested  # emitted when the user clicks "≡ Menu"
 signal character_menu_closed
 
+const HotbarRef = preload("res://scripts/ui/Hotbar.gd")
+const MinimapRef = preload("res://scripts/ui/Minimap.gd")
+
 var _name_label: Label
 var _class_label: Label
 var _level_label: Label
@@ -28,8 +31,8 @@ var _hp_bar: ProgressBar
 var _mp_bar: ProgressBar
 var _xp_bar: ProgressBar
 var _menu_button: Button
-var _minimap: Minimap
-var _hotbar: Hotbar
+var _minimap: MinimapRef
+var _hotbar: HotbarRef
 var _character_menu: Control = null
 
 # Character display data (synced from GameState on _ready + on level_up)
@@ -207,7 +210,7 @@ func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_col
 
 
 func _build_minimap() -> void:
-	_minimap = Minimap.new()
+	_minimap = MinimapRef.new()
 	_minimap.name = "Minimap"
 	# Try to parent inside MinimapPanel (sibling under UI_Canvas)
 	var parent_ctrl := get_parent()  # UI_Canvas
@@ -221,7 +224,7 @@ func _build_minimap() -> void:
 
 
 func _build_hotbar() -> void:
-	_hotbar = Hotbar.new()
+	_hotbar = HotbarRef.new()
 	_hotbar.name = "Hotbar"
 	add_child(_hotbar)
 
@@ -375,7 +378,7 @@ func notify_cell_changed() -> void:
 
 
 ## Returns the hotbar (or null if not yet ready).
-func get_hotbar() -> Hotbar:
+func get_hotbar() -> HotbarRef:
 	return _hotbar
 
 

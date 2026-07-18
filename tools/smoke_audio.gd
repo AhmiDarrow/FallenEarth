@@ -153,7 +153,7 @@ func _test_scene_wiring_calls() -> void:
 		"res://scripts/HubWorld.gd",
 		"res://scripts/SettlementInterior.gd",
 		"res://scripts/RiftInstance.gd",
-		"res://scripts/combat/CombatLevel.gd",
+		"res://scripts/combat/v2/CombatLevel3D.gd",
 		"res://scripts/WorldMapScreen.gd",
 	]
 	for path in wired:

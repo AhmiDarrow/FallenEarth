@@ -3,13 +3,14 @@
 ## Child of the World node. Each managed mob = { data: MobData, node: MobInstance, ai: MobAIController }.
 class_name OverworldMobManager
 extends Node2D
+const MobDataRef = preload("res://scripts/mob/MobData.gd")
 
-signal mob_reached_player(mob_data: MobData)
+signal mob_reached_player(mob_data: MobDataRef)
 
 
 const CELL_SIZE := 24
 
-var _entries: Dictionary = {}  # "x,y" -> entry dict
+var _entries: Dictionary = {}
 var _is_cell_walkable: Callable
 var _hex_q: int = 0
 var _hex_r: int = 0
@@ -26,7 +27,7 @@ func setup(walkable_check: Callable, hex_q: int = 0, hex_r: int = 0, game_state:
 	_mob_key_fn = mob_key_fn
 
 
-func add_mob(data: MobData, mob_node: Node2D) -> void:
+func add_mob(data: MobDataRef, mob_node: Node2D) -> void:
 	var key := "%d,%d" % [data.grid_x, data.grid_y]
 	if _entries.has(key):
 		_remove_entry(key)
@@ -53,10 +54,10 @@ func has_mob_at(local_x: int, local_y: int) -> bool:
 	return _entries.has("%d,%d" % [local_x, local_y])
 
 
-func get_data_at(local_x: int, local_y: int) -> MobData:
+func get_data_at(local_x: int, local_y: int) -> MobDataRef:
 	var entry: Variant = _entries.get("%d,%d" % [local_x, local_y])
 	if entry != null:
-		return (entry as Dictionary).get("data", null) as MobData
+		return (entry as Dictionary).get("data", null) as MobDataRef
 	return null
 
 
@@ -90,7 +91,7 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 			continue
 		if entry.get("moving", false):
 			continue
-		var data: MobData = entry.get("data") as MobData
+		var data: MobDataRef = entry.get("data") as MobDataRef
 		if data == null:
 			to_remove.append(pos_key)
 			continue
@@ -107,7 +108,7 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 						ai.cancel_movement()
 			MobAIController.State.ATTACK:
 				if ai.is_at_player(player_x, player_y):
-					var mob_data: MobData = entry.get("data") as MobData
+					var mob_data: MobDataRef = entry.get("data") as MobDataRef
 					mob_reached_player.emit(mob_data)
 					to_remove.append(pos_key)
 	for key in to_remove:
@@ -117,7 +118,7 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 func _start_move(entry: Dictionary, target: Vector2i) -> void:
 	entry["moving"] = true
 	var mob_node: Node2D = entry["node"]
-	var data: MobData = entry["data"]
+	var data: MobDataRef = entry["data"]
 	var old_x: int = data.grid_x
 	var old_y: int = data.grid_y
 	var target_pos: Vector2 = Vector2(target.x * CELL_SIZE + CELL_SIZE * 0.5, target.y * CELL_SIZE + CELL_SIZE * 0.5)

@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — Fallen Earth (Godot 4 Survival RPG)
 
-**Version:** 0.2.0 (2026-07-01) · See `docs/VERSION.md` for phase map and save format.
+**Version:** 0.11.0 (2026-07-18) · Godot 4.7.1 · See `docs/VERSION.md` for phase map and save format.
 
 **Goal:** Build a top-down 2.5D apocalyptic sci-fi survival RPG in Godot 4 focused on exploration, rift-running, tactical grid combat, character progression, settlement building, and faction/lore systems. Data-driven design (JSON first) for easy iteration.
 
@@ -24,7 +24,7 @@ Inspired by RimWorld for world generation: Procedural hexagonal sphere world wit
 - Multi-session development without losing state via the handoff/memory system.
 
 **Constraints:**
-- Godot 4.x, GDScript (data-first: JSON configs loaded at runtime).
+- Godot 4.7.1, GDScript (data-first: JSON configs loaded at runtime).
 - Single-dev friendly; modular, testable where practical.
 - Top-down 2.5D aesthetic (grim decay + cosmic horror).
 - Existing assets/scenes: project.godot, data/ JSONs, basic managers in scripts/, starter UI scenes.

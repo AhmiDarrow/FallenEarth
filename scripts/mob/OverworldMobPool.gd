@@ -3,16 +3,17 @@
 ## Borrow/return cycle: borrow() -> use -> return_instance().
 class_name OverworldMobPool
 extends Node
+const MobInstanceRef = preload("res://scripts/mob/MobInstance.gd")
 
-var _pool: Array[MobInstance] = []
-var _active: Array[MobInstance] = []
+var _pool: Array[MobInstanceRef] = []
+var _active: Array[MobInstanceRef] = []
 
 
 ## Get an instance from the pool (or create one if empty).
-func borrow() -> MobInstance:
-	var inst: MobInstance
+func borrow() -> MobInstanceRef:
+	var inst: MobInstanceRef
 	if _pool.is_empty():
-		inst = MobInstance.new()
+		inst = MobInstanceRef.new()
 		add_child(inst)
 	else:
 		inst = _pool.pop_back()
@@ -22,7 +23,7 @@ func borrow() -> MobInstance:
 
 
 ## Return an instance to the pool (hides and resets).
-func return_instance(inst: MobInstance) -> void:
+func return_instance(inst: MobInstanceRef) -> void:
 	if inst == null or not is_instance_valid(inst):
 		return
 	inst.visible = false
@@ -44,7 +45,7 @@ func return_all() -> void:
 ## Pre-warm the pool with `count` instances.
 func warm(count: int) -> void:
 	while _pool.size() < count:
-		var inst := MobInstance.new()
+		var inst := MobInstanceRef.new()
 		inst.visible = false
 		add_child(inst)
 		_pool.append(inst)

@@ -3,6 +3,7 @@ class_name MissionGenerator
 extends RefCounted
 
 const TEMPLATES_PATH := "res://data/mission_templates.json"
+const WorldGenerator = preload("res://scripts/WorldGenerator.gd")
 const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
 const Difficulty = preload("res://scripts/EncounterDifficulty.gd")
 const ClassProg = preload("res://scripts/ClassProgression.gd")

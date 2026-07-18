@@ -4,6 +4,7 @@
 
 class_name EncounterBuilder
 extends RefCounted
+const WorldGenerator = preload("res://scripts/WorldGenerator.gd")
 
 signal enemy_spawned(enemy_id: String, enemy_data: Dictionary)
 signal enemy_spawn_failed(enemy_id: String, reason: String)

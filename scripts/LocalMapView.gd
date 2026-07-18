@@ -45,7 +45,7 @@ var _current_map_data: Dictionary = {}
 var _node_by_cell: Dictionary = {}     # Vector2i -> HarvestNode
 var _pickup_by_cell: Dictionary = {}    # Vector2i -> FloorPickup
 # v0.10.0: batched MultiMesh visuals for resource nodes + floor pickups.
-var _visual_manager: ResourceVisualManager = null
+var _visual_manager: ResourceVisualManagerScript = null
 
 
 func _ready() -> void:

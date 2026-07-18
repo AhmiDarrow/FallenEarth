@@ -77,7 +77,7 @@ func _load_scene(scene_path: String, forward_hub_data: bool = false) -> void:
 
 
 func _apply_hub_data_deferred(snapshot: Dictionary) -> void:
-	var hub: HubWorld = get_tree().current_scene as HubWorld
+	var hub: Node = get_tree().current_scene
 	if is_instance_valid(hub) and not snapshot.is_empty():
 		hub.set_character_data(snapshot)
 		print("[GameManager] Character data (deferred) to HubWorld (%s)." % snapshot.get("id", "?"))

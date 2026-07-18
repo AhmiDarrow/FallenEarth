@@ -3,8 +3,9 @@
 ## Poolable: reset() reuses the node for a different mob type.
 class_name MobInstance
 extends Node2D
+const MobDataRef = preload("res://scripts/mob/MobData.gd")
 
-var mob_data: MobData = null
+var mob_data: MobDataRef = null
 var _sprite: Sprite2D = null
 
 
@@ -15,7 +16,7 @@ func _ready() -> void:
 
 
 ## Configure from MobData. Loads the PNG and centres it.
-func setup(data: MobData) -> void:
+func setup(data: MobDataRef) -> void:
 	mob_data = data
 	if _sprite == null:
 		_sprite = Sprite2D.new()

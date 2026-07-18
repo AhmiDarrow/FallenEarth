@@ -112,11 +112,11 @@ func _test_local_map_view() -> void:
 
 func _test_mob_instance() -> void:
 	print("[smoke] test: MobInstance loads sprite")
-	var data := MobData.new()
+	var data := MobDataScript.new()
 	data.sprite_id = "void_stalker"
 	data.grid_x = 10
 	data.grid_y = 10
-	var inst := MobInstance.new()
+	var inst := MobInstanceScript.new()
 	root.add_child(inst)
 	inst.setup(data)
 	if inst._sprite == null or inst._sprite.texture == null:

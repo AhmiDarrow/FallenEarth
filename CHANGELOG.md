@@ -1,5 +1,23 @@
 ---
 
+## [Unreleased] — Godot 4.7.1 Upgrade
+
+### Engine Upgrade
+- Upgraded from **Godot 4.3** to **Godot 4.7.1** (stable, 2026-07-14)
+- Updated `project.godot` config/features from `"4.3"` to `"4.7"`
+- Added `.godot-version` file pinning the project to 4.7.1
+
+### Fixes for Breaking Changes
+- **GDScript class resolution**: Added `preload("res://scripts/WorldGenerator.gd")` to scripts that use `WorldGenerator` static methods directly (NPCGenerator.gd, MissionGenerator.gd, CombatEncounterBuilder.gd) — required because Godot 4.4+ uses stricter GDScript dependency tracking
+- **GameManager.gd**: Changed `var hub: HubWorld = ... as HubWorld` type cast to `var hub: Node = ...` to avoid HubWorld class resolution failure during autoload compilation
+
+### Documentation
+- `docs/VERSION.md`: Godot 4.3 → 4.7.1, updated validation command path
+- `docs/PROJECT_OVERVIEW.md`: Updated Godot version reference
+- `tools/` — All smoke tests pass on Godot 4.7.1
+
+---
+
 ## [Unreleased — v0.10.0] — Combat Overhaul (FFT-style)
 
 - **v0.10.0** — Complete combat overhaul. The 7×7 grid of plain

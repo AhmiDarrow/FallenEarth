@@ -1,6 +1,7 @@
 ## NPCGenerator — Deterministic procedural NPC roster for each world seed.
 class_name NPCGenerator
 extends RefCounted
+const WorldGenerator = preload("res://scripts/WorldGenerator.gd")
 
 const ARCHETYPES_PATH := "res://data/npc_archetypes.json"
 const NAME_PARTS_PATH := "res://data/npc_name_parts.json"

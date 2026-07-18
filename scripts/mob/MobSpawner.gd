@@ -3,6 +3,7 @@
 ## Produces Array[MobData] for a given hex — no scene nodes created.
 class_name MobSpawner
 extends RefCounted
+const MobDataRef = preload("res://scripts/mob/MobData.gd")
 
 const MOBS_PATH := "res://data/mobs.json"
 
@@ -75,7 +76,7 @@ static func spawn_for_hex(
 	local_map: Dictionary,
 	player_local_x: int, player_local_y: int,
 	rng_seed: int
-) -> Array[MobData]:
+) -> Array[MobDataRef]:
 	var hex_key := "%d,%d" % [hex_q, hex_r]
 	var tile: Dictionary = tile_map.get(hex_key, {})
 	var biome: String = str(tile.get("name", "Ash Wastes"))
@@ -87,7 +88,7 @@ static func spawn_for_hex(
 	rng.seed = rng_seed
 
 	var count := rng.randi_range(8, 12 + int(danger * 8))
-	var result: Array[MobData] = []
+	var result: Array[MobDataRef] = []
 
 	# 2 guaranteed near-spawn mobs
 	for _i in range(2):
@@ -107,7 +108,7 @@ static func spawn_for_hex(
 				spawn_context, biome)
 			if enemy.is_empty():
 				continue
-			result.append(MobData.from_enemy_dict(enemy, nlx, nly))
+			result.append(MobDataRef.from_enemy_dict(enemy, nlx, nly))
 			break
 
 	# Regular mobs
@@ -122,7 +123,7 @@ static func spawn_for_hex(
 		var enemy := _generate_enemy(rng, world_seed, tile_map, hex_key, difficulty, spawn_context, biome)
 		if enemy.is_empty():
 			continue
-		result.append(MobData.from_enemy_dict(enemy, lx, ly))
+		result.append(MobDataRef.from_enemy_dict(enemy, lx, ly))
 
 	return result
 

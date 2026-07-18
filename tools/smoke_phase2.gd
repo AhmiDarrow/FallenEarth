@@ -197,7 +197,7 @@ func _test_hud_composes() -> void:
 		_fail("HUD: Hotbar child not found")
 		return
 	# Verify the hotbar is functional through the HUD
-	var hb: Hotbar = hud.get_hotbar()
+	var hb: Control = hud.get_hotbar() as Control
 	if hb == null:
 		_fail("HUD: get_hotbar() returned null")
 		return

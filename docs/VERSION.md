@@ -8,9 +8,9 @@ Single source of truth for release version, save format, and development phase a
 |-------|-------|
 | **Game version** | `0.9.0` |
 | **Save format version** | `0.2.0` |
-| **Godot** | 4.3 |
-| **Last updated** | 2026-07-05 |
-| **Development phase** | Phase 7 (settlement life + combat polish) |
+| **Godot** | 4.7.1 |
+| **Last updated** | 2026-07-18 |
+| **Development phase** | Phase 7 (settlement life + combat polish) — Godot 4.7 upgrade |
 
 ## Version History (summary)
 
@@ -55,5 +55,5 @@ world_npcs, faction_rep, recruited_npc_ids, missions
 ## Validation Command
 
 ```powershell
-& "C:\Users\Administrator\godot\Godot_v4.3-stable_win64.exe" --headless --path "C:\Users\Administrator\FallenEarth" -s validate_scripts.gd
+& "C:\Users\Administrator\FallenEarth\Godot_v4.7.1-stable_win64_console.exe" --headless --path "C:\Users\Administrator\FallenEarth" -s tools/validate_scripts.gd
 ```
