@@ -5,8 +5,8 @@
 class_name MinimapOverhaul
 extends Control
 
-const SIZE := 120.0
-const ICON_SIZE := 2.0
+const SIZE := 160.0
+const ICON_SIZE := 3.0
 const BG_COLOR := Color(0.04, 0.04, 0.06, 0.85)
 const PLAYER_COLOR := Color(0.4, 0.85, 1.0)
 const NPC_COLOR := Color(0.3, 0.6, 1.0)
@@ -25,10 +25,7 @@ var _view_range: float = 100.0
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(SIZE, SIZE)
-	anchor_left = 1.0
-	anchor_top = 0.0
-	anchor_right = 1.0
-	anchor_bottom = 0.0
+	set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	offset_left = -SIZE - 12
 	offset_top = 12
 	offset_right = -12

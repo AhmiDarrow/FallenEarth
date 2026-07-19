@@ -1,31 +1,6 @@
-[gd_scene load_steps=5 format=3 uid="uid://70btn0pv2gki"]
+[gd_scene load_steps=2 format=3 uid="uid://70btn0pv2gki"]
 
 [ext_resource type="Script" path="res://scripts/WorldGeneration.gd" id="1_wg"]
-[ext_resource type="Texture2D" uid="uid://dxl8l8xqfea4u" path="res://assets/backgrounds/worldgenbg.png" id="2_bg"]
-
-[sub_resource type="StyleBoxFlat" id="button_normal"]
-bg_color = Color(0.2, 0.15, 0.3, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.5, 0.8, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
-
-[sub_resource type="StyleBoxFlat" id="info_panel"]
-bg_color = Color(0.08, 0.06, 0.12, 1)
-border_width_left = 1
-border_width_top = 1
-border_width_right = 1
-border_width_bottom = 1
-border_color = Color(0.3, 0.25, 0.4, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [node name="WorldGeneration" type="Control"]
 layout_mode = 3
@@ -41,7 +16,6 @@ layout_mode = 0
 anchor_right = 1.0
 anchor_bottom = 1.0
 mouse_filter = 2
-texture = ExtResource("2_bg")
 stretch_mode = 3
 
 [node name="VBox" type="VBoxContainer" parent="."]
@@ -63,7 +37,6 @@ layout_mode = 2
 [node name="BackBtn" type="Button" parent="VBox/TopRow"]
 custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 text = "Back"
 
 [node name="Spacer" type="Control" parent="VBox/TopRow"]
@@ -101,7 +74,6 @@ placeholder_text = "Enter world seed"
 [node name="RandomButton" type="Button" parent="VBox/TopBar/SeedHBox"]
 custom_minimum_size = Vector2(80, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 text = "Random"
 
 [node name="SizeHBox" type="HBoxContainer" parent="VBox/TopBar"]
@@ -117,14 +89,12 @@ vertical_alignment = 1
 [node name="SmallBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
 custom_minimum_size = Vector2(70, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 toggle_mode = true
 text = "Small"
 
 [node name="MediumBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
 custom_minimum_size = Vector2(70, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 toggle_mode = true
 button_pressed = true
 text = "Medium"
@@ -132,14 +102,12 @@ text = "Medium"
 [node name="LargeBtn" type="Button" parent="VBox/TopBar/SizeHBox"]
 custom_minimum_size = Vector2(70, 36)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 toggle_mode = true
 text = "Large"
 
 [node name="GenerateBtn" type="Button" parent="VBox/TopBar"]
 custom_minimum_size = Vector2(140, 40)
 layout_mode = 2
-theme_override_styles/normal = SubResource("button_normal")
 text = "Generate World"
 
 [node name="ContentHBox" type="HBoxContainer" parent="VBox"]
@@ -147,27 +115,19 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="PreviewPanel" type="Panel" parent="VBox/ContentHBox"]
+[node name="HexMargin" type="MarginContainer" parent="VBox/ContentHBox"]
 custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("info_panel")
-
-[node name="Margin" type="MarginContainer" parent="VBox/ContentHBox/PreviewPanel"]
-layout_mode = 0
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 theme_override_constants/margin_left = 4
 theme_override_constants/margin_top = 4
 theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
-[node name="HexGrid" type="Node2D" parent="VBox/ContentHBox/PreviewPanel/Margin"]
+[node name="HexGrid" type="Node2D" parent="VBox/ContentHBox/HexMargin"]
 
-[node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/PreviewPanel/Margin/HexGrid"]
+[node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/HexMargin/HexGrid"]
 enabled = false
 
 [node name="SideVBox" type="VBoxContainer" parent="VBox/ContentHBox"]
@@ -179,7 +139,6 @@ theme_override_constants/separation = 8
 custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/panel = SubResource("info_panel")
 
 [node name="WorldInfoLabel" type="RichTextLabel" parent="VBox/ContentHBox/SideVBox/WorldInfoPanel"]
 layout_mode = 0
@@ -194,7 +153,6 @@ text = "[i]World info will appear here after generation.[/i]"
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_styles/panel = SubResource("info_panel")
 
 [node name="SelectedInfoLabel" type="RichTextLabel" parent="VBox/ContentHBox/SideVBox/SelectedInfoPanel"]
 layout_mode = 0
@@ -209,6 +167,5 @@ text = "[i]Click a hex to see tile info.[/i]"
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_styles/normal = SubResource("button_normal")
 disabled = true
 text = "Continue to Character"

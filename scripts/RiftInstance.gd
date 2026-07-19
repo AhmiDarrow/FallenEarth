@@ -116,7 +116,7 @@ func _setup_grid() -> void:
 		for x in range(_dungeon_w):
 			var cell := Button.new()
 			cell.custom_minimum_size = Vector2(28, 26)
-			cell.focus_mode = Control.FOCUS_NONE
+			cell.focus_mode = Control.FOCUS_ALL
 			cell.pressed.connect(_on_cell_pressed.bind(x, y))
 			var style := StyleBoxFlat.new()
 			style.bg_color = Color(0.08, 0.06, 0.1)
@@ -126,22 +126,23 @@ func _setup_grid() -> void:
 			style.border_width_bottom = 1
 			style.border_color = Color(0.25, 0.2, 0.35)
 			cell.add_theme_stylebox_override("normal", style)
+			var focus_style := StyleBoxFlat.new()
+			focus_style.border_width_left = 2
+			focus_style.border_width_top = 2
+			focus_style.border_width_right = 2
+			focus_style.border_width_bottom = 2
+			focus_style.border_color = Color.WHITE
+			cell.add_theme_stylebox_override("focus", focus_style)
 			grid_container.add_child(cell)
 			_grid_cells.append(cell)
 
 
-var _escape_was_pressed: bool = false
-
-
-func _process(delta: float) -> void:
-	var esc_pressed: bool = Input.is_key_pressed(KEY_ESCAPE)
-	if esc_pressed and not _escape_was_pressed:
-		_toggle_pause_menu()
-	_escape_was_pressed = esc_pressed
-
-
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed and not event.echo):
+		return
+	if event.keycode == KEY_ESCAPE:
+		_toggle_pause_menu()
+		get_viewport().set_input_as_handled()
 		return
 	if get_tree().paused:
 		return
@@ -309,6 +310,13 @@ func _on_close_rift_core_pressed() -> void:
 
 
 func _on_back_pressed() -> void:
+	# Multiplayer: broadcast rift exit to all clients
+	var ns: Node = get_node_or_null("/root/NetworkSync")
+	if ns != null and ns.has_method("sync_rift_exit"):
+		var nm: Node = get_node_or_null("/root/NetworkManager")
+		if nm != null and nm.has_method("is_server") and nm.is_server():
+			ns.sync_rift_exit()
+
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
 	if is_instance_valid(gs):
 		if not _rift_cleared:

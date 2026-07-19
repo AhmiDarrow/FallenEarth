@@ -6,6 +6,7 @@
 class_name SettlementInterior
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const ROOMS_PATH := "res://data/settlement_rooms.json"
 const SETTLEMENT_PATH := "/root/SettlementManager"
 const CELL_SIZE := 24
@@ -90,12 +91,10 @@ func setup(town: Dictionary, hub: Node, focus_building: String = "") -> void:
 
 
 func _build_frame() -> void:
-	# Dark background
 	var bg := ColorRect.new()
 	bg.name = "BG"
 	bg.color = Color(0.03, 0.02, 0.04, 0.98)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -133,7 +132,7 @@ func _build_frame() -> void:
 
 	var hint := Label.new()
 	hint.name = "HintLabel"
-	hint.text = "WASD=move  E=interact  ESC=leave"
+	hint.text = "WASD=move  F=interact  ESC=leave"
 	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0))
@@ -418,11 +417,12 @@ func _interact_npc(npc: Dictionary) -> void:
 	var npc_name: String = str(npc.get("name", "?"))
 	var race: String = str(npc.get("race", ""))
 	var gender: String = str(npc.get("gender", "male"))
+	var npc_id: String = str(npc.get("id", ""))
 
 	# Check if DialogueManager has dialogue for this role
 	var dm: Node = get_node_or_null("/root/DialogueManager")
 	if dm != null and dm.call("has_role_dialogue", role):
-		_open_dialogue_ui(role, npc_name, race, gender)
+		_open_dialogue_ui(role, npc_name, race, gender, npc_id)
 		return
 
 	# Fallback for roles without dialogue trees
@@ -455,7 +455,7 @@ func _open_mission_board() -> void:
 	add_child(board)
 
 
-func _open_dialogue_ui(role: String, npc_name: String, race: String, gender: String) -> void:
+func _open_dialogue_ui(role: String, npc_name: String, race: String, gender: String, npc_id: String = "") -> void:
 	if has_node("DialogueUI"):
 		return
 	var DialogueUIScript: GDScript = load("res://scripts/DialogueUI.gd")
@@ -465,8 +465,9 @@ func _open_dialogue_ui(role: String, npc_name: String, race: String, gender: Str
 	dialogue_ui.name = "DialogueUI"
 	add_child(dialogue_ui)
 	dialogue_ui.action_triggered.connect(_on_dialogue_action)
+	dialogue_ui.invite_requested.connect(_on_invite_requested)
 	dialogue_ui.dialogue_finished.connect(func(): dialogue_ui.queue_free())
-	dialogue_ui.call("start_dialogue", role, npc_name, race, gender)
+	dialogue_ui.call("start_dialogue", role, npc_name, race, gender, npc_id)
 
 
 func _on_dialogue_action(action: String) -> void:
@@ -477,6 +478,19 @@ func _on_dialogue_action(action: String) -> void:
 			_open_mission_board()
 		"travel_to_riftspire":
 			_travel_to_riftspire()
+
+
+func _on_invite_requested(npc_id: String) -> void:
+	if npc_id.is_empty():
+		return
+	var pm: Node = get_node_or_null("/root/PartyNPCManager")
+	if pm == null or not pm.has_method("invite"):
+		return
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if pm.has_method("can_invite") and pm.call("can_invite", npc_id):
+		pm.call("invite", npc_id)
+		if is_instance_valid(gs):
+			gs.sync_party_companions()
 
 
 func _show_greeting(npc_name: String, role: String, msg: String) -> void:
@@ -601,10 +615,10 @@ func _tick_wanderers(delta: float) -> void:
 		# Show mood emoji if player is nearby
 		if _room_view != null and is_instance_valid(_room_view):
 			var is_near: bool = _room_view.is_player_nearby(wanderer.current_x, wanderer.current_y, 3)
-			var dm: Node = get_node_or_null("/root/DialogueManager")
+			var nm: Node = get_node_or_null("/root/NPCManager")
 			var rep: int = 0
-			if dm != null:
-				rep = dm.call("get_faction_rep", _faction) if _faction != "" else 0
+			if nm != null:
+				rep = nm.call("get_faction_rep", _faction) if _faction != "" else 0
 			var mood: String = wanderer.get_display_mood(is_near, rep)
 			var emoji: String = wanderer.get_mood_emoji(mood)
 			_room_view.show_mood_emoji(wanderer.npc_id, emoji)

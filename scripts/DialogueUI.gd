@@ -8,36 +8,36 @@ extends Control
 signal dialogue_finished
 signal choice_made(choice_index: int)
 signal action_triggered(action: String)
+signal invite_requested(npc_id: String)
 
 var _role: String = ""
 var _current_node: Dictionary = {}
 var _npc_name: String = ""
 var _npc_race: String = ""
 var _npc_gender: String = ""
+var _npc_id: String = ""
 
 var _panel: PanelContainer = null
-var _portrait_rect: TextureRect = null
 var _speaker_label: Label = null
 var _text_label: RichTextLabel = null
 var _choices_container: VBoxContainer = null
 var _close_button: Button = null
+var _invite_button: Button = null
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_build_ui()
 	visible = false
 
 
 func _build_ui() -> void:
-	# Semi-transparent backdrop
 	var backdrop := ColorRect.new()
 	backdrop.name = "Backdrop"
-	backdrop.color = Color(0, 0, 0, 0.6)
-	backdrop.anchor_right = 1.0
-	backdrop.anchor_bottom = 1.0
+	backdrop.color = Color(0, 0, 0, 0.75)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
@@ -59,25 +59,10 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_bottom", 8)
 	_panel.add_child(margin)
 
-	var hbox := HBoxContainer.new()
-	hbox.name = "HBox"
-	hbox.add_theme_constant_override("separation", 12)
-	margin.add_child(hbox)
-
-	# Portrait
-	_portrait_rect = TextureRect.new()
-	_portrait_rect.name = "Portrait"
-	_portrait_rect.custom_minimum_size = Vector2(64, 64)
-	_portrait_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
-	_portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_portrait_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	hbox.add_child(_portrait_rect)
-
 	var vbox := VBoxContainer.new()
 	vbox.name = "VBox"
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_theme_constant_override("separation", 8)
-	hbox.add_child(vbox)
+	margin.add_child(vbox)
 
 	# Speaker name
 	_speaker_label = Label.new()
@@ -112,14 +97,23 @@ func _build_ui() -> void:
 	_close_button.visible = false
 	vbox.add_child(_close_button)
 
+	# Invite button (shown when NPC is recruitable)
+	_invite_button = Button.new()
+	_invite_button.name = "InviteButton"
+	_invite_button.text = "Invite to Party"
+	_invite_button.custom_minimum_size = Vector2(140, 28)
+	_invite_button.pressed.connect(_on_invite_pressed)
+	_invite_button.visible = false
+	vbox.add_child(_invite_button)
 
-func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_gender: String = "") -> void:
+
+func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_gender: String = "", npc_id: String = "") -> void:
 	_role = role
 	_npc_name = npc_name
 	_npc_race = npc_race
 	_npc_gender = npc_gender
-
-	_load_portrait()
+	_npc_id = npc_id
+	_check_invite_eligibility()
 
 	var dm: Node = get_node_or_null("/root/DialogueManager")
 	if dm == null:
@@ -136,24 +130,16 @@ func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_g
 	visible = true
 
 
-const PORTRAIT_RACE_MAP := {
-	"ai": "sentientai",
-}
-
-func _load_portrait() -> void:
-	if _npc_race.is_empty():
-		_portrait_rect.texture = null
-		_portrait_rect.visible = false
+func _check_invite_eligibility() -> void:
+	if _npc_id.is_empty() or not is_instance_valid(_invite_button):
 		return
-	var race_key: String = PORTRAIT_RACE_MAP.get(_npc_race, _npc_race)
-	var idx: int = (_npc_name.hash() % 6 + 6) % 6 + 1
-	var path: String = "res://assets/portraits/%s_%s/portrait_%02d.png" % [race_key, _npc_gender, idx]
-	if ResourceLoader.exists(path):
-		_portrait_rect.texture = load(path)
-		_portrait_rect.visible = true
+	var pm: Node = get_node_or_null("/root/PartyNPCManager")
+	if pm == null or not pm.has_method("can_invite"):
+		return
+	if pm.has_method("can_invite") and pm.call("can_invite", _npc_id):
+		_invite_button.visible = true
 	else:
-		_portrait_rect.texture = null
-		_portrait_rect.visible = false
+		_invite_button.visible = false
 
 
 func _fallback_greeting(npc_name: String, role: String) -> void:
@@ -214,6 +200,13 @@ func _on_choice_pressed(index: int) -> void:
 		return
 
 	_show_node(next_node)
+
+
+func _on_invite_pressed() -> void:
+	invite_requested.emit(_npc_id)
+	visible = false
+	dialogue_finished.emit()
+	queue_free()
 
 
 func _on_close_pressed() -> void:

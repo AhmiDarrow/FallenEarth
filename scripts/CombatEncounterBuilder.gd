@@ -6,9 +6,6 @@ class_name EncounterBuilder
 extends RefCounted
 const WorldGenerator = preload("res://scripts/WorldGenerator.gd")
 
-signal enemy_spawned(enemy_id: String, enemy_data: Dictionary)
-signal enemy_spawn_failed(enemy_id: String, reason: String)
-
 const ENEMY_ARCHETYPES_PATH := "res://data/enemy_archetypes.json"
 const APPEARANCE_PATH := "res://data/appearance.json"
 const MOBS_PATH := "res://data/mobs.json"
@@ -28,6 +25,8 @@ const ENEMY_WEIGHTS := {
 static var _sprite_cache: Dictionary = {}
 static var _sprite_cache_loaded: bool = false
 static var _mob_cache: Dictionary = {}
+static var _json_dict_cache: Dictionary = {}
+static var _biomes_cache: Dictionary = {}
 
 
 static func generate_procedural_enemy(
@@ -176,13 +175,17 @@ static func _make_rng(world_seed: String, salt: String) -> RandomNumberGenerator
 
 
 static func _load_json_dict(path: String) -> Dictionary:
+	if _json_dict_cache.has(path):
+		return _json_dict_cache[path]
 	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 	if not is_instance_valid(file):
 		push_warning("[EncounterBuilder] Missing data: %s" % path)
 		return {}
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
-	return parsed if parsed is Dictionary else {}
+	var result: Dictionary = parsed if parsed is Dictionary else {}
+	_json_dict_cache[path] = result
+	return result
 
 
 static func _pick_enemy_archetype(
@@ -253,7 +256,7 @@ static func _archetype_prefers_danger(archetype_key: String) -> bool:
 	return archetype_key in ["raider", "smuggler", "spy", "cultist", "tech_cultist", "mercenary"]
 
 
-static func _pick_enemy_race(archetype_key: String, rng: RandomNumberGenerator) -> String:
+static func _pick_enemy_race(archetype_key: String, _rng: RandomNumberGenerator) -> String:
 	match archetype_key:
 		"insectoid": return "Chthon"
 		"behemoth": return "Nullborn"
@@ -261,7 +264,7 @@ static func _pick_enemy_race(archetype_key: String, rng: RandomNumberGenerator) 
 		_: return "Human"
 
 
-static func _pick_enemy_class(archetype_key: String, rng: RandomNumberGenerator) -> String:
+static func _pick_enemy_class(archetype_key: String, _rng: RandomNumberGenerator) -> String:
 	match archetype_key:
 		"insectoid": return "Survivor"
 		"behemoth": return "Gladiator"
@@ -445,7 +448,7 @@ static func build_overworld(char_data: Dictionary, mob: Dictionary, tile_key: St
 		"source": SOURCE_OVERWORLD,
 		"tile_key": tile_key,
 		"biome": biome,
-		"grid_size": 7,
+		"grid_size": 20,
 		"player_start": Vector2i(3, 5),
 		"height_seed": abs(tile_key.hash()),
 		"class_combat": {},
@@ -483,16 +486,24 @@ static func build_rift_room(
 	# Look up biome level_range and wildlife_modifiers from biomes.json
 	var biome_level_range: Dictionary = {"min_level": 2, "max_level": 7}
 	var wildlife_mods: Dictionary = {}
-	var biomes_file: FileAccess = FileAccess.open("res://data/biomes.json", FileAccess.READ)
-	if biomes_file:
-		var biomes_parsed: Variant = JSON.parse_string(biomes_file.get_as_text())
-		biomes_file.close()
-		if biomes_parsed is Array:
-			for b in biomes_parsed:
-				if b is Dictionary and str(b.get("name", "")) == biome:
-					biome_level_range = b.get("level_range", biome_level_range)
-					wildlife_mods = b.get("wildlife_modifiers", {})
-					break
+	if _biomes_cache.has(biome):
+		var cached: Dictionary = _biomes_cache[biome]
+		biome_level_range = cached.get("level_range", biome_level_range)
+		wildlife_mods = cached.get("wildlife_modifiers", {})
+	elif not _biomes_cache.has("_loaded"):
+		var biomes_file: FileAccess = FileAccess.open("res://data/biomes.json", FileAccess.READ)
+		if biomes_file:
+			var biomes_parsed: Variant = JSON.parse_string(biomes_file.get_as_text())
+			biomes_file.close()
+			if biomes_parsed is Array:
+				for b in biomes_parsed:
+					if b is Dictionary:
+						_biomes_cache[str(b.get("name", ""))] = b
+				_biomes_cache["_loaded"] = true
+				if _biomes_cache.has(biome):
+					var cached2: Dictionary = _biomes_cache[biome]
+					biome_level_range = cached2.get("level_range", biome_level_range)
+					wildlife_mods = cached2.get("wildlife_modifiers", {})
 	var diff := {"min_level": int(biome_level_range.get("min_level", 2)), "max_level": int(biome_level_range.get("max_level", 7)), "danger_threshold": 0.85}
 	if encounter_type == "boss":
 		diff["danger_threshold"] = 0.95

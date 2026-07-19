@@ -1,64 +1,68 @@
+## MasterTheme — Single consolidated UI theming module for Fallen Earth
+## Import once: `const MT = preload("res://assets/ui/MasterTheme.gd")`
+## Provides colors, sizes, styleboxes, button styling, backgrounds, depth overlay,
+## and theme builder — every UI token the game needs.
 class_name MasterTheme
 extends RefCounted
 
 # =============================================================================
-# Color Palette (warm earth tones)
+# SECTION 1 — Color Palette (warm earth tones)
 # =============================================================================
 
-const BG_DEEP       := Color(0.141, 0.118, 0.102)
-const BG_SURFACE    := Color(0.180, 0.157, 0.141)
-const BG_ELEVATED   := Color(0.227, 0.200, 0.180)
-const BG_INPUT      := Color(0.141, 0.118, 0.102)
-const BG_PANEL      := Color(0.180, 0.157, 0.141)
+const BG_DEEP       := Color(0.141, 0.118, 0.102)  # #241E1A
+const BG_SURFACE    := Color(0.180, 0.157, 0.141)  # #2E2824
+const BG_ELEVATED   := Color(0.227, 0.200, 0.180)  # #3A332E
+const BG_INPUT      := Color(0.141, 0.118, 0.102)  # #241E1A
+const BG_PANEL      := Color(0.180, 0.157, 0.141)  # #2E2824
 
-const BORDER_SUBTLE := Color(0.235, 0.208, 0.188)
-const BORDER_STRONG := Color(0.353, 0.314, 0.282)
-const BORDER_INPUT  := Color(0.235, 0.208, 0.188)
+const BORDER_SUBTLE := Color(0.235, 0.208, 0.188)  # #3C3530
+const BORDER_STRONG := Color(0.353, 0.314, 0.282)  # #5A5048
+const BORDER_INPUT  := Color(0.235, 0.208, 0.188)  # #3C3530
 
-const ACCENT_PRIMARY   := Color(0.788, 0.722, 0.588)
-const ACCENT_SECONDARY := Color(0.459, 0.620, 0.682)
-const ACCENT_DANGER    := Color(0.769, 0.251, 0.251)
-const ACCENT_SUCCESS   := Color(0.439, 0.608, 0.478)
-const ACCENT_NEON      := Color(0.494, 0.427, 0.718)
+const ACCENT_PRIMARY   := Color(0.788, 0.722, 0.588)  # #C9B896
+const ACCENT_SECONDARY := Color(0.459, 0.620, 0.682)  # #759EAE
+const ACCENT_DANGER    := Color(0.769, 0.251, 0.251)  # #C44040
+const ACCENT_SUCCESS   := Color(0.439, 0.608, 0.478)  # #709B7A
+const ACCENT_NEON      := Color(0.494, 0.427, 0.718)  # #7E6DB7
 
-const TEXT_PRIMARY     := Color(0.910, 0.863, 0.773)
-const TEXT_SECONDARY   := Color(0.651, 0.620, 0.580)
-const TEXT_MUTED       := Color(0.475, 0.451, 0.420)
-const TEXT_ACCENT      := Color(0.788, 0.722, 0.588)
-const TEXT_DANGER      := Color(0.769, 0.251, 0.251)
-const TEXT_SUCCESS     := Color(0.439, 0.608, 0.478)
-const TEXT_LINK        := Color(0.459, 0.620, 0.682)
+const TEXT_PRIMARY     := Color(0.910, 0.863, 0.773)  # #E8DCC5
+const TEXT_SECONDARY   := Color(0.651, 0.620, 0.580)  # #A69E94
+const TEXT_MUTED       := Color(0.475, 0.451, 0.420)  # #79736B
+const TEXT_ACCENT      := Color(0.788, 0.722, 0.588)  # #C9B896
+const TEXT_DANGER      := Color(0.769, 0.251, 0.251)  # #C44040
+const TEXT_SUCCESS     := Color(0.439, 0.608, 0.478)  # #709B7A
+const TEXT_LINK        := Color(0.459, 0.620, 0.682)  # #759EAE
 
-const HP_FILL    := Color(0.769, 0.251, 0.251)
-const HP_BG      := Color(0.329, 0.157, 0.157)
-const MP_FILL    := Color(0.376, 0.518, 0.675)
-const MP_BG      := Color(0.173, 0.263, 0.373)
-const XP_FILL    := Color(0.439, 0.608, 0.478)
-const XP_BG      := Color(0.192, 0.325, 0.255)
+const HP_FILL    := Color(0.769, 0.251, 0.251)  # #C44040
+const HP_BG      := Color(0.329, 0.157, 0.157)  # #542828
+const MP_FILL    := Color(0.376, 0.518, 0.675)  # #6084AC
+const MP_BG      := Color(0.173, 0.263, 0.373)  # #2C435F
+const XP_FILL    := Color(0.439, 0.608, 0.478)  # #709B7A
+const XP_BG      := Color(0.192, 0.325, 0.255)  # #315341
 
-const RARITY_COMMON    := Color(0.651, 0.620, 0.580)
-const RARITY_UNCOMMON  := Color(0.439, 0.608, 0.478)
-const RARITY_RARE      := Color(0.459, 0.620, 0.682)
-const RARITY_EPIC      := Color(0.494, 0.427, 0.718)
-const RARITY_LEGENDARY := Color(0.788, 0.722, 0.588)
+const RARITY_COMMON    := Color(0.651, 0.620, 0.580)  # #A69E94
+const RARITY_UNCOMMON  := Color(0.439, 0.608, 0.478)  # #709B7A
+const RARITY_RARE      := Color(0.459, 0.620, 0.682)  # #759EAE
+const RARITY_EPIC      := Color(0.494, 0.427, 0.718)  # #7E6DB7
+const RARITY_LEGENDARY := Color(0.788, 0.722, 0.588)  # #C9B896
 
-const OVERLAY_DARK  := Color(0.102, 0.082, 0.071, 0.85)
-const OVERLAY_LIGHT := Color(0.141, 0.118, 0.102, 0.60)
+const OVERLAY_DARK  := Color(0.102, 0.082, 0.071, 0.85)  # #1A1512 @ 85%
+const OVERLAY_LIGHT := Color(0.141, 0.118, 0.102, 0.60)  # #241E1A @ 60%
 
-const GLOW_PRIMARY := Color(0.788, 0.722, 0.588)
-const GLOW_RIFT    := Color(0.494, 0.427, 0.718)
+const GLOW_PRIMARY := Color(0.788, 0.722, 0.588)  # #C9B896
+const GLOW_RIFT    := Color(0.494, 0.427, 0.718)  # #7E6DB7
 
-const MM_PLAYER      := Color(0.400, 0.851, 1.000)
-const MM_DISCOVERED  := Color(0.451, 0.502, 0.424)
+const MM_PLAYER      := Color(0.400, 0.851, 1.000)  # #66D9FF
+const MM_DISCOVERED  := Color(0.451, 0.502, 0.424)  # #73806A
 const MM_CURRENT     := Color(1, 1, 1)
-const MM_RIFT        := Color(1.000, 0.851, 0.200)
-const MM_RIFTSPIRE   := Color(1.000, 0.502, 0.149)
-const MM_MOB_HOSTILE := Color(1.000, 0.502, 0.400)
-const MM_MOB_NEUTRAL := Color(0.702, 0.851, 0.702)
+const MM_RIFT        := Color(1.000, 0.851, 0.200)  # #FFD930
+const MM_RIFTSPIRE   := Color(1.000, 0.502, 0.149)  # #FF8026
+const MM_MOB_HOSTILE := Color(1.000, 0.502, 0.400)  # #FF8066
+const MM_MOB_NEUTRAL := Color(0.702, 0.851, 0.702)  # #B3D9B3
 const MM_GRID_LINE   := Color(0.200, 0.200, 0.220, 0.5)
 
 # =============================================================================
-# Size & Spacing Tokens
+# SECTION 2 — Size & Spacing Tokens
 # =============================================================================
 
 const FS_HERO  := 42
@@ -96,7 +100,7 @@ const CELL_MD := 48
 const CELL_LG := 64
 
 # =============================================================================
-# StyleBox Factory
+# SECTION 3 — StyleBox Factory
 # =============================================================================
 
 static func panel(bg: Color = BG_DEEP, border: Color = BORDER_SUBTLE,
@@ -208,12 +212,13 @@ static func _button_style_data(variant: String) -> Dictionary:
 			return {bg = Color(0.165, 0.141, 0.118), border = ACCENT_PRIMARY, text = TEXT_PRIMARY}
 
 # =============================================================================
-# Button Styles
+# SECTION 4 — Button Styles
 # =============================================================================
 
 static func apply_button_style(btn: Button, style_key: String = "primary") -> void:
 	if btn == null:
 		return
+
 	var style_data: Dictionary = _button_style_data(style_key)
 	var text_color: Color = style_data.get("text", TEXT_PRIMARY)
 	btn.add_theme_stylebox_override("normal", button_stylebox(style_key, "normal"))
@@ -221,6 +226,7 @@ static func apply_button_style(btn: Button, style_key: String = "primary") -> vo
 	btn.add_theme_stylebox_override("pressed", button_stylebox(style_key, "pressed"))
 	btn.add_theme_stylebox_override("disabled", button_stylebox(style_key, "disabled"))
 	btn.add_theme_stylebox_override("focus", button_stylebox(style_key, "focus"))
+
 	btn.add_theme_color_override("font_color", text_color)
 	btn.add_theme_color_override("font_hover_color", Color.WHITE)
 	btn.add_theme_color_override("font_focus_color", Color.WHITE)
@@ -256,7 +262,7 @@ static func get_button_styles() -> Array[String]:
 	return ["primary", "secondary", "danger", "success", "ghost"]
 
 # =============================================================================
-# Theme Builder
+# SECTION 6 — Theme Builder
 # =============================================================================
 
 static func apply_to(window: Window) -> void:
@@ -266,6 +272,7 @@ static func apply_to(window: Window) -> void:
 
 static func _build_theme() -> Theme:
 	var t := Theme.new()
+
 	t.default_font_size = FS_BODY
 	_set_theme_font_size(t, "Label", "font_size", FS_BODY)
 	_set_theme_font_size(t, "Button", "font_size", FS_BUTTON)

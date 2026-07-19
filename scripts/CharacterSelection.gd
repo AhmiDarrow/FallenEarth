@@ -3,6 +3,7 @@
 
 class_name CharacterSelection extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 
 signal character_selected(race_key: String, class_key: String)
 signal character_created_and_ready(race_key: String, class_key: String, origin: String, character_id: String)
@@ -29,6 +30,14 @@ var _portrait_index_label: Label = null
 
 
 func _ready() -> void:
+	var bg := $BackgroundColor as ColorRect
+	if bg != null:
+		bg.color = MT.BG_DEEP
+	# Style buttons
+	ButtonStyleHelper.apply_secondary($MainVBox/BackRow/BackButton)
+	ButtonStyleHelper.apply_primary($MainVBox/BottomBar/ConfirmButton)
+	ButtonStyleHelper.apply_ghost($MainVBox/BottomBar/ResetButton)
+	# Wire signals
 	$MainVBox/BackRow/BackButton.pressed.connect(_on_back_pressed)
 	$MainVBox/BottomBar/ConfirmButton.pressed.connect(_on_confirm_pressed)
 	$MainVBox/BottomBar/ResetButton.pressed.connect(reset_selection)

@@ -14,6 +14,8 @@
 class_name CombatAI
 extends RefCounted
 
+const INF_DISTANCE := 1000
+
 
 ## Override in archetypes.
 func decide(state: Dictionary) -> Dictionary:

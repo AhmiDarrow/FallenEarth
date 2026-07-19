@@ -6,7 +6,6 @@ signal npcs_generated(count: int)
 signal npc_recruited(npc_id: String, npc_data: Dictionary)
 signal faction_rep_changed(faction_key: String, new_rep: int)
 
-const FACTIONS_PATH := "res://data/factions.json"
 const NPCGeneratorScript = preload("res://scripts/NPCGenerator.gd")
 
 var _world_npcs: Dictionary = {}       # id -> npc dict
@@ -222,11 +221,10 @@ func _sync_to_game_state() -> void:
 
 
 func _load_factions() -> Array:
-	var file: FileAccess = FileAccess.open(FACTIONS_PATH, FileAccess.READ)
-	if not is_instance_valid(file):
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
 		return []
-	var parsed: Variant = JSON.parse_string(file.get_as_text())
-	file.close()
+	var parsed: Variant = dr.get_data("factions")
 	return parsed if parsed is Array else []
 
 

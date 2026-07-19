@@ -16,6 +16,9 @@ var _on_close: Callable = Callable()
 
 
 func _ready() -> void:
+	var bg := get_node_or_null("Background") as ColorRect
+	if bg != null:
+		bg.color = Color(0.04, 0.04, 0.07, 0.85)
 	_title = get_node_or_null("Margin/VBox/Title") as Label
 	_recipe_list = get_node_or_null("Margin/VBox/RecipeList") as VBoxContainer
 	_instructions = get_node_or_null("Margin/VBox/Instructions") as Label
@@ -81,6 +84,7 @@ func _build_recipe_row(rid: String) -> Control:
 	craft_btn.text = "Craft"
 	craft_btn.pressed.connect(_on_craft_pressed.bind(rid))
 	row.add_child(craft_btn)
+	ButtonStyleHelper.apply_primary(craft_btn)
 	return row
 
 

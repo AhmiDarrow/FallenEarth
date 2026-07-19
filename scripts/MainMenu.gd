@@ -29,12 +29,15 @@ func _ready() -> void:
 	if mods_btn != null:
 		MT.apply_secondary(mods_btn)
 		mods_btn.pressed.connect(_on_mods)
+	# Wire signals
 	new_game_btn.pressed.connect(_on_new_game)
 	load_game_btn.pressed.connect(_on_load_game)
 	multiplayer_btn.pressed.connect(_on_multiplayer)
 	options_btn.pressed.connect(_on_options)
 	exit_btn.pressed.connect(_on_exit)
 	print("[MainMenu] Main menu loaded.")
+	# Start main menu music. Defensive lookup in case the autoload
+	# hasn't been registered (e.g. when running a sub-scene headless).
 	var mm: Node = get_node_or_null("/root/MusicManager")
 	if mm != null and mm.has_method("play_track"):
 		mm.call("play_track", "main_menu")
@@ -463,6 +466,7 @@ func _show_lobby_panel(is_server: bool) -> void:
 	player_list.name = "PlayerList"
 	root.add_child(player_list)
 
+	# Populate initial player list
 	var lm: Node = get_node_or_null("/root/LobbyManager")
 	if lm != null and lm.has_method("get_player_list"):
 		for p in lm.get_player_list():
@@ -470,6 +474,7 @@ func _show_lobby_panel(is_server: bool) -> void:
 			lbl.text = "- %s" % p.name
 			player_list.add_child(lbl)
 
+	# Party invite button (host only)
 	if is_server:
 		var party_btn := Button.new()
 		party_btn.text = "Invite All to Party"
@@ -514,6 +519,7 @@ func _on_invite_all_to_party() -> void:
 
 func _on_start_game() -> void:
 	print("[MainMenu] Starting multiplayer game...")
+	# Go to world gen with multiplayer flag
 	var nm: Node = get_node_or_null("/root/NetworkManager")
 	if nm != null and nm.has_method("is_server") and nm.is_server():
 		start_multiplayer_game()
@@ -551,6 +557,10 @@ func _save_label(text: String) -> void:
 func _on_options() -> void:
 	get_tree().change_scene_to_file("res://scenes/ui/Options.tscn")
 
+
+# ---------------------------------------------------------------------------
+# Mods menu
+# ---------------------------------------------------------------------------
 
 func _on_mods() -> void:
 	print("[MainMenu] Mods clicked")

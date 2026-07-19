@@ -11,8 +11,8 @@ const MODS_DIR := "user://mods/"
 const BUNDLED_MODS_DIR := "res://user/mods/"
 const MANIFEST_FILE := "mod.cfg"
 
-var manifests: Dictionary = {}
-var mod_nodes: Dictionary = {}
+var manifests: Dictionary = {}   # mod_id -> ModManifest dict
+var mod_nodes: Dictionary = {}   # mod_id -> Node instance
 var load_order: Array[String] = []
 var failed_mods: Array[String] = []
 
@@ -35,6 +35,10 @@ func _ensure_mods_dir() -> void:
 	if not DirAccess.dir_exists_absolute(MODS_DIR):
 		DirAccess.make_dir_recursive_absolute(MODS_DIR)
 
+
+# ---------------------------------------------------------------------------
+# Discovery
+# ---------------------------------------------------------------------------
 
 func _discover_mods() -> Array[String]:
 	var mod_ids: Array[String] = []
@@ -81,6 +85,7 @@ func _parse_manifest(path: String, fallback_id: String, mod_path: String) -> Dic
 	if mod_id.is_empty():
 		push_warning("[ModLoader] Manifest missing 'id': %s" % path)
 		return {}
+	# Validate mod_id characters
 	for c in mod_id:
 		if not (c in "abcdefghijklmnopqrstuvwxyz0123456789_-"):
 			push_warning("[ModLoader] Invalid mod_id '%s' — only a-z, 0-9, _, - allowed" % mod_id)
@@ -96,6 +101,7 @@ func _parse_manifest(path: String, fallback_id: String, mod_path: String) -> Dic
 			dependencies.append(dep.strip_edges())
 	var load_order_val: int = int(cfg.get_value("mod", "load_order", 100))
 	var entry_script: String = str(cfg.get_value("mod", "entry_script", ""))
+	# Parse settings section
 	var settings: Dictionary = {}
 	if cfg.has_section("settings"):
 		for key in cfg.get_section_keys("settings"):
@@ -114,9 +120,14 @@ func _parse_manifest(path: String, fallback_id: String, mod_path: String) -> Dic
 	}
 
 
+# ---------------------------------------------------------------------------
+# Dependency resolution (topological sort)
+# ---------------------------------------------------------------------------
+
 func _resolve_order(mod_ids: Array[String]) -> Array[String]:
 	if mod_ids.is_empty():
 		return []
+	# Build adjacency: mod_id -> [dependency ids]
 	var graph: Dictionary = {}
 	var in_degree: Dictionary = {}
 	for mod_id in mod_ids:
@@ -129,13 +140,16 @@ func _resolve_order(mod_ids: Array[String]) -> Array[String]:
 		for dep_entry in manifest.dependencies:
 			var dep_id: String = str(dep_entry).split("@")[0].strip_edges()
 			if not graph.has(dep_id):
+				# Dependency not installed — skip, will be caught in validation
 				continue
 			graph[dep_id].append(mod_id)
 			in_degree[mod_id] += 1
+	# Kahn's algorithm
 	var queue: Array[String] = []
 	for mod_id in mod_ids:
 		if in_degree[mod_id] == 0:
 			queue.append(mod_id)
+	# Sort initial queue by load_order
 	queue.sort_custom(func(a, b):
 		var oa = manifests.get(a, {}).get("load_order", 100)
 		var ob = manifests.get(b, {}).get("load_order", 100)
@@ -151,6 +165,7 @@ func _resolve_order(mod_ids: Array[String]) -> Array[String]:
 			in_degree[neighbor] -= 1
 			if in_degree[neighbor] == 0:
 				queue.append(neighbor)
+		# Re-sort by load_order
 		queue.sort_custom(func(a, b):
 			var oa = manifests.get(a, {}).get("load_order", 100)
 			var ob = manifests.get(b, {}).get("load_order", 100)
@@ -159,6 +174,7 @@ func _resolve_order(mod_ids: Array[String]) -> Array[String]:
 			return oa < ob
 		)
 	if result.size() != mod_ids.size():
+		# Cycle detected or missing dependencies
 		var missing: Array[String] = []
 		for mod_id in mod_ids:
 			if not result.has(mod_id):
@@ -169,10 +185,15 @@ func _resolve_order(mod_ids: Array[String]) -> Array[String]:
 	return result
 
 
+# ---------------------------------------------------------------------------
+# Loading
+# ---------------------------------------------------------------------------
+
 func _load_mod(mod_id: String) -> void:
 	var manifest = manifests.get(mod_id)
 	if manifest == null:
 		return
+	# Check dependencies are satisfied
 	for dep_entry in manifest.dependencies:
 		var dep_id: String = str(dep_entry).split("@")[0].strip_edges()
 		if not mod_nodes.has(dep_id):
@@ -180,10 +201,13 @@ func _load_mod(mod_id: String) -> void:
 			failed_mods.append(mod_id)
 			mod_failed.emit(mod_id, "Missing dependency: %s" % dep_id)
 			return
+	# Load entry script
 	var entry_script_path: String = manifest.entry_script
 	if entry_script_path.is_empty():
+		# No entry script — mod is loaded but has no code
 		print("[ModLoader] Mod '%s' v%s loaded (no entry script)" % [mod_id, manifest.version])
 		return
+	# Relative paths resolve against the mod's own folder
 	if not entry_script_path.contains("://"):
 		entry_script_path = str(manifest.path) + entry_script_path
 	if not ResourceLoader.exists(entry_script_path):
@@ -206,10 +230,15 @@ func _load_mod(mod_id: String) -> void:
 	node.name = "Mod_%s" % mod_id
 	add_child(node)
 	mod_nodes[mod_id] = node
+	# Register as autoload if the mod requests it
 	if Engine.has_singleton(mod_id):
 		push_warning("[ModLoader] Mod '%s' — singleton name conflicts with existing autoload" % mod_id)
 	print("[ModLoader] Mod '%s' v%s loaded successfully (order: %d)" % [mod_id, manifest.version, manifest.load_order])
 
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
 
 func get_installed_mods_summary() -> Dictionary:
 	var installed: Array[String] = []

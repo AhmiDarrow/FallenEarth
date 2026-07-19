@@ -4,25 +4,46 @@
 ## Provides data overlays, save keys, UI extensions, settings, and logging.
 extends Node
 
+# -- Signals --
 signal setting_changed(mod_id: String, key: String, value: Variant)
 
+# -- Data overlay registry --
+# mod_id -> {data_key -> {overlay_data, strategy}}
 var _overlays: Dictionary = {}
-var _overlay_strategies: Dictionary = {}
+var _overlay_strategies: Dictionary = {}  # mod_id -> {data_key -> strategy}
+
+# -- Snapshot manager registry (save/load) --
+# [{mod_id, key, path, wrapper_key}]
 var _snapshot_managers: Array[Dictionary] = []
+
+# -- Per-mod save keys --
+# mod_id -> {key -> {getter: Callable, setter: Callable}}
 var _save_keys: Dictionary = {}
+
+# -- UI extensions --
+# extension_type -> [entries]
 var _extensions: Dictionary = {
 	"character_menu_tabs": [],
 	"hud_overlays": [],
 	"pause_menu_entries": [],
 }
+
+# -- Mod settings --
+# mod_id -> {key -> {value, default_value, display_name, type}}
 var _settings: Dictionary = {}
-var log_lines: Array[Dictionary] = []
+
+# -- Logging --
+var log_lines: Array[Dictionary] = []  # [{mod_id, message, level, timestamp}]
 const LOG_DIR := "user://mods/"
 
 
 func _ready() -> void:
 	process_mode = PROCESS_MODE_ALWAYS
 
+
+# ---------------------------------------------------------------------------
+# Data Overlays
+# ---------------------------------------------------------------------------
 
 func register_data_overlay(mod_id: String, data_key: String, overlay_data: Variant, strategy: String = "merge") -> void:
 	if not _overlays.has(mod_id):
@@ -31,6 +52,7 @@ func register_data_overlay(mod_id: String, data_key: String, overlay_data: Varia
 	if not _overlay_strategies.has(mod_id):
 		_overlay_strategies[mod_id] = {}
 	_overlay_strategies[mod_id][data_key] = strategy
+	# Invalidate DataRegistry cache
 	var dr := get_node_or_null("/root/DataRegistry")
 	if dr != null and dr.has_method("clear_cache"):
 		dr.clear_cache()
@@ -55,6 +77,10 @@ func get_all_overlay_mods() -> Array[String]:
 	return result
 
 
+# ---------------------------------------------------------------------------
+# Snapshot Managers (Save/Load)
+# ---------------------------------------------------------------------------
+
 func register_snapshot_manager(mod_id: String, manager_path: String, key: String, wrapper_key: String = "") -> void:
 	_snapshot_managers.append({
 		"mod_id": mod_id,
@@ -67,6 +93,10 @@ func register_snapshot_manager(mod_id: String, manager_path: String, key: String
 func get_snapshot_managers() -> Array[Dictionary]:
 	return _snapshot_managers.duplicate(true)
 
+
+# ---------------------------------------------------------------------------
+# Per-Mod Save Data
+# ---------------------------------------------------------------------------
 
 func register_save_key(mod_id: String, key: String, getter: Callable, setter: Callable) -> void:
 	if not _save_keys.has(mod_id):
@@ -94,6 +124,10 @@ func apply_mod_save_data(data: Dictionary) -> void:
 					if callable.is_valid():
 						callable.call(data[mod_id][key])
 
+
+# ---------------------------------------------------------------------------
+# UI Extensions
+# ---------------------------------------------------------------------------
 
 func add_tab(tab_id: String, label: String, scene_path: String, icon: Texture2D = null) -> void:
 	_extensions["character_menu_tabs"].append({
@@ -124,6 +158,10 @@ func get_extensions(extension_type: String) -> Array:
 	return _extensions.get(extension_type, [])
 
 
+# ---------------------------------------------------------------------------
+# Scene Injection
+# ---------------------------------------------------------------------------
+
 func add_scene_to(parent_path: String, scene_path: String) -> void:
 	var parent := get_node_or_null(parent_path)
 	if parent == null:
@@ -136,6 +174,10 @@ func add_scene_to(parent_path: String, scene_path: String) -> void:
 	parent.add_child(scene)
 
 
+# ---------------------------------------------------------------------------
+# Mod Settings
+# ---------------------------------------------------------------------------
+
 func register_setting(mod_id: String, key: String, default_value: Variant, display_name: String, type: String = "float") -> void:
 	if not _settings.has(mod_id):
 		_settings[mod_id] = {}
@@ -145,6 +187,7 @@ func register_setting(mod_id: String, key: String, default_value: Variant, displ
 		"display_name": display_name,
 		"type": type,
 	}
+	# Load saved value if it exists
 	var saved: Variant = _load_setting(mod_id, key)
 	if saved != null:
 		_settings[mod_id][key]["value"] = saved
@@ -186,6 +229,10 @@ func _load_setting(mod_id: String, key: String) -> Variant:
 	return cfg.get_value("settings", key)
 
 
+# ---------------------------------------------------------------------------
+# Logging
+# ---------------------------------------------------------------------------
+
 func log(mod_id: String, message: String, level: int = 0) -> void:
 	var entry := {
 		"mod_id": mod_id,
@@ -194,13 +241,16 @@ func log(mod_id: String, message: String, level: int = 0) -> void:
 		"timestamp": Time.get_datetime_string_from_system(),
 	}
 	log_lines.append(entry)
+	# Cap log buffer
 	if log_lines.size() > 1000:
 		log_lines = log_lines.slice(-500)
+	# Print to console
 	var prefix := "[%s] " % mod_id
 	match level:
 		0: print(prefix + message)
 		1: push_warning(prefix + message)
 		2: push_error(prefix + message)
+	# Write to mod log file
 	_write_log_file(mod_id, entry)
 
 

@@ -15,6 +15,7 @@ signal active_scene_changed(scene_name: String)
 signal last_save_slot_updated(slot_id: int)
 signal class_level_up(new_level: int, levels_gained: int)
 signal class_xp_gained(amount: int, total_xp: int)
+signal mod_mismatch_detected(missing_mods: Array, extra_mods: Array)
 
 
 # -- exported (configurable in editor / autoload) --
@@ -26,6 +27,7 @@ signal class_xp_gained(amount: int, total_xp: int)
 # proven 2D sprite path (CharacterVisual / MobVisual) is used instead until the
 # procedural billboard is fixed. Set to true to re-enable the 3D visuals.
 var use_procedural_graphics: bool = false
+var is_multiplayer: bool = false
 
 # Runtime-only tracking (not persisted directly — SaveManager handles persistence)
 var _character_data: Dictionary = {}
@@ -46,6 +48,7 @@ var _world_npcs: Dictionary = {}      # npc_id -> procedural NPC instance
 var _faction_rep: Dictionary = {}   # faction_key -> reputation int
 var _recruited_npc_ids: Array[String] = []
 var _mission_save: Dictionary = {}
+var _respawn_point: Dictionary = {"type": "default", "local_x": 256, "local_y": 256}
 
 
 func _ready() -> void:
@@ -66,7 +69,6 @@ func _on_autosave_tick() -> void:
 		return
 	if _character_data.is_empty():
 		return
-	# Write full state to AUTOSAVE_SLOT via SaveManager
 	var hex_out: Dictionary = {}
 	for key in _hex_states:
 		var s: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
@@ -81,11 +83,12 @@ func _on_autosave_tick() -> void:
 		hex_out,
 		_discovered_hexes.duplicate(),
 		_overworld_mobs.duplicate(true) if _overworld_mobs else {},
-		{},
+		get_rift_state_from_runner(),
 		_world_npcs.duplicate(true) if _world_npcs else {},
 		_faction_rep.duplicate(true) if _faction_rep else {},
 		_recruited_npc_ids.duplicate(),
-		_mission_save.duplicate(true) if _mission_save else {}
+		_mission_save.duplicate(true) if _mission_save else {},
+		active_scene
 	)
 
 
@@ -179,6 +182,11 @@ func _grant_starting_equipment(class_id: String) -> void:
 	if is_instance_valid(im) and im.has_method("add_item"):
 		im.call("add_item", "bandage", 3)
 		print("[GameState] Starting consumables: 3x Bandage")
+
+	# Sleeping bag for respawn testing
+	if is_instance_valid(im) and im.has_method("add_item"):
+		im.call("add_item", "sleeping_bag", 1)
+		print("[GameState] Starting utility: 1x Sleeping Bag")
 
 	# Sync equipment into character data for save/encounter use
 	_character_data["equipment"] = em.get_equipment("player").duplicate(true)
@@ -345,15 +353,25 @@ func save_game(slot_id: int, character_data: Dictionary = {}) -> bool:
 	data["world_npcs"] = _world_npcs.duplicate(true) if not _world_npcs.is_empty() else {}
 	data["faction_rep"] = _faction_rep.duplicate(true) if not _faction_rep.is_empty() else {}
 	data["recruited_npc_ids"] = _recruited_npc_ids.duplicate()
+	data["respawn_point"] = _respawn_point.duplicate(true)
 	var mm: MissionManager = get_node_or_null("/root/MissionManager") as MissionManager
 	if is_instance_valid(mm) and mm.has_method("get_save_payload"):
 		data["missions"] = mm.get_save_payload()
 	elif not _mission_save.is_empty():
 		data["missions"] = _mission_save.duplicate(true)
-	data["version"] = "0.2.0"
 
 	# Phase 8: include manager snapshots (inventory, progression, party, equipment, base, base_shops)
 	sm.populate_payload_with_managers(data)
+
+	# Include mod metadata (0.5.0+)
+	var ml := get_node_or_null("/root/ModLoader")
+	if ml != null and ml.has_method("get_installed_mods_summary"):
+		data["mods"] = ml.get_installed_mods_summary()
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api != null and mod_api.has_method("get_mod_save_data"):
+		var mod_save: Dictionary = mod_api.get_mod_save_data()
+		if not mod_save.is_empty():
+			data["mod_data"] = mod_save
 
 	var slot_name := "Slot%d" % slot_id
 	var success: bool = sm.save_to_game_file(data, slot_id, slot_name)
@@ -444,6 +462,10 @@ func load_game(slot_id: int) -> bool:
 		for rid in recruited_src:
 			_recruited_npc_ids.append(str(rid))
 
+	var rp_src = data.get("respawn_point", {})
+	if rp_src is Dictionary and not rp_src.is_empty():
+		_respawn_point = rp_src.duplicate(true)
+
 	var nm: NPCManager = get_node_or_null("/root/NPCManager") as NPCManager
 	if is_instance_valid(nm):
 		nm.load_from_save(_world_npcs, _faction_rep, _recruited_npc_ids)
@@ -464,47 +486,60 @@ func load_game(slot_id: int) -> bool:
 	# Phase 8: restore manager state (inventory, progression, party, equipment, base, base_shops)
 	sm.apply_managers_from_payload(data)
 
+	# Check mod compatibility (0.5.0+ saves)
+	_check_mod_compatibility(data)
+
 	game_loaded.emit(slot_id, data)
 	last_save_slot_updated.emit(slot_id)
 	return true
 
 
-## Autosave — called by SaveManager's autosave timer signal.
-func auto_save() -> bool:
-	return save_game(last_save_slot)
+## Fetches save payload from RiftRunner if available, else returns empty dict.
+func get_rift_state_from_runner() -> Dictionary:
+	var runner: Node = get_node_or_null("/root/RiftRunner")
+	if is_instance_valid(runner) and runner.has_method("get_save_payload"):
+		return runner.get_save_payload()
+	return {}
 
 
-## Internal callback from SaveManager.auto_save_triggered.
-func _autosave_tick_handler() -> void:
-	var sm: Node = get_node_or_null("/root/SaveManager")
-	if not is_instance_valid(sm):
+## Check if the save was created with a different mod set. Warns on mismatch.
+func _check_mod_compatibility(save_data: Dictionary) -> void:
+	var save_mods: Dictionary = save_data.get("mods", {})
+	if save_mods.is_empty():
+		return  # Old save (pre-0.5.0) — no mod metadata
+	var ml := get_node_or_null("/root/ModLoader")
+	if ml == null or not ml.has_method("get_installed_mods_summary"):
 		return
-	if _character_data.is_empty():
-		return
-	# Write full state to AUTOSAVE_SLOT via SaveManager
-	var hex_out: Dictionary = {}
-	for key in _hex_states:
-		var s: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
-		s.erase("terrain")
-		hex_out[key] = s
-	sm.full_autosave(
-		_character_data.duplicate(true),
-		_appearance_data.duplicate(true) if _appearance_data else {},
-		_equipment_data.duplicate(true) if _equipment_data else {},
-		_world_data.duplicate(true) if _world_data else {},
-		{"q": _player_q, "r": _player_r, "local_x": _local_x, "local_y": _local_y},
-		hex_out,
-		_discovered_hexes.duplicate(),
-		_overworld_mobs.duplicate(true) if _overworld_mobs else {},
-		{},
-		_world_npcs.duplicate(true) if _world_npcs else {},
-		_faction_rep.duplicate(true) if _faction_rep else {},
-		_recruited_npc_ids.duplicate(),
-		_mission_save.duplicate(true) if _mission_save else {}
-	)
+	var current_mods: Dictionary = ml.get_installed_mods_summary()
+	var save_list: Array = save_mods.get("installed", [])
+	var current_list: Array = current_mods.get("installed", [])
+	var missing: Array = []
+	# Check for mods in save but not currently installed
+	for mod_entry in save_list:
+		var mod_id: String = str(mod_entry).split("@")[0]
+		var found := false
+		for cm in current_list:
+			if str(cm).split("@")[0] == mod_id:
+				found = true
+				break
+		if not found:
+			missing.append(mod_id)
+	# Check for mods installed but not in save (informational)
+	var extra: Array = []
+	for mod_entry in current_list:
+		var mod_id: String = str(mod_entry).split("@")[0]
+		var found := false
+		for sm in save_list:
+			if str(sm).split("@")[0] == mod_id:
+				found = true
+				break
+		if not found:
+			extra.append(mod_id)
+	if not missing.is_empty() or not extra.is_empty():
+		push_warning("[GameState] Mod mismatch detected. Save was created with mods not currently installed: %s. Extra mods not in save: %s" % [missing, extra])
+		mod_mismatch_detected.emit(missing, extra)
 
 
-# ===================================================================
 # -- Scene management --
 # ===================================================================
 
@@ -530,6 +565,7 @@ func reset_session() -> void:
 	_faction_rep = {}
 	_recruited_npc_ids = []
 	_mission_save = {}
+	_respawn_point = {"type": "default", "local_x": 256, "local_y": 256}
 	active_scene = ""
 	var nm: NPCManager = get_node_or_null("/root/NPCManager") as NPCManager
 	if is_instance_valid(nm):
@@ -573,7 +609,7 @@ func _migrate_character_level_fields() -> void:
 # ===================================================================
 
 func _get_race_base_stats(race_id: String) -> Dictionary:
-	var rm: RaceManager = get_node("/root/RaceManager") if has_node("/root/RaceManager") else null
+	var rm: RaceManager = get_node_or_null("/root/RaceManager") as RaceManager
 	if not is_instance_valid(rm):
 		# fallback low bases
 		return {"str": 10, "dex": 10, "con": 10, "int": 10, "wis": 10, "cha": 10}
@@ -587,7 +623,7 @@ func _get_race_base_stats(race_id: String) -> Dictionary:
 
 
 func _get_class_stat_mods(class_id: String) -> Dictionary:
-	var cm: ClassManager = get_node("/root/ClassManager") if has_node("/root/ClassManager") else null
+	var cm: ClassManager = get_node_or_null("/root/ClassManager") as ClassManager
 	if not is_instance_valid(cm):
 		return {}
 	var cls_data: Dictionary = cm.get_all_classes().get(class_id, {}) as Dictionary
@@ -613,6 +649,7 @@ func set_start_tile(tile_key: String, tile_data: Dictionary) -> void:
 		_player_r = int(parts[1])
 	_local_x = int(LocalMapGen.MAP_SIZE / 2.0)
 	_local_y = int(LocalMapGen.MAP_SIZE / 2.0)
+	_respawn_point = {"type": "default", "local_x": _local_x, "local_y": _local_y}
 	discover_hex(_player_q, _player_r)
 	ensure_hex_state(_player_q, _player_r)
 	print("[GameState] Starting grid chosen: ", tile_key, " biome: ", tile_data.get("name", "?"))
@@ -837,3 +874,11 @@ func get_faction_rep() -> Dictionary:
 
 func get_recruited_npc_ids() -> Array[String]:
 	return _recruited_npc_ids.duplicate()
+
+
+func get_respawn_point() -> Dictionary:
+	return _respawn_point.duplicate(true) if not _respawn_point.is_empty() else {"type": "default", "local_x": 256, "local_y": 256}
+
+
+func set_respawn_point(type: String, local_x: int, local_y: int) -> void:
+	_respawn_point = {"type": type, "local_x": clampi(local_x, 0, LocalMapGen.MAP_SIZE - 1), "local_y": clampi(local_y, 0, LocalMapGen.MAP_SIZE - 1)}

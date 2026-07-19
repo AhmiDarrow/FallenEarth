@@ -1,20 +1,47 @@
 ---
 
-## [Unreleased] — Godot 4.7.1 Upgrade
+## [v0.11.0] — 2026-07-07 — Combat Architecture Rewrite + UI Design System
 
-### Engine Upgrade
-- Upgraded from **Godot 4.3** to **Godot 4.7.1** (stable, 2026-07-14)
-- Updated `project.godot` config/features from `"4.3"` to `"4.7"`
-- Added `.godot-version` file pinning the project to 4.7.1
+### Combat Architecture Rewrite (v0.11.0)
+Rebuilt combat system from scratch using Resource/Service/Module architecture
+from `ramaureirac/godot-tactical-rpg`. Old `TacticalCombat.tscn` still works;
+new `CombatLevel.tscn` is the replacement.
 
-### Fixes for Breaking Changes
-- **GDScript class resolution**: Added `preload("res://scripts/WorldGenerator.gd")` to scripts that use `WorldGenerator` static methods directly (NPCGenerator.gd, MissionGenerator.gd, CombatEncounterBuilder.gd) — required because Godot 4.4+ uses stricter GDScript dependency tracking
-- **GameManager.gd**: Changed `var hub: HubWorld = ... as HubWorld` type cast to `var hub: Node = ...` to avoid HubWorld class resolution failure during autoload compilation
+- **Resources (4):** TileResource, UnitResource, ParticipantResource, ArenaResource
+- **Services (6):** PathfindingService, TurnService, UnitMovementService, UnitCombatService, PlayerService, OpponentService
+- **Modules (4):** CombatTile, CombatUnit, CombatArena, CombatLevel
+- **UI (2):** TopPromptV110, ActionBarV110
+- **Backward compatible:** old BattleCell/GridView/Unit + TacticalCombat scene still work
 
-### Documentation
-- `docs/VERSION.md`: Godot 4.3 → 4.7.1, updated validation command path
-- `docs/PROJECT_OVERVIEW.md`: Updated Godot version reference
-- `tools/` — All smoke tests pass on Godot 4.7.1
+### UI Design System
+Full design system for consistent, maintainable UI across all screens.
+
+- `UI_Colors.gd` — 50+ design tokens (palette, spacing, font sizes, bar/cell dimensions)
+- `UI_Theme.gd` — Programmatic Godot Theme applied globally in GameManager
+- `StyleBoxHelper.gd` — 10 static factories for StyleBoxFlat
+- `UIBackgrounds.gd` — Texture overlay system (6 pixel-art backgrounds)
+- `ButtonStyleHelper.gd` — 5 states × 5 variants, design system palette
+- Wired across 20+ UI screens (MainMenu, HUD, Inventory, Equipment, Crafting, etc.)
+- All inline StyleBoxFlat removed from .tscn files
+- PanelContainer default made transparent (was dark squares everywhere)
+
+### Bug Fixes
+- CharacterMenu use-after-free in select_tab()
+- HoverTooltip font_size constant → font_size override
+- HUD show_percentage now true
+- InventoryManager item icon loading
+- ResourceVisualManager sprite paths
+- CharacterVisual sprite loading fallback + equipment slot_offsets + offhand slot
+
+### UI Layout Fixes
+- ShopInterface, MissionBoardInterface, BaseShopUI → container-based responsive layouts
+- InventoryScreen → full-rect layout (fixes overlap with CharacterMenu header)
+- EquipmentScreen, InventoryScreen, WorldMapScreen, HUD, LootWindow sizing adjustments
+- StatsScreen migrated to design tokens
+
+### Character Sprites
+- Human male complete: 128px base, 8 idle rotations, 4-frame walk × 8 dirs
+- 6 of 8 tool sprites generated (crowbar, pickaxe, mining_drill, laser_cutter, wrench, knife)
 
 ---
 

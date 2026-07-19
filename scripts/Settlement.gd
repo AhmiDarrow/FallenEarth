@@ -19,6 +19,7 @@
 class_name Settlement
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const ENTRANCE_TILE := Vector2i(0, 0)
 const SETTLEMENT_PATH := "/root/SettlementManager"
 const PARTY_PATH := "/root/PartyNPCManager"
@@ -72,11 +73,9 @@ func setup(town: Dictionary, hub: Node) -> void:
 
 
 func _build_ui() -> void:
-	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.05, 0.04, 0.06, 0.95)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Title
@@ -126,6 +125,7 @@ func _build_ui() -> void:
 	leave_btn.custom_minimum_size = Vector2(180, 44)
 	leave_btn.pressed.connect(_on_leave_pressed)
 	add_child(leave_btn)
+	ButtonStyleHelper.apply_danger(leave_btn)
 
 
 func _populate() -> void:
@@ -225,6 +225,7 @@ func _populate_npc_list() -> void:
 		invite_btn.text = "Invite"
 		invite_btn.pressed.connect(_on_invite_pressed.bind(rid))
 		row.add_child(invite_btn)
+		ButtonStyleHelper.apply_primary(invite_btn)
 
 
 func _on_invite_pressed(npc_id: String) -> void:
@@ -262,6 +263,7 @@ func _populate_services_list() -> void:
 		talk_btn.text = "Talk"
 		talk_btn.pressed.connect(_on_service_talk.bind(building_name, npc_role, npc_index))
 		row.add_child(talk_btn)
+		ButtonStyleHelper.apply_secondary(talk_btn)
 		npc_index += 1
 
 

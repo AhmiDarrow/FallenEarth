@@ -218,6 +218,34 @@ func remove_mob(mob_id: String) -> bool:
 	return false
 
 
+## Look up a mob template by its sprite_id (UUID) across all caches.
+## Returns the template dictionary (empty if not found).
+func get_mob_by_sprite_id(sprite_id: String) -> Dictionary:
+	for mobility in ["neutral", "aggressive"]:
+		if overworld_cache.has(mobility):
+			for m in overworld_cache[mobility]:
+				if m is Dictionary and str(m.get("sprite_id", "")) == sprite_id:
+					return m.duplicate(true)
+	for m in rift_only_cache:
+		if m is Dictionary and str(m.get("sprite_id", "")) == sprite_id:
+			return m.duplicate(true)
+	return {}
+
+
+## Look up a mob template by its id field across all caches.
+## Returns the template dictionary (empty if not found).
+func get_mob(id: String) -> Dictionary:
+	for mobility in ["neutral", "aggressive"]:
+		if overworld_cache.has(mobility):
+			for m in overworld_cache[mobility]:
+				if m is Dictionary and str(m.get("id", "")) == id:
+					return m.duplicate(true)
+	for m in rift_only_cache:
+		if m is Dictionary and str(m.get("id", "")) == id:
+			return m.duplicate(true)
+	return {}
+
+
 ## Get count of currently spawned (active) mobs
 func get_active_mob_count() -> int:
 	return _spawned_mobs.size()

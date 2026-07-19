@@ -1,12 +1,24 @@
 ## DataRegistry — Centralized JSON data loading with mod overlay merge.
+##
+## Autoload #4 — all managers request data from here instead of loading files directly.
+## Loads base game data once, then applies mod overlays in load order.
 extends Node
 
+# Base data: data_key -> parsed value
 var _base_data: Dictionary = {}
+
+# Mod overlays: mod_id -> {data_key -> parsed value}
 var _overlays: Dictionary = {}
+
+# Overlay strategies: mod_id -> {data_key -> strategy_string}
 var _overlay_strategies: Dictionary = {}
+
+# Merge cache: data_key -> merged result (invalidated on overlay change)
 var _merge_cache: Dictionary = {}
+
 var _base_loaded: bool = false
 
+# Map of registry keys to file paths
 const BASE_FILES := {
 	"items": "res://data/items.json",
 	"weapons": "res://data/weapons.json",
@@ -44,8 +56,13 @@ const BASE_FILES := {
 
 func _ready() -> void:
 	_load_all_base_data()
+	# After base data is loaded, have ModAPI register overlays from discovered mods
 	_register_mod_overlays()
 
+
+# ---------------------------------------------------------------------------
+# Base data loading
+# ---------------------------------------------------------------------------
 
 func _load_all_base_data() -> void:
 	for key in BASE_FILES:
@@ -61,6 +78,7 @@ func _load_json_file(path: String) -> Variant:
 	if not ResourceLoader.exists(path):
 		push_warning("[DataRegistry] File not found: %s" % path)
 		return null
+	# Try load() first (handles .import files)
 	var resource = load(path)
 	if resource == null:
 		return null
@@ -68,6 +86,7 @@ func _load_json_file(path: String) -> Variant:
 	if resource is Dictionary:
 		data = resource
 	elif "data" in resource:
+		# Godot's JSON import wraps parsed result in .data
 		var d = resource.data
 		if d is Dictionary:
 			data = d
@@ -78,7 +97,12 @@ func _load_json_file(path: String) -> Variant:
 	return data
 
 
+# ---------------------------------------------------------------------------
+# Mod overlay registration
+# ---------------------------------------------------------------------------
+
 func _register_mod_overlays() -> void:
+	# Scan each loaded mod for data overlay files
 	var ml := get_node_or_null("/root/ModLoader")
 	if ml == null:
 		return
@@ -123,25 +147,34 @@ func _load_mod_overlay(mod_id: String, data_key: String, file_path: String) -> v
 	if overlay_data == null:
 		push_warning("[ModLoader] Overlay file missing 'data' key: %s" % file_path)
 		return
+	# Validate strategy
 	if strategy not in ["merge", "append", "override", "patch"]:
 		push_warning("[ModLoader] Invalid strategy '%s' in %s" % [strategy, file_path])
 		return
+	# Register the overlay
 	if not _overlays.has(mod_id):
 		_overlays[mod_id] = {}
 	_overlays[mod_id][data_key] = overlay_data
 	if not _overlay_strategies.has(mod_id):
 		_overlay_strategies[mod_id] = {}
 	_overlay_strategies[mod_id][data_key] = strategy
+	# Invalidate cache for this key
 	_merge_cache.erase(data_key)
 	ModAPI.log(mod_id, "Registered overlay for '%s' (strategy: %s)" % [data_key, strategy])
 
 
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+## Returns merged data for the given key (base + all mod overlays).
 func get_data(data_key: String) -> Variant:
 	if _merge_cache.has(data_key):
 		return _merge_cache[data_key]
 	var result = _base_data.get(data_key)
 	if result == null:
 		return null
+	# Apply overlays in mod load order
 	var ml := get_node_or_null("/root/ModLoader")
 	if ml == null:
 		return result
@@ -154,10 +187,12 @@ func get_data(data_key: String) -> Variant:
 	return result
 
 
+## Returns base game data only (no mod overlays).
 func get_base(data_key: String) -> Variant:
 	return _base_data.get(data_key)
 
 
+## Invalidate the merge cache for a specific key or all keys.
 func clear_cache(data_key: String = "") -> void:
 	if data_key.is_empty():
 		_merge_cache.clear()
@@ -165,10 +200,14 @@ func clear_cache(data_key: String = "") -> void:
 		_merge_cache.erase(data_key)
 
 
+## Reload overlays from a specific mod (for development iteration).
 func reload_mod_overlays(mod_id: String) -> void:
+	# Clear existing overlays for this mod
 	_overlays.erase(mod_id)
 	_overlay_strategies.erase(mod_id)
+	# Clear entire merge cache since we don't know which keys were affected
 	_merge_cache.clear()
+	# Re-scan mod data directory
 	var ml := get_node_or_null("/root/ModLoader")
 	if ml == null:
 		return
@@ -179,6 +218,10 @@ func reload_mod_overlays(mod_id: String) -> void:
 	if DirAccess.dir_exists_absolute(data_dir):
 		_scan_mod_data_dir(mod_id, data_dir)
 
+
+# ---------------------------------------------------------------------------
+# Overlay merge strategies
+# ---------------------------------------------------------------------------
 
 func _merge_overlay(base: Variant, overlay: Variant, strategy: String) -> Variant:
 	match strategy:
@@ -214,6 +257,7 @@ func _deep_merge(base: Dictionary, overlay: Dictionary) -> Dictionary:
 
 func _array_append(base: Variant, overlay: Variant) -> Variant:
 	if base is Dictionary and overlay is Dictionary:
+		# Both dictionaries — try to merge arrays within matching keys
 		var result: Dictionary = base.duplicate(true)
 		for key in overlay:
 			if result.has(key) and result[key] is Array and overlay[key] is Array:

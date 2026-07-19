@@ -14,6 +14,7 @@
 class_name Base
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const BASE_PATH := "/root/BaseManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const EQUIP_PATH := "/root/EquipmentManager"
@@ -74,11 +75,9 @@ func setup(base_state: Dictionary, hub: Node) -> void:
 
 
 func _build_ui() -> void:
-	# Background
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Title
@@ -135,6 +134,7 @@ func _build_ui() -> void:
 	name_btn.custom_minimum_size = Vector2(100, 32)
 	name_btn.pressed.connect(_on_name_button_pressed)
 	add_child(name_btn)
+	ButtonStyleHelper.apply_primary(name_btn)
 	# Upgrade section
 	var upg_label := Label.new()
 	upg_label.name = "UpgLabel"
@@ -158,6 +158,7 @@ func _build_ui() -> void:
 	upg_btn.custom_minimum_size = Vector2(140, 40)
 	upg_btn.pressed.connect(_on_upgrade_pressed)
 	add_child(upg_btn)
+	ButtonStyleHelper.apply_primary(upg_btn)
 	# Status line
 	var status := Label.new()
 	status.name = "StatusLabel"
@@ -173,6 +174,7 @@ func _build_ui() -> void:
 	close.custom_minimum_size = Vector2(120, 40)
 	close.pressed.connect(_on_close_pressed)
 	add_child(close)
+	ButtonStyleHelper.apply_danger(close)
 	# Shop section (Phase 7)
 	var shop_label := Label.new()
 	shop_label.name = "ShopLabel"

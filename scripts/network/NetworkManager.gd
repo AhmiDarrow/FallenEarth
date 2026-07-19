@@ -1,4 +1,5 @@
 ## NetworkManager — ENet multiplayer peer lifecycle
+## Singleton managing server/client roles, player ID mapping, and reconnect tokens.
 extends Node
 
 signal server_started(port: int)
@@ -18,9 +19,9 @@ const SNAPSHOT_INTERVAL := 5.0
 
 var role: int = Role.NONE
 var peer: ENetMultiplayerPeer = null
-var player_names: Dictionary = {}
-var player_data: Dictionary = {}
-var reconnect_tokens: Dictionary = {}
+var player_names: Dictionary = {}  # peer_id -> String
+var player_data: Dictionary = {}   # peer_id -> Dictionary (character data snapshot)
+var reconnect_tokens: Dictionary = {}  # peer_id -> String token
 var _snapshot_timer: float = 0.0
 var _snapshot_count: int = 0
 
@@ -148,11 +149,13 @@ func validate_reconnect_token(token: String) -> int:
 func _on_peer_connected(peer_id: int) -> void:
 	print("[NetworkManager] Peer connected: %d" % peer_id)
 	client_connected.emit(peer_id)
+	# Request mod list from connecting client before registering
 	_server_request_mod_list.rpc_id(peer_id, peer_id)
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
 	print("[NetworkManager] Peer disconnected: %d" % peer_id)
+	# Check for reconnect token — if they have one, keep state
 	if reconnect_tokens.has(peer_id):
 		print("[NetworkManager] Peer %d has reconnect token — preserving state" % peer_id)
 		return
@@ -171,6 +174,7 @@ func register_player(requester_id: int) -> void:
 	var caller_id := multiplayer.get_remote_sender_id()
 	var name_str := "Player_%d" % caller_id
 	add_player(caller_id, name_str)
+	# Broadcast updated player list
 	_sync_player_list()
 
 
@@ -183,13 +187,20 @@ func _sync_player_list_all(names: Dictionary) -> void:
 	player_names = names.duplicate()
 
 
+# ---------------------------------------------------------------------------
+# Mod compatibility handshake
+# ---------------------------------------------------------------------------
+
+## Server requests mod list from connecting client
 @rpc("authority", "call_local", "reliable")
 func _server_request_mod_list(peer_id: int) -> void:
 	if not is_server():
 		return
+	# Client receives this and sends back their mod list
 	_client_send_mod_list.rpc_id(peer_id, multiplayer.get_unique_id())
 
 
+## Client sends their mod list to the server
 @rpc("any_peer", "call_local", "reliable")
 func _client_send_mod_list(requester_id: int) -> void:
 	if not is_server():
@@ -202,6 +213,7 @@ func _client_send_mod_list(requester_id: int) -> void:
 	_server_receive_mod_list.rpc_id(requester_id, caller_id, mod_summary)
 
 
+## Server receives and validates client mod list
 @rpc("authority", "call_local", "reliable")
 func _server_receive_mod_list(peer_id: int, client_mods: Dictionary) -> void:
 	if not is_server():
@@ -214,19 +226,23 @@ func _server_receive_mod_list(peer_id: int, client_mods: Dictionary) -> void:
 	var client_list: Array = client_mods.get("installed", [])
 	var missing: Array = []
 	var extra: Array = []
+	# Check server mods exist on client
 	for mod_entry in server_list:
 		var mod_id: String = str(mod_entry).split("@")[0]
 		if not _list_has_mod(client_list, mod_id):
 			missing.append(str(mod_entry))
+	# Check client mods exist on server
 	for mod_entry in client_list:
 		var mod_id: String = str(mod_entry).split("@")[0]
 		if not _list_has_mod(server_list, mod_id):
 			extra.append(str(mod_entry))
 	if missing.is_empty() and extra.is_empty():
+		# Mods compatible — proceed with registration
 		var name_str := "Player_%d" % peer_id
 		add_player(peer_id, name_str)
 		_sync_player_list()
 	else:
+		# Mods incompatible — kick with reason
 		_kick_with_mod_mismatch(peer_id, missing, extra)
 
 
@@ -246,10 +262,12 @@ func _kick_with_mod_mismatch(peer_id: int, missing: Array, extra: Array) -> void
 	reason += " Install the required mods and reconnect."
 	print("[NetworkManager] Kicking peer %d: %s" % [peer_id, reason])
 	_notify_mod_mismatch.rpc_id(peer_id, reason)
+	# Brief delay so the message arrives before disconnect
 	await get_tree().create_timer(1.0).timeout
 	multiplayer.disconnect_peer(peer_id)
 
 
+## Client receives this when mods are incompatible
 @rpc("authority", "call_local", "reliable")
 func _notify_mod_mismatch(reason: String) -> void:
 	mod_mismatch_kicked.emit(reason)
@@ -273,6 +291,7 @@ func _take_state_snapshot() -> void:
 		"players": player_data.duplicate(true),
 		"names": player_names.duplicate(true),
 	}
+	# Store for reconnect
 	_take_state_snapshot_rpc.rpc(snapshot)
 
 

@@ -12,8 +12,8 @@ class_name ResourceVisualManager
 extends Node2D
 
 const CELL_SIZE := 24
-const SPRITE_FOLDER := "res://assets/resources/"
-const PICKUP_FOLDER := "res://assets/pickups/"
+const SPRITE_FOLDER := "res://assets/sprites/resource_nodes/"
+const PICKUP_FOLDER := "res://assets/sprites/items/"
 
 var _node_layer: Node2D = null
 var _pickup_layer: Node2D = null

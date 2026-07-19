@@ -4,6 +4,7 @@
 class_name OptionsMenu
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const SETTINGS_PATH := "user://options.cfg"
 
 var _music_slider: HSlider = null
@@ -57,12 +58,10 @@ func _on_parent_resized() -> void:
 
 
 func _build_ui() -> void:
-	# Semi-transparent backdrop
 	var backdrop := ColorRect.new()
 	backdrop.name = "Backdrop"
-	backdrop.color = Color(0, 0, 0, 0.7)
-	backdrop.anchor_right = 1.0
-	backdrop.anchor_bottom = 1.0
+	backdrop.color = Color(0, 0, 0, 0.8)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
@@ -182,6 +181,8 @@ func _build_ui() -> void:
 	_close_button.custom_minimum_size = Vector2(100, 32)
 	_close_button.pressed.connect(_on_close_pressed)
 	vbox.add_child(_close_button)
+	# Add mod settings section
+	_build_mod_settings_section(vbox)
 
 
 func _on_music_changed(value: float) -> void:
@@ -253,3 +254,63 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
 		_on_close_pressed()
 		get_viewport().set_input_as_handled()
+
+
+## Build mod settings section in the options menu
+func _build_mod_settings_section(parent_vbox: VBoxContainer) -> void:
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api == null:
+		return
+	var all_settings: Dictionary = mod_api.get_all_settings()
+	if all_settings.is_empty():
+		return
+	# Add separator
+	var separator := HSeparator.new()
+	separator.name = "ModSeparator"
+	parent_vbox.add_child(separator)
+	# Add section title
+	var section_title := Label.new()
+	section_title.name = "ModSectionTitle"
+	section_title.text = "Mod Settings"
+	section_title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
+	section_title.add_theme_font_size_override("font_size", 16)
+	parent_vbox.add_child(section_title)
+	# Add settings for each mod
+	for mod_id in all_settings:
+		var mod_label := Label.new()
+		mod_label.text = mod_id
+		mod_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
+		mod_label.add_theme_font_size_override("font_size", 12)
+		parent_vbox.add_child(mod_label)
+		for key in all_settings[mod_id]:
+			var setting: Dictionary = all_settings[mod_id][key]
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 8)
+			parent_vbox.add_child(row)
+			var label := Label.new()
+			label.text = setting.get("display_name", key)
+			label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+			label.add_theme_font_size_override("font_size", 12)
+			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(label)
+			match setting.type:
+				"float":
+					var slider := HSlider.new()
+					slider.min_value = 0.0
+					slider.max_value = 10.0
+					slider.step = 0.1
+					slider.value = setting.value
+					slider.custom_minimum_size = Vector2(120, 20)
+					slider.value_changed.connect(func(val): mod_api.set_setting(mod_id, key, val))
+					row.add_child(slider)
+				"bool":
+					var check := CheckBox.new()
+					check.button_pressed = setting.value
+					check.pressed.connect(func(): mod_api.set_setting(mod_id, key, check.button_pressed))
+					row.add_child(check)
+				"String":
+					var line_edit := LineEdit.new()
+					line_edit.text = str(setting.value)
+					line_edit.custom_minimum_size = Vector2(120, 24)
+					line_edit.text_changed.connect(func(text): mod_api.set_setting(mod_id, key, text))
+					row.add_child(line_edit)

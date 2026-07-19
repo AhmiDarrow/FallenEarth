@@ -3,6 +3,8 @@
 class_name PauseMenu
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+
 signal resumed()
 signal save_requested()
 signal load_requested()
@@ -15,6 +17,17 @@ var _load_popup: Window = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	# Background overlay
+	var overlay := $Overlay as ColorRect
+	if overlay != null:
+		overlay.color = Color(0.04, 0.04, 0.07, 0.85)
+	MT.apply_primary($VBoxContainer/ResumeBtn)
+	MT.apply_secondary($VBoxContainer/SaveBtn)
+	MT.apply_secondary($VBoxContainer/LoadBtn)
+	MT.apply_secondary($VBoxContainer/OptionsBtn)
+	MT.apply_danger($VBoxContainer/ExitMenuBtn)
+	MT.apply_danger($VBoxContainer/ExitDesktopBtn)
+	# Wire signals
 	$VBoxContainer/ResumeBtn.pressed.connect(_on_resume)
 	$VBoxContainer/SaveBtn.pressed.connect(_on_save)
 	$VBoxContainer/LoadBtn.pressed.connect(_on_load)
@@ -128,6 +141,7 @@ func _show_save_popup(slots: Array[Dictionary], gs: GameState) -> void:
 	_save_popup.exclusive = true
 	_save_popup.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_save_popup)
+	_save_popup.close_requested.connect(_save_popup.hide)
 
 	var root := VBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -185,6 +199,7 @@ func _show_load_popup(slots: Array[Dictionary]) -> void:
 	_load_popup.exclusive = true
 	_load_popup.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(_load_popup)
+	_load_popup.close_requested.connect(_load_popup.hide)
 
 	var root := VBoxContainer.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

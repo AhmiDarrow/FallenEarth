@@ -44,8 +44,7 @@ func _initialize() -> void:
 	_test_furniture_data_fields()
 	_test_furniture_collision()
 	# Phase F tests
-	_test_button_assets_exist()
-	_test_button_style_helper()
+	_test_button_styles()
 	# Phase G tests
 	_test_riftspire_portal_npc()
 	_test_riftspire_portal_interaction()
@@ -607,53 +606,18 @@ func _test_furniture_collision() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Phase F tests — Button assets
+# Phase F tests — Button styles
 # ---------------------------------------------------------------------------
 
 const ButtonStyleHelperScript = preload("res://scripts/ButtonStyleHelper.gd")
 
-func _test_button_assets_exist() -> void:
-	print("[smoke] test: button assets exist")
-	var paths := [
-		"res://assets/sprites/ui/buttons/button_primary.png",
-		"res://assets/sprites/ui/buttons/button_secondary.png",
-		"res://assets/sprites/ui/buttons/button_danger.png",
-		"res://assets/sprites/ui/buttons/button_success.png",
-	]
-	var found := 0
-	for path in paths:
-		# Check via ResourceLoader first
-		if ResourceLoader.exists(path):
-			var tex: Texture2D = load(path)
-			if tex != null:
-				var sz: Vector2 = tex.get_size()
-				if sz.x > 0 and sz.y > 0:
-					found += 1
-				else:
-					_fail("Button texture has zero size: %s" % path)
-			else:
-				_fail("Could not load button texture: %s" % path)
-		else:
-			# Fallback: check filesystem directly
-			var fs_path: String = path.replace("res://", "C:/Users/Administrator/FallenEarth/")
-			if FileAccess.file_exists(fs_path):
-				found += 1
-			else:
-				_fail("Button asset not found: %s" % path)
-	if found == paths.size():
-		_ok("All %d button assets exist and load" % found)
-	else:
-		_fail("Only %d/%d button assets found" % [found, paths.size()])
-
-
-func _test_button_style_helper() -> void:
+func _test_button_styles() -> void:
 	print("[smoke] test: ButtonStyleHelper works")
 	var btn := Button.new()
 	btn.text = "Test Button"
 	root.add_child(btn)
 	await process_frame
 
-	# Test apply_style for each style
 	var styles := ["primary", "secondary", "danger", "success"]
 	var applied := 0
 	for style in styles:
@@ -664,11 +628,6 @@ func _test_button_style_helper() -> void:
 		else:
 			_fail("Failed to apply style: %s" % style)
 
-	# Test textures_exist
-	if not ButtonStyleHelperScript.textures_exist():
-		_fail("ButtonStyleHelper.textures_exist() returned false")
-
-	# Test get_available_styles
 	var avail: Array = ButtonStyleHelperScript.get_available_styles()
 	if avail.size() != 4:
 		_fail("Expected 4 available styles, got %d" % avail.size())

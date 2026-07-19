@@ -24,10 +24,14 @@ var _flash_color: Color = Color(1.0, 0.2, 0.2)
 var _dead_progress: float = 0.0
 var _base_y: float = 0.0
 var _base_scale: Vector3 = Vector3.ONE
+## Per-mesh flash overlay materials, built once per bound root and reused
+## across flashes (uniform updates only — no per-frame material creation).
+var _flash_mats: Dictionary = {}
 
 
 func bind(root: Node3D) -> void:
 	_root = root
+	_flash_mats.clear()
 	if _root != null:
 		_base_y = _root.position.y
 		_base_scale = _root.scale
@@ -44,6 +48,7 @@ func set_state(s: int) -> void:
 func flash_damage(color: Color = Color(1.0, 0.2, 0.2)) -> void:
 	_flash = 1.0
 	_flash_color = color
+	_prepare_flash_materials()
 	_apply_flash()
 
 
@@ -92,13 +97,33 @@ func _anim_dead(_delta: float) -> void:
 	_root.position.y = lerp(_base_y, _base_y * 0.3, k)
 
 
-func _apply_flash() -> void:
-	if _root == null:
+func _prepare_flash_materials() -> void:
+	if _root == null or not _flash_mats.is_empty():
 		return
 	for mi in _iter_meshes(_root):
 		var base: Material = mi.material_override
 		if base is StandardMaterial3D:
-			mi.material_overlay = MaterialLibrary_flash(base, _flash_color, _flash)
+			var sm: ShaderMaterial = MaterialLibrary.make_shader_variant(
+				base, MaterialLibrary.ShaderVariant.DAMAGE_FLASH, {"flash_color": _flash_color}
+			)
+			# Unique instance per mesh so per-entity strength animation
+			# doesn't mutate the globally cached variant.
+			_flash_mats[mi] = sm.duplicate()
+
+
+func _apply_flash() -> void:
+	var clearing: bool = _flash <= 0.001
+	for mi in _flash_mats:
+		if not is_instance_valid(mi):
+			continue
+		if clearing:
+			mi.material_overlay = null
+			continue
+		var sm: ShaderMaterial = _flash_mats[mi]
+		sm.set_shader_parameter("flash_strength", _flash)
+		sm.set_shader_parameter("flash_color", _flash_color)
+		if mi.material_overlay != sm:
+			mi.material_overlay = sm
 
 
 static func _iter_meshes(root: Node) -> Array:
@@ -112,8 +137,3 @@ static func _iter_meshes(root: Node) -> Array:
 
 # Local reference to MaterialLibrary to avoid cluttering the header import.
 const MaterialLibrary := preload("res://scripts/procedural/MaterialLibrary.gd")
-
-static func MaterialLibrary_flash(base: StandardMaterial3D, color: Color, strength: float):
-	if strength <= 0.001:
-		return null
-	return MaterialLibrary.make_shader_variant(base, MaterialLibrary.ShaderVariant.DAMAGE_FLASH, {"flash_color": color})

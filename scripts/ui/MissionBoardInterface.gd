@@ -8,6 +8,7 @@
 class_name MissionBoardInterface
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const MISSION_PATH := "/root/MissionManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const HUB_PATH := "/root/HubWorld"
@@ -18,90 +19,66 @@ var _offers: Array = []
 
 
 func _ready() -> void:
-	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
-	# to avoid Godot's "size overridden after _ready" warning — see
-	# BaseShopUI for the full explanation.
 	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# Sync our size to the parent BEFORE building children — otherwise
-	# `_build_ui()` reads `size = (0, 0)` and places the status label
-	# and close button off-screen.
-	_sync_size_to_parent()
 	_build_ui()
 	_refresh()
-	# Stay in lockstep with the parent if it ever resizes.
-	var parent := get_parent()
-	if parent is Control and not (parent as Control).resized.is_connected(_on_parent_resized):
-		(parent as Control).resized.connect(_on_parent_resized)
-
-
-## Snap our `size` to the parent Control's rect. Required because we
-## are added as a child of a non-Container Control and the engine
-## doesn't auto-size us from anchors alone.
-func _sync_size_to_parent() -> void:
-	var parent := get_parent()
-	if parent is Control:
-		var p: Control = parent as Control
-		if p.size.x > 0 and p.size.y > 0:
-			size = p.size
-			position = Vector2.ZERO
-
-
-## Re-sync our size and re-layout when the parent Control is resized.
-func _on_parent_resized() -> void:
-	_sync_size_to_parent()
-	if has_node("StatusLabel"):
-		$StatusLabel.position = Vector2(20, size.y - 70)
-	if has_node("Close"):
-		$Close.position = Vector2(size.x - 100, size.y - 50)
 
 
 func _build_ui() -> void:
 	var bg := ColorRect.new()
 	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
+
+	var root_vbox := VBoxContainer.new()
+	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root_vbox.add_theme_constant_override("separation", 8)
+	add_child(root_vbox)
+
 	# Title
 	var title := Label.new()
 	title.text = "[ Mission Board ]"
 	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 24)
-	title.position = Vector2(20, 12)
-	add_child(title)
+	title.add_theme_font_size_override("font_size", 22)
+	root_vbox.add_child(title)
+
 	# Subtitle
 	var sub := Label.new()
 	sub.text = "Available offers:"
 	sub.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
-	sub.add_theme_font_size_override("font_size", 16)
-	sub.position = Vector2(20, 60)
-	add_child(sub)
-	# List
+	sub.add_theme_font_size_override("font_size", 14)
+	root_vbox.add_child(sub)
+
+	# Scrollable list
 	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(20, 90)
-	scroll.size = Vector2(740, 480)
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
+	root_vbox.add_child(scroll)
 	var list := VBoxContainer.new()
 	list.name = "OfferList"
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
-	# Status
+
+	# Bottom bar: status + close
+	var bottom := HBoxContainer.new()
+	bottom.custom_minimum_size = Vector2(0, 32)
+	root_vbox.add_child(bottom)
 	var status_label := Label.new()
 	status_label.name = "StatusLabel"
 	status_label.text = ""
 	status_label.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
-	status_label.add_theme_font_size_override("font_size", 14)
-	status_label.position = Vector2(20, size.y - 70)
-	status_label.size = Vector2(740, 30)
-	add_child(status_label)
-	# Close
+	status_label.add_theme_font_size_override("font_size", 13)
+	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom.add_child(status_label)
 	var close := Button.new()
 	close.text = "Close"
-	close.position = Vector2(size.x - 100, size.y - 50)
-	close.custom_minimum_size = Vector2(80, 36)
+	close.custom_minimum_size = Vector2(80, 32)
 	close.pressed.connect(_on_close_pressed)
-	add_child(close)
+	bottom.add_child(close)
+	ButtonStyleHelper.apply_secondary(close)
 
 
 func _refresh() -> void:
@@ -181,5 +158,5 @@ func _set_status(msg: String) -> void:
 
 
 func _on_close_pressed() -> void:
-	emit_signal("closed")
+	closed.emit()
 	queue_free()

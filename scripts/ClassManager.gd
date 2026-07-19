@@ -6,7 +6,6 @@ extends Node
 signal classes_loaded()
 
 
-const CLASSES_DATA_PATH := "res://data/character_classes.json"
 const ClassProg = preload("res://scripts/ClassProgression.gd")
 
 var _all_classes: Dictionary = {}  # key → class_data dictionary
@@ -16,21 +15,22 @@ func _ready() -> void:
 	_load_classes()
 
 
-## Load the canonical classes from res://data/character_classes.json
+## Load the canonical classes from DataRegistry
 func load_classes_from_json() -> bool:
 	return _load_classes()
 
 
 func _load_classes() -> bool:
-	var file := FileAccess.open(CLASSES_DATA_PATH, FileAccess.READ)
-	if not is_instance_valid(file):
-		push_error("[ClassManager] Failed to open %s" % CLASSES_DATA_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[ClassManager] DataRegistry not available")
 		return false
 
-	var text := file.get_as_text()
-	file.close()
+	var json_result: Variant = dr.get_data("classes")
+	if json_result == null:
+		push_error("[ClassManager] character_classes.json missing or invalid")
+		return false
 
-	var json_result: Variant = JSON.parse_string(text)
 	if json_result is Array:
 		# character_classes.json is an array of class objects — build lookup dict
 		_all_classes = {}

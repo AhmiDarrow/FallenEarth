@@ -18,6 +18,10 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+ModLoader="*res://scripts/ModLoader.gd"
+ModAPI="*res://scripts/ModAPI.gd"
+EventBus="*res://scripts/EventBus.gd"
+DataRegistry="*res://scripts/DataRegistry.gd"
 SaveManager="*res://scripts/SaveManager.gd"
 GameState="*res://scripts/GameState.gd"
 RaceManager="*res://scripts/RaceManager.gd"
@@ -41,12 +45,17 @@ BaseShopManager="*res://scripts/BaseShopManager.gd"
 DialogueManager="*res://scripts/DialogueManager.gd"
 QuestTracker="*res://scripts/QuestTracker.gd"
 LoadingTips="*res://scripts/LoadingTips.gd"
-ModLoader="*res://scripts/ModLoader.gd"
-ModAPI="*res://scripts/ModAPI.gd"
 AmbientAudio="*res://scripts/AmbientAudio.gd"
 MusicManager="*res://scripts/MusicManager.gd"
 KeybindManager="*res://scripts/KeybindManager.gd"
 TamedMobManager="*res://scripts/TamedMobManager.gd"
+NetworkManager="*res://scripts/network/NetworkManager.gd"
+LobbyManager="*res://scripts/network/LobbyManager.gd"
+NetworkSync="*res://scripts/network/NetworkSync.gd"
+PlayerPartyManager="*res://scripts/network/PlayerPartyManager.gd"
+ChatManager="*res://scripts/network/ChatManager.gd"
+TradeManager="*res://scripts/network/TradeManager.gd"
+RespawnManager="*res://scripts/RespawnManager.gd"
 
 [display]
 
@@ -57,3 +66,11 @@ window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/size/initial_width=1280
 window/size/initial_height=720
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/wyvernbox/editor/plugin.cfg")
+
+[gui]
+
+common/drop_mouse_on_gui_input_disabled=true

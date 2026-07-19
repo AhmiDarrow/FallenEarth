@@ -5,6 +5,8 @@
 class_name QuestTrackerUI
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+
 var _panel: PanelContainer = null
 var _title_label: Label = null
 var _missions_container: VBoxContainer = null
@@ -47,6 +49,7 @@ func _build_ui() -> void:
 	_panel.offset_bottom = -10
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
+	_panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_SUBTLE, MT.RADIUS_MD))
 
 	var margin := MarginContainer.new()
 	margin.name = "Margin"

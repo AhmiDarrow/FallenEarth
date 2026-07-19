@@ -15,8 +15,7 @@ var _active_rows: Dictionary = {}  # action_name → HBoxContainer
 
 
 func _ready() -> void:
-	anchor_right = 1.0
-	anchor_bottom = 1.0
+	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	_build_ui()
 	_populate_bindings()
@@ -24,8 +23,7 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var outer := VBoxContainer.new()
-	outer.anchor_right = 1.0
-	outer.anchor_bottom = 1.0
+	outer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	outer.add_theme_constant_override("separation", 8)
 	add_child(outer)
 

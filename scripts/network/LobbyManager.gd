@@ -1,4 +1,5 @@
 ## LobbyManager — Lobby creation, join codes, UPnP discovery, player list
+## Singleton that layers on top of NetworkManager.
 extends Node
 
 signal lobby_created(join_code: String)
@@ -6,7 +7,7 @@ signal lobby_joined(host: String, port: int)
 signal lobby_closed()
 signal player_joined_lobby(peer_id: int, player_name: String)
 signal player_left_lobby(peer_id: int, player_name: String)
-signal lobby_list_updated(lobbies: Array)
+signal lobby_list_updated(lobbies: Array)  # LAN discovery
 
 const DEFAULT_PORT := 28900
 const BROADCAST_PORT := 28901
@@ -17,7 +18,7 @@ var _upnp: UPNP = null
 var _join_code: String = ""
 var _lan_broadcast_enabled: bool = true
 var _broadcast_peer: PacketPeerUDP = null
-var _discovered_lobbies: Array = []
+var _discovered_lobbies: Array = []  # each: {host, port, name, player_count}
 
 
 func _ready() -> void:
@@ -33,14 +34,20 @@ func host_lobby(lobby_name: String = "Fallen Earth Game") -> bool:
 	if _net == null or not _net.has_method("start_server"):
 		push_error("[LobbyManager] NetworkManager unavailable")
 		return false
+
 	if not _net.start_server(DEFAULT_PORT):
 		return false
+
 	_join_code = _generate_code()
 	_setup_upnp()
+
 	if _lan_broadcast_enabled:
 		_start_lan_broadcast(lobby_name)
+
 	print("[LobbyManager] Lobby created: %s (code: %s)" % [lobby_name, _join_code])
 	lobby_created.emit(_join_code)
+
+	# Listen for players on the network manager
 	if _net.is_connected("client_connected", _on_player_connected):
 		return true
 	_net.client_connected.connect(_on_player_connected)
@@ -52,6 +59,7 @@ func join_lobby(host: String, port: int = DEFAULT_PORT) -> bool:
 	if _net == null or not _net.has_method("start_client"):
 		push_error("[LobbyManager] NetworkManager unavailable")
 		return false
+
 	var result: bool = _net.start_client(host, port)
 	if result:
 		print("[LobbyManager] Joining lobby at %s:%d" % [host, port])
@@ -60,9 +68,12 @@ func join_lobby(host: String, port: int = DEFAULT_PORT) -> bool:
 
 
 func join_by_code(code: String) -> bool:
+	# For LAN: resolve join code to IP via broadcast
 	code = code.strip_edges().to_upper()
 	if code.is_empty():
 		return false
+	# Simple join: we assume manual IP for now, code is just display
+	# In a fuller implementation, a matchmaking relay would map code -> IP
 	push_warning("[LobbyManager] join_by_code requires a matchmaking relay or known IP")
 	return false
 
@@ -90,6 +101,7 @@ func get_player_list() -> Array[Dictionary]:
 			"peer_id": pid,
 			"name": _net.get_player_name(pid) if _net.has_method("get_player_name") else str(names[pid]),
 		})
+	# Include host if server
 	if _net != null and _net.is_server():
 		result.push_front({
 			"peer_id": _net.get_my_peer_id(),
@@ -156,6 +168,7 @@ func _start_lan_broadcast(lobby_name: String) -> void:
 		"players": 1,
 	})
 	_broadcast_peer.put_var(announce.to_utf8_buffer())
+	# Start periodic broadcast
 	var timer := Timer.new()
 	timer.name = "BroadcastTimer"
 	timer.wait_time = 3.0
@@ -180,7 +193,7 @@ func _broadcast_announce(lobby_name: String) -> void:
 func _get_player_count() -> int:
 	if _net == null:
 		return 1
-	var count := 1
+	var count := 1  # host
 	for pid in _net.player_names:
 		count += 1
 	return count
@@ -192,6 +205,7 @@ func _start_broadcast_listener() -> void:
 	if err != OK:
 		print("[LobbyManager] Could not bind broadcast listener (port %d): %d" % [BROADCAST_PORT, err])
 		return
+	# Use a timer to poll
 	var poll_timer := Timer.new()
 	poll_timer.name = "PollTimer"
 	poll_timer.wait_time = 1.0
@@ -217,6 +231,7 @@ func _poll_broadcast(listener: PacketPeerUDP) -> void:
 			"code": str(parsed.get("code", "")),
 			"players": int(parsed.get("players", 0)),
 		}
+		# Deduplicate
 		var exists := false
 		for existing in _discovered_lobbies:
 			if existing.host == entry.host and existing.port == entry.port:

@@ -98,7 +98,7 @@ func enter_settlement(hex_key: String, hub: Node, focus_building: String = "") -
 			print("[SettlementManager] Spawned resident %s in settlement %s" % [
 				n.get("name", "?"), hex_key
 			])
-	emit_signal("entered_settlement", hex_key, town)
+	entered_settlement.emit(hex_key, town)
 	print("[SettlementManager] Entered settlement %s (%s, %s, %s)" % [
 		hex_key, town.get("template_name", "?"), town.get("faction", "?"), town.get("biome", "?")
 	])
@@ -116,7 +116,7 @@ func leave_settlement() -> void:
 	interior = null
 	active_settlement_hex = ""
 	active_settlement_data = {}
-	emit_signal("left_settlement", hex)
+	left_settlement.emit(hex)
 	print("[SettlementManager] Left settlement %s" % hex)
 
 

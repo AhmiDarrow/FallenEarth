@@ -1,13 +1,13 @@
 ## CharacterMenu — Tabbed shell for all character screens.
 ##
-## Hosts the Inventory, Equipment, Crafting, Party, and Stats tabs.
-## A single instance is opened by the HUD "≡ Menu" button or by the
-## keyboard hotkeys (I, E, C, P, S). Tab buttons at the top swap the
-## content area beneath. Tab state is preserved when switching (e.g.
-## Inventory's selected item is not lost when you peek at the Party tab).
+## Hosts the Inventory, Equipment, Crafting, Jobs, Party, and Stats tabs.
+## A single instance is opened by the keyboard hotkeys (I, E, C, J, P, S).
+## Tab buttons at the top swap the content area beneath. Tab state is
+## preserved when switching (e.g. Inventory's selected item is not lost
+## when you peek at the Party tab).
 ##
 ## Keyboard:
-##   - I, E, C, P, S: open the corresponding tab (or close the menu if
+##   - I, E, C, J, P, S: open the corresponding tab (or close the menu if
 ##     that tab is already active)
 ##   - Tab / Shift+Tab: cycle forward / backward through tabs
 ##   - Escape: close the menu
@@ -27,22 +27,30 @@
 class_name CharacterMenu
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+
 signal closed
 
-const TABS := [
+
+
+var TABS: Array = [
 	{"id": "inventory", "label": "Inventory", "key": KEY_I},
 	{"id": "equipment", "label": "Equipment", "key": KEY_E},
 	{"id": "crafting",  "label": "Crafting",  "key": KEY_C},
+	{"id": "jobs",      "label": "Jobs",      "key": KEY_J},
 	{"id": "party",     "label": "Party",     "key": KEY_P},
 	{"id": "stats",     "label": "Stats",     "key": KEY_S},
+	{"id": "mounts",    "label": "Mounts",    "key": KEY_H},
 ]
 
-const SCREEN_PATHS := {
+var SCREEN_PATHS: Dictionary = {
 	"inventory": "res://scripts/ui/InventoryScreen.gd",
 	"equipment": "res://scripts/ui/EquipmentScreen.gd",
 	"crafting":  "res://scripts/ui/CraftingScreen.gd",
+	"jobs":      "res://scripts/ui/JobsScreen.gd",
 	"party":     "res://scripts/ui/PartyScreen.gd",
 	"stats":     "res://scripts/ui/StatsScreen.gd",
+	"mounts":    "res://scripts/ui/MountScreen.gd",
 }
 
 # Scene references (resolved by Godot from the .tscn at load time).
@@ -112,6 +120,7 @@ func _ensure_shell() -> void:
 		_close_btn.text = "X"
 		_close_btn.custom_minimum_size = Vector2(40, 40)
 		add_child(_close_btn)
+		ButtonStyleHelper.apply_ghost(_close_btn)
 	if _tab_bar == null:
 		_tab_bar = HBoxContainer.new()
 		_tab_bar.name = "TabBar"
@@ -156,11 +165,14 @@ func _build_tab_bar() -> void:
 		btn.text = "%s [%s]" % [tab.label, OS.get_keycode_string(tab.key).replace("KEY_", "")]
 		btn.custom_minimum_size = Vector2(140, 28)
 		btn.toggle_mode = true
-		btn.focus_mode = Control.FOCUS_NONE
+		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", MT.focus_ring())
 		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
 		_tab_bar.add_child(btn)
 		_tab_buttons[tab.id] = btn
+	# Apply mod-registered tabs
+	_apply_mod_tabs()
 
 
 func _on_tab_button_pressed(tab_id: String) -> void:
@@ -184,18 +196,24 @@ func select_tab(tab_id: String) -> void:
 	# Deactivate old tab
 	if _active_tab != "" and _tab_controllers.has(_active_tab):
 		var old_screen: Control = _tab_controllers[_active_tab]
-		old_screen.visible = false
+		if is_instance_valid(old_screen):
+			old_screen.visible = false
 	if _tab_buttons.has(_active_tab):
 		_tab_buttons[_active_tab].button_pressed = false
 	# Activate new tab
 	_active_tab = tab_id
-	if not _tab_controllers.has(tab_id):
+	if not _tab_controllers.has(tab_id) or not is_instance_valid(_tab_controllers.get(tab_id)):
 		_lazy_load_tab(tab_id)
-	_tab_controllers[tab_id].visible = true
+	if _tab_controllers.has(tab_id) and is_instance_valid(_tab_controllers[tab_id]):
+		_tab_controllers[tab_id].visible = true
 	_tab_buttons[tab_id].button_pressed = true
 
 
 func _lazy_load_tab(tab_id: String) -> void:
+	var existing := _content.get_node_or_null("Screen_" + tab_id)
+	if existing:
+		existing.queue_free()
+		_tab_controllers.erase(tab_id)
 	var path: String = SCREEN_PATHS.get(tab_id, "")
 	if path.is_empty() or not ResourceLoader.exists(path):
 		# Placeholder for tabs that don't have a screen yet (e.g. Equipment
@@ -206,8 +224,7 @@ func _lazy_load_tab(tab_id: String) -> void:
 		ph.add_theme_font_size_override("font_size", 18)
 		ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		ph.anchor_right = 1.0
-		ph.anchor_bottom = 1.0
+		ph.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_content.add_child(ph)
 		_tab_controllers[tab_id] = ph
 		return
@@ -216,8 +233,7 @@ func _lazy_load_tab(tab_id: String) -> void:
 		push_error("[CharacterMenu] Failed to load tab script: %s" % path)
 		return
 	var screen = script.new()
-	screen.anchor_right = 1.0
-	screen.anchor_bottom = 1.0
+	screen.set_anchors_preset(Control.PRESET_FULL_RECT)
 	screen.name = "Screen_" + tab_id
 	screen.mouse_filter = Control.MOUSE_FILTER_PASS
 	_content.add_child(screen)
@@ -229,7 +245,8 @@ func get_active_tab() -> String:
 
 
 func close_menu() -> void:
-	emit_signal("closed")
+	closed.emit()
+	_tab_controllers.clear()
 	queue_free()
 
 
@@ -277,6 +294,10 @@ func _unhandled_key_input(event: InputEvent) -> void:
 			select_tab("party")
 			get_viewport().set_input_as_handled()
 			return
+		if km.is_action_pressed("jobs", event):
+			select_tab("jobs")
+			get_viewport().set_input_as_handled()
+			return
 		if km.is_action_pressed("stats", event):
 			select_tab("stats")
 			get_viewport().set_input_as_handled()
@@ -286,4 +307,28 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		if event.keycode == tab.key:
 			select_tab(tab.id)
 			get_viewport().set_input_as_handled()
-			return
+
+
+## Add mod-registered tabs to the tab bar
+func _apply_mod_tabs() -> void:
+	var mod_api := get_node_or_null("/root/ModAPI")
+	if mod_api == null:
+		return
+	var mod_tabs: Array = mod_api.get_extensions("character_menu_tabs")
+	if mod_tabs.is_empty():
+		return
+	for tab in mod_tabs:
+		TABS.append({"id": tab.id, "label": tab.label, "key": KEY_NONE})
+		SCREEN_PATHS[tab.id] = tab.scene_path
+		# Add button to tab bar
+		var btn := Button.new()
+		btn.name = "Tab_%s" % tab.id
+		btn.text = tab.label
+		btn.custom_minimum_size = Vector2(140, 28)
+		btn.toggle_mode = true
+		btn.focus_mode = Control.FOCUS_ALL
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", MT.focus_ring())
+		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
+		_tab_bar.add_child(btn)
+		_tab_buttons[tab.id] = btn

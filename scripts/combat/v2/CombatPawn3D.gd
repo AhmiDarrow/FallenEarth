@@ -1,33 +1,35 @@
 class_name CombatPawn3D
 extends CharacterBody3D
-## 3D combat pawn — CharacterBody3D with billboard sprite.
-##
-## Adapted from ramaureirac/godot-tactical-rpg `TacticsPawn`.
-## Displays a billboard sprite facing the camera, with name label
-## and health info. Movement is handled by UnitMovementService3D.
 
 const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
 const PAWN_HEIGHT: float = 0.6
-const CELL_SIZE: float = 1.0
 const SPRITE_FOLDER: String = "res://assets/mobs/"
 const CHAR_FOLDER: String = "res://assets/characters/"
 
-## The UnitResource this pawn reads from
 var res: UnitResource
 
-## Reference to arena node (for tile lookups that return CombatTile3D)
 var arena_node: Node3D = null
 
-## True while animating movement
 var is_moving: bool = false
 
-## Child references
 var _sprite: Sprite3D
 var _name_label: Label3D
 var _hp_label: Label3D
 var _tile_raycast: RayCast3D
 var _collision: CollisionShape3D
 var _anim_player: AnimationPlayer
+var _team_ring: MeshInstance3D
+
+## Sprite animation state (manual frame cycling for Sprite3D)
+var _anim_library: Dictionary = {}  # anim_name → Array[Texture2D]
+var _anim_speeds: Dictionary = {}   # anim_name → speed
+var _anim_loops: Dictionary = {}    # anim_name → bool
+var _anim_frames: Array[Texture2D] = []
+var _anim_speed: float = 5.0
+var _anim_loop: bool = true
+var _anim_timer: float = 0.0
+var _anim_index: int = 0
+var _anim_name: String = "idle"
 
 
 func _ready() -> void:
@@ -35,6 +37,7 @@ func _ready() -> void:
 	_build_tile_raycast()
 	_build_sprite()
 	_build_labels()
+	_build_team_ring()
 	_build_animations()
 
 
@@ -54,7 +57,6 @@ func _build_collision() -> void:
 func _build_tile_raycast() -> void:
 	_tile_raycast = RayCast3D.new()
 	_tile_raycast.name = "TileRaycast"
-	# Start above pawn and reach down through the tile — must pass through tile collision
 	_tile_raycast.position = Vector3(0, 0.5, 0)
 	_tile_raycast.target_position = Vector3(0, -2.0, 0)
 	_tile_raycast.enabled = true
@@ -64,7 +66,7 @@ func _build_tile_raycast() -> void:
 func _build_sprite() -> void:
 	_sprite = Sprite3D.new()
 	_sprite.name = "Sprite3D"
-	_sprite.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	_sprite.billboard = BaseMaterial3D.BILLBOARD_FIXED_Y
 	_sprite.pixel_size = 0.01
 	_sprite.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST
 	_sprite.position = Vector3(0, PAWN_HEIGHT, 0)
@@ -74,29 +76,50 @@ func _build_sprite() -> void:
 
 
 func _build_labels() -> void:
-	# HP label (below name)
 	_hp_label = Label3D.new()
 	_hp_label.name = "HPLabel"
 	_hp_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_hp_label.font_size = 28
-	_hp_label.outline_size = 8
+	_hp_label.font_size = 16
+	_hp_label.outline_size = 4
 	_hp_label.outline_modulate = Color.BLACK
+	_hp_label.no_depth_test = true
 	_hp_label.position = Vector3(0, PAWN_HEIGHT + 1.0, 0)
-	_hp_label.pixel_size = 0.01
+	_hp_label.pixel_size = 0.012
 	_hp_label.render_priority = 1
 	add_child(_hp_label)
 
-	# Name label (above HP)
 	_name_label = Label3D.new()
 	_name_label.name = "NameLabel"
 	_name_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
-	_name_label.font_size = 32
-	_name_label.outline_size = 8
+	_name_label.font_size = 18
+	_name_label.outline_size = 4
 	_name_label.outline_modulate = Color.BLACK
-	_name_label.position = Vector3(0, PAWN_HEIGHT + 1.4, 0)
-	_name_label.pixel_size = 0.01
+	_name_label.no_depth_test = true
+	_name_label.position = Vector3(0, PAWN_HEIGHT + 1.3, 0)
+	_name_label.pixel_size = 0.012
 	_name_label.render_priority = 2
 	add_child(_name_label)
+
+
+func _build_team_ring() -> void:
+	_team_ring = MeshInstance3D.new()
+	_team_ring.name = "TeamRing"
+	# Use a flat cylinder as a team-colored ring under the pawn
+	var ring := CylinderMesh.new()
+	ring.top_radius = 0.5
+	ring.bottom_radius = 0.5
+	ring.height = 0.02
+	ring.radial_segments = 24
+	_team_ring.mesh = ring
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mat.no_depth_test = true
+	# Color set in setup_from_data based on team
+	_team_ring.material_override = mat
+	_team_ring.position = Vector3(0, 0.01, 0)
+	_team_ring.visible = false
+	add_child(_team_ring)
 
 
 func _build_animations() -> void:
@@ -123,34 +146,92 @@ func setup_from_data(data: Dictionary, arena: ArenaResource, arena_node_ref: Nod
 	res.attack = int(data.get("attack", 0)) + int(data.get("attack_bonus", 0))
 	res.defense = int(data.get("defense", 0)) + int(data.get("armor_bonus", 0))
 	res.speed = int(data.get("speed", 0))
-	res.move = int(data.get("move", 3)) + int(sqrt(float(res.level) / 25.0))
+	res.move = maxi(1, int(data.get("move", 3)) - 1 + int(sqrt(float(res.level) / 10.0)))
 	res.jump = int(data.get("jump", 1))
 	res.attack_range = int(data.get("attack_range", 1))
 	res.sprite_id = str(data.get("sprite_id", res.unit_id))
 	res.facing = int(data.get("facing", 2))
 	arena_node = arena_node_ref
-	# Position on grid — use local position since we're a child of the Arena
 	position = Vector3(
-		res.grid_pos.x * CELL_SIZE,
+		res.grid_pos.x * CombatTile3D.CELL_SIZE,
 		0.0,
-		res.grid_pos.y * CELL_SIZE
+		res.grid_pos.y * CombatTile3D.CELL_SIZE
 	)
 	_load_sprite()
 	_refresh_labels()
+	_setup_team_ring()
 
 
 func _load_sprite() -> void:
-	var path: String = ""
+	_anim_library.clear()
+	_anim_speeds.clear()
+	_anim_loops.clear()
+
+	var tres_path: String = ""
+	var fallback_png: String = ""
 	if res.team == "player":
-		path = "%s%s_%s/%s_%s_S.png" % [CHAR_FOLDER, res.race, res.gender, res.race, res.gender]
+		var base: String = "%s%s_%s/%s_%s" % [CHAR_FOLDER, res.race, res.gender, res.race, res.gender]
+		tres_path = base + ".tres"
+		fallback_png = base + "_S.png"
 	else:
-		path = SPRITE_FOLDER + res.sprite_id + ".png"
-	if ResourceLoader.exists(path):
-		_sprite.texture = load(path)
-		_sprite.scale = Vector3(1.5, 1.5, 1.5)
+		var base: String = SPRITE_FOLDER + res.sprite_id
+		tres_path = base + "/" + res.sprite_id + ".tres"
+		fallback_png = base + ".png"
+
+	var scale_vec := Vector3(1.0, 1.0, 1.0)
+
+	if ResourceLoader.exists(tres_path):
+		var sf: SpriteFrames = load(tres_path)
+		var anim_names: PackedStringArray = sf.get_animation_names()
+		for aname in anim_names:
+			var fc: int = sf.get_frame_count(aname)
+			var frames: Array[Texture2D] = []
+			for i in range(fc):
+				frames.append(sf.get_frame_texture(aname, i))
+			_anim_library[aname] = frames
+			_anim_speeds[aname] = sf.get_animation_speed(aname)
+			_anim_loops[aname] = sf.get_animation_loop(aname)
+	elif ResourceLoader.exists(fallback_png):
+		_anim_library["idle"] = [load(fallback_png)]
+		_anim_speeds["idle"] = 5.0
+		_anim_loops["idle"] = true
 	else:
-		_sprite.texture = _make_placeholder()
-		_sprite.scale = Vector3(1.2, 1.2, 1.2)
+		_anim_library["idle"] = [_make_placeholder()]
+		_anim_speeds["idle"] = 5.0
+		_anim_loops["idle"] = true
+		scale_vec = Vector3(0.8, 0.8, 0.8)
+
+	_switch_anim("idle")
+	_sprite.scale = scale_vec
+
+
+func _switch_anim(anim_name: String) -> void:
+	if not _anim_library.has(anim_name):
+		anim_name = "idle" if _anim_library.has("idle") else ""
+		if anim_name.is_empty():
+			return
+	_anim_frames = _anim_library[anim_name]
+	_anim_speed = _anim_speeds.get(anim_name, 5.0)
+	_anim_loop = _anim_loops.get(anim_name, true)
+	_anim_index = 0
+	_anim_timer = 0.0
+	_anim_name = anim_name
+	if not _anim_frames.is_empty():
+		_sprite.texture = _anim_frames[0]
+		_snap_feet_to_tile()
+
+
+func _snap_feet_to_tile() -> void:
+	if _sprite.texture == null:
+		return
+	var tex_h: float = float(_sprite.texture.get_height())
+	# Bottom of centered sprite = sprite_y - (tex_h * 0.5 * pixel_size).
+	# Place bottom at TILE_HEIGHT so feet sit on top of the tile.
+	_sprite.position.y = CombatTile3D.TILE_HEIGHT + tex_h * 0.5 * _sprite.pixel_size
+	# Keep labels above the sprite top.
+	var top_y: float = _sprite.position.y + tex_h * 0.5 * _sprite.pixel_size
+	_hp_label.position.y = top_y + 0.3
+	_name_label.position.y = top_y + 0.6
 
 
 func _make_placeholder() -> Texture2D:
@@ -161,7 +242,6 @@ func _make_placeholder() -> Texture2D:
 		img.set_pixel(0, i, Color.BLACK)
 		img.set_pixel(31, i, Color.BLACK)
 		img.set_pixel(i, 31, Color.BLACK)
-	# Simple face
 	img.set_pixel(10, 12, Color.BLACK)
 	img.set_pixel(20, 12, Color.BLACK)
 	img.set_pixel(12, 18, Color.RED)
@@ -169,6 +249,50 @@ func _make_placeholder() -> Texture2D:
 	img.set_pixel(16, 18, Color.RED)
 	img.set_pixel(18, 18, Color.RED)
 	return ImageTexture.create_from_image(img)
+
+
+func _setup_team_ring() -> void:
+	if _team_ring == null:
+		return
+	var mat: StandardMaterial3D = _team_ring.material_override as StandardMaterial3D
+	if mat == null:
+		return
+	if res == null:
+		return
+	match res.team:
+		"player":
+			mat.albedo_color = Color(0.2, 0.6, 1.0, 0.5)
+			_team_ring.visible = true
+		"enemy":
+			mat.albedo_color = Color(1.0, 0.2, 0.2, 0.5)
+			_team_ring.visible = true
+		"ally":
+			mat.albedo_color = Color(0.2, 1.0, 0.4, 0.5)
+			_team_ring.visible = true
+		_:
+			_team_ring.visible = false
+
+
+func _process(delta: float) -> void:
+	if _anim_frames.is_empty():
+		return
+	_anim_timer += delta
+	var frame_duration: float = 1.0 / maxf(_anim_speed, 0.001)
+	if _anim_timer >= frame_duration:
+		_anim_timer -= frame_duration
+		_anim_index += 1
+		if _anim_index >= _anim_frames.size():
+			if _anim_loop:
+				_anim_index = 0
+			else:
+				_anim_index = _anim_frames.size() - 1
+		_sprite.texture = _anim_frames[_anim_index]
+
+
+func play_anim(anim_name: String) -> void:
+	if _anim_name == anim_name:
+		return
+	_switch_anim(anim_name)
 
 
 func _refresh_labels() -> void:
@@ -199,7 +323,6 @@ func get_tile() -> CombatTile3D:
 		var collider: Node3D = _tile_raycast.get_collider()
 		if collider is CombatTile3D:
 			return collider as CombatTile3D
-	# Fallback: look up tile by grid_pos from arena
 	if arena_node != null and res != null:
 		var tile = arena_node.get_tile(res.grid_pos.x, res.grid_pos.y)
 		if tile != null and tile is CombatTile3D:
@@ -227,7 +350,6 @@ func update_hp(new_hp: int) -> void:
 		_play_death()
 
 
-## Show a floating damage number (or "MISS") above the pawn.
 func show_damage_text(amount: int) -> void:
 	var lbl := Label3D.new()
 	lbl.pixel_size = 0.01
@@ -242,8 +364,7 @@ func show_damage_text(amount: int) -> void:
 		lbl.modulate = Color(1.0, 0.3, 0.3)
 	lbl.position = Vector3(0, 1.2, 0)
 	add_child(lbl)
-	# Animate: float up and fade out
-	var tween := create_tween()
+	var tween: Tween = create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(lbl, "position:y", 1.8, 0.8).set_ease(Tween.EASE_OUT)
 	tween.tween_property(lbl, "modulate:a", 0.0, 0.8).set_delay(0.3)
@@ -251,9 +372,39 @@ func show_damage_text(amount: int) -> void:
 	tween.tween_callback(lbl.queue_free)
 
 
+func _show_loot_text(item_name: String) -> void:
+	var lbl := Label3D.new()
+	lbl.pixel_size = 0.01
+	lbl.font_size = 20
+	lbl.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	lbl.no_depth_test = true
+	lbl.text = "+%s" % item_name
+	lbl.modulate = Color(0.3, 1.0, 0.3)
+	lbl.position = Vector3(0, 1.4, 0)
+	add_child(lbl)
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(lbl, "position:y", 2.0, 1.0).set_ease(Tween.EASE_OUT)
+	tween.tween_property(lbl, "modulate:a", 0.0, 1.0).set_delay(0.3)
+	tween.set_parallel(false)
+	tween.tween_callback(lbl.queue_free)
+
+
 func _play_death() -> void:
-	_sprite.modulate = Color(0.4, 0.4, 0.4, 0.5)
-	scale = Vector3(0.6, 0.6, 0.6)
+	if _anim_library.has("death"):
+		_switch_anim("death")
+		# Calculate death anim duration from speed + frame count
+		var fc: int = _anim_frames.size()
+		var dur: float = float(fc) / maxf(_anim_speed, 0.001)
+		var tween: Tween = create_tween().set_delay(dur)
+		tween.tween_callback(func():
+			if is_inside_tree():
+				_sprite.modulate = Color(0.4, 0.4, 0.4, 0.5)
+				scale = Vector3(0.6, 0.6, 0.6)
+		)
+	else:
+		_sprite.modulate = Color(0.4, 0.4, 0.4, 0.5)
+		scale = Vector3(0.6, 0.6, 0.6)
 	_anim_player.stop()
 
 
@@ -265,4 +416,4 @@ func show_stats(v: bool) -> void:
 func move_to_world_pos(world_pos: Vector3) -> void:
 	position = Vector3(world_pos.x, 0.0, world_pos.z)
 	if res:
-		res.grid_pos = Vector2i(int(world_pos.x / CELL_SIZE), int(world_pos.z / CELL_SIZE))
+		res.grid_pos = Vector2i(int(world_pos.x / CombatTile3D.CELL_SIZE), int(world_pos.z / CombatTile3D.CELL_SIZE))

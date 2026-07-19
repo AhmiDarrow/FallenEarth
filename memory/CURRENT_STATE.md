@@ -1,29 +1,40 @@
 # CURRENT STATE — Fallen Earth
 
 **Version:** 0.11.0
-**Last Updated:** 2026-07-06 14:00
+**Last Updated:** 2026-07-07 14:30
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** v0.11.0 Combat Architecture Rewrite — COMPLETE.
+**Current Phase:** UI Design System — COMPLETE. Graphical fixes COMPLETE.
 
 ## Summary
 
-v0.11.0 "Combat Architecture Rewrite" complete. Three rounds of
-polish (v0.10.5 → v0.11) hadn't fixed the visual issues, and the
-god-class architecture (TacticalCombat.gd 800+ lines,
-CombatManager.gd 1500+ lines) made the system hard to maintain.
-Rebuilt the combat system using the Resource/Service/Module
-pattern from `ramaureirac/godot-tactical-rpg`:
-  - 4 Resources (TileResource, UnitResource, ParticipantResource,
-    ArenaResource) for data + state
-  - 6 Services (PathfindingService, TurnService, UnitMovement,
-    UnitCombat, PlayerService, OpponentService) for logic
-  - 4 Modules (CombatTile, CombatUnit, CombatArena, CombatLevel)
-    for scene tree
-  - 2 UI panels (TopPrompt, ActionBar) — the other 3 deferred
+UI Design System complete. Full system built from scratch:
+- `UI_Colors.gd` (50+ design tokens), `UI_Theme.gd` (programmatic Theme),
+  `StyleBoxHelper.gd` (10 StyleBox factories), `UIBackgrounds.gd` (texture overlay system)
+- 6 pixel-art backgrounds via PixelLab MCP in `assets/ui/`
+- `ButtonStyleHelper.gd` rewritten (5 states, 5 variants, design system palette)
+- Applied across 20+ UI screens (MainMenu, HUD, Inventory, Equipment, Crafting,
+  CharacterMenu, Dialogue, Shop, MissionBoard, WorldMap, LootWindow, etc.)
+- All inline StyleBoxFlat removed from .tscn files (MainMenu, PauseMenu, WorldGeneration)
+- Theme applied globally via `UI_Theme.apply_to(get_tree().root)` in GameManager
+- PanelContainer default made transparent (was dark squares everywhere)
 
-Backward compatible: old BattleCell/GridView/Unit + TacticalCombat
-scene still work, old encounter format auto-converted. To switch,
-replace TacticalCombat.tscn reference with CombatLevel.tscn.
+Post-UI graphical fixes applied:
+- InventoryScreen converted to full-rect layout (fixes overlap with CharacterMenu header)
+- ShopInterface, MissionBoardInterface, BaseShopUI converted to container-based responsive layouts
+- HUD bar group background alpha reduced to 0.45, corner radius to 4
+- UIBackgrounds modal overlay alpha reduced to 0.15 (subtle, not overpowering)
+- WorldMapScreen removed apply_modal_bg (was letting HubWorld tiles bleed through)
+- LootWindow cell size increased from 40 to 48 (matches InventoryScreen)
+- EquipmentScreen slots reduced from 110x96 to 90x80
+- StatsScreen migrated to design system tokens
+
+Character sprites: human_male complete (8 directions + 4-frame walk × 8 dirs).
+6 of 8 tool sprites generated via PixelLab MCP.
+
+v0.11.0 "Combat Architecture Rewrite" also complete: rebuilt combat on
+Resource/Service/Module architecture from ramaureirac/godot-tactical-rpg.
+4 Resources, 6 Services, 4 Modules, 2 UI panels ported (TopPrompt, ActionBar).
+Old TacticalCombat.tscn still works; new CombatLevel.tscn is the replacement.
 
 ## v0.10.10 details
 
@@ -145,18 +156,23 @@ Splash → MainMenu → WorldGeneration (pick start hex)
 | Hex sphere world gen | ✅ | `WorldGenerator.gd`, `WorldGeneration.tscn` |
 | Strategic world map | ✅ | `WorldMapScreen.gd`, `WorldMapScreen.tscn` |
 | Local 512×512 maps (TileMapLayer) | ✅ | `LocalMapGenerator.gd`, `LocalMapView.gd`, `LocalMapView.tscn` |
-| TileSet build per biome | ✅ NEW v0.3.0 | `TileSetService.gd` |
-| Hex state + travel | ✅ | `GameState.gd` (`hex_states`, `travel_to_hex`) |
+| TileSet build per biome | ✅ | `TileSetService.gd` |
+| Hex state + travel | ✅ | `GameState.gd`, `travel_to_hex` |
 | Rifts (local coords) | ✅ | `RiftRunner.gd`, `RiftInstance.gd` |
 | Tactical combat (FFT) | ✅ | `TacticalCombat.gd`, `CombatManager.gd` |
+| Tactical combat v0.11.0 (R/S/M) | ✅ | `CombatLevel.gd`, `CombatArena.gd`, `CombatTile.gd`, `CombatUnit.gd` |
 | Missions (local mobs) | ✅ | `MissionManager.gd` |
-| Save/load (all managers) | ✅ NEW v0.8.0 Phase H | `GameState.gd`, `SaveManager.gd` — aggregates + restores inventory, progression, party, equipment, base, base_shops |
-| Display options | ✅ | `DisplayManager.gd`, `Options.gd`, `scenes/ui/Options.tscn` |
-| Hand-drawn tiles | ✅ NEW v0.3.0 | `assets/tilesets/{biome}/{terrain}.png` — 50 files via PixelLab |
-| Mob sprites (visible) | ✅ v0.2.0 round 2 | `assets/mobs/{id}.png` — 27 mobs |
-| Settlement buildings on map | ✅ NEW v0.8.0 | `SettlementBuilding.gd` + `assets/sprites/buildings/` — 9 building types, procedural layout |
-| Spatial settlement interiors | ✅ NEW v0.8.0 | `SettlementInterior.gd` + `RoomView.gd` + `data/settlement_rooms.json` — room system, WASD, NPC visuals, E-key |
-| Settlement interior visuals | ✅ NEW v0.8.0 Phase C | NPC character sprites (AtlasTexture), biome floor textures, faction wall accents |
+| Save/load (all managers) | ✅ | `GameState.gd`, `SaveManager.gd` |
+| Display options | ✅ | `DisplayManager.gd`, `Options.gd` |
+| Hand-drawn tiles | ✅ | `assets/tilesets/{biome}/{terrain}.png` — 50 files |
+| Mob sprites (visible) | ✅ | `assets/mobs/{id}.png` — 27 mobs |
+| Settlement buildings on map | ✅ | `SettlementBuilding.gd`, `assets/sprites/buildings/` |
+| Spatial settlement interiors | ✅ | `SettlementInterior.gd`, `RoomView.gd` |
+| Settlement interior visuals | ✅ | NPC sprites, biome floors, faction accents |
+| **UI Design System** | ✅ | `UI_Colors.gd`, `UI_Theme.gd`, `StyleBoxHelper.gd`, `UIBackgrounds.gd`, `ButtonStyleHelper.gd` |
+| UI background textures | ✅ | `assets/ui/` — 6 pixel-art textures |
+| Character sprites (human_male) | ✅ | `assets/characters/human_male_test/` — 42 PNGs + contact sheets |
+| Tool sprites | ✅ | `assets/sprites/tools/` — 6 of 8 generated |
 
 ## What changed in v0.8.0 Phase A
 
@@ -436,12 +452,14 @@ Last runs:
 
 ## Next Session Priorities
 
-1. **F5 visual playthrough** — confirm tiles render and mobs are visible at full size.
-2. **Per-biome tile QA** — open each biome in F5; replace any tile that looks
-   too dark or too similar to neighbours via `tools/generate_tiles.py --biome <x> --force`.
-3. **Settlement building** — `hex_state.settlement` is a stub in `LocalMapGenerator`.
+1. **Remaining 23 character sprites** — human_female, mutant×2, sentient_ai×2, cyborg×2, chthon×2, vesperid×2, nullborn×2, revenant×2. Pipeline documented, ~345 generations needed.
+2. **Remaining tool sprites** — chainsaw, welder (2 of 8 not yet generated).
+3. **Animation frames** — idle + attack for all characters. PixelLab `animate-with-text` pipeline documented.
+4. **v0.11.1 combat UI** — port remaining 3 UI panels (TurnOrderBar, UnitInfoCard, SkillBar) to new R/S/M architecture.
+5. **F5 visual playthrough** — confirm tiles render, mobs visible, UI looks correct.
 
 ## Asset budget
 
-- PixelLab Tier 2 (Pixel Artisan) — 4770 generations remaining (was 5000).
-- v0.3.0 used 50 generations (10 biomes × 5 terrain types).
+- PixelLab Tier 2 (Pixel Artisan) — 1640+ generations remaining (was 5000, consumed ~3360 for terrain, mobs, UI backgrounds, character sprites, tools).
+- Per character combo: ~17 generations (base 128 + base 64 + 7 rotations + 8 walk).
+- 23 remaining combos × 17 = ~391 generations (budget sufficient).

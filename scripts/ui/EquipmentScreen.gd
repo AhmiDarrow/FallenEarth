@@ -18,6 +18,7 @@
 class_name EquipmentScreen
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 
@@ -33,51 +34,57 @@ const PLAYER_ID := "player"
 var _slot_panels: Dictionary = {}  # slot -> PanelContainer
 var _inventory_vbox: VBoxContainer
 var _stats_label: Label
-var _equipment_changed: bool = false  # dirty flag
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	_build_ui()
 	_refresh()
+	var inv: Node = get_node_or_null(INVENTORY_PATH)
+	if inv != null and inv.has_signal("inventory_changed"):
+		inv.connect("inventory_changed", _refresh_inventory)
 
 
 func _build_ui() -> void:
 	# Layout: HBoxContainer splits into slots (left) and inventory (right).
 	var hbox := HBoxContainer.new()
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 12)
 	add_child(hbox)
 	# Left: equipment grid
 	var left_panel := PanelContainer.new()
-	left_panel.custom_minimum_size = Vector2(360, 0)
+	left_panel.custom_minimum_size = Vector2(300, 0)
+	left_panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_SUBTLE, MT.RADIUS_MD))
 	hbox.add_child(left_panel)
 	var left_vbox := VBoxContainer.new()
 	left_panel.add_child(left_vbox)
 	var title := Label.new()
 	title.text = "[ Equipment ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 24)
+	title.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	title.add_theme_font_size_override("font_size", MT.FS_H2)
 	left_vbox.add_child(title)
 	var grid := GridContainer.new()
 	grid.columns = 3
+	grid.add_theme_constant_override("h_separation", 4)
+	grid.add_theme_constant_override("v_separation", 4)
 	left_vbox.add_child(grid)
 	for slot in EQUIP_SLOTS:
 		var slot_box := PanelContainer.new()
 		slot_box.name = "Slot_%s" % slot
-		slot_box.custom_minimum_size = Vector2(110, 96)
+		slot_box.custom_minimum_size = Vector2(90, 80)
+		slot_box.add_theme_stylebox_override("panel", MT.panel(MT.BG_ELEVATED, MT.BORDER_SUBTLE, MT.RADIUS_SM))
 		grid.add_child(slot_box)
 		_slot_panels[slot] = slot_box
 	# Right: inventory list
 	var right_panel := PanelContainer.new()
 	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_SUBTLE, MT.RADIUS_MD))
 	hbox.add_child(right_panel)
 	var right_vbox := VBoxContainer.new()
 	right_panel.add_child(right_vbox)
 	var inv_title := Label.new()
 	inv_title.text = "Inventory (click Equip to auto-slot)"
-	inv_title.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
+	inv_title.add_theme_color_override("font_color", MT.TEXT_LINK)
 	right_vbox.add_child(inv_title)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -89,8 +96,8 @@ func _build_ui() -> void:
 	# Bottom: stats label
 	_stats_label = Label.new()
 	_stats_label.text = ""
-	_stats_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
-	_stats_label.add_theme_font_size_override("font_size", 14)
+	_stats_label.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
+	_stats_label.add_theme_font_size_override("font_size", MT.FS_BODY)
 	left_vbox.add_child(_stats_label)
 
 
@@ -116,25 +123,26 @@ func _refresh_slots() -> void:
 		slot_box.add_child(slot_vbox)
 		var label := Label.new()
 		label.text = "%s" % SLOT_LABELS.get(slot, slot)
-		label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
+		label.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
 		slot_vbox.add_child(label)
 		if not item_id.is_empty():
 			var item_label := Label.new()
 			item_label.text = _short_id(item_id)
-			item_label.add_theme_color_override("font_color", Color.WHITE)
-			item_label.add_theme_font_size_override("font_size", 11)
+			item_label.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
+			item_label.add_theme_font_size_override("font_size", MT.FS_TINY)
 			item_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			item_label.custom_minimum_size = Vector2(96, 32)
+			item_label.custom_minimum_size = Vector2(80, 24)
 			slot_vbox.add_child(item_label)
 			var unequip_btn := Button.new()
 			unequip_btn.text = "Unequip"
-			unequip_btn.custom_minimum_size = Vector2(96, 24)
+			unequip_btn.custom_minimum_size = Vector2(80, 22)
 			unequip_btn.pressed.connect(_on_unequip_pressed.bind(slot))
 			slot_vbox.add_child(unequip_btn)
+			MT.apply_danger(unequip_btn)
 		else:
 			var empty := Label.new()
 			empty.text = "(empty)"
-			empty.add_theme_color_override("font_color", Color(0.5, 0.5, 0.55))
+			empty.add_theme_color_override("font_color", MT.TEXT_MUTED)
 			slot_vbox.add_child(empty)
 
 
@@ -165,6 +173,7 @@ func _refresh_inventory() -> void:
 		equip_btn.text = "Equip"
 		equip_btn.pressed.connect(_on_equip_pressed.bind(item_id))
 		row.add_child(equip_btn)
+		MT.apply_success(equip_btn)
 
 
 func _refresh_stats() -> void:
@@ -185,8 +194,8 @@ func _refresh_stats() -> void:
 		armor_total += int(entry.get("armor", 0))
 	var atk: int = em.get_attack(PLAYER_ID)
 	var defn: int = em.get_defense(PLAYER_ID)
-	var hp: int = em.get_max_hp("", 1, mods)
-	var mp: int = em.get_max_mp("", 1, mods)
+	var hp: int = em.get_max_hp(1, mods)
+	var mp: int = em.get_max_mp(1, mods)
 	_stats_label.text = "HP %d   MP %d   ATK %d   DEF %d   STR %d   INT %d   CON %d" % [
 		hp, mp, atk, defn,
 		int(mods.get("str", 0)),
@@ -201,28 +210,38 @@ func _refresh_stats() -> void:
 
 func _on_equip_pressed(item_id: String) -> void:
 	var em: Node = get_node_or_null(EQUIPMENT_PATH)
-	if em == null:
+	var inv: Node = get_node_or_null(INVENTORY_PATH)
+	if em == null or inv == null:
 		return
 	var target_slot: String = _resolve_target_slot(item_id)
 	if target_slot.is_empty():
 		return
 	if em.equip(PLAYER_ID, item_id, target_slot):
+		if inv.has_method("remove_item"):
+			inv.remove_item(item_id, 1)
 		_refresh()
-		_equipment_changed = true
 
 
 func _on_unequip_pressed(slot: String) -> void:
 	var em: Node = get_node_or_null(EQUIPMENT_PATH)
+	var inv: Node = get_node_or_null(INVENTORY_PATH)
 	if em == null:
 		return
+	var eq: Dictionary = em.get_equipment(PLAYER_ID)
+	var item_id: String = str(eq.get(slot, ""))
+	if item_id.is_empty():
+		return
 	em.unequip(PLAYER_ID, slot)
+	if inv != null and inv.has_method("add_item"):
+		inv.add_item(item_id, 1)
 	_refresh()
-	_equipment_changed = true
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+static var _tools_id_set: Dictionary = {}
 
 func _is_equippable(item_id: String) -> bool:
 	# Weapons, armor, accessories, and tools can be equipped
@@ -232,17 +251,8 @@ func _is_equippable(item_id: String) -> bool:
 	var em: Node = get_node_or_null(EQUIPMENT_PATH)
 	if em != null and em.get_accessory(item_id) != null and not em.get_accessory(item_id).is_empty():
 		return true
-	# Tools: any item in data/tools.json
-	var tools_path := "res://data/tools.json"
-	if ResourceLoader.exists(tools_path):
-		var raw = load(tools_path)
-		if raw != null:
-			var data = raw.data if "data" in raw else raw
-			if data is Dictionary:
-				for t in data.get("tools", []):
-					if t is Dictionary and str(t.get("id", "")) == item_id:
-						return true
-	return false
+	# Tools: any item in data/tools.json (cached)
+	return _is_tool(item_id)
 
 
 func _resolve_target_slot(item_id: String) -> String:
@@ -265,7 +275,7 @@ func _resolve_target_slot(item_id: String) -> String:
 				return slot
 	# Accessory → acc1 (or acc2 if acc1 is taken)
 	var em: Node = get_node_or_null(EQUIPMENT_PATH)
-	if em != null and not em.get_accessory(item_id).is_empty():
+	if em != null and em.get_accessory(item_id) != null and not em.get_accessory(item_id).is_empty():
 		var eq2: Dictionary = _get_equipment()
 		if str(eq2.get("acc1", "")).is_empty():
 			return "acc1"
@@ -282,19 +292,17 @@ func _resolve_target_slot(item_id: String) -> String:
 
 
 func _is_tool(item_id: String) -> bool:
-	var path := "res://data/tools.json"
-	if not ResourceLoader.exists(path):
-		return false
-	var raw = load(path)
-	if raw == null:
-		return false
-	var data = raw.data if "data" in raw else raw
-	if not (data is Dictionary):
-		return false
-	for t in data.get("tools", []):
-		if t is Dictionary and str(t.get("id", "")) == item_id:
-			return true
-	return false
+	if _tools_id_set.is_empty():
+		var path := "res://data/tools.json"
+		if ResourceLoader.exists(path):
+			var raw = load(path)
+			if raw != null:
+				var data = raw.data if "data" in raw else raw
+				if data is Dictionary:
+					for t in data.get("tools", []):
+						if t is Dictionary:
+							_tools_id_set[str(t.get("id", ""))] = true
+	return _tools_id_set.has(item_id)
 
 
 func _get_equipment() -> Dictionary:

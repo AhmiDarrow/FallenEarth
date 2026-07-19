@@ -25,10 +25,6 @@
 ## layer (Phase 8 will include the equipment dict).
 extends Node
 
-const WEAPONS_PATH := "res://data/weapons.json"
-const ARMOR_PATH := "res://data/armor.json"
-const ACCESSORIES_PATH := "res://data/accessories.json"
-
 signal equipment_changed(npc_id: String, slot: String)
 signal main_hand_changed(npc_id: String, item_id: String)
 
@@ -82,7 +78,11 @@ func _load_json(path: String) -> Variant:
 
 
 func _load_weapons() -> void:
-	var data = _load_json(WEAPONS_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[EquipmentManager] DataRegistry not available")
+		return
+	var data: Variant = dr.get_data("weapons")
 	if data == null or not (data is Dictionary):
 		return
 	_weapon_curve = data.get("tier_curve", {})
@@ -92,7 +92,11 @@ func _load_weapons() -> void:
 
 
 func _load_armor() -> void:
-	var data = _load_json(ARMOR_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[EquipmentManager] DataRegistry not available")
+		return
+	var data: Variant = dr.get_data("armor")
 	if data == null or not (data is Dictionary):
 		return
 	_armor_curve = data.get("tier_curve", {})
@@ -102,7 +106,11 @@ func _load_armor() -> void:
 
 
 func _load_accessories() -> void:
-	var data = _load_json(ACCESSORIES_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[EquipmentManager] DataRegistry not available")
+		return
+	var data: Variant = dr.get_data("accessories")
 	if data == null or not (data is Dictionary):
 		return
 	_accessories = {}
@@ -120,7 +128,7 @@ func _load_accessories() -> void:
 func get_weapon(class_id: String, tier: int) -> Dictionary:
 	if not _weapons_data.has(class_id):
 		return {}
-	if tier < 0 or tier >= 26:
+	if tier < 0 or tier >= _weapon_curve.get("levels", []).size():
 		return {}
 	# Cache key
 	var key: String = "%s_%d" % [class_id, tier]
@@ -169,7 +177,7 @@ var _weapon_cache: Dictionary = {}
 func get_armor(class_id: String, slot: String, tier: int) -> Dictionary:
 	if not _armor_data.has(class_id) or not _armor_slots_data.has(slot):
 		return {}
-	if tier < 0 or tier >= 13:
+	if tier < 0 or tier >= _armor_curve.get("levels", []).size():
 		return {}
 	var key: String = "%s_%s_%d" % [class_id, slot, tier]
 	if _armor_cache.has(key):
@@ -234,9 +242,14 @@ func _tier_color_for(tier_color_shift: Dictionary, tier: int, base_color: Dictio
 	var v: float = float(base_color.get("v", 0.5))
 	if tier_color_shift.is_empty():
 		return Color.from_hsv(h, s, v)
-	var hue_off: float = float(tier_color_shift.get("hue_offset", [0.0])[tier])
-	var sat_off: float = float(tier_color_shift.get("sat_offset", [0.0])[tier])
-	var val_off: float = float(tier_color_shift.get("value_offset", [0.0])[tier])
+	var hue_arr: Array = tier_color_shift.get("hue_offset", [0.0])
+	var sat_arr: Array = tier_color_shift.get("sat_offset", [0.0])
+	var val_arr: Array = tier_color_shift.get("value_offset", [0.0])
+	if hue_arr.is_empty() or sat_arr.is_empty() or val_arr.is_empty():
+		return Color.from_hsv(h, s, v)
+	var hue_off: float = float(hue_arr[min(tier, hue_arr.size() - 1)])
+	var sat_off: float = float(sat_arr[min(tier, sat_arr.size() - 1)])
+	var val_off: float = float(val_arr[min(tier, val_arr.size() - 1)])
 	var new_h: float = fposmod(h + hue_off, 1.0)
 	var new_s: float = clamp(s + sat_off, 0.0, 1.0)
 	var new_v: float = clamp(v + val_off, 0.0, 1.0)
@@ -290,10 +303,10 @@ func unequip(npc_id: String, slot: String) -> bool:
 func _set_slot(npc_id: String, slot: String, item_id: String) -> bool:
 	var eq: Dictionary = get_equipment(npc_id)
 	eq[slot] = item_id
-	emit_signal("equipment_changed", npc_id, slot)
+	equipment_changed.emit(npc_id, slot)
 	# MainHand slot drives the main_hand signal
 	if slot == "mainhand" or slot == "tool":
-		emit_signal("main_hand_changed", npc_id, item_id)
+		main_hand_changed.emit(npc_id, item_id)
 	return true
 
 
@@ -372,12 +385,12 @@ func _resolve_item(item_id: String) -> Dictionary:
 ## Returns the max HP / MP / etc. derived from class + level + stat_mods.
 ## Phase 4: simple curve + stat_mods contribution. The full system
 ## grows in later phases.
-func get_max_hp(class_id: String, level: int, stat_mods: Dictionary) -> int:
+func get_max_hp(level: int, stat_mods: Dictionary) -> int:
 	var base: int = 50 + level * 8
 	return base + int(stat_mods.get("con", 0)) * 4 + int(stat_mods.get("hp_max_add", 0))
 
 
-func get_max_mp(class_id: String, level: int, stat_mods: Dictionary) -> int:
+func get_max_mp(level: int, stat_mods: Dictionary) -> int:
 	var base: int = 20 + level * 3
 	return base + int(stat_mods.get("int", 0)) * 3
 

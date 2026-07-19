@@ -43,6 +43,7 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	var bg_sb := StyleBoxFlat.new()
 	bg_sb.bg_color = Color(0.0, 0.0, 0.0, 0.6)
 	bg_panel.add_theme_stylebox_override("panel", bg_sb)
+	# Dark backdrop
 
 	# Center results box
 	var panel_w: float = min(440.0, vp_size.x * 0.4)
@@ -144,28 +145,10 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	var btn := Button.new()
 	btn.text = "Continue"
 	btn.custom_minimum_size = Vector2(160, 40)
-	btn.add_theme_font_size_override("font_size", 18)
-	btn.add_theme_color_override("font_color", COLOR_BUTTON)
-	btn.add_theme_color_override("font_outline_color", Color.BLACK)
-	btn.add_theme_constant_override("outline_size", 3)
-	var btn_sb := StyleBoxFlat.new()
-	btn_sb.bg_color = Color(0.12, 0.10, 0.16, 0.92)
-	btn_sb.border_width_left = 2
-	btn_sb.border_width_top = 2
-	btn_sb.border_width_right = 2
-	btn_sb.border_width_bottom = 2
-	btn_sb.border_color = COLOR_BUTTON_BORDER
-	btn_sb.corner_radius_top_left = 4
-	btn_sb.corner_radius_top_right = 4
-	btn_sb.corner_radius_bottom_left = 4
-	btn_sb.corner_radius_bottom_right = 4
-	btn.add_theme_stylebox_override("normal", btn_sb)
-	var btn_hover := btn_sb.duplicate()
-	btn_hover.bg_color = Color(0.22, 0.20, 0.28, 0.95)
-	btn_hover.border_color = COLOR_BUTTON
-	btn.add_theme_stylebox_override("hover", btn_hover)
 	btn.pressed.connect(_on_continue_pressed)
 	btn_container.add_child(btn)
+	ButtonStyleHelper.apply_primary(btn)
+	btn.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
 
 
 func _make_row(label_text: String, value_text: String) -> HBoxContainer:

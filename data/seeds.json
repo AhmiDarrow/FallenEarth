@@ -7,7 +7,7 @@
     "VOID_BLOOM_013"
   ],
   "default_player_seed": "workcamp_escape_01",
-  "entity_visual_salt": 0x45D9F3B,
+  "entity_visual_salt": 73244475,
   "lod_config": {
     "default_distances": [8.0, 16.0, 24.0],
     "entity_type_overrides": {

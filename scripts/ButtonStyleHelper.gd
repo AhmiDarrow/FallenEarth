@@ -1,3 +1,4 @@
+## ButtonStyleHelper — Delegates to MasterTheme. Kept for backward compatibility.
 class_name ButtonStyleHelper
 extends RefCounted
 

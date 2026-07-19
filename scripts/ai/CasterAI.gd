@@ -69,7 +69,7 @@ func decide(state: Dictionary) -> Dictionary:
 		if not closest.is_empty():
 			var enemy_pos: Vector2i = closest.get("pos", Vector2i.ZERO)
 			var best_tile: Vector2i = my_pos
-			var best_d: int = 1000
+			var best_d: int = INF_DISTANCE
 			for tile in reachable:
 				if tile == my_pos:
 					continue

@@ -1,193 +1,195 @@
-## InventoryScreen — 30-slot inventory grid screen.
-##
-## Phase 2. Shows the player's stack-based inventory in a 6x5 grid.
-## Each cell displays the item's icon (small ColorRect placeholder for
-## Phase 2) and stack qty. Hovering a slot shows the item name. Right-click
-## opens a context menu (Use / Drop / Add to Hotbar / Equip if equipment).
-##
-## The screen is opened from the Character menu in the HUD. Close button
-## returns to the world.
+## InventoryScreen — Wyvernbox-powered grid inventory with drag & drop,
+## weight display, stats panel, and tooltip.
 class_name InventoryScreen
 extends Control
 
-const SLOT_COUNT := 30
-const COLS := 6
-const SLOT_SIZE := 56
-
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
+const CELL_SIZE := 48
 
 signal closed
 
-var _slot_buttons: Array[Button] = []
-var _context_menu: PopupMenu = null
-var _context_slot_index: int = -1
-
-var _hover_tooltip: HoverTooltip
+var _main_view: InventoryView
+var _tooltip: PanelContainer
 
 
 func _ready() -> void:
-	# Use `anchors_preset` (property syntax) instead of `anchor_right = 1.0`
-	# to avoid Godot's "size overridden after _ready" warning — see
-	# BaseShopUI for the full explanation.
 	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	# Background
+
 	var bg := ColorRect.new()
 	bg.color = Color(0.02, 0.02, 0.04, 0.92)
-	bg.anchor_right = 1.0
-	bg.anchor_bottom = 1.0
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
-	# Title bar
+
+	# Main window panel — fills parent with margins
+	var panel := PanelContainer.new()
+	panel.name = "WindowPanel"
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.offset_left = 0
+	panel.offset_top = 0
+	panel.offset_right = 0
+	panel.offset_bottom = 0
+	add_child(panel)
+
+	var vbox := VBoxContainer.new()
+	panel.add_child(vbox)
+
+	# Top bar
+	var top_bar := _make_top_bar()
+	vbox.add_child(top_bar)
+
+	# Main body: grid | stats
+	var body := HBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(body)
+
+	var grid_vbox := VBoxContainer.new()
+	grid_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	grid_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.add_child(grid_vbox)
+
+	_main_view = _make_grid_view()
+	grid_vbox.add_child(_main_view)
+
+	# Bottom info
+	var info := HBoxContainer.new()
+	info.custom_minimum_size = Vector2(0, 30)
+	var wgt := _make_weight_label()
+	info.add_child(wgt)
+	grid_vbox.add_child(info)
+
+	# Stats panel on right
+	var stats := _make_stats_panel()
+	body.add_child(stats)
+
+	# Tooltip (mouse follower)
+	_tooltip = _make_tooltip()
+	_tooltip.hide()
+	add_child(_tooltip)
+
+	# Connect inventory signals
+	var inv: Node = get_node_or_null(INVENTORY_PATH)
+	if inv != null:
+		if inv.has_signal("inventory_changed"):
+			inv.connect("inventory_changed", _refresh_weight)
+		_refresh_weight()
+
+	# Connect grid signals for tooltip
+	_main_view.item_stack_selected.connect(_on_item_selected)
+	_main_view.item_stack_deselected.connect(_on_item_deselected)
+
+
+func _make_top_bar() -> Control:
+	var hb := HBoxContainer.new()
+	hb.custom_minimum_size = Vector2(0, 36)
 	var title := Label.new()
-	title.text = "[ Inventory ]"
-	title.add_theme_color_override("font_color", Color.WHITE)
-	title.add_theme_font_size_override("font_size", 24)
-	title.position = Vector2(20, 12)
-	add_child(title)
-	# Close button
-	var close := Button.new()
-	close.text = "X"
-	close.position = Vector2(size.x - 60, 12)
-	close.custom_minimum_size = Vector2(40, 40)
-	close.pressed.connect(_on_close_pressed)
-	add_child(close)
-	# Grid
-	_build_grid()
-	# Context menu
-	_context_menu = PopupMenu.new()
-	_context_menu.add_item("Use")
-	_context_menu.add_item("Add to Hotbar")
-	_context_menu.add_item("Drop")
-	_context_menu.id_pressed.connect(_on_context_id_pressed)
-	add_child(_context_menu)
-	# Hook inventory signal
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv != null and inv.has_signal("inventory_changed"):
-		inv.connect("inventory_changed", _refresh_slots)
-	_refresh_slots()
+	title.text = "INVENTORY"
+	title.add_theme_color_override("font_color", Color(0.95, 0.6, 0.1))
+	title.add_theme_font_size_override("font_size", 22)
+	hb.add_child(title)
+	hb.add_spacer(true)
+	var close_btn := Button.new()
+	close_btn.text = "X"
+	close_btn.pressed.connect(func(): closed.emit(); queue_free())
+	hb.add_child(close_btn)
+	return hb
 
 
-func _build_grid() -> void:
-	var start_x: int = 40
-	var start_y: int = 80
-	for i in SLOT_COUNT:
-		var btn := Button.new()
-		btn.name = "Slot_%d" % i
-		btn.custom_minimum_size = Vector2(SLOT_SIZE, SLOT_SIZE)
-		btn.position = Vector2(
-			start_x + (i % COLS) * (SLOT_SIZE + 4),
-			start_y + (i / COLS) * (SLOT_SIZE + 4),
-		)
-		btn.focus_mode = Control.FOCUS_NONE
-		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.pressed.connect(_on_slot_pressed.bind(i))
-		btn.gui_input.connect(_on_slot_gui_input.bind(i))
-		add_child(btn)
-		_slot_buttons.append(btn)
+func _make_grid_view() -> InventoryView:
+	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
+	if inv_mgr == null or not inv_mgr.has_method("get_main_grid"):
+		return InventoryView.new()
+
+	var grid_inv = inv_mgr.get_main_grid()
+	var view := InventoryView.new()
+	view.name = "MainGrid"
+	view.inventory = grid_inv
+	view.cell_size = Vector2(CELL_SIZE, CELL_SIZE)
+	view.item_scene = preload("res://addons/wyvernbox_prefabs/item_stack_view.tscn")
+	view.selected_item_style = preload("res://addons/wyvernbox_prefabs/graphics/selected_cell.tres")
+	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	view.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	view.custom_minimum_size = Vector2(CELL_SIZE * 10, CELL_SIZE * 3)
+	view.show_backgrounds = true
+	view.mouse_filter = Control.MOUSE_FILTER_STOP
+
+	# Visible grid background so the 10x3 area is obvious
+	var grid_bg := ColorRect.new()
+	grid_bg.name = "GridBg"
+	grid_bg.color = Color(0.07, 0.07, 0.11, 0.95)
+	grid_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	view.add_child(grid_bg)
+	view.grid_background = NodePath("GridBg")
+
+	return view
 
 
-func _refresh_slots() -> void:
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv == null:
+func _make_weight_label() -> Label:
+	var lbl := Label.new()
+	lbl.name = "WeightLabel"
+	lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	return lbl
+
+
+func _make_stats_panel() -> Control:
+	var panel := VBoxContainer.new()
+	panel.custom_minimum_size = Vector2(140, 0)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
+	var title := Label.new()
+	title.text = "STATS"
+	title.add_theme_color_override("font_color", Color(0.95, 0.6, 0.1))
+	panel.add_child(title)
+
+	var stats := ["Encumbrance", "Defense", "Damage"]
+	for s in stats:
+		var lbl := Label.new()
+		lbl.text = s + ": --"
+		lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+		panel.add_child(lbl)
+	return panel
+
+
+func _make_tooltip() -> PanelContainer:
+	var tip := preload("res://addons/wyvernbox_prefabs/tooltip.tscn").instantiate() as PanelContainer
+	tip.visible = false
+	tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return tip
+
+
+func _on_item_selected(item_view: Node) -> void:
+	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
+	if inv_mgr == null:
 		return
-	var snapshot: Array = inv.get_inventory_snapshot()
-	for i in SLOT_COUNT:
-		if i >= _slot_buttons.size():
-			break
-		var btn: Button = _slot_buttons[i]
-		if i < snapshot.size():
-			var slot: Dictionary = snapshot[i]
-			var item_id: String = str(slot.get("item_id", ""))
-			var qty: int = int(slot.get("qty", 0))
-			var name: String = str(inv.get_item_name(item_id)) if inv.has_method("get_item_name") else item_id
-			btn.text = "%s\nx%d" % [name, qty] if not name.is_empty() else ""
-			btn.tooltip_text = name
-		else:
-			btn.text = ""
-			btn.tooltip_text = ""
-
-
-func _on_slot_pressed(_i: int) -> void:
-	# Default click does nothing for Phase 2; right-click opens context.
-	pass
-
-
-func _on_slot_gui_input(i: int, event: InputEvent) -> void:
-	if not (event is InputEventMouseButton):
+	var grid: GridInventory = inv_mgr.get_main_grid() if inv_mgr.has_method("get_main_grid") else null
+	if grid == null:
 		return
-	if not event.pressed:
+	var cell_pos: Vector2 = _main_view.selected_cell
+	if cell_pos.x < 0 or cell_pos.y < 0:
 		return
-	if event.button_index == MOUSE_BUTTON_RIGHT:
-		_context_slot_index = i
-		var inv: Node = get_node_or_null(INVENTORY_PATH)
-		var snapshot: Array = inv.get_inventory_snapshot() if inv else []
-		if i < snapshot.size():
-			_context_menu.popup(Rect2(get_global_mouse_position(), Vector2(120, 80)))
-
-
-func _on_context_id_pressed(id: int) -> void:
-	if _context_slot_index < 0:
+	var stack: ItemStack = grid.get_item_at_position(cell_pos.x, cell_pos.y)
+	if stack == null:
 		return
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv == null:
+	_tooltip.display_item(stack, item_view)
+	_tooltip.global_position = get_global_mouse_position() + Vector2(16, 16)
+	_tooltip.show()
+
+
+func _on_item_deselected(_item_view: Node) -> void:
+	_tooltip.hide()
+
+
+func _refresh_weight() -> void:
+	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
+	if inv_mgr == null:
 		return
-	var snapshot: Array = inv.get_inventory_snapshot()
-	if _context_slot_index >= snapshot.size():
+	var lbl: Label = find_child("WeightLabel", true, false) as Label
+	if lbl == null:
 		return
-	var slot: Dictionary = snapshot[_context_slot_index]
-	var item_id: String = str(slot.get("item_id", ""))
-	match id:
-		0:  # Use
-			_apply_use(item_id)
-		1:  # Add to Hotbar
-			_add_to_hotbar(item_id)
-		2:  # Drop
-			inv.remove_item(item_id, 1)
-			print("[InventoryScreen] Dropped 1 x %s" % item_id)
-	_context_slot_index = -1
+	var cur: float = inv_mgr.get("current_weight") if inv_mgr != null else 0.0
+	var max_w: float = inv_mgr.get("max_weight") if inv_mgr != null else 50.0
+	lbl.text = "Weight: %.1f / %.1f kg" % [cur, max_w]
 
-
-func _apply_use(item_id: String) -> void:
-	# Phase 2: only "bandage" is usable. Heals 30 HP.
-	if item_id != "bandage":
-		print("[InventoryScreen] %s is not usable yet (Phase 2)" % item_id)
-		return
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv == null:
-		return
-	inv.remove_item("bandage", 1)
-	print("[InventoryScreen] Used bandage (heal 30 HP) — HP system lands in Phase 4")
-
-
-func _add_to_hotbar(item_id: String) -> void:
-	# Find the Hotbar in the HUD and assign to the first empty slot.
-	var hud: Control = _find_hud()
-	if hud == null:
-		print("[InventoryScreen] No HUD found; cannot add to hotbar")
-		return
-	var hb: Node = hud.find_child("Hotbar", true, false)
-	if hb == null or not hb.has_method("set_slot"):
-		print("[InventoryScreen] No Hotbar in HUD")
-		return
-	for i in 10:
-		if hb.get_slot(i).is_empty():
-			hb.set_slot(i, item_id)
-			print("[InventoryScreen] Added %s to hotbar slot %d" % [item_id, i + 1])
-			return
-	print("[InventoryScreen] Hotbar full")
-
-
-func _find_hud() -> Control:
-	# Walk up the tree
-	var n: Node = get_parent()
-	while n != null:
-		if n is Control and n.has_node("Hotbar"):
-			return n as Control
-		n = n.get_parent()
-	return null
-
-
-func _on_close_pressed() -> void:
-	emit_signal("closed")
-	queue_free()

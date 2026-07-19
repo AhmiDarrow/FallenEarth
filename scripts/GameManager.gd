@@ -3,7 +3,8 @@
 extends Node
 
 signal scene_changed(scene_path: String)
-signal character_ready(race_key: String, class_key: String, origin: String, character_id: String)
+
+const MasterTheme = preload("res://assets/ui/MasterTheme.gd")
 
 # Scene paths
 const SPLASH_SCENE := "res://scenes/ui/Splash.tscn"
@@ -27,6 +28,9 @@ var _hub_character_data: Dictionary = {}
 
 func _ready() -> void:
 	print("[GameManager] Initialized. (Main scene should be Splash.tscn which drives the initial flow)")
+	# Apply the centralized UI Theme to the root Window.
+	# This cascades to all Controls globally, including new scenes.
+	MasterTheme.apply_to(get_tree().root)
 	# Note: We no longer force-load Splash here because project.godot sets
 	# run/main_scene to Splash.tscn. The Splash scene itself handles the timer
 	# and calls on_splash_complete() to transition.
@@ -148,7 +152,7 @@ func go_to_tactical_combat(encounter: Dictionary) -> void:
 	if is_instance_valid(gs):
 		gs.set_pending_combat(encounter)
 	if not ResourceLoader.exists(TACTICAL_COMBAT_SCENE):
-		push_error("[GameManager] TacticalCombat scene missing.")
+		push_error("[GameManager] Combat scene missing: %s" % TACTICAL_COMBAT_SCENE)
 		return
 	var packed: PackedScene = load(TACTICAL_COMBAT_SCENE) as PackedScene
 	if is_instance_valid(packed):
@@ -188,7 +192,6 @@ func go_to_rift(rift_id: String, biome_key: String = "Ash Wastes", rift_data: Di
 func on_character_selected(race_key: String, class_key: String) -> void:
 	var gs: GameState = GameState
 	if is_instance_valid(gs):
-		character_ready.connect(_on_character_ready)
 		print("[GameManager] Character selected: race=%s class=%s → loading Hub" % [race_key, class_key])
 		go_to_hub({"id": "pending", "race": race_key, "class": class_key})
 	else:
@@ -206,6 +209,3 @@ func on_splash_complete() -> void:
 # ===================================================================
 # Helpers
 # ===================================================================
-
-func _on_character_ready(race_key: String, class_key: String, origin: String, character_id: String) -> void:
-	print("[GameManager] Character '%s' (%s/%s, origin=%s) ready." % [character_id, race_key, class_key, origin])

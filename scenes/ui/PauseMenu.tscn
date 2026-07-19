@@ -1,18 +1,6 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=2 format=3]
 
 [ext_resource type="Script" path="res://scripts/PauseMenu.gd" id="1_pm"]
-
-[sub_resource type="StyleBoxFlat" id="btn_normal"]
-bg_color = Color(0.2, 0.15, 0.3, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.5, 0.8, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [node name="PauseMenu" type="Control"]
 anchors_preset = 15
@@ -42,53 +30,53 @@ offset_right = 160.0
 offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="TitleLabel" type="RichTextLabel" parent="VBoxContainer"]
-custom_minimum_size = Vector2(320, 48)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 bbcode_enabled = true
 text = "[center][b]PAUSED[/b][/center]"
 
+[node name="TitleUnderline" type="ColorRect" parent="VBoxContainer"]
+custom_minimum_size = Vector2(80, 2)
+layout_mode = 2
+size_flags_horizontal = 4
+color = Color(0.788, 0.722, 0.588, 0.6)
+
 [node name="ResumeBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Resume"
-theme_override_styles/normal = SubResource("btn_normal")
 
 [node name="SaveBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Save Game"
-theme_override_styles/normal = SubResource("btn_normal")
 
 [node name="LoadBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Load Game"
-theme_override_styles/normal = SubResource("btn_normal")
 
 [node name="OptionsBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Options"
-theme_override_styles/normal = SubResource("btn_normal")
 
 [node name="ExitMenuBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Exit to Menu"
-theme_override_styles/normal = SubResource("btn_normal")
 
 [node name="ExitDesktopBtn" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 46)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Exit to Desktop"
-theme_override_styles/normal = SubResource("btn_normal")

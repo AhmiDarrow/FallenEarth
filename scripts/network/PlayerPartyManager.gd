@@ -1,4 +1,6 @@
 ## PlayerPartyManager — Player-to-player party system
+## Manages invites, party state, auto-join for battles/rifts.
+## Complements PartyNPCManager (NPC companions) — both can coexist.
 extends Node
 
 signal party_invite_received(from_peer_id: int, from_name: String)
@@ -13,9 +15,10 @@ signal auto_join_changed(peer_id: int, battles: bool, rifts: bool)
 
 const INVITE_TIMEOUT := 15.0
 
-var party_leader: int = -1
-var party_members: Dictionary = {}
-var _pending_invites: Dictionary = {}
+var party_leader: int = -1  # peer_id of leader, -1 = not in party
+var party_members: Dictionary = {}  # peer_id -> {name, auto_join_battles, auto_join_rifts, character_data}
+var _pending_invites: Dictionary = {}  # from_peer_id -> {from_name, timer}
+
 var _net: Node = null
 var _net_sync: Node = null
 
@@ -27,6 +30,7 @@ func _ready() -> void:
 
 
 func _process(delta: float) -> void:
+	# Tick pending invite timers
 	var expired: Array[int] = []
 	for pid in _pending_invites:
 		var inv: Dictionary = _pending_invites[pid]
@@ -57,6 +61,7 @@ func get_party_member_list() -> Array[Dictionary]:
 		var m: Dictionary = party_members[pid].duplicate()
 		m["peer_id"] = pid
 		result.append(m)
+	# Include self
 	var my_id := multiplayer.get_unique_id()
 	if not _member_dict_has_id(result, my_id):
 		var nm: Node = get_node_or_null("/root/NetworkManager")
@@ -73,6 +78,8 @@ func _member_dict_has_id(list: Array, pid: int) -> bool:
 			return true
 	return false
 
+
+# ----- Invite flow -----
 
 func send_invite(target_peer_id: int) -> bool:
 	if not _can_initiate_party():
@@ -119,6 +126,8 @@ func set_auto_join(battles: bool, rifts: bool) -> void:
 	_sync_auto_join_rpc.rpc_id(party_leader, my_id, battles, rifts)
 
 
+# ----- RPCs -----
+
 @rpc("any_peer", "call_local", "reliable")
 func _send_invite_rpc(from_peer_id: int, from_name: String) -> void:
 	var caller := multiplayer.get_remote_sender_id()
@@ -138,8 +147,11 @@ func _accept_invite_rpc(accepter_id: int, accepter_name: String) -> void:
 		return
 	if not _can_initiate_party():
 		return
+	# Add to party
 	_add_member(accepter_id, accepter_name)
+	# Notify the new member
 	_joined_party_rpc.rpc_id(accepter_id, multiplayer.get_unique_id(), _serialize_party())
+	# Broadcast updated party to all existing members
 	_broadcast_party_update()
 
 
@@ -195,6 +207,8 @@ func _invite_declined_rpc(reason: String) -> void:
 	print("[PlayerPartyManager] Invite declined: %s" % reason)
 
 
+# ----- Internal helpers -----
+
 func _can_initiate_party() -> bool:
 	var nm: Node = get_node_or_null("/root/NetworkManager")
 	if nm == null or not nm.has_method("is_server"):
@@ -238,6 +252,7 @@ func _clear_party_state() -> void:
 
 
 func _disband_party() -> void:
+	# Notify all members
 	for pid in party_members:
 		_kick_from_party_rpc.rpc_id(pid)
 	_clear_party_state()

@@ -38,7 +38,3 @@ Inspired by RimWorld for world generation: Procedural hexagonal sphere world wit
 - Performance on larger generated worlds.
 
 **Gameplay Style:** RimWorld/Stardew Valley hybrid tailored to lore (post-apoc rift runner settles on hex world tile, builds outpost, forages/gathers daily like SDV farm, manages colony/events like RW, closes rifts for progression). Overworld hex map is central play space.
-
-**Memory Layer:** Shared `memory/` + `docs/` + `skills/` (remedy orchestrator + handoff skills) + root AGENTS.md / REMEDY.md / CLAUDE.md for automatic behavior. LATEST_HANDOFF + SESSION_NOTES for git-free cross-agent continuity.
-
-**Current Project State (v0.2.0):** Two-layer world implemented (planet + local maps). FFT combat, NPCs, missions, rift loop wired. Compile-validated; F5 manual test and settlement building are next. Hand-drawn assets in progress (parallel agent). See `memory/CURRENT_STATE.md` and `docs/NEXT_TASKS.md`.

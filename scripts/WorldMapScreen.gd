@@ -5,9 +5,11 @@ class_name WorldMapScreen extends Control
 signal return_to_local_requested()
 signal travel_to_hex_requested(q: int, r: int)
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 
-const HEX_SIZE := 22.0
+
+const HEX_SIZE := 30.0
 
 @onready var char_label: RichTextLabel = $CharInfoBar/CharLabel as RichTextLabel
 @onready var info_label: RichTextLabel = $InfoPanel/InfoLabel as RichTextLabel
@@ -34,8 +36,10 @@ func _ready() -> void:
 	var local_btn: Button = $BottomBar/ReturnLocal as Button
 	if is_instance_valid(travel_btn):
 		travel_btn.pressed.connect(_on_travel_pressed)
+		MT.apply_primary(travel_btn)
 	if is_instance_valid(local_btn):
 		local_btn.pressed.connect(_on_return_local_pressed)
+		MT.apply_secondary(local_btn)
 
 	_rift_runner = get_node_or_null("/root/RiftRunner")
 	_npc_manager = get_node_or_null("/root/NPCManager")
@@ -88,8 +92,13 @@ func _build_world_view() -> void:
 		var r := int(parts[1])
 		var tile: Dictionary = _tile_map[key]
 		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(40, 36)
-		btn.focus_mode = Control.FOCUS_NONE
+		btn.custom_minimum_size = Vector2(50, 44)
+		btn.focus_mode = Control.FOCUS_ALL
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("focus", MT.focus_ring())
+		btn.add_theme_stylebox_override("normal", MT.button_stylebox("ghost", "normal"))
+		btn.add_theme_stylebox_override("hover", MT.button_stylebox("ghost", "hover"))
+		btn.add_theme_stylebox_override("pressed", MT.button_stylebox("ghost", "pressed"))
 		btn.text = _hex_marker(q, r, tile, gs)
 		btn.tooltip_text = _tile_tooltip(tile, gs, q, r)
 		btn.modulate = _biome_color(str(tile.get("name", "")))
@@ -100,7 +109,7 @@ func _build_world_view() -> void:
 			btn.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 
 		var pos := WorldGenerator.axial_to_pixel(q, r, HEX_SIZE)
-		btn.position = pos - Vector2(20, 18)
+		btn.position = pos - Vector2(25, 22)
 		btn.pressed.connect(_on_hex_pressed.bind(q, r))
 		world_grid.add_child(btn)
 		_hex_cells[key] = btn

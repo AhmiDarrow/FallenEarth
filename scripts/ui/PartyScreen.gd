@@ -39,14 +39,16 @@ var _add_popup: PopupPanel = null
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_PASS
 	_build_ui()
+	var pm: Node = get_node_or_null(PARTY_PATH)
+	if pm != null and not pm.is_connected("party_changed", _refresh):
+		pm.connect("party_changed", _refresh)
 	_refresh()
 
 
 func _build_ui() -> void:
 	# Layout: HBoxContainer splits the screen into list (left) and detail (right)
 	var hbox := HBoxContainer.new()
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 8)
 	add_child(hbox)
 
@@ -79,11 +81,8 @@ func _refresh() -> void:
 	# Clear the list
 	for child in _list_vbox.get_children():
 		child.queue_free()
-	# Listen to PartyNPCManager changes
-	var pm: Node = get_node_or_null(PARTY_PATH)
-	if pm != null and not pm.is_connected("party_changed", _refresh):
-		pm.connect("party_changed", _refresh)
 	# Populate from the current party_members
+	var pm: Node = get_node_or_null(PARTY_PATH)
 	if pm == null:
 		return
 	var members: Array = pm.party_members
@@ -125,8 +124,7 @@ func _refresh_detail() -> void:
 		ph.add_theme_color_override("font_color", Color(0.5, 0.5, 0.55))
 		ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		ph.anchor_right = 1.0
-		ph.anchor_bottom = 1.0
+		ph.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_detail_panel.add_child(ph)
 		return
 	var pm: Node = get_node_or_null(PARTY_PATH)
@@ -274,7 +272,7 @@ func _on_decline_pressed(npc_id: String) -> void:
 	for i in pm.available_npcs.size():
 		if str(pm.available_npcs[i].get("id", "")) == npc_id:
 			pm.available_npcs.remove_at(i)
-			pm.emit_signal("available_changed")
+			pm.available_changed.emit()
 			break
 	if _add_popup != null and is_instance_valid(_add_popup):
 		_add_popup.queue_free()

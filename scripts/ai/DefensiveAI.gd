@@ -28,7 +28,7 @@ func decide(state: Dictionary) -> Dictionary:
 		for tile in reachable:
 			if tile == my_pos:
 				continue
-			var min_d: int = 1000
+			var min_d: int = INF_DISTANCE
 			for e in enemies:
 				if int(e.get("hp", 0)) <= 0:
 					continue
@@ -72,7 +72,7 @@ func decide(state: Dictionary) -> Dictionary:
 		if tile == my_pos:
 			continue
 		var d_to_target: int = chebyshev(tile, target_pos)
-		var d_to_enemy: int = 1000
+		var d_to_enemy: int = INF_DISTANCE
 		for e in enemies:
 			if int(e.get("hp", 0)) <= 0:
 				continue

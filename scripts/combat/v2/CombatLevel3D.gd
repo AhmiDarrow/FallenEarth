@@ -10,18 +10,15 @@ const PlayerServiceScript = preload("res://scripts/combat/services/player/player
 const OpponentServiceScript = preload("res://scripts/combat/services/opponent/opponent_service.gd")
 const PathfindingServiceScript = preload("res://scripts/combat/services/pathfinding/pathfinding_service.gd")
 const ParticipantResourceScript = preload("res://scripts/combat/models/participant/participant_resource.gd")
-const CombatArena3DScript = preload("res://scripts/combat/v2/CombatArena3D.gd")
-const CombatPawn3DScript = preload("res://scripts/combat/v2/CombatPawn3D.gd")
-const CombatTile3DScript = preload("res://scripts/combat/v2/CombatTile3D.gd")
-const TacticsCamera3DScript = preload("res://scripts/combat/v2/TacticsCamera3D.gd")
-const TacticsInput3DScript = preload("res://scripts/combat/v2/TacticsInput3D.gd")
-const UnitMovementService3DScript = preload("res://scripts/combat/v2/UnitMovementService3D.gd")
 
 ## Scene references
 @onready var _arena: CombatArena3D = $Arena
 @onready var _camera: TacticsCamera3D = $TacticsCamera
 @onready var _input: TacticsInput3D = $TacticsInput
 @onready var _light: DirectionalLight3D = $DirectionalLight3D
+@onready var _world_env: WorldEnvironment = $WorldEnvironment
+
+## Background references (created at runtime)
 
 ## Service instances
 var _turn_serv: TurnService
@@ -29,6 +26,8 @@ var _player_serv: PlayerService
 var _opponent_serv: OpponentService
 var _path_serv: PathfindingService
 var _move_serv: UnitMovementService3D
+var _biome_service: BiomeTileService
+var _combat_serv: UnitCombatService
 
 ## Participants
 var _player: ParticipantResource
@@ -40,6 +39,12 @@ var _encounter: Dictionary = {}
 ## UI references
 @onready var _top_prompt: Control = get_node_or_null("HUDLayer/TopPrompt")
 @onready var _action_bar: Control = get_node_or_null("HUDLayer/ActionBar")
+@onready var _enemy_info: Control = null
+@onready var _player_stats: Control = null
+const PlayerStatsPanelScript = preload("res://scripts/combat/ui/PlayerStatsPanel.gd")
+const TameResultPopupScript = preload("res://scripts/ui/TameResultPopup.gd")
+const EnemyInfoPanelScript = preload("res://scripts/combat/ui/EnemyInfoPanel.gd")
+const TameCalc = preload("res://scripts/TameCalculator.gd")
 
 
 func _ready() -> void:
@@ -85,20 +90,51 @@ func _ready() -> void:
 	_arena.res.unit_attacked.connect(_on_unit_attacked)
 
 	# Wire action bar buttons
-	if _action_bar != null and _action_bar.has_method("show_move_button"):
+	if _action_bar != null and _action_bar.has_method("show_main_buttons"):
 		_action_bar.on_move = _on_action_move
 		_action_bar.on_attack = _on_action_attack
+		_action_bar.on_tame = _on_action_tame
 		_action_bar.on_end_turn = _on_end_turn_pressed
 		_action_bar.on_retreat = _on_retreat_pressed
+
+	# Biome service
+	_biome_service = BiomeTileService.new()
+	_combat_serv = UnitCombatService.new()
 
 	# Configure arena
 	_configure_from_encounter()
 
-	# Center camera on arena (offset toward back to keep pawns in frame)
+	# Setup biome visuals
+	_setup_biome_background()
+	_setup_biome_lighting()
+
+	# Configure and center camera on player
 	var grid_size: int = _arena.res.grid_size
-	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.35)
-	_camera.set_target(arena_center)
-	_camera._snap_next_frame = true
+	_camera.configure_for_grid(grid_size)
+	var player_pawn: CombatPawn3D = _arena.get_pawn("player")
+	if player_pawn != null:
+		_camera.follow_pawn(player_pawn)
+	else:
+		var half: float = float(grid_size) * 0.5
+		_camera.set_target(Vector3(half, 0.0, half))
+
+	# Create enemy info panel on HUDLayer
+	var hud: CanvasLayer = get_node_or_null("HUDLayer") as CanvasLayer
+	if hud:
+		_enemy_info = Control.new()
+		_enemy_info.set_script(EnemyInfoPanelScript)
+		hud.add_child(_enemy_info)
+
+		_player_stats = Control.new()
+		_player_stats.set_script(PlayerStatsPanelScript)
+		hud.add_child(_player_stats)
+
+	# Apply layout (reads DisplayManager resolution)
+	_apply_layout()
+
+	# Show info panels
+	_update_enemy_info()
+	_update_player_stats()
 
 	# Kick off first turn
 	_start_turn("player")
@@ -137,7 +173,7 @@ func _process(delta: float) -> void:
 func _fallback_encounter() -> Dictionary:
 	return {
 		"biome_key": "Ash Wastes",
-		"grid_size": 7,
+		"grid_size": 20,
 		"height_seed": 0,
 		"character_data": {
 			"class": "recruit", "race": "human", "gender": "male",
@@ -152,19 +188,20 @@ func _fallback_encounter() -> Dictionary:
 
 func _configure_from_encounter() -> void:
 	var biome: String = str(_encounter.get("biome_key", _encounter.get("biome", "Ash Wastes")))
-	var grid_size: int = int(_encounter.get("grid_size", 7))
+	var grid_size: int = int(_encounter.get("grid_size", 20))
 	var height_seed: int = int(_encounter.get("height_seed", 0))
 	_arena.configure(biome, grid_size, height_seed)
 
 	# New format: units array
-	if _encounter.has("units") and (_encounter["units"] as Array).size() > 0:
-		for unit_data in _encounter["units"]:
+	var units_arr: Array = _encounter.get("units", [])
+	if units_arr.size() > 0:
+		for unit_data in units_arr:
 			_arena.add_unit(unit_data)
 		return
 
 	# Legacy format
 	var char_data: Dictionary = _encounter.get("character_data", {}) as Dictionary
-	var player_start: Vector2i = _encounter.get("player_start", Vector2i(int(grid_size / 2.0), grid_size - 1))
+	var player_start: Vector2i = _encounter.get("player_start", Vector2i(int(grid_size / 2.0), maxi(grid_size - 3, 0)))
 	if not char_data.is_empty():
 		var player_data: Dictionary = _character_to_unit(char_data, player_start)
 		_arena.add_unit(player_data)
@@ -175,7 +212,7 @@ func _configure_from_encounter() -> void:
 		var t: Dictionary = templates[i]
 		if not t is Dictionary:
 			continue
-		var pos: Vector2i = _random_open_tile(used, player_start, 2)
+		var pos: Vector2i = _random_open_tile(used, player_start, 4)
 		if pos.x < 0:
 			continue
 		used.append(pos)
@@ -287,10 +324,15 @@ func _start_turn(side: String) -> void:
 			u.reset_turn()
 	_arena.res.turn_started.emit(side)
 	_arena.reset_all_tile_markers()
-	# Center camera on grid, offset slightly toward back to keep pawns in frame
-	var grid_size: int = _arena.res.grid_size
-	var arena_center: Vector3 = _arena.global_position + Vector3(grid_size * 0.5, 0.0, grid_size * 0.35)
-	_camera.set_target(arena_center)
+	# Advance tame cooldown at start of player turn
+	if side == "player":
+		var tmm: Node = get_node_or_null("/root/TamedMobManager")
+		if is_instance_valid(tmm) and tmm.has_method("advance_turn"):
+			tmm.advance_turn()
+	# Focus camera on player
+	var player_pawn: CombatPawn3D = _arena.get_pawn("player")
+	if player_pawn != null:
+		_camera.follow_pawn(player_pawn)
 
 
 func _get_active_unit() -> CombatPawn3D:
@@ -335,24 +377,24 @@ func on_show_movements(participant: ParticipantResource) -> int:
 		participant.advance_to(TurnServiceScript.STAGE_END_TURN)
 		return TurnServiceScript.STAGE_END_TURN
 	var arena: ArenaResource = _arena.res
-	var enemies: Array = []
+	var allies: Array = []
 	if participant.side == "player":
 		for uid in arena.units:
 			var u: Object = arena.units[uid]
-			if u != null and is_instance_valid(u) and (u.res.team == "enemy" or u.res.team == "ally"):
-				enemies.append(u)
+			if u != null and is_instance_valid(u) and u.res.team == "player":
+				allies.append(u)
 	else:
 		for uid in arena.units:
 			var u: Object = arena.units[uid]
-			if u != null and is_instance_valid(u) and u.res.team == "player":
-				enemies.append(u)
+			if u != null and is_instance_valid(u) and (u.res.team == "enemy" or u.res.team == "ally"):
+				allies.append(u)
 	# Process surrounding tiles using arena
 	var root_tile: CombatTile3D = pawn.get_tile()
 	if root_tile == null:
 		# Can't find tile — skip movement, go to attack phase
 		participant.advance_to(TurnServiceScript.STAGE_DISPLAY_TARGETS)
 		return TurnServiceScript.STAGE_DISPLAY_TARGETS
-	_arena.process_surrounding_tiles(root_tile, pawn.res.move, enemies)
+	_arena.process_surrounding_tiles(root_tile, pawn.res.move, allies)
 	_arena.mark_reachable_tiles(root_tile, pawn.res.move)
 	return TurnServiceScript.STAGE_SELECT_LOCATION
 
@@ -392,6 +434,7 @@ func on_move_unit(participant: ParticipantResource) -> int:
 		if current_tile:
 			pawn.res.grid_pos = Vector2i(current_tile.grid_x, current_tile.grid_y)
 			current_tile.occupier = pawn
+		pawn.res.end_move()
 	participant.advance_to(TurnServiceScript.STAGE_DISPLAY_TARGETS)
 	return TurnServiceScript.STAGE_DISPLAY_TARGETS
 
@@ -451,10 +494,9 @@ func on_attack(participant: ParticipantResource) -> int:
 	if attacker == null or target == null:
 		participant.advance_to(TurnServiceScript.STAGE_END_TURN)
 		return TurnServiceScript.STAGE_END_TURN
-	# Resolve attack using existing combat service
-	var combat_serv := UnitCombatService.new()
-	combat_serv.resolve_attack(attacker, target, _arena.res)
-	# Clear highlights
+	_combat_serv.resolve_attack(attacker, target, _arena.res)
+	if attacker.res != null:
+		attacker.res.end_action()
 	_arena.reset_all_tile_markers()
 	participant.advance_to(TurnServiceScript.STAGE_END_TURN)
 	return TurnServiceScript.STAGE_END_TURN
@@ -529,9 +571,11 @@ func _check_encounter_end() -> void:
 
 func _on_unit_attacked(attacker_id: String, target_id: String, damage: int) -> void:
 	var target_pawn: CombatPawn3D = _arena.get_pawn(target_id)
-	if target_pawn != null:
+	if target_pawn != null and target_pawn.res != null:
 		target_pawn.update_hp(target_pawn.res.current_hp)
 		target_pawn.show_damage_text(damage)
+	_update_enemy_info()
+	_update_player_stats()
 
 
 func _on_encounter_ended(victory: bool) -> void:
@@ -539,7 +583,8 @@ func _on_encounter_ended(victory: bool) -> void:
 	if victory:
 		_show_battle_results(victory)
 	else:
-		_return_from_battle(victory)
+		_gs_clear_pending_combat()
+		_trigger_respawn()
 
 
 func _show_battle_results(victory: bool) -> void:
@@ -548,7 +593,7 @@ func _show_battle_results(victory: bool) -> void:
 	var templates: Array = _encounter.get("enemy_templates", []) as Array
 	if templates.size() > 0:
 		mob_data = templates[0] as Dictionary
-	var biome: String = str(_encounter.get("biome", "Ash Wastes"))
+	var biome: String = str(_encounter.get("biome_key", _encounter.get("biome", "Ash Wastes")))
 
 	# Roll and apply rewards
 	var loot_result := {}
@@ -601,7 +646,7 @@ func _return_from_battle(victory: bool) -> void:
 			mm.report_combat_victory(_encounter)
 	if victory and bool(ctx.get("remove_mob_on_victory", false)):
 		gs.remove_overworld_mob(str(ctx.get("tile_key", "")))
-	gs.clear_pending_combat()
+	_gs_clear_pending_combat()
 	var return_scene: String = str(_encounter.get("return_scene", "res://scenes/HubWorld.tscn"))
 	var gm: GameManager = get_node_or_null("/root/GameManager") as GameManager
 	if is_instance_valid(gm):
@@ -619,7 +664,159 @@ func _return_from_battle(victory: bool) -> void:
 		get_tree().change_scene_to_file(return_scene)
 
 
+func _gs_clear_pending_combat() -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if is_instance_valid(gs):
+		gs.clear_pending_combat()
+
+
+func _trigger_respawn() -> void:
+	var rm: Node = get_node_or_null("/root/RespawnManager")
+	if is_instance_valid(rm):
+		rm.on_player_death()
+	else:
+		# Fallback: return to hub directly if RespawnManager missing
+		_return_from_battle(false)
+
+
+# ─── Biome Visuals ──────────────────────────────────────────
+
+func _setup_biome_background() -> void:
+	var biome_name: String = str(_encounter.get("biome_key", _encounter.get("biome", "Ash Wastes")))
+	var bg_path: String = _biome_service.get_biome_background_path(biome_name)
+
+	if not ResourceLoader.exists(bg_path):
+		return
+
+	var tex: Texture2D = load(bg_path)
+	var grid_size_px: float = float(_arena.res.grid_size) * CombatTile3D.CELL_SIZE
+
+	var bg := Sprite3D.new()
+	bg.name = "BiomeBackground"
+	bg.texture = tex
+	bg.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	bg.centered = true
+	bg.pixel_size = 0.01
+	var scale_factor: float = (grid_size_px * 4.0) / (tex.get_width() * 0.01)
+	bg.scale = Vector3(scale_factor, scale_factor, 1.0)
+	bg.position = Vector3(grid_size_px * 0.5, -10.0, grid_size_px * 0.5)
+	add_child(bg)
+
+
+func _setup_biome_lighting() -> void:
+	var biome_name: String = str(_encounter.get("biome_key", _encounter.get("biome", "Ash Wastes")))
+
+	# Tint directional light
+	if _light and is_instance_valid(_light):
+		var light_color: Color = _biome_service.get_biome_light_color(biome_name)
+		_light.light_color = light_color
+		_light.light_energy = 1.5
+
+	# Tint world environment ambient
+	if _world_env and is_instance_valid(_world_env):
+		var env: Environment = _world_env.environment
+		if env:
+			var ambient: Color = _biome_service.get_biome_ambient_color(biome_name)
+			env.ambient_light_color = ambient
+
+
+# ─── Layout ────────────────────────────────────────────────
+
+func _apply_layout() -> void:
+	var vp: Viewport = get_viewport()
+	if vp == null:
+		return
+	var vp_size: Vector2 = vp.get_visible_rect().size
+	if vp_size.x <= 0 or vp_size.y <= 0:
+		vp_size = Vector2(1280, 720)
+
+	# Position TopPrompt at top center
+	if _top_prompt:
+		var pw: float = clampi(int(vp_size.x * 0.30), 300, 600)
+		var ph: float = 64.0
+		_top_prompt.offset_left = -pw * 0.5
+		_top_prompt.offset_right = pw * 0.5
+		_top_prompt.offset_top = vp_size.y * 0.10
+		_top_prompt.offset_bottom = vp_size.y * 0.10 + ph
+
+	# Position player stats panel (bottom-left)
+	if _player_stats:
+		var psw: float = clampi(int(vp_size.x * 0.16), 160, 240)
+		var psh: float = 130.0
+		var pmargin: float = vp_size.y * 0.04
+		_player_stats.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		_player_stats.offset_left = vp_size.x * 0.02
+		_player_stats.offset_top = -psh - pmargin
+		_player_stats.offset_bottom = -pmargin
+		_player_stats.offset_right = vp_size.x * 0.02 + psw
+
+	# Position action panel (bottom-right)
+	if _action_bar:
+		var apw: float = clampi(int(vp_size.x * 0.14), 140, 200)
+		var aph: float = clampi(int(vp_size.y * 0.38), 200, 320)
+		var bottom_margin: float = vp_size.y * 0.04
+		_action_bar.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+		_action_bar.offset_right = -vp_size.x * 0.02
+		_action_bar.offset_left = -vp_size.x * 0.02 - apw
+		_action_bar.offset_bottom = -bottom_margin
+		_action_bar.offset_top = -aph - bottom_margin
+
+
 # ─── HUD ───────────────────────────────────────────────────
+
+func _update_enemy_info() -> void:
+	if _enemy_info == null or not _enemy_info.has_method("set_target"):
+		return
+	var target_pawn = null
+	for uid in _arena.res.units:
+		var u: Object = _arena.res.units[uid]
+		if u == null or not is_instance_valid(u):
+			continue
+		if u.res == null or not u.res.is_alive():
+			continue
+		if u.res.team == "enemy" or u.res.team == "ally":
+			target_pawn = u
+			break
+	_enemy_info.set_target(target_pawn)
+	_update_tame_visibility(target_pawn)
+
+
+func _update_tame_visibility(enemy_pawn) -> void:
+	if _action_bar == null or not _action_bar.has_method("set_tame_visible"):
+		return
+	if enemy_pawn == null or not is_instance_valid(enemy_pawn):
+		_action_bar.set_tame_visible(false)
+		return
+	var mob_data: Dictionary = _find_mob_template_for(enemy_pawn.res.sprite_id)
+	var is_tamable: bool = bool(mob_data.get("is_tamable", false))
+	var player_level: int = _get_player_level()
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	var has_capacity: bool = true
+	if is_instance_valid(tmm) and tmm.has_method("can_tame"):
+		has_capacity = tmm.can_tame(player_level)
+	_action_bar.set_tame_visible(is_tamable and has_capacity)
+	_action_bar.set_tame_enabled(is_tamable and has_capacity)
+
+
+func _update_player_stats() -> void:
+	if _player_stats == null or not _player_stats.has_method("update_from_character"):
+		return
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return
+	var char_data: Dictionary = gs.get_character_data()
+	if char_data.is_empty():
+		return
+	_player_stats.update_from_character(char_data)
+	# Keep in sync with player pawn
+	var player_pawn: CombatPawn3D = _arena.get_pawn("player")
+	if player_pawn != null and player_pawn.res != null:
+		char_data["hp"] = player_pawn.res.current_hp
+		char_data["max_hp"] = player_pawn.res.max_hp
+		char_data["mp"] = player_pawn.res.current_mp
+		char_data["max_mp"] = player_pawn.res.max_mp
+		_player_stats.update_from_character(char_data)
+
 
 func _update_top_prompt() -> void:
 	if _top_prompt == null or not _top_prompt.has_method("show_prompt"):
@@ -710,6 +907,161 @@ func _on_action_attack() -> void:
 	# Skip to attack target selection
 	p.advance_to(TurnServiceScript.STAGE_DISPLAY_TARGETS)
 	_update_top_prompt()
+
+
+func _on_action_tame() -> void:
+	if _arena.res.is_ended:
+		return
+	if _arena.res.current_side != "player":
+		return
+	var p: ParticipantResource = _player
+	if p.current_pawn == null:
+		return
+	# Check capacity before attempting
+	var player_level: int = _get_player_level()
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	if is_instance_valid(tmm) and tmm.has_method("can_tame") and not tmm.can_tame(player_level):
+		if _top_prompt != null and _top_prompt.has_method("show_prompt"):
+			_top_prompt.show_prompt("Cannot tame", "You already have the maximum number of tamed mobs")
+		return
+	# Find nearest tamable enemy
+	var target: CombatPawn3D = _get_nearest_tamable_enemy(p.current_pawn)
+	if target == null:
+		if _top_prompt != null and _top_prompt.has_method("show_prompt"):
+			_top_prompt.show_prompt("No tamable target", "No tamable enemies in range")
+		return
+	_attempt_tame(target)
+
+
+func _attempt_tame(target: CombatPawn3D) -> void:
+	if target == null or target.res == null:
+		return
+	_arena.reset_all_tile_markers()
+
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	var player_level: int = 1
+	var char_data: Dictionary = gs.get_character_data() if is_instance_valid(gs) else {}
+	if not char_data.is_empty():
+		player_level = int(char_data.get("level", 1))
+
+	var mob_data: Dictionary = _find_mob_template_for(target.res.id)
+	var is_tamable: bool = bool(mob_data.get("is_tamable", false))
+	if not is_tamable:
+		return
+
+	var tame_difficulty: float = float(mob_data.get("tame_difficulty", 0.5))
+	var mob_level: int = target.res.level
+	var cur_hp: int = target.res.current_hp
+	var max_hp: int = target.res.max_hp
+
+	var chance: float = TameCalc.calculate_chance(player_level, mob_level, cur_hp, max_hp, tame_difficulty)
+	var roll: float = randf()
+	var success: bool = roll < chance
+
+	var result: Dictionary = {
+		"success": success,
+		"mob_name": target.res.display_name,
+		"tamable_type": str(mob_data.get("tamable_type", "companion")),
+		"chance": chance,
+	}
+
+	if success:
+		var mount_bonus: Dictionary = mob_data.get("mount_bonus", {}) as Dictionary
+		var tmm: Node = get_node_or_null("/root/TamedMobManager")
+		if is_instance_valid(tmm) and tmm.has_method("register_tame"):
+			tmm.register_tame(
+				str(mob_data.get("id", "")),
+				target.res.display_name,
+				str(mob_data.get("tamable_type", "companion")),
+				mount_bonus,
+				tame_difficulty,
+				player_level,
+				str(mob_data.get("sprite_id", ""))
+			)
+		target.update_hp(0)
+	else:
+		var player_pawn: CombatPawn3D = _arena.get_pawn("player")
+		if player_pawn != null and player_pawn.res != null:
+			var failure_mult: float = 0.8
+			var damage: int = maxi(1, int(float(target.res.attack) * failure_mult))
+			player_pawn.res.current_hp = maxi(0, player_pawn.res.current_hp - damage)
+			player_pawn.update_hp(player_pawn.res.current_hp)
+			player_pawn.show_damage_text(damage)
+
+	_show_tame_result(result)
+	_update_player_stats()
+	_update_enemy_info()
+	_check_encounter_end()
+
+
+func _show_tame_result(result: Dictionary) -> void:
+	var hud: CanvasLayer = get_node_or_null("HUDLayer") as CanvasLayer
+	if hud == null:
+		return
+	var popup: Control = Control.new()
+	popup.set_script(TameResultPopupScript)
+	hud.add_child(popup)
+	popup.setup(result, func():
+		_update_top_prompt()
+	)
+
+
+func _find_mob_template_for(sprite_id: String) -> Dictionary:
+	var mm: Node = get_node_or_null("/root/MobManager")
+	if not is_instance_valid(mm) or not mm.has_method("get_mob_by_sprite_id"):
+		return {}
+	return mm.call("get_mob_by_sprite_id", sprite_id) as Dictionary
+
+
+func _get_player_level() -> int:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if not is_instance_valid(gs):
+		return 1
+	var char_data: Dictionary = gs.get_character_data()
+	if char_data.is_empty():
+		return 1
+	return int(char_data.get("level", 1))
+
+
+func _get_nearest_tamable_enemy(from_pawn: CombatPawn3D) -> CombatPawn3D:
+	if from_pawn == null or from_pawn.res == null:
+		return null
+	var best: CombatPawn3D = null
+	var best_dist: int = 999999
+	var origin: Vector2i = from_pawn.res.grid_pos
+	for uid in _arena.res.units:
+		var u: Object = _arena.res.units[uid]
+		if u == null or not is_instance_valid(u):
+			continue
+		if u.res.team == "player" or not u.res.is_alive():
+			continue
+		var mob_data: Dictionary = _find_mob_template_for(u.res.sprite_id)
+		if not bool(mob_data.get("is_tamable", false)):
+			continue
+		var d: int = abs(u.res.grid_pos.x - origin.x) + abs(u.res.grid_pos.y - origin.y)
+		if d < best_dist:
+			best_dist = d
+			best = u
+	return best
+
+
+func _get_nearest_enemy(from_pawn: CombatPawn3D) -> CombatPawn3D:
+	if from_pawn == null or from_pawn.res == null:
+		return null
+	var best: CombatPawn3D = null
+	var best_dist: int = 999999
+	var origin: Vector2i = from_pawn.res.grid_pos
+	for uid in _arena.res.units:
+		var u: Object = _arena.res.units[uid]
+		if u == null or not is_instance_valid(u):
+			continue
+		if u.res.team == "player" or not u.res.is_alive():
+			continue
+		var d: int = abs(u.res.grid_pos.x - origin.x) + abs(u.res.grid_pos.y - origin.y)
+		if d < best_dist:
+			best_dist = d
+			best = u
+	return best
 
 
 func _on_retreat_pressed() -> void:

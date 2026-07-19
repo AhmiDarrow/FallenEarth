@@ -278,9 +278,6 @@ func draw_rusted_panel(rect: Rect2, text: String) -> void:
 func draw_health_bar(rect: Rect2, pct: float, name: String = "") -> void:
 	return
 
-func draw_inventory_slot(rect: Rect2, item: Dictionary, idx: int) -> void:
-	return
-
 func draw_circle(pos: Vector2, radius: float, color: Color) -> void:
 	return
 

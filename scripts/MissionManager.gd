@@ -19,6 +19,8 @@ var _active: Dictionary = {}          # mission_id -> mission
 var _completed_ids: Array[String] = []
 var _npc_offers: Dictionary = {}      # npc_id -> Array[mission_id]
 var _counter: int = 0
+var _scaling_cache: Dictionary = {}
+var _scaling_cached: bool = false
 
 
 func _ready() -> void:
@@ -468,11 +470,15 @@ func _remove_from_npc_offers(mission_id: String) -> void:
 
 
 func _scaling() -> Dictionary:
+	if _scaling_cached:
+		return _scaling_cache
 	var file: FileAccess = FileAccess.open(TEMPLATES_PATH, FileAccess.READ)
 	if not is_instance_valid(file):
 		return {}
 	var parsed: Variant = JSON.parse_string(file.get_as_text())
 	file.close()
 	if parsed is Dictionary:
-		return (parsed as Dictionary).get("scaling", {}) as Dictionary
+		_scaling_cache = (parsed as Dictionary).get("scaling", {}) as Dictionary
+		_scaling_cached = true
+		return _scaling_cache
 	return {}

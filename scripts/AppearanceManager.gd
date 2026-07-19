@@ -6,7 +6,6 @@ extends Node
 signal appearance_loaded(appearance_data: Dictionary)
 
 
-const APPEARANCE_DATA_PATH := "res://data/appearance.json"
 const PLAYER_TEMPLATES_PATH := "res://scripts/data/player_templates.json"  # note: singular filename on disk
 
 var _appearance_data: Dictionary = {}
@@ -19,25 +18,38 @@ func _load_appearance_data() -> void:
 	load_appearance_from_json()
 
 
-## Load appearance data from the canonical JSON
+## Load appearance data from DataRegistry
 func load_appearance_from_json(path: String = "") -> bool:
-	var json_path := path if path != "" else APPEARANCE_DATA_PATH
-	var file := FileAccess.open(json_path, FileAccess.READ)
-	if not is_instance_valid(file):
-		push_error("[AppearanceManager] Failed to open %s" % json_path)
+	# If a custom path is provided, load from file directly (for testing)
+	if path != "":
+		var file := FileAccess.open(path, FileAccess.READ)
+		if not is_instance_valid(file):
+			push_error("[AppearanceManager] Failed to open %s" % path)
+			return false
+		var text := file.get_as_text()
+		file.close()
+		var result: Variant = JSON.parse_string(text)
+		if not (result is Dictionary):
+			push_error("[AppearanceManager] %s did not produce a dictionary." % path)
+			return false
+		_appearance_data = result.duplicate(true)
+		appearance_loaded.emit(_appearance_data)
+		print("[AppearanceManager] Appearance data loaded from %s." % path)
+		return true
+
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[AppearanceManager] DataRegistry not available")
 		return false
 
-	var text := file.get_as_text()
-	file.close()
-
-	var result: Variant = JSON.parse_string(text)
-	if not (result is Dictionary):
-		push_error("[AppearanceManager] %s did not produce a dictionary." % json_path)
+	var result: Variant = dr.get_data("appearance")
+	if result == null or not (result is Dictionary):
+		push_error("[AppearanceManager] appearance.json missing or invalid")
 		return false
 
 	_appearance_data = result.duplicate(true)
 	appearance_loaded.emit(_appearance_data)
-	print("[AppearanceManager] Appearance data loaded from %s." % json_path)
+	print("[AppearanceManager] Appearance data loaded from DataRegistry.")
 	return true
 
 

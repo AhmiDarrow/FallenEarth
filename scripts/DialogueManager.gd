@@ -4,8 +4,6 @@
 ## and applies effects (reputation changes, item grants, etc.).
 extends Node
 
-const DIALOGUE_PATH := "res://data/dialogue.json"
-
 var _dialogues: Dictionary = {}
 var _faction_rep: Dictionary = {}
 
@@ -16,14 +14,12 @@ func _ready() -> void:
 
 
 func _load_dialogues() -> void:
-	var file: FileAccess = FileAccess.open(DIALOGUE_PATH, FileAccess.READ)
-	if file == null:
-		push_error("[DialogueManager] Could not open %s" % DIALOGUE_PATH)
+	var dr := get_node_or_null("/root/DataRegistry")
+	if dr == null:
+		push_error("[DialogueManager] DataRegistry not available")
 		return
-	var text: String = file.get_as_text()
-	file.close()
-	var parsed: Variant = JSON.parse_string(text)
-	if not (parsed is Dictionary):
+	var parsed: Variant = dr.get_data("dialogue")
+	if parsed == null or not (parsed is Dictionary):
 		push_error("[DialogueManager] dialogue.json root is not Dictionary")
 		return
 	_dialogues = parsed.get("dialogues", {})
@@ -92,25 +88,22 @@ func _apply_effects(effects: Dictionary) -> void:
 	# EC changes
 	var remove_ec: int = int(effects.get("remove_ec", 0))
 	if remove_ec > 0:
-		var inv: Node = get_node_or_null("/root/InventoryManager")
-		if inv != null and inv.has_method("remove_item"):
-			inv.remove_item("ec", remove_ec)
+		var pm: Node = get_node_or_null("/root/ProgressionManager")
+		if pm != null and pm.has_method("spend_ec"):
+			pm.spend_ec(remove_ec)
 	# Heal
 	var heal_full: bool = effects.get("heal_full", false)
 	if heal_full:
-		var pm: Node = get_node_or_null("/root/ProgressionManager")
-		if pm != null:
-			pm.set("hp", pm.get("max_hp"))
+		var gs: Node = get_node_or_null("/root/GameState")
+		if gs != null and gs.has_method("set_character_health"):
+			gs.set_character_health(99999)
 
 
 func _change_faction_rep(faction_key: String, amount: int) -> void:
-	if not _faction_rep.has(faction_key):
-		_faction_rep[faction_key] = 0
-	_faction_rep[faction_key] = int(_faction_rep[faction_key]) + amount
-	# Sync to GameState
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs != null and gs.has_method("set_faction_rep"):
-		gs.set_faction_rep(faction_key, _faction_rep[faction_key])
+	_faction_rep[faction_key] = int(_faction_rep.get(faction_key, 0)) + amount
+	var nm: Node = get_node_or_null("/root/NPCManager")
+	if nm != null and nm.has_method("modify_faction_rep"):
+		nm.modify_faction_rep(faction_key, amount)
 	print("[DialogueManager] %s reputation: %d (%+d)" % [faction_key, _faction_rep[faction_key], amount])
 
 

@@ -44,6 +44,8 @@ var _current_map_data: Dictionary = {}
 # 1966 + 3748 nodes was the dominant per-move cost.
 var _node_by_cell: Dictionary = {}     # Vector2i -> HarvestNode
 var _pickup_by_cell: Dictionary = {}    # Vector2i -> FloorPickup
+var _settlement_by_cell: Dictionary = {}  # Vector2i -> SettlementNode
+var _building_by_cell: Dictionary = {}    # Vector2i -> SettlementBuilding (per footprint cell)
 # v0.10.0: batched MultiMesh visuals for resource nodes + floor pickups.
 var _visual_manager: ResourceVisualManagerScript = null
 
@@ -140,6 +142,7 @@ func _get_world_towns() -> Array:
 func _populate_settlements(towns: Array) -> void:
 	if not is_instance_valid(settlement_layer):
 		return
+	_settlement_by_cell.clear()
 	for entry in towns:
 		if not (entry is Dictionary):
 			continue
@@ -150,23 +153,18 @@ func _populate_settlements(towns: Array) -> void:
 		var hex_str: String = str(entry.get("hex", ""))
 		var parts: PackedStringArray = hex_str.split(",")
 		if parts.size() == 2:
-			node.position = cell_to_world(Vector2i(int(parts[0]), int(parts[1])))
+			var cell := Vector2i(int(parts[0]), int(parts[1]))
+			node.position = cell_to_world(cell)
 			# Tag the node with the hex key for hit-test lookup
 			node.set_meta("hex", hex_str)
+			_settlement_by_cell[cell] = node
 
 
-## Returns the SettlementNode at the given cell, or null.
+## Returns the SettlementNode at the given cell, or null. O(1) via cell index.
 func get_settlement_at(cell: Vector2i) -> Node2D:
-	if not is_instance_valid(settlement_layer):
-		return null
-	for child in settlement_layer.get_children():
-		if child.get_script() != SettlementNodeScript:
-			continue
-		var p: Vector2 = child.global_position
-		var cx: int = int(floor(p.x / CELL_SIZE))
-		var cy: int = int(floor(p.y / CELL_SIZE))
-		if cx == cell.x and cy == cell.y:
-			return child
+	var n: Node = _settlement_by_cell.get(cell)
+	if n != null and is_instance_valid(n):
+		return n
 	return null
 
 
@@ -175,25 +173,29 @@ func get_settlement_at(cell: Vector2i) -> Node2D:
 func _populate_buildings(structures: Array) -> void:
 	if not is_instance_valid(settlement_layer):
 		return
+	_building_by_cell.clear()
 	for entry in structures:
 		if not (entry is Dictionary):
 			continue
 		var node: Node2D = SettlementBuildingScene.instantiate()
 		settlement_layer.add_child(node)
 		node.setup((entry as Dictionary).duplicate(true))
+		# Index every footprint cell for O(1) lookup.
+		var bx: int = int(entry.get("x", 0))
+		var by: int = int(entry.get("y", 0))
+		for cy in range(by, by + int(entry.get("h", 1))):
+			for cx in range(bx, bx + int(entry.get("w", 1))):
+				_building_by_cell[Vector2i(cx, cy)] = node
 		# Phase (extend coverage): procedural 3D visual for settlement structures.
 		_attach_procedural_if_enabled(node, {"visual_preset": "prop_structure", "id": str(entry.get("id", "bld"))})
 
 
-## Returns the SettlementBuilding whose footprint contains the given cell, or null.
+## Returns the SettlementBuilding whose footprint contains the given cell,
+## or null. O(1) via per-cell footprint index.
 func get_building_at(cell: Vector2i) -> Node2D:
-	if not is_instance_valid(settlement_layer):
-		return null
-	for child in settlement_layer.get_children():
-		if not child.has_method("is_cell_inside"):
-			continue
-		if child.is_cell_inside(cell):
-			return child
+	var n: Node = _building_by_cell.get(cell)
+	if n != null and is_instance_valid(n):
+		return n
 	return null
 
 
@@ -226,6 +228,31 @@ func get_cooking_table_at(cell: Vector2i) -> Node2D:
 		if cx == cell.x and cy == cell.y:
 			return child
 	return null
+
+
+## Returns the SleepingBag at the given cell, or null.
+func get_sleeping_bag_at(cell: Vector2i) -> Node2D:
+	if not is_instance_valid(station_layer):
+		return null
+	for child in station_layer.get_children():
+		if not (child is SleepingBag):
+			continue
+		var p: Vector2 = child.global_position
+		var cx: int = int(floor(p.x / CELL_SIZE))
+		var cy: int = int(floor(p.y / CELL_SIZE))
+		if cx == cell.x and cy == cell.y:
+			return child
+	return null
+
+
+## Add a sleeping bag node to the station layer at the given cell.
+func add_sleeping_bag(cell: Vector2i, bag: Node2D) -> void:
+	if not is_instance_valid(station_layer):
+		return
+	if not is_instance_valid(bag):
+		return
+	station_layer.add_child(bag)
+	bag.position = cell_to_world(cell)
 
 
 ## Returns the station layer (for HubWorld to query stations).
@@ -483,6 +510,8 @@ func _clear_settlements() -> void:
 	if is_instance_valid(settlement_layer):
 		for child in settlement_layer.get_children():
 			child.queue_free()
+	_settlement_by_cell.clear()
+	_building_by_cell.clear()
 
 
 func _clear_buildings() -> void:
@@ -490,6 +519,7 @@ func _clear_buildings() -> void:
 		for child in settlement_layer.get_children():
 			if child.has_method("is_cell_inside"):
 				child.queue_free()
+	_building_by_cell.clear()
 
 
 func _clear_markers() -> void:

@@ -10,7 +10,7 @@ extends Camera3D
 @export var rotate_speed: float = 2.0
 @export var zoom_speed: float = 2.0
 @export var zoom_min: float = 4.0
-@export var zoom_max: float = 20.0
+@export var zoom_max: float = 45.0
 @export var boundary_radius: float = 10.0
 
 ## Isometric angles
@@ -24,8 +24,23 @@ var _rotation_target: float = 0.0
 var _snap_next_frame: bool = true
 
 
+var _grid_size: int = 20
+var _default_zoom: float = 10.0
+
+
 func _ready() -> void:
 	_rotation_target = deg_to_rad(yaw_angle)
+
+
+## Adjust zoom and boundary for grid size, called from CombatLevel3D
+func configure_for_grid(grid_size: int) -> void:
+	_grid_size = maxi(grid_size, 3)
+	boundary_radius = float(_grid_size) * 1.2
+	var ideal_zoom: float = float(_grid_size) * 1.5 + 1.0
+	ideal_zoom *= 0.6
+	_default_zoom = clampf(ideal_zoom, zoom_min, zoom_max)
+	_current_zoom = _default_zoom
+	_snap_next_frame = true
 
 
 func _process(delta: float) -> void:
@@ -72,9 +87,16 @@ func _handle_input(delta: float) -> void:
 		_current_zoom = clampf(_current_zoom - zoom_speed, zoom_min, zoom_max)
 	if Input.is_action_just_released("ui_page_down") or Input.is_key_pressed(KEY_X):
 		_current_zoom = clampf(_current_zoom + zoom_speed, zoom_min, zoom_max)
+	if Input.is_key_pressed(KEY_C):
+		reset_zoom()
 
 	_target_position.x = clampf(_target_position.x, -boundary_radius, boundary_radius)
 	_target_position.z = clampf(_target_position.z, -boundary_radius, boundary_radius)
+
+
+func reset_zoom() -> void:
+	_current_zoom = _default_zoom
+	_snap_next_frame = true
 
 
 func follow_pawn(pawn: Node3D) -> void:

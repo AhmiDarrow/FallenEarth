@@ -13,6 +13,7 @@
 class_name StatsScreen
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
 const INVENTORY_PATH := "/root/InventoryManager"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 const PARTY_PATH := "/root/PartyNPCManager"
@@ -33,20 +34,19 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	var hbox := HBoxContainer.new()
-	hbox.anchor_right = 1.0
-	hbox.anchor_bottom = 1.0
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	hbox.add_theme_constant_override("separation", 12)
 	add_child(hbox)
 	# Left: member list
 	var left_panel := PanelContainer.new()
-	left_panel.custom_minimum_size = Vector2(240, 0)
+	left_panel.custom_minimum_size = Vector2(200, 0)
 	hbox.add_child(left_panel)
 	var left_vbox := VBoxContainer.new()
 	left_panel.add_child(left_vbox)
 	var title := Label.new()
 	title.text = "[ Stats — Select Member ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	title.add_theme_font_size_override("font_size", MT.FS_H2)
 	left_vbox.add_child(title)
 	_list_vbox = VBoxContainer.new()
 	_list_vbox.add_theme_constant_override("separation", 4)
@@ -59,10 +59,10 @@ func _build_ui() -> void:
 	right_panel.add_child(right_vbox)
 	_stats_label = Label.new()
 	_stats_label.text = ""
-	_stats_label.add_theme_color_override("font_color", Color.WHITE)
+	_stats_label.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
 	_stats_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	_stats_label.add_theme_constant_override("outline_size", 2)
-	_stats_label.add_theme_font_size_override("font_size", 16)
+	_stats_label.add_theme_font_size_override("font_size", MT.FS_STAT)
 	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right_vbox.add_child(_stats_label)
 
@@ -81,7 +81,8 @@ func _refresh_member_list() -> void:
 	var pm_btn := Button.new()
 	pm_btn.text = "Player"
 	pm_btn.toggle_mode = true
-	pm_btn.focus_mode = Control.FOCUS_NONE
+	pm_btn.focus_mode = Control.FOCUS_ALL
+	pm_btn.add_theme_stylebox_override("focus", MT.focus_ring())
 	pm_btn.button_pressed = (_selected_id == PLAYER_ID)
 	pm_btn.pressed.connect(_on_member_pressed.bind(PLAYER_ID))
 	_list_vbox.add_child(pm_btn)
@@ -96,7 +97,8 @@ func _refresh_member_list() -> void:
 		var row := Button.new()
 		row.text = "%s (%s · Lv.%d)" % [member_name, member_class, level]
 		row.toggle_mode = true
-		row.focus_mode = Control.FOCUS_NONE
+		row.focus_mode = Control.FOCUS_ALL
+		row.add_theme_stylebox_override("focus", MT.focus_ring())
 		row.button_pressed = (_selected_id == str(n.get("id", "")))
 		row.pressed.connect(_on_member_pressed.bind(str(n.get("id", ""))))
 		_list_vbox.add_child(row)
@@ -139,8 +141,8 @@ func _refresh_stats() -> void:
 				if str(n.get("id", "")) == _selected_id:
 					level = int(n.get("level", 1))
 					break
-	var hp: int = em.get_max_hp("", level, mods)
-	var mp: int = em.get_max_mp("", level, mods)
+	var hp: int = em.get_max_hp(level, mods)
+	var mp: int = em.get_max_mp(level, mods)
 	var main_hand: String = em.get_main_hand_item(_selected_id)
 	_stats_label.text = "Member: %s\nLevel: %d\n\nMax HP: %d   Max MP: %d\n\nAttack: %d   Defense: %d\nArmor (gear): %d\n\nSTR: %+d   INT: %+d   CON: %+d   WIS: %+d   DEX: %+d\n\nMain hand: %s" % [
 		_selected_id, level,

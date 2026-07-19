@@ -1,0 +1,22 @@
+{
+  "strategy": "merge",
+  "data": {
+    "dialogues": {
+      "example_mod_npc": {
+        "greeting": {
+          "text": "Hello! I'm an NPC added by the Example Mod.",
+          "choices": [
+            {"text": "Tell me about the mod.", "next": "mod_info"},
+            {"text": "Goodbye.", "next": ""}
+          ]
+        },
+        "mod_info": {
+          "text": "This is a test dialogue tree. Mods can add new NPCs and dialogue through the overlay system.",
+          "choices": [
+            {"text": "Thanks!", "next": ""}
+          ]
+        }
+      }
+    }
+  }
+}
