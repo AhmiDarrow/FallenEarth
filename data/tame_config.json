@@ -1,0 +1,20 @@
+{
+    "data": {
+        "base_cooldown_turns": 3,
+        "failure_attack_damage_mult": 0.8,
+        "max_tamed_base": 1,
+        "max_tamed_per_level_tier": [
+            {"min_level": 1, "max_tamed": 1},
+            {"min_level": 10, "max_tamed": 2},
+            {"min_level": 25, "max_tamed": 3},
+            {"min_level": 50, "max_tamed": 4},
+            {"min_level": 100, "max_tamed": 5},
+            {"min_level": 200, "max_tamed": 6}
+        ],
+        "tame_chance_floor": 0.01,
+        "tame_chance_ceiling": 0.95,
+        "level_diff_multiplier": 0.02,
+        "level_diff_base": 0.1,
+        "health_weight": 1.0
+    }
+}

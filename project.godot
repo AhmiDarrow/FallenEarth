@@ -46,6 +46,7 @@ ModAPI="*res://scripts/ModAPI.gd"
 AmbientAudio="*res://scripts/AmbientAudio.gd"
 MusicManager="*res://scripts/MusicManager.gd"
 KeybindManager="*res://scripts/KeybindManager.gd"
+TamedMobManager="*res://scripts/TamedMobManager.gd"
 
 [display]
 

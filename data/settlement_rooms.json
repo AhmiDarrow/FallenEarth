@@ -19,7 +19,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "riftspire_portal", "name": "Riftspire Portal", "role": "riftspire_portal", "x": 5, "y": 5, "race": "ai", "gender": "female", "color": [0.4, 0.1, 0.8] }
+        { "id": "riftspire_portal", "name": "Riftspire Portal", "role": "riftspire_portal", "x": 5, "y": 5, "race": "ai" }
       ],
       "furniture": [
         { "type": "bench", "x": 2, "y": 4 },
@@ -50,8 +50,8 @@
         "############"
       ],
       "npcs": [
-        { "id": "innkeeper", "name": "Innkeeper", "role": "innkeeper", "x": 5, "y": 2, "race": "human", "gender": "female", "color": [0.8, 0.6, 0.2] },
-        { "id": "wanderer",  "name": "Wanderer",  "role": "talker",    "x": 8, "y": 5, "race": "chthon", "gender": "male",   "color": [0.5, 0.7, 0.5] }
+        { "id": "innkeeper", "name": "Innkeeper", "role": "innkeeper", "x": 5, "y": 2 },
+        { "id": "wanderer",  "name": "Wanderer",  "role": "talker",    "x": 8, "y": 5 }
       ],
       "furniture": [
         { "type": "table", "x": 3, "y": 4 },
@@ -78,7 +78,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "merchant", "name": "Merchant", "role": "trader", "x": 5, "y": 3, "race": "human", "gender": "male", "color": [0.9, 0.7, 0.2] }
+        { "id": "merchant", "name": "Merchant", "role": "trader", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "shelf", "x": 1, "y": 2 },
@@ -105,7 +105,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "crafter", "name": "Crafter", "role": "crafter", "x": 5, "y": 3, "race": "cyborg", "gender": "female", "color": [0.6, 0.5, 0.4] }
+        { "id": "crafter", "name": "Crafter", "role": "crafter", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "table", "x": 3, "y": 4 },
@@ -131,7 +131,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "armorer", "name": "Armorer", "role": "armorer", "x": 5, "y": 3, "race": "mutant", "gender": "male", "color": [0.5, 0.5, 0.7] }
+        { "id": "armorer", "name": "Armorer", "role": "armorer", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "rack", "x": 1, "y": 2 },
@@ -139,7 +139,7 @@
         { "type": "table", "x": 3, "y": 5 }
       ],
       "exits": [
-        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 8, "target_y": 8 }
+        { "x": 5, "y": 8, "target_room": "town_square", "target_x": 3, "target_y": 8 }
       ]
     },
     "blacksmith": {
@@ -157,7 +157,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "smith", "name": "Blacksmith", "role": "smith", "x": 5, "y": 3, "race": "mutant", "gender": "female", "color": [0.4, 0.4, 0.5] }
+        { "id": "smith", "name": "Blacksmith", "role": "smith", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "anvil", "x": 3, "y": 3 },
@@ -183,7 +183,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "quest_giver", "name": "Herald", "role": "quest_giver", "x": 5, "y": 2, "race": "vesperid", "gender": "female", "color": [0.3, 0.7, 0.8] }
+        { "id": "quest_giver", "name": "Herald", "role": "quest_giver", "x": 5, "y": 2 }
       ],
       "furniture": [
         { "type": "sign", "x": 5, "y": 1, "label": "Quests" },
@@ -209,7 +209,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "faction_rep", "name": "Commander", "role": "faction_rep", "x": 5, "y": 3, "race": "human", "gender": "male", "color": [0.7, 0.2, 0.2] }
+        { "id": "faction_rep", "name": "Commander", "role": "faction_rep", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "table", "x": 3, "y": 5 },
@@ -234,7 +234,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "auctioneer", "name": "Auctioneer", "role": "auctioneer", "x": 5, "y": 3, "race": "cyborg", "gender": "female", "color": [0.6, 0.4, 0.8] }
+        { "id": "auctioneer", "name": "Auctioneer", "role": "auctioneer", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "podium", "x": 5, "y": 2 },
@@ -260,7 +260,7 @@
         "############"
       ],
       "npcs": [
-        { "id": "trainer", "name": "Trainer", "role": "trainer", "x": 5, "y": 3, "race": "revenant", "gender": "male", "color": [0.8, 0.3, 0.3] }
+        { "id": "trainer", "name": "Trainer", "role": "trainer", "x": 5, "y": 3 }
       ],
       "furniture": [
         { "type": "dummy", "x": 2, "y": 3 },

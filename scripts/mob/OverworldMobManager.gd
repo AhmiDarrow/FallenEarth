@@ -9,6 +9,8 @@ signal mob_reached_player(mob_data: MobDataRef)
 
 
 const CELL_SIZE := 24
+## Mobs farther than this (Chebyshev cells) from the player skip AI ticking.
+const TICK_RANGE := 48
 
 var _entries: Dictionary = {}
 var _is_cell_walkable: Callable
@@ -95,12 +97,15 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 		if data == null:
 			to_remove.append(pos_key)
 			continue
+		# Skip AI for mobs far outside the player's active area.
+		if maxi(abs(data.grid_x - player_x), abs(data.grid_y - player_y)) > TICK_RANGE:
+			continue
 		var old_x: int = data.grid_x
 		var old_y: int = data.grid_y
 		ai.tick(delta, player_x, player_y)
 		match ai.current_state:
 			MobAIController.State.WANDER, MobAIController.State.AGGRO, MobAIController.State.RETURN_TO_SPAWN, MobAIController.State.FLEE:
-				var target: Vector2i = ai._wander_target
+				var target: Vector2i = ai.get_wander_target()
 				if target.x != old_x or target.y != old_y:
 					if _is_cell_walkable.call(target.x, target.y):
 						_start_move(entry, target)
@@ -111,6 +116,13 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 					var mob_data: MobDataRef = entry.get("data") as MobDataRef
 					mob_reached_player.emit(mob_data)
 					to_remove.append(pos_key)
+				else:
+					var target: Vector2i = ai.get_wander_target()
+					if target.x != old_x or target.y != old_y:
+						if _is_cell_walkable.call(target.x, target.y):
+							_start_move(entry, target)
+						else:
+							ai.cancel_movement()
 	for key in to_remove:
 		_remove_entry(key)
 
@@ -135,7 +147,7 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 		if ai != null:
 			if ai.current_state == MobAIController.State.WANDER:
 				ai.confirm_arrival()
-			elif ai.current_state == MobAIController.State.AGGRO:
+			elif ai.current_state == MobAIController.State.AGGRO or ai.current_state == MobAIController.State.ATTACK:
 				ai.grid_x = target.x
 				ai.grid_y = target.y
 		# Update GameState position so persistence + combat work correctly

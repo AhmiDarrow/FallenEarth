@@ -93,7 +93,7 @@ func _on_autosave_tick() -> void:
 # -- Character creation --
 # ===================================================================
 
-func create_character(race_id: String, class_id: String, origin: String, char_name: String = "", gender: String = "male") -> bool:
+func create_character(race_id: String, class_id: String, origin: String, char_name: String = "", gender: String = "male", portrait: int = 1) -> bool:
 	if race_id.is_empty() or class_id.is_empty():
 		push_error("[GameState] Cannot create character — missing race_id or class_id.")
 		return false
@@ -111,8 +111,9 @@ func create_character(race_id: String, class_id: String, origin: String, char_na
 
 	var display_name: String = char_name.strip_edges() if not char_name.is_empty() else "Unnamed %s" % race_id
 
-	# Store gender in appearance data for downstream renderers
+	# Store gender and portrait in appearance data for downstream renderers
 	_appearance_data["gender"] = gender
+	_appearance_data["portrait"] = portrait
 
 	var cm: ClassManager = get_node_or_null("/root/ClassManager") as ClassManager
 	var max_hp: int = 80 + int(final_stats.get("con", 10)) * 5

@@ -16,6 +16,7 @@ var _npc_race: String = ""
 var _npc_gender: String = ""
 
 var _panel: PanelContainer = null
+var _portrait_rect: TextureRect = null
 var _speaker_label: Label = null
 var _text_label: RichTextLabel = null
 var _choices_container: VBoxContainer = null
@@ -58,10 +59,25 @@ func _build_ui() -> void:
 	margin.add_theme_constant_override("margin_bottom", 8)
 	_panel.add_child(margin)
 
+	var hbox := HBoxContainer.new()
+	hbox.name = "HBox"
+	hbox.add_theme_constant_override("separation", 12)
+	margin.add_child(hbox)
+
+	# Portrait
+	_portrait_rect = TextureRect.new()
+	_portrait_rect.name = "Portrait"
+	_portrait_rect.custom_minimum_size = Vector2(64, 64)
+	_portrait_rect.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	_portrait_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait_rect.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	hbox.add_child(_portrait_rect)
+
 	var vbox := VBoxContainer.new()
 	vbox.name = "VBox"
+	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_theme_constant_override("separation", 8)
-	margin.add_child(vbox)
+	hbox.add_child(vbox)
 
 	# Speaker name
 	_speaker_label = Label.new()
@@ -103,6 +119,8 @@ func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_g
 	_npc_race = npc_race
 	_npc_gender = npc_gender
 
+	_load_portrait()
+
 	var dm: Node = get_node_or_null("/root/DialogueManager")
 	if dm == null:
 		push_error("[DialogueUI] DialogueManager not found")
@@ -116,6 +134,26 @@ func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_g
 
 	_show_node(greeting)
 	visible = true
+
+
+const PORTRAIT_RACE_MAP := {
+	"ai": "sentientai",
+}
+
+func _load_portrait() -> void:
+	if _npc_race.is_empty():
+		_portrait_rect.texture = null
+		_portrait_rect.visible = false
+		return
+	var race_key: String = PORTRAIT_RACE_MAP.get(_npc_race, _npc_race)
+	var idx: int = (_npc_name.hash() % 6 + 6) % 6 + 1
+	var path: String = "res://assets/portraits/%s_%s/portrait_%02d.png" % [race_key, _npc_gender, idx]
+	if ResourceLoader.exists(path):
+		_portrait_rect.texture = load(path)
+		_portrait_rect.visible = true
+	else:
+		_portrait_rect.texture = null
+		_portrait_rect.visible = false
 
 
 func _fallback_greeting(npc_name: String, role: String) -> void:

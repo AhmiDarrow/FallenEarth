@@ -13,12 +13,19 @@ const CLASS_DATA_PATH := "res://data/character_classes.json"
 
 
 # -- state --
+const PORTRAIT_RACE_MAP := {
+	"ai": "sentientai",
+}
+
 var _selected_race_key: String = ""
 var _selected_class_key: String = ""
 var _selected_gender: String = "male"
+var _selected_portrait: int = 1
 var available_races: Array[String] = []
 var available_classes: Array[String] = []
 var _race_info_cache: Dictionary = {}
+var _portrait_preview: TextureRect = null
+var _portrait_index_label: Label = null
 
 
 func _ready() -> void:
@@ -168,7 +175,9 @@ func prefill_underworld_races():
 
 func _on_race_selected(race_key: String):
 	_selected_race_key = race_key
+	_selected_portrait = 1
 	_update_all_race_buttons()
+	_update_portrait_preview()
 	_update_selection_summary()
 	
 	print("[CharacterSelection] Selected race: %s (origin=%s)" % [race_key, get_origin_for_race(race_key)])
@@ -324,11 +333,106 @@ func _build_gender_buttons():
 	if _selected_gender.is_empty():
 		_selected_gender = "male"
 	_update_gender_buttons()
+	_build_portrait_picker()
+
+
+func _get_portrait_race_key() -> String:
+	var data: Dictionary = _load_race_data()
+	for category in ["upworld", "underworld"]:
+		var group: Dictionary = data.get(category, {})
+		if group.has(_selected_race_key):
+			var vtag: String = str(group[_selected_race_key].get("visual_tag", ""))
+			return PORTRAIT_RACE_MAP.get(vtag, vtag)
+	return PORTRAIT_RACE_MAP.get(_selected_race_key.to_lower(), _selected_race_key.to_lower())
+
+
+func _build_portrait_picker() -> void:
+	var existing := $MainVBox/PortraitHBox
+	if is_instance_valid(existing):
+		for child in existing.get_children():
+			child.queue_free()
+		existing.queue_free()
+
+	var hbox := HBoxContainer.new()
+	hbox.name = "PortraitHBox"
+	hbox.alignment = HBoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 12)
+
+	_portrait_preview = TextureRect.new()
+	_portrait_preview.name = "PortraitPreview"
+	_portrait_preview.custom_minimum_size = Vector2(80, 80)
+	_portrait_preview.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	_portrait_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	hbox.add_child(_portrait_preview)
+
+	var btn_vbox := VBoxContainer.new()
+	btn_vbox.alignment = VBoxContainer.ALIGNMENT_CENTER
+	btn_vbox.add_theme_constant_override("separation", 4)
+
+	var prev_btn := Button.new()
+	prev_btn.text = "<"
+	prev_btn.custom_minimum_size = Vector2(40, 28)
+	prev_btn.pressed.connect(_on_portrait_prev)
+	btn_vbox.add_child(prev_btn)
+
+	_portrait_index_label = Label.new()
+	_portrait_index_label.text = "1/6"
+	_portrait_index_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_portrait_index_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
+	_portrait_index_label.add_theme_font_size_override("font_size", 12)
+	btn_vbox.add_child(_portrait_index_label)
+
+	var next_btn := Button.new()
+	next_btn.text = ">"
+	next_btn.custom_minimum_size = Vector2(40, 28)
+	next_btn.pressed.connect(_on_portrait_next)
+	btn_vbox.add_child(next_btn)
+
+	hbox.add_child(btn_vbox)
+
+	var name_hbox := $MainVBox/NameHBox
+	if is_instance_valid(name_hbox):
+		$MainVBox.add_child_below_node(name_hbox, hbox)
+
+	_update_portrait_preview()
+
+
+func _on_portrait_prev() -> void:
+	_selected_portrait = (_selected_portrait - 2 + 6) % 6 + 1
+	_update_portrait_preview()
+
+
+func _on_portrait_next() -> void:
+	_selected_portrait = _selected_portrait % 6 + 1
+	_update_portrait_preview()
+
+
+func _update_portrait_preview() -> void:
+	var parent := _portrait_preview.get_parent() if is_instance_valid(_portrait_preview) else null
+	if not is_instance_valid(parent):
+		return
+	if _selected_race_key.is_empty():
+		parent.visible = false
+		return
+	parent.visible = true
+	var race_key: String = _get_portrait_race_key()
+	var path: String = "res://assets/portraits/%s_%s/portrait_%02d.png" % [race_key, _selected_gender, _selected_portrait]
+	if ResourceLoader.exists(path):
+		_portrait_preview.texture = load(path)
+		_portrait_preview.visible = true
+	else:
+		_portrait_preview.texture = null
+		_portrait_preview.visible = false
+	if is_instance_valid(_portrait_index_label):
+		_portrait_index_label.text = "%d/6" % _selected_portrait
 
 
 func _on_gender_selected(gender: String) -> void:
 	_selected_gender = gender
+	_selected_portrait = 1
 	_update_gender_buttons()
+	_update_portrait_preview()
 	_update_selection_summary()
 	print("[CharacterSelection] Selected gender: %s" % gender)
 
@@ -446,7 +550,7 @@ func commit_character(char_name: String = "") -> bool:
 		push_error("[CharacterSelection] GameState autoload not found.")
 		return false
 	
-	var create_success: bool = gs.create_character(_selected_race_key, _selected_class_key, origin, char_name, _selected_gender)
+	var create_success: bool = gs.create_character(_selected_race_key, _selected_class_key, origin, char_name, _selected_gender, _selected_portrait)
 	if not create_success:
 		push_error("[CharacterSelection] GameState.create_character failed for %s/%s." % [_selected_race_key, _selected_class_key])
 		return false

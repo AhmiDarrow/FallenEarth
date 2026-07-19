@@ -180,6 +180,7 @@ func _enter_room(room_id: String, entry_x: int, entry_y: int) -> void:
 		return
 
 	var room_data: Dictionary = _rooms[room_id]
+	_proceduralize_npcs(room_data)
 	_room_view = Node2D.new()
 	_room_view.name = "Room_%s" % room_id
 	_room_view.set_script(load("res://scripts/RoomView.gd"))
@@ -198,6 +199,63 @@ func _enter_room(room_id: String, entry_x: int, entry_y: int) -> void:
 	# Initialize wanderers on first room entry
 	if _wanderers.is_empty():
 		_init_wanderers()
+
+
+const BIOMES_PATH := "res://data/biomes.json"
+
+var _biome_race_pool: Array = []
+
+
+func _get_biome_race_pool() -> Array:
+	if not _biome_race_pool.is_empty():
+		return _biome_race_pool
+	var file: FileAccess = FileAccess.open(BIOMES_PATH, FileAccess.READ)
+	if file == null:
+		_biome_race_pool = ["human", "mutant", "cyborg", "chthon", "vesperid", "nullborn", "revenant"]
+		return _biome_race_pool
+	var text: String = file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Array):
+		_biome_race_pool = ["human", "mutant", "cyborg", "chthon", "vesperid", "nullborn", "revenant"]
+		return _biome_race_pool
+	for entry in parsed:
+		var name: String = str(entry.get("name", ""))
+		if name.to_lower() == _biome.to_lower():
+			var tags: Array = entry.get("wildlife_modifiers", {}).get("preferred_race_tags", [])
+			if not tags.is_empty():
+				_biome_race_pool = tags.duplicate()
+				return _biome_race_pool
+			break
+	_biome_race_pool = ["human", "mutant", "cyborg", "chthon", "vesperid", "nullborn", "revenant"]
+	return _biome_race_pool
+
+
+func _pick_npc_race(seed_str: String) -> String:
+	var pool: Array = _get_biome_race_pool()
+	if pool.is_empty():
+		return "human"
+	var h: int = abs(seed_str.hash())
+	var salt: int = abs(_biome.hash()) + abs(_faction.hash())
+	return str(pool[(h + salt) % pool.size()])
+
+
+func _pick_npc_gender(seed_str: String) -> String:
+	var h: int = abs(seed_str.hash())
+	var salt: int = abs(_biome.hash())
+	return "male" if (h + salt) % 2 == 0 else "female"
+
+
+func _proceduralize_npcs(room_data: Dictionary) -> void:
+	var npcs: Array = room_data.get("npcs", [])
+	for npc in npcs:
+		if npc.has("race") and not str(npc.get("race", "")).is_empty():
+			continue
+		var npc_id: String = str(npc.get("id", ""))
+		npc["race"] = _pick_npc_race(npc_id)
+		npc["gender"] = _pick_npc_gender(npc_id)
+		var idx: int = (abs(npc_id.hash()) % 6 + 6) % 6 + 1
+		npc["portrait"] = idx
 
 
 func _setup_player_visual() -> void:
