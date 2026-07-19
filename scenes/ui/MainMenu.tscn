@@ -1,19 +1,7 @@
-[gd_scene load_steps=4 format=3 uid="uid://b8rtx3u4vv1yk"]
+[gd_scene load_steps=3 format=3 uid="uid://b8rtx3u4vv1yk"]
 
 [ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_mfk0p"]
 [ext_resource type="Texture2D" uid="uid://bv6wiephmt4nj" path="res://scenes/ui/image2.jpg" id="2_uosv7"]
-
-[sub_resource type="StyleBoxFlat" id="button_normal"]
-bg_color = Color(0.2, 0.15, 0.3, 1)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(0.6, 0.5, 0.8, 1)
-corner_radius_top_left = 4
-corner_radius_top_right = 4
-corner_radius_bottom_right = 4
-corner_radius_bottom_left = 4
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -51,10 +39,10 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 12
+theme_override_constants/separation = 16
 
 [node name="TitleLabel" type="RichTextLabel" parent="VBoxContainer"]
-custom_minimum_size = Vector2(320, 64)
+custom_minimum_size = Vector2(360, 80)
 layout_mode = 2
 size_flags_horizontal = 4
 bbcode_enabled = true
@@ -62,33 +50,37 @@ text = "[center][b]FALLEN EARTH[/b][/center]"
 autowrap_mode = 4
 
 [node name="NewGameButton" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 50)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("button_normal")
 text = "▶ New Game"
 
 [node name="LoadGameButton" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 50)
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("button_normal")
 text = "📂 Load Game"
 
-[node name="OptionsButton" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 50)
+[node name="MultiplayerButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("button_normal")
+text = "🌐 Multiplayer"
+
+[node name="OptionsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(320, 56)
+layout_mode = 2
+size_flags_horizontal = 4
 text = "⚙ Options"
 
-[node name="ExitButton" type="Button" parent="VBoxContainer"]
-custom_minimum_size = Vector2(300, 50)
+[node name="ModsButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(320, 56)
 layout_mode = 2
 size_flags_horizontal = 4
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_styles/normal = SubResource("button_normal")
+text = "🧩 Mods"
+
+[node name="ExitButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(320, 56)
+layout_mode = 2
+size_flags_horizontal = 4
 text = "🚪 Exit"
