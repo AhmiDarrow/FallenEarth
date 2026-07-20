@@ -156,7 +156,7 @@ func get_character_data() -> Dictionary:
 ## bandages to inventory for early-game healing.
 func _grant_starting_equipment(class_id: String) -> void:
 	var em: EquipmentManager = get_node_or_null("/root/EquipmentManager") as EquipmentManager
-	var im: Node = get_node_or_null("/root/InventoryManager")
+	var im: Node = get_node_or_null("/root/InventoryHandler")
 	if not is_instance_valid(em):
 		push_warning("[GameState] EquipmentManager not available — skipping starting equipment.")
 		return
@@ -169,14 +169,14 @@ func _grant_starting_equipment(class_id: String) -> void:
 			em.equip("player", weapon_id, "mainhand")
 			print("[GameState] Starting weapon equipped: %s" % weapon.get("name", weapon_id))
 
-	# Armor — full set (tier 0 = level 1)
-	for slot in ["head", "chest", "legs", "boots"]:
-		var armor_piece: Dictionary = em.get_armor(class_id, slot, 0)
-		if not armor_piece.is_empty():
-			var armor_id: String = str(armor_piece.get("id", ""))
-			if not armor_id.is_empty():
-				em.equip("player", armor_id, slot)
-				print("[GameState] Starting armor equipped (%s): %s" % [slot, armor_piece.get("name", armor_id)])
+	# Armor — class determines starting armor type
+	var armor_type: String = em.get_starting_armor_type(class_id) if em.has_method("get_starting_armor_type") else "rugged"
+	var armor_piece: Dictionary = em.get_armor(armor_type, 0)
+	if not armor_piece.is_empty():
+		var armor_id: String = str(armor_piece.get("id", ""))
+		if not armor_id.is_empty():
+			em.equip("player", armor_id, "armor")
+			print("[GameState] Starting armor equipped: %s (%s)" % [armor_piece.get("name", armor_id), armor_type])
 
 	# Consumables — 3 bandages for early healing
 	if is_instance_valid(im) and im.has_method("add_item"):
@@ -187,6 +187,28 @@ func _grant_starting_equipment(class_id: String) -> void:
 	if is_instance_valid(im) and im.has_method("add_item"):
 		im.call("add_item", "sleeping_bag", 1)
 		print("[GameState] Starting utility: 1x Sleeping Bag")
+
+	# v0.4.0 polish (re-pipeline): starting tools so the player can test
+	# the gather system on the very first hex. axe_stone goes to main hand
+	# AND to InventoryHandler row 0 col 0 — Hotbar reads the inventory, so
+	# the mainhand-equipped tool must also live in the hotbar; the player
+	# wouldn't otherwise see the equipped axe on their hotbar. Pickaxe
+	# gets slot 1. Also seed 5 sticks + 5 stones for crafting replacements.
+	if is_instance_valid(im) and im.has_method("add_item"):
+		# Equip axe_stone to mainhand (overrides the weapon that was just
+		# equipped). Tools and weapons share MainHand in the current model.
+		if is_instance_valid(em) and em.has_method("equip"):
+			em.equip("player", "axe_stone", "mainhand")
+			print("[GameState] Starting tool equipped: Stone Axe (mainhand)")
+		# Mirror the equipped tool into the hotbar so it's visible (slot 0
+		# = InventoryHandler.main_grid[0][0]).
+		im.call("add_item", "axe_stone", 1)
+		print("[GameState] Hotbar slot 0: Stone Axe")
+		im.call("add_item", "pickaxe_stone", 1)
+		print("[GameState] Hotbar slot 1: Stone Pickaxe")
+		im.call("add_item", "stick", 5)
+		im.call("add_item", "stone", 5)
+		print("[GameState] Starting crafting materials: 5x Stick, 5x Stone")
 
 	# Sync equipment into character data for save/encounter use
 	_character_data["equipment"] = em.get_equipment("player").duplicate(true)

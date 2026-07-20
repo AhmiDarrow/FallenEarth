@@ -1,27 +1,32 @@
 ## HUD — Top-level in-game Character HUD overlay.
 ##
-## Phase 2. Composes:
-##   - Top bar: player name, race, class, level, EC
-##   - HP / MP / XP bars (below top bar)
-##   - Minimap (top-right)
-##   - Hotbar (bottom)
+## v0.4.0 polish: rewritten with BoxContainer / VBoxContainer layout so
+## the panel scales with viewport size. Composes:
+##   - Top bar:    player name, race, class, level, EC (top-left)
+##   - Status:     HP / MP / XP bars grouped beneath the top bar
+##   - Minimap:    top-right (local overworld: terrain tints, category
+##                 dots, player-direction triangle)
+##   - Hotbar:     bottom-centre (InventoryHandler row 0 +
+##                 EquipmentManager mainhand overlay)
+##   - Help line:  bottom-left, persistent — primary keys
 ##
-## The character menu is opened via keyboard hotkeys (I/E/C/P/S/J).
-## Menu and Save are accessed from the pause menu (Escape).
-## World map has a dedicated hotkey (M).
+## Character menu is opened via keyboard hotkeys (I/E/C/P/S/J).
+## Pause menu via Escape. World map via M.
 ##
-## Listens to InventoryManager (inventory_changed), ProgressionManager
-## (xp_changed, level_up, ec_changed), and HubWorld (cell_changed for
-## the minimap player position).
+## Listens to:
+##   - InventoryHandler (inventory_changed) → refresh hotbar
+##   - ProgressionManager (xp_changed, level_up, ec_changed) → refresh bars
+##   - HubWorld (notify_cell_changed) → refresh minimap
 class_name HUD
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
-const TOP_BAR_H := 48.0
-const BAR_H := 16.0
-const BAR_W := 220.0
-const HOTBAR_H := 80.0
+const TOP_BAR_H := 56.0
+const BAR_H := 18.0
+const BAR_W := 240.0
+const HELP_LINE_H := 30.0
 
 signal character_menu_closed
 
@@ -35,6 +40,7 @@ var _xp_bar: ProgressBar
 var _minimap: Minimap
 var _hotbar: Hotbar
 var _region_info_label: Label
+var _help_line: RichTextLabel
 var _character_menu: Control = null
 
 # Character display data (synced from GameState on _ready + on level_up)
@@ -44,27 +50,31 @@ var _display_class: String = "?"
 
 
 func _ready() -> void:
-	# Anchor to fill parent (Full Rect), then sync size after first layout pass
+	# Fill parent rect so the HUD occupies the entire viewport.
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_PASS
+
+	# Build all sub-components. Each builder parents into the appropriate
+	# area of the HUD; no BoxContainer integrator here because the
+	# sub-components anchor themselves to specific corners.
 	_build_top_bar()
-	_build_resource_bars()
+	_build_status_block()
 	_build_minimap()
+	_build_help_line()
 	_build_hotbar()
-	# Connect to parent resized so we resize when the viewport changes
+
+	# Connect to parent resized so we resize when the viewport changes.
 	var parent := get_parent()
 	if parent is Control:
 		if not (parent as Control).resized.is_connected(_on_parent_resized):
 			(parent as Control).resized.connect(_on_parent_resized)
-	# Defer size sync so the parent Control has completed its layout
 	_sync_size_to_parent.call_deferred()
 	_connect_signals()
 	_refresh_from_gamestate()
 
 
-## Snap our `size` to the parent Control's rect. Required because we
-## are added as a child of a non-Container Control and the engine
-## doesn't auto-size us from anchors alone in every setup.
+## Snap our `size` to the parent Control's rect. Required because we are
+## added as a child of a non-Container Control.
 func _sync_size_to_parent() -> void:
 	var parent := get_parent()
 	if parent is Control:
@@ -74,7 +84,6 @@ func _sync_size_to_parent() -> void:
 			position = Vector2.ZERO
 
 
-## Re-sync our size when the parent resizes.
 func _on_parent_resized() -> void:
 	_sync_size_to_parent()
 
@@ -85,199 +94,189 @@ func _notification(what: int) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Build sub-components
+# Top bar — name / race / class / level / EC
 # ---------------------------------------------------------------------------
 
 func _build_top_bar() -> void:
-	# Top bar background — limited to left 45% to prevent bleed into center
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.05, 0.07, 0.85)
+	# Top bar background panel: anchored top-left, stretches 60% of width.
+	var bg := Panel.new()
+	bg.name = "TopBarBG"
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = MT.OVERLAY_DARK
+	sb.content_margin_left = 14
+	sb.content_margin_right = 14
+	sb.content_margin_top = 6
+	sb.content_margin_bottom = 6
+	sb.corner_radius_top_left = 6
+	sb.corner_radius_top_right = 6
+	sb.corner_radius_bottom_right = 6
+	sb.corner_radius_bottom_left = 6
+	bg.add_theme_stylebox_override("panel", sb)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bg.anchor_left = 0.0
 	bg.anchor_top = 0.0
-	bg.anchor_right = 0.45
+	bg.anchor_right = 0.6
 	bg.anchor_bottom = 0.0
-	bg.offset_bottom = TOP_BAR_H
-	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.offset_left = 8
+	bg.offset_top = 8
+	bg.offset_right = -8
+	bg.offset_bottom = TOP_BAR_H - 4
 	add_child(bg)
 
-	# Name (left)
-	_name_label = Label.new()
-	_name_label.text = _display_name
-	_name_label.add_theme_color_override("font_color", Color.WHITE)
-	_name_label.add_theme_font_size_override("font_size", 18)
-	_name_label.anchor_left = 0.0
-	_name_label.anchor_top = 0.0
-	_name_label.offset_left = 16
-	_name_label.offset_top = 8
-	add_child(_name_label)
+	# Inner HBoxContainer lays out the four info cells auto-sized.
+	var bar := HBoxContainer.new()
+	bar.name = "TopBar"
+	bg.add_child(bar)
+	bar.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bar.offset_left = 8
+	bar.offset_top = 4
+	bar.offset_right = -8
+	bar.offset_bottom = -4
+	bar.add_theme_constant_override("separation", 18)
+	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	# Race / Class (under name)
-	_class_label = Label.new()
-	_class_label.text = "%s · %s" % [_display_race, _display_class]
-	_class_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
-	_class_label.add_theme_font_size_override("font_size", 12)
-	_class_label.anchor_left = 0.0
-	_class_label.anchor_top = 0.0
-	_class_label.offset_left = 16
-	_class_label.offset_top = 30
-	add_child(_class_label)
+	# Name cell (icon: silhouette)
+	var name_box := _make_stat_cell("Recruit", MT.FS_H3, MT.TEXT_ACCENT)
+	bar.add_child(name_box)
+	_name_label = name_box.find_child("Value", true, false) as Label
 
-	# Level (right of name in top bar)
-	_level_label = Label.new()
-	_level_label.text = "Lv. 1"
-	_level_label.add_theme_color_override("font_color", Color(1, 0.95, 0.6))
-	_level_label.add_theme_font_size_override("font_size", 14)
-	_level_label.anchor_left = 0.0
-	_level_label.anchor_top = 0.0
-	_level_label.offset_left = 180
-	_level_label.offset_top = 8
-	add_child(_level_label)
+	# Race / Class cell
+	var class_box := _make_stat_cell("?", MT.FS_SMALL, MT.TEXT_SECONDARY)
+	bar.add_child(class_box)
+	_class_label = class_box.find_child("Value", true, false) as Label
 
-	# EC (right of level in top bar)
-	_ec_label = Label.new()
-	_ec_label.text = "0 EC"
-	_ec_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
-	_ec_label.add_theme_font_size_override("font_size", 14)
-	_ec_label.anchor_left = 0.0
-	_ec_label.anchor_top = 0.0
-	_ec_label.offset_left = 260
-	_ec_label.offset_top = 8
-	add_child(_ec_label)
+	# Level cell
+	var level_box := _make_stat_cell("Lv. 1", MT.FS_H2, Color(1, 0.92, 0.55))
+	bar.add_child(level_box)
+	_level_label = level_box.find_child("Value", true, false) as Label
+
+	# EC cell
+	var ec_box := _make_stat_cell("0 EC", MT.FS_H2, MT.ACCENT_PRIMARY)
+	bar.add_child(ec_box)
+	_ec_label = ec_box.find_child("Value", true, false) as Label
 
 
-func _build_resource_bars() -> void:
-	# Container background for the bar group — centered in the top-left area
-	var bar_group := PanelContainer.new()
-	bar_group.anchor_left = 0.0
-	bar_group.anchor_top = 0.0
-	bar_group.anchor_right = 0.0
-	bar_group.anchor_bottom = 0.0
-	bar_group.offset_left = 12
-	bar_group.offset_top = TOP_BAR_H + 4
-	bar_group.offset_right = 12 + BAR_W + 20
-	bar_group.offset_bottom = TOP_BAR_H + 4 + BAR_H * 3 + 16
-	bar_group.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.04, 0.04, 0.06, 0.45)
-	bg_style.corner_radius_top_left = 4
-	bg_style.corner_radius_top_right = 4
-	bg_style.corner_radius_bottom_left = 4
-	bg_style.corner_radius_bottom_right = 4
-	bar_group.add_theme_stylebox_override("panel", bg_style)
-	add_child(bar_group)
+## Stat-cell helper: VBox of two labels (small icon, larger value). The
+## inner "Value" label can be retrieved by name from `_refresh_*` callers.
+func _make_stat_cell(value: String, _value_size: int, value_color: Color) -> VBoxContainer:
+	var box := VBoxContainer.new()
+	box.custom_minimum_size = Vector2(0, TOP_BAR_H - 16)
+	box.add_theme_constant_override("separation", -2)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon_dot := ColorRect.new()
+	icon_dot.color = MT.ACCENT_PRIMARY
+	icon_dot.custom_minimum_size = Vector2(8, 2)
+	box.add_child(icon_dot)
+	var value_label := Label.new()
+	value_label.name = "Value"
+	value_label.text = value
+	value_label.add_theme_color_override("font_color", value_color)
+	value_label.add_theme_font_size_override("font_size", _value_size)
+	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	box.add_child(value_label)
+	return box
 
-	# Region info label (inside bar group, top)
-	_region_info_label = Label.new()
-	_region_info_label.text = ""
+
+# ---------------------------------------------------------------------------
+# Status block — HP / MP / XP bars + region info
+# ---------------------------------------------------------------------------
+
+func _build_status_block() -> void:
+	# Status panel (background)
+	var panel := Panel.new()
+	panel.name = "StatusPanel"
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = MT.OVERLAY_DARK
+	sb.border_color = MT.BORDER_SUBTLE
+	sb.border_width_left = 1
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.content_margin_left = 8
+	sb.content_margin_right = 8
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 4
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_right = 4
+	sb.corner_radius_bottom_left = 4
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.anchor_left = 0.0
+	panel.anchor_top = 0.0
+	panel.anchor_right = 0.0
+	panel.anchor_bottom = 0.0
+	panel.offset_left = 8
+	panel.offset_top = TOP_BAR_H + 8
+	panel.offset_right = 8 + BAR_W + 64
+	panel.offset_bottom = TOP_BAR_H + 4 + (BAR_H + 2) * 3 + 18
+	add_child(panel)
+
+	# Region info label (top of the status panel)
+	_region_info_label = UH.make_label("", 10, MT.TEXT_SECONDARY)
+	_region_info_label.name = "RegionInfoLabel"
 	_region_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	_region_info_label.anchor_left = 0.0
-	_region_info_label.anchor_top = 0.0
-	_region_info_label.offset_left = 16
-	_region_info_label.offset_top = TOP_BAR_H + 6
-	_region_info_label.add_theme_font_size_override("font_size", 10)
-	_region_info_label.add_theme_color_override("font_color", Color(0.75, 0.75, 0.8))
-	add_child(_region_info_label)
+	_region_info_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
+	_region_info_label.offset_top = 4
+	_region_info_label.offset_left = 8
+	_region_info_label.offset_right = -8
+	panel.add_child(_region_info_label)
 
-	var bar_x := 20
-	var bar_y: float = TOP_BAR_H + 22
+	# Inner VBox for the three bars, anchored below region label
+	var strip := VBoxContainer.new()
+	strip.name = "BarStrip"
+	strip.set_anchors_preset(Control.PRESET_FULL_RECT)
+	strip.offset_left = 6
+	strip.offset_top = 22
+	strip.offset_right = -6
+	strip.offset_bottom = -6
+	strip.add_theme_constant_override("separation", 2)
+	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(strip)
 
-	# HP
-	var hp_label := Label.new()
-	hp_label.text = "HP"
-	hp_label.add_theme_color_override("font_color", Color(0.95, 0.4, 0.4))
-	hp_label.add_theme_font_size_override("font_size", 10)
-	hp_label.anchor_left = 0.0
-	hp_label.anchor_top = 0.0
-	hp_label.offset_left = bar_x
-	hp_label.offset_top = bar_y + 1
-	add_child(hp_label)
-	_hp_bar = _make_bar(bar_x + 26, bar_y, BAR_W, Color(0.75, 0.2, 0.2))
-	add_child(_hp_bar)
-	bar_y += BAR_H + 4
+	_hp_bar = _make_bar(BAR_W, MT.HP_FILL)
+	strip.add_child(_hp_bar)
+	_hp_bar.value = 0
+	_hp_bar.max_value = 1
 
-	# MP
-	var mp_label := Label.new()
-	mp_label.text = "MP"
-	mp_label.add_theme_color_override("font_color", Color(0.5, 0.65, 0.95))
-	mp_label.add_theme_font_size_override("font_size", 10)
-	mp_label.anchor_left = 0.0
-	mp_label.anchor_top = 0.0
-	mp_label.offset_left = bar_x
-	mp_label.offset_top = bar_y + 1
-	add_child(mp_label)
-	_mp_bar = _make_bar(bar_x + 26, bar_y, BAR_W, Color(0.3, 0.45, 0.9))
-	add_child(_mp_bar)
-	bar_y += BAR_H + 4
+	_mp_bar = _make_bar(BAR_W, MT.MP_FILL)
+	strip.add_child(_mp_bar)
+	_mp_bar.value = 0
+	_mp_bar.max_value = 1
 
-	# XP
-	var xp_label := Label.new()
-	xp_label.text = "XP"
-	xp_label.add_theme_color_override("font_color", Color(0.6, 0.95, 0.5))
-	xp_label.add_theme_font_size_override("font_size", 10)
-	xp_label.anchor_left = 0.0
-	xp_label.anchor_top = 0.0
-	xp_label.offset_left = bar_x
-	xp_label.offset_top = bar_y + 1
-	add_child(xp_label)
-	_xp_bar = _make_bar(bar_x + 26, bar_y, BAR_W, Color(0.35, 0.7, 0.25))
-	add_child(_xp_bar)
+	_xp_bar = _make_bar(BAR_W, MT.XP_FILL)
+	strip.add_child(_xp_bar)
+	_xp_bar.value = 0
+	_xp_bar.max_value = 1
 
 
-func _make_bar(offset_left: float, offset_top: float, bar_width: float, fill_color: Color) -> ProgressBar:
-	var bar := ProgressBar.new()
-	bar.anchor_left = 0.0
-	bar.anchor_top = 0.0
-	bar.offset_left = offset_left
-	bar.offset_top = offset_top
-	bar.anchor_right = 0.0
-	bar.offset_right = offset_left + bar_width
-	bar.custom_minimum_size = Vector2(80, BAR_H)
-	bar.max_value = 100
-	bar.value = 100
-	bar.show_percentage = true
-
-	var bg_style := StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.08, 0.08, 0.1, 0.9)
-	bg_style.border_width_left = 1
-	bg_style.border_width_right = 1
-	bg_style.border_width_top = 1
-	bg_style.border_width_bottom = 1
-	bg_style.border_color = Color(0.2, 0.2, 0.22, 0.8)
-	bg_style.corner_radius_top_left = 3
-	bg_style.corner_radius_top_right = 3
-	bg_style.corner_radius_bottom_left = 3
-	bg_style.corner_radius_bottom_right = 3
-	bar.add_theme_stylebox_override("background", bg_style)
-
-	var fill_style := StyleBoxFlat.new()
-	fill_style.bg_color = fill_color
-	fill_style.corner_radius_top_left = 2
-	fill_style.corner_radius_top_right = 2
-	fill_style.corner_radius_bottom_left = 2
-	fill_style.corner_radius_bottom_right = 2
-	bar.add_theme_stylebox_override("fill", fill_style)
-
+func _make_bar(bar_width: float, fill_color: Color) -> ProgressBar:
+	var bar := UH.make_progress_bar(int(bar_width), BAR_H, fill_color)
+	bar.custom_minimum_size = Vector2(bar_width, BAR_H)
+	bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return bar
 
+
+# ---------------------------------------------------------------------------
+# Minimap — top-right
+# ---------------------------------------------------------------------------
 
 func _build_minimap() -> void:
 	_minimap = Minimap.new()
 	_minimap.name = "Minimap"
+	# v0.4.0 polish: terrain tints, category dots, player-direction arrow.
+	# 240x160 panel anchored top-right (~6% side margins).
 	_minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_minimap.offset_left = -220
-	_minimap.offset_top = 20
-	_minimap.offset_right = -20
-	_minimap.offset_bottom = 220
-	# Try to parent inside MinimapPanel (sibling under UI_Canvas)
-	var parent_ctrl := get_parent()  # UI_Canvas
-	if parent_ctrl != null:
-		var panel := parent_ctrl.get_node_or_null("MinimapPanel") as Control
-		if panel != null:
-			panel.add_child(_minimap)
-			return
-	# Fallback: add directly to HUD
+	_minimap.offset_left = -260
+	_minimap.offset_top = 8
+	_minimap.offset_right = -8
+	_minimap.offset_bottom = 232
 	add_child(_minimap)
 
+
+# ---------------------------------------------------------------------------
+# Hotbar — bottom-centre
+# ---------------------------------------------------------------------------
 
 func _build_hotbar() -> void:
 	_hotbar = Hotbar.new()
@@ -287,7 +286,56 @@ func _build_hotbar() -> void:
 	_apply_mod_overlays()
 
 
+# ---------------------------------------------------------------------------
+# Help line — bottom-left
+# ---------------------------------------------------------------------------
 
+func _build_help_line() -> void:
+	var bg := Panel.new()
+	bg.name = "HelpLineBG"
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.04, 0.04, 0.06, 0.6)
+	sb.content_margin_left = 10
+	sb.content_margin_right = 10
+	sb.content_margin_top = 5
+	sb.content_margin_bottom = 5
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_right = 4
+	sb.corner_radius_bottom_left = 4
+	bg.add_theme_stylebox_override("panel", sb)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	bg.anchor_left = 0.0
+	bg.anchor_top = 1.0
+	bg.anchor_right = 0.0
+	bg.anchor_bottom = 1.0
+	bg.offset_left = 8
+	bg.offset_top = -HELP_LINE_H - 6
+	bg.offset_right = 560
+	bg.offset_bottom = -4
+	add_child(bg)
+
+	_help_line = RichTextLabel.new()
+	_help_line.name = "HelpLine"
+	_help_line.bbcode_enabled = true
+	_help_line.fit_content = true
+	_help_line.scroll_active = false
+	_help_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_help_line.add_theme_color_override("default_color", MT.TEXT_SECONDARY)
+	_help_line.add_theme_font_size_override("normal_font_size", 11)
+	_help_line.text = (
+		"[b]WASD[/b] move  ·  [b]F[/b] gather/interact  ·  [b]1-0[/b] hotbar  ·  "
+		+ "[b]I/E/C/P/S/J[/b] menus  ·  [b]M[/b] map  ·  [b]Esc[/b] pause"
+	)
+	_help_line.anchor_left = 0.0
+	_help_line.anchor_top = 1.0
+	_help_line.anchor_right = 0.0
+	_help_line.anchor_bottom = 1.0
+	_help_line.offset_left = 16
+	_help_line.offset_top = -HELP_LINE_H - 4
+	_help_line.offset_right = 540
+	_help_line.offset_bottom = -4
+	add_child(_help_line)
 
 
 # ---------------------------------------------------------------------------
@@ -300,7 +348,7 @@ func _connect_signals() -> void:
 		prog.connect("xp_changed", _on_xp_changed)
 		prog.connect("level_up", _on_level_up)
 		prog.connect("ec_changed", _on_ec_changed)
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if inv != null:
 		inv.connect("inventory_changed", _on_inventory_changed)
 
@@ -320,7 +368,6 @@ func _refresh_from_gamestate() -> void:
 		_display_class = str(char_data.get("class", "?"))
 		_name_label.text = _display_name
 		_class_label.text = "%s · %s" % [_display_race, _display_class]
-	# Progression values
 	var prog: Node = get_node_or_null("/root/ProgressionManager")
 	if prog != null:
 		_refresh_level(prog.level, prog.xp, prog.xp_to_next(prog.level))
@@ -335,7 +382,7 @@ func _refresh_level(lvl: int, current_xp: int, xp_to_next: int) -> void:
 		_xp_bar.value = current_xp
 	else:
 		_xp_bar.max_value = 1
-		_xp_bar.value = 1  # max level
+		_xp_bar.value = 1
 
 
 func _refresh_minimap() -> void:
@@ -366,14 +413,10 @@ func _on_inventory_changed() -> void:
 		_hotbar.refresh()
 
 
-## Open the CharacterMenu (tabbed shell). Called by HubWorld when a
-## character-screen hotkey fires (I/E/C/P/S/J). Idempotent: a second
-## open of the same tab closes the menu.
-##
-## Mirrors the `PauseMenu` pattern: the menu is loaded from its
-## dedicated scene (`scenes/ui/CharacterMenu.tscn`) and added to a
-## `CanvasLayer` so it overlays everything, including the pause menu.
-## The menu's own `open()` method handles sizing and z-order.
+# ---------------------------------------------------------------------------
+# Public API for HubWorld
+# ---------------------------------------------------------------------------
+
 func open_character_menu(initial_tab: String = "inventory") -> void:
 	if _character_menu != null and is_instance_valid(_character_menu):
 		if _character_menu.has_method("get_active_tab") and _character_menu.get_active_tab() == initial_tab:
@@ -391,9 +434,6 @@ func open_character_menu(initial_tab: String = "inventory") -> void:
 		return
 	_character_menu.name = "CharacterMenu"
 	_character_menu.closed.connect(_on_character_menu_closed)
-
-	# Parent CanvasLayer to the root scene so the menu is independent of HUD.
-	# Same layer as UI_Canvas (100); added later so renders on top.
 	var root: Node = get_tree().current_scene
 	var layer := CanvasLayer.new()
 	layer.name = "CharacterMenuLayer"
@@ -402,8 +442,6 @@ func open_character_menu(initial_tab: String = "inventory") -> void:
 	_character_menu.set_meta(&"_menu_layer", layer)
 	layer.add_child(_character_menu)
 	_character_menu.open(initial_tab)
-
-	# Hide HUD elements while the menu is open.
 	visible = false
 
 
@@ -417,33 +455,23 @@ func _on_character_menu_closed() -> void:
 	character_menu_closed.emit()
 
 
-# ---------------------------------------------------------------------------
-# Public API for HubWorld
-# ---------------------------------------------------------------------------
-
-## Called by HubWorld on cell change so the minimap highlights correctly.
 func notify_cell_changed() -> void:
 	_refresh_minimap()
 
 
-## Called by HubWorld to update the region info text (biome, mob count, etc.)
-## shown between the top bar and resource bars.
 func set_region_info(text: String) -> void:
 	if is_instance_valid(_region_info_label):
 		_region_info_label.text = text
 
 
-## Returns the hotbar (or null if not yet ready).
 func get_hotbar() -> Hotbar:
 	return _hotbar
 
 
-## Returns true if the character menu is currently open.
 func is_character_menu_open() -> bool:
 	return _character_menu != null and is_instance_valid(_character_menu)
 
 
-## Add mod-registered overlay scenes to the HUD
 func _apply_mod_overlays() -> void:
 	var mod_api := get_node_or_null("/root/ModAPI")
 	if mod_api == null:

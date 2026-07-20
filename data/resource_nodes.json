@@ -1,731 +1,276 @@
 {
-  "_comment": "Per-biome resource nodes. Each biome has 1-3 trees, 1-3 formations, 0-3 ore, 0-3 crystals, 0-3 fauna. floor_pickup_density gives the chance per cell that a stick or stone appears (universal across all biomes). The total number of each node type placed on a 512x512 map is computed by LocalMapGenerator using these densities and biome modifiers (no fixed counts; nodes are sampled per cell).",
+  "_comment": "Per-biome resource nodes + visual decor. Each biome uses ONLY sprite IDs that have 16 PNG variants in assets/sprites/{resource_nodes,decor}/<id>_{00-15}.png AND whose entity ids appear in data/tools.json::tools[*]::harvests so the matching tool can actually gather them. Available sprites (2026-07-20): TREES=[tree_glass_cactus, tree_ironwood, tree_pine, tree_withered_oak], ORE=[ore_copper, ore_iron, ore_starmetal], FORMATIONS=[formation_rust_pipe], CRYSTALS=[crystal_teal, crystal_void], DECOR=[decor_bone_heap, decor_bones_scat, decor_crater, decor_flowers, decor_mushroom_glow, decor_pillar_glass, decor_rock_charged, decor_shrub_dead, decor_tower_base, decor_vent_toxic, decor_wall_ruin]. fauna_* removed: no renderable sprite for fauna creatures. floor_pickup_density gives per-cell chance for stick/stone (universal). TERRAIN_WATER is excluded from placement. Tool harvests (data/tools.json): axe_stone/axe_rough/axe_reinforced/axe_masterwork -> ash_scrub, withered_oak, neon_kelp, scorched_shrub, ironwood_spire, ironwood_cluster, glass_cactus, dead_tree, lightning_pine, toxic_bramble. pickaxe_stone/pickaxe_iron -> iron_outcrop. pickaxe_copper -> iron_outcrop, copper_outcrop. pickaxe_starmetal -> iron_outcrop, copper_outcrop, starmetal_outcrop.",
   "biomes": {
     "Ash Wastes": {
       "trees": [
-        {
-          "id": "ash_scrub",
-          "name": "Ash Scrub",
-          "yield": {
-            "item": "withered_branch",
-            "qty": [
-              1,
-              3
-            ]
-          },
-          "gather_secs": 2.5,
-          "respawn_secs": 180,
-          "density": 0.005,
-          "sprite": "tree_ash_scrub"
-        },
-        {
-          "id": "withered_oak",
-          "name": "Withered Oak",
-          "yield": {
-            "item": "withered_branch",
-            "qty": [
-              2,
-              4
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 240,
-          "density": 0.0013,
-          "sprite": "tree_withered_oak"
-        }
+        {"id": "ash_scrub", "name": "Ash Scrub", "yield": {"item_id": "withered_branch", "count": [1, 3]}, "gather_secs": 2.5, "respawn_secs": 180, "density": 0.005, "sprite": "tree_withered_oak"},
+        {"id": "withered_oak_ash", "name": "Withered Oak", "yield": {"item_id": "withered_branch", "count": [2, 4]}, "gather_secs": 4.0, "respawn_secs": 240, "density": 0.0013, "sprite": "tree_pine"}
       ],
       "formations": [
-        {
-          "id": "rust_pipe_cluster",
-          "name": "Rust Pipe Cluster",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 3.0,
-          "respawn_secs": 240,
-          "density": 0.0037,
-          "sprite": "formation_rust_pipe",
-          "passable": true
-        },
-        {
-          "id": "wrecked_vehicle",
-          "name": "Wrecked Vehicle",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              2,
-              4
-            ]
-          },
-          "gather_secs": 5.0,
-          "respawn_secs": 360,
-          "density": 0.001,
-          "sprite": "formation_vehicle",
-          "passable": true
-        }
+        {"id": "rust_pipe_cluster", "name": "Rust Pipe Cluster", "yield": {"item_id": "rusted_scrap", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0037, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.003,
-          "sprite": "ore_iron"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.003, "sprite": "ore_iron"},
+        {"id": "copper_outcrop", "name": "Copper Outcrop", "yield": {"item_id": "copper_ore", "count": [1, 2]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.0015, "sprite": "ore_copper"}
       ],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "wasteland_lizard",
-          "name": "Wasteland Lizard",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.0015,
-          "sprite": "fauna_lizard"
-        }
-      ]
+      "crystals": []
     },
     "Rust Canyons": {
-      "trees": [],
+      "trees": [
+        {"id": "withered_oak_rust", "name": "Rusted Oak", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0015, "sprite": "tree_withered_oak"},
+        {"id": "lightning_pine_rust", "name": "Storm Pine", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 3.5, "respawn_secs": 280, "density": 0.001, "sprite": "tree_pine"}
+      ],
       "formations": [
-        {
-          "id": "rusted_container",
-          "name": "Rusted Container",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              2,
-              4
-            ]
-          },
-          "gather_secs": 3.5,
-          "respawn_secs": 300,
-          "density": 0.0045,
-          "sprite": "formation_container",
-          "passable": true
-        },
-        {
-          "id": "collapsed_walkway",
-          "name": "Collapsed Walkway",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              3,
-              6
-            ]
-          },
-          "gather_secs": 6.0,
-          "respawn_secs": 420,
-          "density": 0.0008,
-          "sprite": "formation_walkway",
-          "passable": true
-        }
+        {"id": "rusted_container", "name": "Rusted Container", "yield": {"item_id": "rusted_scrap", "count": [2, 4]}, "gather_secs": 3.5, "respawn_secs": 300, "density": 0.0045, "sprite": "formation_rust_pipe", "passable": true},
+        {"id": "collapsed_walkway", "name": "Collapsed Walkway", "yield": {"item_id": "rusted_scrap", "count": [3, 6]}, "gather_secs": 6.0, "respawn_secs": 420, "density": 0.0008, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.0035,
-          "sprite": "ore_iron"
-        },
-        {
-          "id": "copper_outcrop",
-          "name": "Copper Outcrop",
-          "yield": {
-            "item": "copper_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 5.0,
-          "respawn_secs": 360,
-          "density": 0.002,
-          "sprite": "ore_copper"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.0035, "sprite": "ore_iron"},
+        {"id": "copper_outcrop", "name": "Copper Outcrop", "yield": {"item_id": "copper_ore", "count": [1, 2]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.002, "sprite": "ore_copper"},
+        {"id": "starmetal_outcrop", "name": "Starmetal Outcrop", "yield": {"item_id": "starmetal_ore", "count": [1, 2]}, "gather_secs": 6.0, "respawn_secs": 480, "density": 0.0005, "sprite": "ore_starmetal"}
       ],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "rust_rat",
-          "name": "Rust Rat",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.002,
-          "sprite": "fauna_rat"
-        }
+      "crystals": [
+        {"id": "void_shard_rust", "name": "Void Shard Fragment", "yield": {"item_id": "void_shard", "count": [1, 1]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.0008, "sprite": "crystal_void"}
       ]
     },
     "Neon Bogs": {
       "trees": [
-        {
-          "id": "neon_kelp",
-          "name": "Neon Kelp",
-          "yield": {
-            "item": "kelp_fibre",
-            "qty": [
-              2,
-              4
-            ]
-          },
-          "gather_secs": 2.5,
-          "respawn_secs": 180,
-          "density": 0.0063,
-          "sprite": "tree_neon_kelp"
-        }
+        {"id": "neon_kelp", "name": "Neon Kelp", "yield": {"item_id": "kelp_fibre", "count": [2, 4]}, "gather_secs": 2.5, "respawn_secs": 180, "density": 0.0063, "sprite": "tree_glass_cactus"},
+        {"id": "glass_cactus_bog", "name": "Glass Cactus", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 220, "density": 0.002, "sprite": "tree_glass_cactus"}
       ],
       "formations": [
-        {
-          "id": "shallow_pool",
-          "name": "Shallow Pool",
-          "yield": null,
-          "gather_secs": 0,
-          "respawn_secs": 0,
-          "density": 0.003,
-          "sprite": "formation_pool",
-          "passable": false
-        }
+        {"id": "shallow_pool", "name": "Shallow Pool", "yield": null, "gather_secs": 0, "respawn_secs": 0, "density": 0.003, "sprite": "formation_rust_pipe", "passable": false}
       ],
-      "ore": [],
+      "ore": [
+        {"id": "copper_outcrop", "name": "Copper Outcrop", "yield": {"item_id": "copper_ore", "count": [1, 2]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.001, "sprite": "ore_copper"}
+      ],
       "crystals": [
-        {
-          "id": "teal_geode",
-          "name": "Teal Geode",
-          "yield": {
-            "item": "teal_crystal",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 5.0,
-          "respawn_secs": 360,
-          "density": 0.0015,
-          "sprite": "crystal_teal"
-        }
-      ],
-      "fauna": [
-        {
-          "id": "bog_crab",
-          "name": "Bog Crab",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.0025,
-          "sprite": "fauna_crab"
-        },
-        {
-          "id": "lumen_jelly",
-          "name": "Lumen Jelly",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.001,
-          "sprite": "fauna_jelly"
-        }
+        {"id": "teal_geode", "name": "Teal Geode", "yield": {"item_id": "teal_crystal", "count": [1, 2]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.0015, "sprite": "crystal_teal"},
+        {"id": "void_shard_bog", "name": "Void Shard", "yield": {"item_id": "void_shard", "count": [1, 1]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.0007, "sprite": "crystal_void"}
       ]
     },
     "Scorched Plains": {
       "trees": [
-        {
-          "id": "scorched_shrub",
-          "name": "Scorched Shrub",
-          "yield": {
-            "item": "withered_branch",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 2.0,
-          "respawn_secs": 180,
-          "density": 0.0037,
-          "sprite": "tree_scorched_shrub"
-        }
+        {"id": "scorched_shrub", "name": "Scorched Shrub", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 2.0, "respawn_secs": 180, "density": 0.0037, "sprite": "tree_pine"},
+        {"id": "dead_tree_plains", "name": "Burnt Tree", "yield": {"item_id": "withered_branch", "count": [2, 3]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0025, "sprite": "tree_withered_oak"}
       ],
       "formations": [
-        {
-          "id": "glass_shard_field",
-          "name": "Glass Shard Field",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 3.0,
-          "respawn_secs": 300,
-          "density": 0.0025,
-          "sprite": "formation_glass",
-          "passable": true
-        }
+        {"id": "glass_shard_field", "name": "Glass Shard Field", "yield": {"item_id": "rusted_scrap", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 300, "density": 0.0025, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              3
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.0025,
-          "sprite": "ore_iron"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 3]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.0025, "sprite": "ore_iron"},
+        {"id": "copper_outcrop", "name": "Copper Outcrop", "yield": {"item_id": "copper_ore", "count": [1, 2]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.001, "sprite": "ore_copper"}
       ],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "dust_moth",
-          "name": "Dust Moth",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.002,
-          "sprite": "fauna_moth"
-        }
-      ]
+      "crystals": []
     },
     "Ironwood Thicket": {
       "trees": [
-        {
-          "id": "ironwood_spire",
-          "name": "Ironwood Spire",
-          "yield": {
-            "item": "ironwood_bark",
-            "qty": [
-              2,
-              4
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.0045,
-          "sprite": "tree_ironwood"
-        },
-        {
-          "id": "ironwood_cluster",
-          "name": "Ironwood Cluster",
-          "yield": {
-            "item": "ironwood_bark",
-            "qty": [
-              3,
-              5
-            ]
-          },
-          "gather_secs": 5.5,
-          "respawn_secs": 360,
-          "density": 0.0015,
-          "sprite": "tree_ironwood_cluster"
-        }
+        {"id": "ironwood_spire", "name": "Ironwood Spire", "yield": {"item_id": "ironwood_bark", "count": [2, 4]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.0045, "sprite": "tree_ironwood"},
+        {"id": "ironwood_cluster", "name": "Ironwood Cluster", "yield": {"item_id": "ironwood_bark", "count": [3, 5]}, "gather_secs": 5.5, "respawn_secs": 360, "density": 0.0015, "sprite": "tree_ironwood"},
+        {"id": "lightning_pine_thicket", "name": "Lightning Pine", "yield": {"item_id": "ironwood_bark", "count": [2, 4]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.0025, "sprite": "tree_pine"},
+        {"id": "glass_cactus_thicket", "name": "Glass Cactus", "yield": {"item_id": "vwithred_branch", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0015, "sprite": "tree_glass_cactus"}
       ],
       "formations": [
-        {
-          "id": "metallic_vine",
-          "name": "Metallic Vine",
-          "yield": {
-            "item": "living_metal_sample",
-            "qty": [
-              1,
-              1
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 360,
-          "density": 0.002,
-          "sprite": "formation_vine",
-          "passable": true
-        }
+        {"id": "metallic_vine", "name": "Metallic Vine", "yield": {"item_id": "living_metal_sample", "count": [1, 1]}, "gather_secs": 4.0, "respawn_secs": 360, "density": 0.002, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.0025,
-          "sprite": "ore_iron"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.0025, "sprite": "ore_iron"}
       ],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "iron_buck",
-          "name": "Iron Buck",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.0013,
-          "sprite": "fauna_deer"
-        }
-      ]
+      "crystals": []
     },
     "Glass Dunes": {
       "trees": [
-        {
-          "id": "glass_cactus",
-          "name": "Glass Cactus",
-          "yield": {
-            "item": "withered_branch",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 2.5,
-          "respawn_secs": 240,
-          "density": 0.003,
-          "sprite": "tree_glass_cactus"
-        }
+        {"id": "glass_cactus", "name": "Glass Cactus", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 2.5, "respawn_secs": 240, "density": 0.003, "sprite": "tree_glass_cactus"},
+        {"id": "withered_oak_dunes", "name": "Withered Oak", "yield": {"item_id": "withered_branch", "count": [2, 3]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0015, "sprite": "tree_withered_oak"}
       ],
       "formations": [
-        {
-          "id": "prismatic_crystal",
-          "name": "Prismatic Crystal Outcrop",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 3.0,
-          "respawn_secs": 300,
-          "density": 0.0035,
-          "sprite": "formation_prism",
-          "passable": true
-        }
+        {"id": "prismatic_crystal", "name": "Prismatic Crystal Outcrop", "yield": {"item_id": "rusted_scrap", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 300, "density": 0.0035, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.002,
-          "sprite": "ore_iron"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.002, "sprite": "ore_iron"},
+        {"id": "starmetal_outcrop", "name": "Starmetal Outcrop", "yield": {"item_id": "starmetal_ore", "count": [1, 2]}, "gather_secs": 6.0, "respawn_secs": 480, "density": 0.0006, "sprite": "ore_starmetal"}
       ],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "glass_serpent",
-          "name": "Glass Serpent",
-          "passive": false,
-          "aggro_range": 4,
-          "density": 0.0008,
-          "sprite": "fauna_serpent"
-        }
+      "crystals": [
+        {"id": "void_shard_glass", "name": "Void Shard", "yield": {"item_id": "void_shard", "count": [1, 1]}, "gather_secs": 5.5, "respawn_secs": 420, "density": 0.0008, "sprite": "crystal_void"}
       ]
     },
     "Corpse Fields": {
       "trees": [
-        {
-          "id": "dead_tree",
-          "name": "Dead Tree",
-          "yield": {
-            "item": "withered_branch",
-            "qty": [
-              2,
-              3
-            ]
-          },
-          "gather_secs": 3.0,
-          "respawn_secs": 240,
-          "density": 0.0025,
-          "sprite": "tree_dead"
-        }
+        {"id": "dead_tree", "name": "Dead Tree", "yield": {"item_id": "withered_branch", "count": [2, 3]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0025, "sprite": "tree_withered_oak"},
+        {"id": "withered_oak_corpse", "name": "Corpse Oak", "yield": {"item_id": "withered_branch", "count": [2, 4]}, "gather_secs": 4.0, "respawn_secs": 280, "density": 0.0015, "sprite": "tree_withered_oak"},
+        {"id": "lightning_pine_corpse", "name": "Boneset Pine", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 2.5, "respawn_secs": 220, "density": 0.0015, "sprite": "tree_pine"}
       ],
       "formations": [
-        {
-          "id": "bone_pile",
-          "name": "Bone Pile",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 3.0,
-          "respawn_secs": 300,
-          "density": 0.0035,
-          "sprite": "formation_bones",
-          "passable": true
-        }
+        {"id": "bone_pile", "name": "Bone Pile", "yield": {"item_id": "rusted_scrap", "count": [1, 2]}, "gather_secs": 3.0, "respawn_secs": 300, "density": 0.0035, "sprite": "formation_rust_pipe", "passable": true}
       ],
-      "ore": [],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "bone_buzzard",
-          "name": "Bone Buzzard",
-          "passive": false,
-          "aggro_range": 3,
-          "density": 0.0013,
-          "sprite": "fauna_bird"
-        }
+      "ore": [
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.0015, "sprite": "ore_iron"}
+      ],
+      "crystals": [
+        {"id": "void_shard_field", "name": "Void Shard Cluster", "yield": {"item_id": "void_shard", "count": [1, 1]}, "gather_secs": 5.5, "respawn_secs": 420, "density": 0.0013, "sprite": "crystal_void"}
       ]
     },
     "Stormspire Highlands": {
       "trees": [
-        {
-          "id": "lightning_pine",
-          "name": "Lightning Pine",
-          "yield": {
-            "item": "ironwood_bark",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 3.5,
-          "respawn_secs": 300,
-          "density": 0.0025,
-          "sprite": "tree_pine"
-        }
+        {"id": "lightning_pine", "name": "Lightning Pine", "yield": {"item_id": "ironwood_bark", "count": [1, 2]}, "gather_secs": 3.5, "respawn_secs": 300, "density": 0.0025, "sprite": "tree_pine"},
+        {"id": "ironwood_spire_storm", "name": "Ironwood Spire", "yield": {"item_id": "ironwood_bark", "count": [2, 4]}, "gather_secs": 4.0, "respawn_secs": 320, "density": 0.0015, "sprite": "tree_ironwood"}
       ],
       "formations": [
-        {
-          "id": "storm_capacitor",
-          "name": "Storm Capacitor",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              2,
-              3
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 360,
-          "density": 0.0025,
-          "sprite": "formation_capacitor",
-          "passable": true
-        }
+        {"id": "storm_capacitor", "name": "Storm Capacitor", "yield": {"item_id": "rusted_scrap", "count": [2, 3]}, "gather_secs": 4.0, "respawn_secs": 360, "density": 0.0025, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.003,
-          "sprite": "ore_iron"
-        },
-        {
-          "id": "starmetal_outcrop",
-          "name": "Starmetal Outcrop",
-          "yield": {
-            "item": "starmetal_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 6.0,
-          "respawn_secs": 480,
-          "density": 0.001,
-          "sprite": "ore_starmetal"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.003, "sprite": "ore_iron"},
+        {"id": "starmetal_outcrop", "name": "Starmetal Outcrop", "yield": {"item_id": "starmetal_ore", "count": [1, 2]}, "gather_secs": 6.0, "respawn_secs": 480, "density": 0.001, "sprite": "ore_starmetal"}
       ],
       "crystals": [
-        {
-          "id": "void_shard_node",
-          "name": "Void Shard Cluster",
-          "yield": {
-            "item": "void_shard",
-            "qty": [
-              1,
-              1
-            ]
-          },
-          "gather_secs": 5.5,
-          "respawn_secs": 420,
-          "density": 0.0013,
-          "sprite": "crystal_void"
-        }
-      ],
-      "fauna": [
-        {
-          "id": "storm_hawk",
-          "name": "Storm Hawk",
-          "passive": false,
-          "aggro_range": 4,
-          "density": 0.0008,
-          "sprite": "fauna_hawk"
-        }
+        {"id": "void_shard_storm", "name": "Void Shard Cluster", "yield": {"item_id": "void_shard", "count": [1, 1]}, "gather_secs": 5.5, "respawn_secs": 420, "density": 0.0013, "sprite": "crystal_void"}
       ]
     },
     "Toxin Marshes": {
       "trees": [
-        {
-          "id": "toxic_bramble",
-          "name": "Toxic Bramble",
-          "yield": {
-            "item": "withered_branch",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 2.5,
-          "respawn_secs": 240,
-          "density": 0.0035,
-          "sprite": "tree_bramble"
-        }
+        {"id": "toxic_bramble", "name": "Toxic Bramble", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 2.5, "respawn_secs": 240, "density": 0.0035, "sprite": "tree_glass_cactus"},
+        {"id": "withered_oak_toxic", "name": "Toxic Oak", "yield": {"item_id": "withered_branch", "count": [2, 3]}, "gather_secs": 3.5, "respawn_secs": 280, "density": 0.0015, "sprite": "tree_withered_oak"}
       ],
       "formations": [
-        {
-          "id": "toxic_pool",
-          "name": "Toxic Pool",
-          "yield": null,
-          "gather_secs": 0,
-          "respawn_secs": 0,
-          "density": 0.0037,
-          "sprite": "formation_pool",
-          "passable": false
-        }
+        {"id": "toxic_pool", "name": "Toxic Pool", "yield": null, "gather_secs": 0, "respawn_secs": 0, "density": 0.0037, "sprite": "formation_rust_pipe", "passable": false}
       ],
-      "ore": [],
+      "ore": [
+        {"id": "copper_outcrop", "name": "Copper Outcrop", "yield": {"item_id": "copper_ore", "count": [1, 2]}, "gather_secs": 5.0, "respawn_secs": 360, "density": 0.001, "sprite": "ore_copper"}
+      ],
       "crystals": [
-        {
-          "id": "ember_geode",
-          "name": "Ember Geode",
-          "yield": {
-            "item": "ember_crystal",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 5.5,
-          "respawn_secs": 420,
-          "density": 0.0013,
-          "sprite": "crystal_ember"
-        }
-      ],
-      "fauna": [
-        {
-          "id": "marsh_frog",
-          "name": "Marsh Frog",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.0025,
-          "sprite": "fauna_frog"
-        }
+        {"id": "void_shard_toxic", "name": "Void Shard Cluster", "yield": {"item_id": "void_shard", "count": [1, 1]}, "gather_secs": 5.5, "respawn_secs": 420, "density": 0.0013, "sprite": "crystal_void"}
       ]
     },
     "Dead City Outskirts": {
-      "trees": [],
+      "trees": [
+        {"id": "withered_oak_city", "name": "Dead Oak", "yield": {"item_id": "withered_branch", "count": [2, 3]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.0015, "sprite": "tree_withered_oak"},
+        {"id": "lightning_pine_city", "name": "City Pine", "yield": {"item_id": "withered_branch", "count": [1, 2]}, "gather_secs": 2.5, "respawn_secs": 200, "density": 0.0015, "sprite": "tree_pine"},
+        {"id": "dead_tree_city", "name": "Dead Tree", "yield": {"item_id": "withered_branch", "count": [2, 3]}, "gather_secs": 3.0, "respawn_secs": 240, "density": 0.001, "sprite": "tree_withered_oak"}
+      ],
       "formations": [
-        {
-          "id": "rubble_pile",
-          "name": "Rubble Pile",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              2,
-              4
-            ]
-          },
-          "gather_secs": 3.5,
-          "respawn_secs": 300,
-          "density": 0.005,
-          "sprite": "formation_rubble",
-          "passable": true
-        },
-        {
-          "id": "collapsed_wall",
-          "name": "Collapsed Wall",
-          "yield": {
-            "item": "rusted_scrap",
-            "qty": [
-              3,
-              5
-            ]
-          },
-          "gather_secs": 5.5,
-          "respawn_secs": 420,
-          "density": 0.0015,
-          "sprite": "formation_wall",
-          "passable": true
-        }
+        {"id": "rubble_pile", "name": "Rubble Pile", "yield": {"item_id": "rusted_scrap", "count": [2, 4]}, "gather_secs": 3.5, "respawn_secs": 300, "density": 0.005, "sprite": "formation_rust_pipe", "passable": true},
+        {"id": "collapsed_wall", "name": "Collapsed Wall", "yield": {"item_id": "rusted_scrap", "count": [3, 5]}, "gather_secs": 5.5, "respawn_secs": 420, "density": 0.0015, "sprite": "formation_rust_pipe", "passable": true}
       ],
       "ore": [
-        {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
-          "yield": {
-            "item": "iron_ore",
-            "qty": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.003,
-          "sprite": "ore_iron"
-        }
+        {"id": "iron_outcrop", "name": "Iron Outcrop", "yield": {"item_id": "iron_ore", "count": [1, 2]}, "gather_secs": 4.0, "respawn_secs": 300, "density": 0.003, "sprite": "ore_iron"}
       ],
-      "crystals": [],
-      "fauna": [
-        {
-          "id": "city_rat",
-          "name": "City Rat",
-          "passive": true,
-          "aggro_range": 0,
-          "density": 0.003,
-          "sprite": "fauna_rat"
-        }
+      "crystals": []
+    }
+  },
+  "decor": {
+    "_comment": "Decor uses ONLY sprite IDs that have 16 PNG variants in assets/sprites/decor/. Every biome gets decor_rock_charged for visible decorative rocks + biome-themed decor. passable=false blocks movement; passable=true is walkable overlay.",
+    "Ash Wastes": {
+      "large": [
+        {"id": "ash_crater", "name": "Ash Crater", "sprite": "decor_crater", "passable": false, "density": 0.002},
+        {"id": "rusted_wall_section", "name": "Rusted Wall Section", "sprite": "decor_tower_base", "passable": false, "density": 0.001}
+      ],
+      "small": [
+        {"id": "scorched_rocks", "name": "Scorched Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.008},
+        {"id": "dead_shrub", "name": "Dead Shrub", "sprite": "decor_shrub_dead", "passable": true, "density": 0.006},
+        {"id": "scattered_bones_ash", "name": "Scattered Bones", "sprite": "decor_bones_scat", "passable": true, "density": 0.003}
+      ]
+    },
+    "Rust Canyons": {
+      "large": [
+        {"id": "collapsed_structure", "name": "Collapsed Structure", "sprite": "decor_wall_ruin", "passable": false, "density": 0.003},
+        {"id": "wrecked_machinery", "name": "Wrecked Machinery", "sprite": "decor_tower_base", "passable": false, "density": 0.0015}
+      ],
+      "small": [
+        {"id": "canyon_rocks", "name": "Canyon Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.009},
+        {"id": "rust_scraps", "name": "Rust Scraps", "sprite": "decor_bones_scat", "passable": true, "density": 0.005}
+      ]
+    },
+    "Neon Bogs": {
+      "large": [
+        {"id": "sunken_ruin", "name": "Sunken Ruin", "sprite": "decor_wall_ruin", "passable": false, "density": 0.002},
+        {"id": "bog_pool", "name": "Bog Pool", "sprite": "decor_crater", "passable": false, "density": 0.003}
+      ],
+      "small": [
+        {"id": "bog_rocks", "name": "Bog Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.005},
+        {"id": "glowing_mushroom", "name": "Glowing Mushroom", "sprite": "decor_mushroom_glow", "passable": true, "density": 0.009},
+        {"id": "marsh_grass", "name": "Marsh Grass", "sprite": "decor_flowers", "passable": true, "density": 0.008}
+      ]
+    },
+    "Scorched Plains": {
+      "large": [
+        {"id": "impact_crater", "name": "Impact Crater", "sprite": "decor_crater", "passable": false, "density": 0.002},
+        {"id": "burned_vehicle", "name": "Burned Vehicle Wreck", "sprite": "decor_tower_base", "passable": false, "density": 0.001}
+      ],
+      "small": [
+        {"id": "scorched_rocks_plains", "name": "Scorched Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.009},
+        {"id": "glass_shards", "name": "Glass Shards", "sprite": "decor_pillar_glass", "passable": true, "density": 0.007},
+        {"id": "dried_weeds", "name": "Dried Weeds", "sprite": "decor_shrub_dead", "passable": true, "density": 0.006}
+      ]
+    },
+    "Ironwood Thicket": {
+      "large": [
+        {"id": "iron_stump", "name": "Iron Stump", "sprite": "decor_rock_charged", "passable": false, "density": 0.003},
+        {"id": "vine_tangle", "name": "Vine Tangle", "sprite": "decor_shrub_dead", "passable": false, "density": 0.002}
+      ],
+      "small": [
+        {"id": "thicket_rocks", "name": "Thicket Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.006},
+        {"id": "metal_flowers", "name": "Metal Flowers", "sprite": "decor_flowers", "passable": true, "density": 0.008},
+        {"id": "ironwood_sapling", "name": "Ironwood Sapling", "sprite": "decor_shrub_dead", "passable": true, "density": 0.005}
+      ]
+    },
+    "Glass Dunes": {
+      "large": [
+        {"id": "glass_pillar", "name": "Glass Pillar", "sprite": "decor_pillar_glass", "passable": false, "density": 0.002},
+        {"id": "sandstone_arch", "name": "Sandstone Arch", "sprite": "decor_tower_base", "passable": false, "density": 0.001}
+      ],
+      "small": [
+        {"id": "dune_rocks", "name": "Dune Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.007},
+        {"id": "dune_pebbles", "name": "Dune Pebbles", "sprite": "decor_bones_scat", "passable": true, "density": 0.008},
+        {"id": "glass_fragments", "name": "Glass Fragments", "sprite": "decor_pillar_glass", "passable": true, "density": 0.006}
+      ]
+    },
+    "Corpse Fields": {
+      "large": [
+        {"id": "bone_heap", "name": "Bone Heap", "sprite": "decor_bone_heap", "passable": false, "density": 0.003},
+        {"id": "war_wreckage", "name": "War Wreckage", "sprite": "decor_tower_base", "passable": false, "density": 0.002}
+      ],
+      "small": [
+        {"id": "corpse_rocks", "name": "Corpse Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.005},
+        {"id": "scattered_bones", "name": "Scattered Bones", "sprite": "decor_bones_scat", "passable": true, "density": 0.009},
+        {"id": "crater_rubble", "name": "Crater Rubble", "sprite": "decor_crater", "passable": true, "density": 0.006}
+      ]
+    },
+    "Stormspire Highlands": {
+      "large": [
+        {"id": "lightning_tower_base", "name": "Lightning Tower Base", "sprite": "decor_tower_base", "passable": false, "density": 0.002},
+        {"id": "storm_crater", "name": "Storm Crater", "sprite": "decor_crater", "passable": false, "density": 0.002}
+      ],
+      "small": [
+        {"id": "storm_rocks", "name": "Storm Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.008},
+        {"id": "charged_rocks", "name": "Charged Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.005},
+        {"id": "static_crystals", "name": "Static Crystals", "sprite": "decor_pillar_glass", "passable": true, "density": 0.005}
+      ]
+    },
+    "Toxin Marshes": {
+      "large": [
+        {"id": "toxic_vent", "name": "Toxic Vent", "sprite": "decor_vent_toxic", "passable": false, "density": 0.003},
+        {"id": "chemical_pool", "name": "Chemical Pool", "sprite": "decor_crater", "passable": false, "density": 0.002}
+      ],
+      "small": [
+        {"id": "toxic_rocks", "name": "Toxic Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.005},
+        {"id": "toxic_fungi", "name": "Toxic Fungi", "sprite": "decor_mushroom_glow", "passable": true, "density": 0.008},
+        {"id": "sludge_moss", "name": "Sludge Moss", "sprite": "decor_flowers", "passable": true, "density": 0.007}
+      ]
+    },
+    "Dead City Outskirts": {
+      "large": [
+        {"id": "collapsed_wall", "name": "Collapsed Wall", "sprite": "decor_wall_ruin", "passable": false, "density": 0.003},
+        {"id": "rubble_pile_large", "name": "Rubble Pile", "sprite": "decor_tower_base", "passable": false, "density": 0.002}
+      ],
+      "small": [
+        {"id": "city_rocks", "name": "City Rocks", "sprite": "decor_rock_charged", "passable": true, "density": 0.007},
+        {"id": "broken_concrete", "name": "Broken Concrete", "sprite": "decor_bones_scat", "passable": true, "density": 0.008},
+        {"id": "overgrown_vines", "name": "Overgrown Vines", "sprite": "decor_shrub_dead", "passable": true, "density": 0.006}
       ]
     }
   },
   "floor_pickup_density": {
-    "_comment": "Per-cell chance that a stick or stone appears on a walkable ground cell. The center homestead pocket (~50 cells radius) and the spawn area (5 cells) suppress floor pickups. The LocalMapGenerator places each pickup once at map generation; pickups don't respawn (player walks over them and they're gone for the rest of the map's life).",
+    "_comment": "Per-cell chance that a stick or stone appears on a walkable ground cell. LocalMapGenerator places each pickup once at map generation; pickups don't respawn.",
     "stick": 0.003,
     "stone": 0.0045
   }

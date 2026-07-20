@@ -90,9 +90,9 @@ func _tick_gather(delta: float) -> void:
 	var qty: int = int(_hw._gather_yield_preview.get("yield_qty", 0))
 	if item_id.is_empty() or qty <= 0:
 		return
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if inv == null:
-		push_warning("[HubWorld] No InventoryManager; gather dropped on the floor.")
+		push_warning("[HubWorld] No InventoryHandler; gather dropped on the floor.")
 		return
 	inv.add_item(item_id, qty)
 	node.deplete()
@@ -179,6 +179,37 @@ func _resolve_hotbar_tool() -> Dictionary:
 	return {}
 
 
+## v0.4.0 polish: When the player presses F (interact) the FIRST step is
+## to check whether the SELECTED hotbar slot holds a special "place/use"
+## item — currently just `sleeping_bag`. If so, run the place/use action
+## and short-circuit the rest of the interact cascade. This makes the
+## hotbar the "use selected item" key (1-9 to select, F to use) and keeps
+## the F key focused on world interactions (gather, settle, rift, etc.).
+##
+## Returns true if a hotbar-driven action was executed (caller should
+## consume the F press). Returns false if the selected slot has a tool —
+## meaning the standard cascade (gather / adjacent interactable) should
+## proceed.
+func _try_use_hotbar_selected_item() -> bool:
+	if not is_instance_valid(_hw._hud):
+		return false
+	var hb: Hotbar = _hw._hud.get_hotbar() if _hw._hud.has_method("get_hotbar") else null
+	if hb == null or not is_instance_valid(hb):
+		return false
+	var item_id: String = str(hb.get_slot(hb.get_selected_index()))
+	if item_id.is_empty():
+		return false
+	# Currently the only "place on F" item is the sleeping bag. New
+	# placeable items drop a case here without changing the cascade.
+	match item_id:
+		"sleeping_bag":
+			# Place the bag only on walkable ground (so we don't bury it
+			# in a wall or a river). _place_sleeping_bag() returns false
+			# if the cell isn't walkable or the player lacks a bag.
+			return _place_sleeping_bag()
+	return false
+
+
 # ---------------------------------------------------------------------------
 # Phase 1: Floor pickups (sticks, stones)
 # ---------------------------------------------------------------------------
@@ -193,9 +224,9 @@ func _try_collect_floor_pickup_at(x: int, y: int) -> Dictionary:
 	var qty: int = pickup.get_item_qty()
 	if item_id.is_empty() or qty <= 0:
 		return {}
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if inv == null:
-		push_warning("[HubWorld] No InventoryManager; pickup dropped on the floor.")
+		push_warning("[HubWorld] No InventoryHandler; pickup dropped on the floor.")
 		return {}
 	inv.add_item(item_id, qty)
 	# v0.10.0: hide the MultiMesh visual for this pickup.
@@ -247,7 +278,7 @@ func _adjacent_settlement_hex() -> String:
 			# The settlement node may be on the cell the player is on too
 			var s_node: Node2D = _hw._map_view.get_settlement_at(cell)
 			if s_node != null:
-				return s_node.get_cell(24) if s_node.has_method("get_cell") else str(s_node.get_meta("hex", ""))
+				return s_node.get_cell(32) if s_node.has_method("get_cell") else str(s_node.get_meta("hex", ""))
 	return ""
 
 
@@ -381,7 +412,7 @@ func _open_mission_board() -> void:
 ## settlement > base > harvest > equipment tab.
 func _has_adjacent_base() -> bool:
 	if _hw._base_node != null and is_instance_valid(_hw._base_node):
-		var cell: Vector2i = _hw._base_node.get_cell(24) if _hw._base_node.has_method("get_cell") else Vector2i.ZERO
+		var cell: Vector2i = _hw._base_node.get_cell(32) if _hw._base_node.has_method("get_cell") else Vector2i.ZERO
 		# Base is "adjacent" if the player is on the same cell (base is
 		# the player's home; they spawn on top of it) or on an
 		# immediate-neighbor cell.
@@ -517,7 +548,7 @@ func _adjacent_sleeping_bag() -> Node2D:
 func _interact_sleeping_bag(bag: Node2D) -> void:
 	if not is_instance_valid(bag):
 		return
-	var cell: Vector2i = bag.get_cell(24) if bag.has_method("get_cell") else Vector2i(_hw._local_x, _hw._local_y)
+	var cell: Vector2i = bag.get_cell(32) if bag.has_method("get_cell") else Vector2i(_hw._local_x, _hw._local_y)
 	var rm: Node = get_node_or_null("/root/RespawnManager")
 	if is_instance_valid(rm) and rm.has_method("set_respawn_point"):
 		rm.set_respawn_point("sleeping_bag", cell.x, cell.y)
@@ -528,7 +559,7 @@ func _interact_sleeping_bag(bag: Node2D) -> void:
 func _place_sleeping_bag() -> bool:
 	if not is_instance_valid(_hw._map_view):
 		return false
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if inv == null or not inv.has_method("has_item") or not inv.has_method("remove_item"):
 		return false
 	if not inv.has_item("sleeping_bag", 1):
@@ -544,7 +575,7 @@ func _place_sleeping_bag() -> bool:
 	inv.remove_item("sleeping_bag", 1)
 	# Create sleeping bag node
 	var bag := SleepingBag.new()
-	var cell_size: int = _hw._map_view.get_cell_size() if _hw._map_view.has_method("get_cell_size") else 24
+	var cell_size: int = _hw._map_view.get_cell_size() if _hw._map_view.has_method("get_cell_size") else 32
 	bag.position = Vector2(_hw._local_x * cell_size + cell_size * 0.5, _hw._local_y * cell_size + cell_size * 0.5)
 	var world_node: Node2D = _hw.get_node_or_null("World")
 	if world_node != null:

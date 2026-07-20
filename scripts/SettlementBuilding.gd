@@ -2,12 +2,12 @@
 ##
 ## Placed by LocalMapView._populate_buildings() from map_data["settlement"]["structures"].
 ## Each building is a Sprite2D + Label on the settlement_layer. The player can
-## walk up to the entrance cell and press E to interact (open shop, mission board,
+## walk up to the entrance cell and press F to interact (open shop, mission board,
 ## or enter the settlement interior).
 class_name SettlementBuilding
 extends Node2D
 
-const CELL_SIZE := 24
+const CELL_SIZE := 32
 
 var building_id: String = ""
 var role: String = ""

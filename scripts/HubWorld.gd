@@ -14,7 +14,7 @@ const MobPoolScript = preload("res://scripts/mob/OverworldMobPool.gd")
 const MobInstanceScript = preload("res://scripts/mob/MobInstance.gd")
 const MobDataScript = preload("res://scripts/mob/MobData.gd")
 const CharacterVisualScript = preload("res://scripts/CharacterVisual.gd")
-const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
+# InventoryHandler is an autoload (class_name) — no preload needed
 const ProgressionMgrScript = preload("res://scripts/ProgressionManager.gd")
 const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
 const LootRollerScript = preload("res://scripts/LootRoller.gd")
@@ -28,6 +28,7 @@ const LootPopupScene = preload("res://scenes/ui/LootPopup.tscn")
 const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
 const TransitionScreenScene = preload("res://scenes/TransitionScreen.tscn")
 const EntityVisualComponentScript = preload("res://scripts/procedural/EntityVisualComponent.gd")
+const MountFollowerScript = preload("res://scripts/mount/MountFollower.gd")
 
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
@@ -55,7 +56,7 @@ var _marker_nodes: Dictionary = {}
 
 # Phase 1 gather state. _gathering_node is set when the player presses E
 # adjacent to a HarvestNode; the timer counts down to 0, then the yield
-# is awarded to InventoryManager. _gathering_node is null when idle.
+# is awarded to InventoryHandler. _gathering_node is null when idle.
 var _gathering_node: Node2D = null
 var _gather_timer: float = 0.0
 var _gather_total: float = 0.0
@@ -109,6 +110,7 @@ var _rift_check_timer: float = 0.0
 var _npc_manager: Node = null
 var _mission_manager: Node = null
 var _player_visual: Node2D = null
+var _mount_follower: Node2D = null
 var _transition_screen: CanvasLayer = null
 
 # Multiplayer: remote player avatars on this hex
@@ -140,7 +142,7 @@ func _ready() -> void:
 	_gs = get_node_or_null("/root/GameState") as GameState
 	_em = get_node_or_null("/root/EquipmentManager") as EquipmentManager
 	_gm = get_node_or_null("/root/GameManager") as GameManager
-	_inv = get_node_or_null("/root/InventoryManager")
+	_inv = get_node_or_null("/root/InventoryHandler")
 	_sm = get_node_or_null("/root/SettlementManager")
 	_ppm = get_node_or_null("/root/PlayerPartyManager")
 
@@ -284,6 +286,8 @@ func _ready() -> void:
 	if is_instance_valid(tmm):
 		if not tmm.mount_changed.is_connected(_on_mount_changed):
 			tmm.mount_changed.connect(_on_mount_changed)
+		if not tmm.riding_changed.is_connected(_update_mount_visual):
+			tmm.riding_changed.connect(_update_mount_visual)
 		_update_mount_visual()
 	_hud_manager._setup_hover_tooltip()
 	_hud_manager._setup_hud()
@@ -350,6 +354,15 @@ func _process(delta: float) -> void:
 	if _mob_manager != null and is_instance_valid(_mob_manager):
 		_mob_manager.tick_all(delta, _local_x, _local_y)
 
+	# Ensure mount follower exists if it should (handle HubWorld re-creation
+	# after combat or scene transitions where _ready may not trigger).
+	_mount_state_sync()
+
+	# Tick mount follower to trail player.
+	if _mount_follower != null and is_instance_valid(_mount_follower):
+		if _mount_follower.has_method("follow_player"):
+			_mount_follower.follow_player(_local_x, _local_y)
+
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
@@ -409,6 +422,20 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	# Interact / gather
 	if km.is_action_pressed("interact", event) and not event.echo:
+		# v0.4.0 polish: check whether the SELECTED hotbar item is a
+		# "placeable" (sleeping_bag etc.). If so, run that place/use action
+		# INSTEAD of the gather cascade — the player moved sleeping bag to
+		# the hotbar explicitly to deploy it.
+		if _interaction_manager._try_use_hotbar_selected_item():
+			return
+		# Mount ride/dismount takes priority
+		var tmm: Node = get_node_or_null("/root/TamedMobManager")
+		if is_instance_valid(tmm) and tmm.has_method("is_riding") and tmm.is_riding():
+			_dismount_mount()
+			return
+		if _is_mount_follower_adjacent():
+			_ride_mount()
+			return
 		if _sm != null and _sm.is_inside_settlement():
 			_interaction_manager._leave_settlement()
 			return
@@ -435,10 +462,23 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _npc_manager_ui._is_near_npc():
 			_npc_manager_ui._open_npc_dialogue()
 			return
-		if _interaction_manager._place_sleeping_bag():
-			return
+		# v0.4.0 polish: gather LAST so cascade resolution is the gather
+		# itself (after the player walks adjacent to a harvestable with the
+		# correct tool equipped). Sleeping bag placement is no longer fired
+		# from this cascade — see _try_use_hotbar_selected_item above.
 		_interaction_manager._try_start_gather()
 		return
+
+	# Ride hotkey — mount/dismount
+	if km.is_action_pressed("ride", event) and not event.echo:
+		var tmm: Node = get_node_or_null("/root/TamedMobManager")
+		if is_instance_valid(tmm) and tmm.has_method("is_riding") and tmm.is_riding():
+			_dismount_mount()
+			return
+		if _is_mount_follower_adjacent():
+			_ride_mount()
+			return
+		# No mount nearby; message ignored (no feedback needed)
 
 	# World map
 	if km.is_action_pressed("world_map", event):
@@ -464,15 +504,17 @@ func _unhandled_input(event: InputEvent) -> void:
 func _fallback_unhandled_input(event: InputEvent) -> void:
 	if not (event is InputEventKey and event.pressed):
 		return
-	# Character-menu hotkeys — always allowed even while paused
+	# Character-menu hotkeys — always allowed even while paused.
+	# Note: KEY_F is the canonical interact/gather key (see KeybindManager
+	# "interact" action). Equipment tab stays on KEY_E (per the docs at
+	# docs/UI_DESIGN_SYSTEM.md and existing user muscle memory).
 	match event.keycode:
 		KEY_I:
 			_hud_manager.open_character_tab("inventory")
 			return
 		KEY_E:
-			if not _interaction_manager._has_adjacent_harvest_node():
-				_hud_manager.open_character_tab("equipment")
-				return
+			_hud_manager.open_character_tab("equipment")
+			return
 		KEY_C:
 			_hud_manager.open_character_tab("crafting")
 			return
@@ -496,6 +538,8 @@ func _fallback_unhandled_input(event: InputEvent) -> void:
 	match event.keycode:
 		KEY_M:
 			_rift_manager.open_world_map()
+		KEY_R:
+			_fallback_ride_hotkey()
 		KEY_UP, KEY_W:
 			_player_manager._try_move_local(0, -1)
 		KEY_DOWN, KEY_S:
@@ -602,7 +646,7 @@ func _restore_sleeping_bag() -> void:
 	if lx < 0 or ly < 0:
 		return
 	var bag := SleepingBag.new()
-	var cell_size: int = _map_view.get_cell_size() if _map_view.has_method("get_cell_size") else 24
+	var cell_size: int = _map_view.get_cell_size() if _map_view.has_method("get_cell_size") else 32
 	bag.position = Vector2(lx * cell_size + cell_size * 0.5, ly * cell_size + cell_size * 0.5)
 	if _map_view.has_method("add_sleeping_bag"):
 		_map_view.add_sleeping_bag(Vector2i(lx, ly), bag)
@@ -616,11 +660,20 @@ func _seed_local_mobs() -> void:
 	if _tile_map.is_empty():
 		push_warning("[HubWorld] _tile_map is empty — cannot seed mobs.")
 		return
-	# Skip if this hex was already seeded (prevents killed mobs from
-	# re-appearing when HubWorld reloads — deterministic RNG would
-	# place them at the same positions).
+	# Skip if this hex was already seeded this session or has live mobs
+	# (prevents re-seeding on HubWorld reload after combat/menus).
 	var hex_key: String = "%d,%d" % [_player_q, _player_r]
 	if _seeded_hexes.has(hex_key):
+		return
+	# Check GameState for existing mobs in this hex — if any exist, skip seeding
+	# so killed mobs stay dead and we don't waste CPU re-rolling every cell.
+	var has_existing_mobs := false
+	for mk in gs.get_overworld_mobs():
+		if str(mk).begins_with(hex_key + "|"):
+			has_existing_mobs = true
+			break
+	if has_existing_mobs:
+		_seeded_hexes[hex_key] = true
 		return
 	_seeded_hexes[hex_key] = true
 
@@ -632,81 +685,141 @@ func _seed_local_mobs() -> void:
 	var biome: String = str(tile.get("name", "Ash Wastes"))
 	var danger: float = float(tile.get("rift_chance", 0.25))
 	var level_range: Dictionary = tile.get("level_range", {"min_level": 2, "max_level": 6})
-	# v0.9.1: Bumped density. With the previous 2-9 mobs in 502×502, the
-	# player had to walk hundreds of cells to find one. Bumping to 8-18
-	# + adding 2 guaranteed "near-spawn" mobs ensures the player
-	# sees a fight within walking distance of their starting cell.
-	var count := rng.randi_range(8, 12 + int(danger * 8))
-	var seeded := 0
-	var skipped_blocked := 0
-	var skipped_near := 0
-	var skipped_duplicate := 0
-	var skipped_no_enemy := 0
+	var world_seed: String = str(gs.get_world_data().get("seed", ""))
+	var tile_key: String = "%d,%d" % [_player_q, _player_r]
 
-	# v0.9.1: 2 guaranteed mobs in the player's camera view (within
-	# 20 cells of spawn). Camera shows ~53×30 cells, so cells in the
-	# 3..20 distance range are always visible from spawn.
+	var total_seeded := 0
+
+	# ------------------------------------------------------------------
+	# Lane 1: Beast & Mount spawning via MobSpawner
+	# Generates sprite-based creatures (PNG from assets/mobs/) 
+	# ------------------------------------------------------------------
+	var beast_count := rng.randi_range(6, 10 + int(danger * 6))
+
+	# 2 guaranteed near-spawn beast mobs
 	for _i in range(2):
 		var tries: int = 0
 		while tries < 16:
 			tries += 1
 			var ndx: int = rng.randi_range(-20, 20)
 			var ndy: int = rng.randi_range(-15, 15)
-			# Skip if too close (<3) — keep them on screen but not on the player
 			if abs(ndx) + abs(ndy) < 3:
 				continue
 			var nlx: int = clampi(_local_x + ndx, 4, LocalMapGen.MAP_SIZE - 4)
 			var nly: int = clampi(_local_y + ndy, 4, LocalMapGen.MAP_SIZE - 4)
-			if LocalMapGen.get_movement_cost(_local_map, nlx, nly) < 0:
-				continue
-			var nkey: String = gs.mob_key(_player_q, _player_r, nlx, nly)
-			if not gs.get_overworld_mob(nkey).is_empty():
-				continue
 			var near_diff: Dictionary = {"min_level": int(level_range.get("min_level", 2)), "max_level": mini(int(level_range.get("min_level", 2)) + 3, int(level_range.get("max_level", 5)))}
-			var near_enemy: Dictionary = EncounterBuilder.generate_procedural_enemy(
-				str(gs.get_world_data().get("seed", "")), _tile_map,
-				"%d,%d" % [_player_q, _player_r], near_diff, "upworld", biome
-			)
-			if near_enemy.is_empty():
-				continue
-			gs.set_local_mob(_player_q, _player_r, nlx, nly, near_enemy)
-			seeded += 1
-			break
+			if _try_spawn_beast_at(gs, rng, nlx, nly, near_diff, tile, biome, world_seed, tile_key):
+				total_seeded += 1
+				break
 
-	for i in count:
+	for i in range(beast_count):
 		var lx := rng.randi_range(10, LocalMapGen.MAP_SIZE - 10)
 		var ly := rng.randi_range(10, LocalMapGen.MAP_SIZE - 10)
 		if LocalMapGen.get_movement_cost(_local_map, lx, ly) < 0:
-			skipped_blocked += 1
 			continue
-		# v0.9.1: 2-cell exclusion (was 5) so mobs can spawn right next
-		# to the player. The player needs to be on an adjacent cell to
-		# trigger combat, and walking 5+ cells felt like a desert.
 		if abs(lx - _local_x) + abs(ly - _local_y) < 2:
-			skipped_near += 1
 			continue
-		# v0.8.0: skip mobs inside the town boundary (clearing + buildings)
 		var town_bnd: Variant = _local_map.get("settlement", {}).get("boundary", null)
 		if town_bnd is Rect2i and town_bnd.has_point(Vector2i(lx, ly)):
-			skipped_blocked += 1
+			continue
+		var diff: Dictionary = {"min_level": int(level_range.get("min_level", 2)), "max_level": int(level_range.get("max_level", 6))}
+		if _try_spawn_beast_at(gs, rng, lx, ly, diff, tile, biome, world_seed, tile_key):
+			total_seeded += 1
+
+	# ------------------------------------------------------------------
+	# Lane 2: Humanoid enemy spawning via EncounterBuilder
+	# Generates procedural humanoid NPCs (raiders, cultists, etc.)
+	# ------------------------------------------------------------------
+	var humanoid_count := rng.randi_range(0, 2 + int(danger * 2))
+
+	for _i in range(humanoid_count):
+		var lx := rng.randi_range(10, LocalMapGen.MAP_SIZE - 10)
+		var ly := rng.randi_range(10, LocalMapGen.MAP_SIZE - 10)
+		if LocalMapGen.get_movement_cost(_local_map, lx, ly) < 0:
+			continue
+		if abs(lx - _local_x) + abs(ly - _local_y) < 2:
+			continue
+		var town_bnd: Variant = _local_map.get("settlement", {}).get("boundary", null)
+		if town_bnd is Rect2i and town_bnd.has_point(Vector2i(lx, ly)):
 			continue
 		var key := gs.mob_key(_player_q, _player_r, lx, ly)
 		if not gs.get_overworld_mob(key).is_empty():
-			skipped_duplicate += 1
 			continue
 
-		# Generate enemy via EncounterBuilder (independent of NPC system)
 		var difficulty: Dictionary = {"min_level": int(level_range.get("min_level", 2)), "max_level": int(level_range.get("max_level", 6))}
 		var enemy: Dictionary = EncounterBuilder.generate_procedural_enemy(
-			str(gs.get_world_data().get("seed", "")), _tile_map,
-			"%d,%d" % [_player_q, _player_r], difficulty, "upworld", biome
+			world_seed, _tile_map, tile_key, difficulty, "upworld", biome
 		)
 		if enemy.is_empty():
-			skipped_no_enemy += 1
 			continue
 
 		gs.set_local_mob(_player_q, _player_r, lx, ly, enemy)
-		seeded += 1
+		total_seeded += 1
+
+	if total_seeded == 0:
+		push_warning("[HubWorld] _seed_local_mobs: seeded 0 mobs at hex %s (biome=%s)" % [hex_key, biome])
+
+	# ------------------------------------------------------------------
+	# Lane 3: Rift creature spawning (reserved for RiftSpawner future)
+	# Currently rift creatures spawn via EncounterBuilder during rift
+	# instance generation — not seeded on the overworld map.
+	# ------------------------------------------------------------------
+
+
+## Build a beast/mount enemy dictionary from a mobs.json template,
+## matching the fields expected by MobData.from_enemy_dict and the rendering system.
+func _build_beast_enemy(rng: RandomNumberGenerator, template: Dictionary, difficulty: Dictionary, tile: Dictionary, world_seed: String, tile_key: String) -> Dictionary:
+	var min_level := int(difficulty.get("min_level", 2))
+	var max_level := int(difficulty.get("max_level", 6))
+	var level := clampi(min_level + rng.randi_range(0, max_level - min_level), min_level, max_level)
+
+	var base_hp := int(template.get("hp", level * 10))
+	var base_damage := int(template.get("attack_damage", level * 2))
+	var base_armor := int(template.get("armor", 0))
+
+	var threat_mult := float(tile.get("wildlife_modifiers", {}).get("threat_multiplier", 1.0))
+	if threat_mult != 1.0:
+		base_hp = int(base_hp * threat_mult)
+		base_damage = int(base_damage * threat_mult)
+		base_armor = int(base_armor * threat_mult)
+
+	var enemy := {
+		"id": "%s_%d" % [template.get("id", "mob"), rng.randi() % 10000],
+		"name": str(template.get("name", "Beast")),
+		"sprite_id": str(template.get("sprite_id", template.get("id", ""))),
+		"level": level,
+		"hp": base_hp,
+		"max_hp": base_hp,
+		"attack_damage": base_damage,
+		"armor": base_armor,
+		"mob_type": str(template.get("ai_archetype", "aggressive")),
+		"aggro_range": int(template.get("threat_range", 5)),
+		"threat_mult": threat_mult,
+		"spawn_context": "upworld",
+		"wildlife_class": str(template.get("wildlife_class", "beast")),
+	}
+	for key in ["drain_rate", "drops"]:
+		if template.has(key):
+			enemy[key] = template[key]
+	return enemy
+
+
+## Try to place a beast/mount enemy at (nlx, nly) on the local map.
+## Returns true if a mob was placed, false if the cell was blocked or already occupied.
+func _try_spawn_beast_at(gs: Node, rng: RandomNumberGenerator, nlx: int, nly: int, diff: Dictionary, tile: Dictionary, biome: String, world_seed: String, tile_key: String) -> bool:
+	if LocalMapGen.get_movement_cost(_local_map, nlx, nly) < 0:
+		return false
+	var key: String = gs.mob_key(_player_q, _player_r, nlx, nly)
+	if not gs.get_overworld_mob(key).is_empty():
+		return false
+	var mob_template: Dictionary = MobSpawnerScript.pick_mob_template("upworld", biome, "beast,mount")
+	if mob_template.is_empty():
+		return false
+	var enemy: Dictionary = _build_beast_enemy(rng, mob_template, diff, tile, world_seed, tile_key)
+	if enemy.is_empty():
+		return false
+	gs.set_local_mob(_player_q, _player_r, nlx, nly, enemy)
+	return true
 
 
 
@@ -769,10 +882,16 @@ func _update_mount_visual() -> void:
 		return
 	var mount_data: Dictionary = tmm.get_active_mount() if tmm.has_method("get_active_mount") else {}
 	var sprite_id: String = str(mount_data.get("sprite_id", ""))
+	var is_riding: bool = tmm.is_riding() if tmm.has_method("is_riding") else false
 	if sprite_id.is_empty():
 		_player_visual.call("clear_mount_sprite")
-	else:
+		_remove_mount_follower()
+	elif is_riding:
 		_player_visual.call("set_mount_sprite", sprite_id)
+		_remove_mount_follower()
+	else:
+		_player_visual.call("clear_mount_sprite")
+		_create_mount_follower()
 
 
 func _get_mount_speed_mult() -> float:
@@ -782,7 +901,96 @@ func _get_mount_speed_mult() -> float:
 	return 1.0
 
 
+# ---------------------------------------------------------------------------
+# Mount follower lifecycle & riding
+# ---------------------------------------------------------------------------
+
+func _is_mount_follower_adjacent() -> bool:
+	if _mount_follower == null or not is_instance_valid(_mount_follower):
+		return false
+	if _mount_follower.has_method("is_adjacent_to"):
+		return _mount_follower.is_adjacent_to(_local_x, _local_y, 1)
+	return false
+
+
+func _ride_mount() -> void:
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	if not is_instance_valid(tmm) or not tmm.has_method("is_riding"):
+		return
+	if tmm.is_riding():
+		return
+	if _mount_follower == null or not is_instance_valid(_mount_follower):
+		return
+	tmm.set_riding(true)
+
+
+func _dismount_mount() -> void:
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	if not is_instance_valid(tmm) or not tmm.has_method("is_riding"):
+		return
+	if not tmm.is_riding():
+		return
+	tmm.set_riding(false)
+
+
+func _create_mount_follower() -> void:
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	if not is_instance_valid(tmm):
+		return
+	var sprite_id: String = tmm.get_active_mount_sprite_id() if tmm.has_method("get_active_mount_sprite_id") else ""
+	if sprite_id.is_empty():
+		return
+
+	if _mount_follower != null and is_instance_valid(_mount_follower):
+		_mount_follower.queue_free()
+		_mount_follower = null
+
+	var follower := MountFollowerScript.new()
+	follower.setup(sprite_id, _local_x, _local_y, Callable(_player_manager, "_is_cell_walkable"))
+	follower.name = "MountFollower"
+	world_grid.add_child(follower)
+	_mount_follower = follower
+
+
+func _mount_state_sync() -> void:
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	if not is_instance_valid(tmm) or not tmm.has_method("is_riding"):
+		return
+	var sprite_id: String = str(tmm.get_active_mount_sprite_id()) if tmm.has_method("get_active_mount_sprite_id") else ""
+	if sprite_id.is_empty():
+		return
+	# If riding but no mount sprite on player, re-apply it
+	if tmm.is_riding():
+		if is_instance_valid(_player_visual):
+			var pv := _player_visual
+			var has_mount_sprite := pv.find_child("MountAnimatedSprite2D", true, false) != null or pv.find_child("MountSprite2D", true, false) != null
+			if not has_mount_sprite:
+				_update_mount_visual()
+		return
+	# Not riding: ensure MountFollower exists
+	if _mount_follower != null and is_instance_valid(_mount_follower):
+		return
+	_create_mount_follower()
+
+
+func _remove_mount_follower() -> void:
+	if _mount_follower != null and is_instance_valid(_mount_follower):
+		_mount_follower.queue_free()
+	_mount_follower = null
+
+
+func _fallback_ride_hotkey() -> void:
+	var tmm: Node = get_node_or_null("/root/TamedMobManager")
+	if not is_instance_valid(tmm) or not tmm.has_method("is_riding"):
+		return
+	if tmm.is_riding():
+		_dismount_mount()
+	elif _is_mount_follower_adjacent():
+		_ride_mount()
+
+
 func _exit_tree() -> void:
+	_remove_mount_follower()
 	if _network_manager != null:
 		_network_manager._cleanup_remote_players()
 		_network_manager._disconnect_net_signals()

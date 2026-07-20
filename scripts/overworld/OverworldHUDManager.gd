@@ -1,5 +1,7 @@
 class_name OverworldHUDManager extends Node
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const HUDScript = preload("res://scripts/ui/HUD.gd")
 const HoverTooltipScript = preload("res://scripts/HoverTooltip.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
@@ -44,6 +46,10 @@ func _setup_hud() -> void:
 		old_bar = _hw.get_node_or_null("CharInfoBar") as CanvasItem
 	if old_bar != null:
 		old_bar.visible = false
+
+	var info_panel := _hw.get_node_or_null("UI_Canvas/TileInfoPanel") as VBoxContainer
+	if is_instance_valid(info_panel):
+		UH.make_scrollable(info_panel)
 
 
 func _open_character_menu() -> void:
@@ -101,7 +107,7 @@ func _hit_test_at_world(world_pos: Vector2) -> String:
 	var pickup: Node2D = _hw._map_view.get_floor_pickup_at(cell)
 	if pickup != null and is_instance_valid(pickup):
 		var item_id: String = pickup.get_item_id()
-		var inv: Node = get_node_or_null("/root/InventoryManager")
+		var inv: Node = get_node_or_null("/root/InventoryHandler")
 		if inv != null and inv.has_method("get_item_name"):
 			return String(inv.get_item_name(item_id))
 		return item_id
@@ -234,11 +240,9 @@ func _update_char_info(data: Dictionary) -> void:
 
 func _append_start_info(start: Dictionary) -> void:
 	var biome: String = str(start.get("name", "Unknown"))
-	var extra := RichTextLabel.new()
+	var extra := UH.make_rich_section("[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?")])
 	extra.name = "StartInfoLabel"
-	extra.bbcode_enabled = true
 	extra.fit_content = true
-	extra.text = "[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?")]
 	var char_bar := _hw.get_node_or_null("UI_Canvas/CharInfoBar") as HBoxContainer
 	if char_bar != null:
 		char_bar.add_child(extra)
@@ -290,10 +294,8 @@ func _on_back_to_menu_pressed() -> void:
 
 
 func _show_notification(text: String) -> void:
-	var label := Label.new()
-	label.text = text
+	var label := UH.make_label(text, MT.FS_BODY, Color(0.2, 0.8, 0.4))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_color_override("font_color", Color(0.2, 0.8, 0.4))
 	label.position = Vector2(400, 300)
 	label.size = Vector2(480, 30)
 	label.z_index = 200
@@ -320,3 +322,26 @@ func _save_to_autoslot_if_can() -> void:
 	if not is_instance_valid(gs) or gs.get_character_data().is_empty():
 		return
 	gs.save_game(0)
+
+
+## v0.4.0 polish: getter for the minimap so it can show the current
+## region name in its title strip. Loads the local map's biome name.
+func get_region_info() -> String:
+	if _hw == null:
+		return ""
+	if not is_instance_valid(_hw._local_map) or _hw._local_map.is_empty():
+		return "?"
+	var biome: String = str(_hw._local_map.get("biome", "?"))
+	var pos: String = "%d,%d" % [_hw._local_x, _hw._local_y]
+	return "%s  %s" % [biome, pos]
+
+
+## v0.4.0 polish: minimap also needs a "current facing direction" for
+## the player arrow. Pulls from CharacterVisual if available.
+func get_player_facing() -> int:
+	if _hw == null:
+		return 0
+	var child = _hw.find_child("PlayerVisual", true, false)
+	if child != null and "current_direction" in child:
+		return int(child.get("current_direction"))
+	return 0

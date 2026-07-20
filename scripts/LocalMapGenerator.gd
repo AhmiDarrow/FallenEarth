@@ -8,11 +8,11 @@ const TERRAIN_GROUND := 0
 const TERRAIN_DEBRIS := 1
 const TERRAIN_VEGETATION := 2
 const TERRAIN_BLOCKED := 3
+const TERRAIN_WATER := 4
 
 ## TERRAIN_RIFT_SCAR was removed in v0.4.0 Phase 0. Rifts are now entities
 ## spawned at coordinates (see RiftRunner) and rendered as markers on the
-## local map, not as terrain. Any legacy save with terrain[i] == 4 is
-## treated as TERRAIN_GROUND by LocalMapView.configure().
+## local map, not as terrain. Terrain indices are now contiguous 0-4.
 
 const EDGE_NORTH := 0
 const EDGE_SOUTH := 1
@@ -120,6 +120,10 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 			else:
 				terrain[idx] = TERRAIN_GROUND
 
+	# Phase: carve rivers (water channels) using a separate noise layer.
+	# Converts low-elevation cells in river noise troughs to TERRAIN_WATER.
+	_carve_rivers(terrain, local_seed, elev)
+
 	# Edge detection: compute a bitmask per cell indicating which cardinal
 	# neighbors have different terrain. N=1, S=2, W=4, E=8. Used by TileSetService
 	# to place edge-blend tiles for smoother terrain transitions.
@@ -175,6 +179,8 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 	# so the table cell is reserved; town buildings are already in occupied[])
 	var resource_nodes: Array = _emit_resource_nodes(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 	var floor_pickups: Array = _emit_floor_pickups(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
+	# Phase 2: emit visual decor (rocks, ruins, flora) — no yields, just atmosphere
+	var decor: Array = _emit_decor(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 
 	return {
 		"size": MAP_SIZE,
@@ -194,6 +200,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		"resource_nodes": resource_nodes,
 		"floor_pickups": floor_pickups,
 		"cooking_tables": cooking_tables,
+		"decor": decor,
 	}
 
 
@@ -270,6 +277,78 @@ static func _emit_floor_pickups(
 	return out
 
 
+## Emit visual decor (rocks, ruins, flora) using dual placement:
+## - Large items (craters, ruins, walls) use noise clustering for natural groups
+## - Small items (rocks, flowers, shrubs) use density-based random placement
+## Decor is purely visual — no yields, no interaction. passable=false blocks
+## movement; passable=true is walkable overlay.
+static func _emit_decor(
+		rng: RandomNumberGenerator,
+		biome_name: String,
+		terrain: PackedByteArray,
+		occupied: PackedByteArray,
+		spawn: Vector2i
+) -> Array:
+	var decor_data: Dictionary = _load_biome_decor(biome_name)
+	if decor_data.is_empty():
+		return []
+	var profile: Dictionary = _load_biome_decor_profile(biome_name)
+	var out: Array = []
+
+	# Noise field for clustering large decor items
+	var cluster_noise := FastNoiseLite.new()
+	cluster_noise.seed = hash_seed("%s#decor_cluster" % biome_name)
+	cluster_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	cluster_noise.frequency = profile.get("cluster_noise_freq", 0.02)
+	cluster_noise.fractal_octaves = 2
+
+	var cluster_threshold: float = profile.get("cluster_threshold", 0.6)
+
+	# Phase 1: Large decor items — placed via noise clustering
+	var large_items: Array = decor_data.get("large", [])
+	for entry in large_items:
+		if entry == null or not (entry is Dictionary):
+			continue
+		var density: float = float(entry.get("density", 0.0))
+		if density <= 0.0:
+			continue
+		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+		for _i in count:
+			var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn)
+			if pos.x < 0:
+				break
+			# Check noise value — only place if above threshold (creates clusters)
+			var nval: float = cluster_noise.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5
+			if nval < cluster_threshold:
+				continue
+			var placed: Dictionary = (entry as Dictionary).duplicate(true)
+			placed["x"] = pos.x
+			placed["y"] = pos.y
+			placed["category"] = "decor_large"
+			out.append(placed)
+
+	# Phase 2: Small decor items — placed via density (scattered)
+	var small_items: Array = decor_data.get("small", [])
+	for entry in small_items:
+		if entry == null or not (entry is Dictionary):
+			continue
+		var density: float = float(entry.get("density", 0.0))
+		if density <= 0.0:
+			continue
+		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+		for _i in count:
+			var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn)
+			if pos.x < 0:
+				break
+			var placed: Dictionary = (entry as Dictionary).duplicate(true)
+			placed["x"] = pos.x
+			placed["y"] = pos.y
+			placed["category"] = "decor_small"
+			out.append(placed)
+
+	return out
+
+
 # Find a random walkable cell that is not yet occupied and is not within
 # `spawn_buffer` cells of the spawn point. Returns Vector2i(-1, -1) if
 # no candidate found after `max_attempts` tries.
@@ -287,7 +366,12 @@ static func _pick_walkable_cell(
 		if abs(x - spawn.x) < spawn_buffer or abs(y - spawn.y) < spawn_buffer:
 			continue
 		var idx := y * MAP_SIZE + x
-		if int(terrain[idx]) == TERRAIN_BLOCKED:
+		# Resource nodes, decor, and floor pickups only spawn on solid ground.
+		# _carve_rivers() leaves TERRAIN_WATER cells scattered across the map,
+		# which used to receive resource nodes (16% of Scorched Plains had trees
+		# on water). Treat water as blocked for placement.
+		var t := int(terrain[idx])
+		if t == TERRAIN_BLOCKED or t == TERRAIN_WATER:
 			continue
 		if int(occupied[idx]) != 0:
 			continue
@@ -642,6 +726,68 @@ static func _load_biome_terrain_profile(biome_name: String) -> Dictionary:
 	})
 
 
+# Cached loader for decor data from data/resource_nodes.json.
+static var _decor_cache: Dictionary = {}
+static var _decor_cache_mtime: int = -1
+
+
+static func _load_biome_decor(biome_name: String) -> Dictionary:
+	var path := "res://data/resource_nodes.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var ftime := FileAccess.get_modified_time(path)
+	if _decor_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Dictionary = {}
+			if raw is Dictionary:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Dictionary:
+					data = d
+			if not data.is_empty():
+				_decor_cache = data.get("decor", {})
+				_decor_cache_mtime = ftime
+	return _decor_cache.get(biome_name, {})
+
+
+# Cached loader for decor_profile from data/biomes.json.
+static var _dp_cache: Dictionary = {}
+static var _dp_cache_mtime: int = -1
+
+
+static func _load_biome_decor_profile(biome_name: String) -> Dictionary:
+	var path := "res://data/biomes.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var ftime := FileAccess.get_modified_time(path)
+	if _dp_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Array = []
+			if raw is Array:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Array:
+					data = d
+			_dp_cache.clear()
+			for entry in data:
+				if entry is Dictionary:
+					var nm: String = str(entry.get("name", ""))
+					var prof: Dictionary = entry.get("decor_profile", {})
+					if not nm.is_empty() and not prof.is_empty():
+						_dp_cache[nm] = prof
+			_dp_cache_mtime = ftime
+	return _dp_cache.get(biome_name, {
+		"cluster_noise_freq": 0.02,
+		"cluster_threshold": 0.65,
+		"large_density": 0.003,
+		"small_density": 0.014,
+	})
+
+
 static func get_terrain(map_data: Dictionary, x: int, y: int) -> int:
 	var size: int = int(map_data.get("size", MAP_SIZE))
 	if x < 0 or y < 0 or x >= size or y >= size:
@@ -670,6 +816,8 @@ static func get_terrain_movement_cost(terrain_type: int) -> int:
 		TERRAIN_VEGETATION:
 			return 2
 		TERRAIN_BLOCKED:
+			return -1
+		TERRAIN_WATER:
 			return -1
 		_:
 			return 1
@@ -711,5 +859,58 @@ static func terrain_label(terrain_type: int) -> String:
 			return "vegetation"
 		TERRAIN_BLOCKED:
 			return "blocked"
+		TERRAIN_WATER:
+			return "water"
 		_:
 			return "ground"
+
+
+## Carve river/water channels into the terrain using a separate noise layer.
+## Uses domain-warped simplex noise to create sinuous, connected water paths
+## through low-elevation areas. Dilates thin rivers to 2-3 cells wide.
+static func _carve_rivers(terrain: PackedByteArray, local_seed: String, elev: float) -> void:
+	var river_noise := FastNoiseLite.new()
+	river_noise.seed = hash_seed(local_seed + "river")
+	river_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	river_noise.frequency = 0.025
+	river_noise.fractal_octaves = 3
+	river_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	river_noise.fractal_gain = 0.4
+
+	# Domain-warp noise for river sinuosity
+	var warp_noise := FastNoiseLite.new()
+	warp_noise.seed = hash_seed(local_seed + "river_warp")
+	warp_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	warp_noise.frequency = 0.008
+
+	var water_threshold := 0.25 + (1.0 - elev) * 0.15
+	var river_cells: Array[Vector2i] = []
+
+	for y in MAP_SIZE:
+		for x in MAP_SIZE:
+			var idx := y * MAP_SIZE + x
+			if int(terrain[idx]) == TERRAIN_BLOCKED:
+				continue
+			var warp_x := float(x) + warp_noise.get_noise_2d(x, y) * 30.0
+			var warp_y := float(y) + warp_noise.get_noise_2d(x + 500, y + 500) * 30.0
+			var rn := river_noise.get_noise_2d(warp_x, warp_y)
+			var n := rn * 0.5 + 0.5
+			if n < water_threshold:
+				terrain[idx] = TERRAIN_WATER
+				river_cells.append(Vector2i(x, y))
+
+	# Dilate rivers: expand each water cell into walkable neighbors to create
+	# wider channels. One pass is usually enough.
+	var to_dilate: Array[Vector2i] = []
+	for cell in river_cells:
+		for d in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1), Vector2i(0, 1)]:
+			var nx: int = cell.x + d.x
+			var ny: int = cell.y + d.y
+			if nx < 0 or ny < 0 or nx >= MAP_SIZE or ny >= MAP_SIZE:
+				continue
+			var nidx: int = ny * MAP_SIZE + nx
+			var nt := int(terrain[nidx])
+			if nt != TERRAIN_WATER and nt != TERRAIN_BLOCKED:
+				to_dilate.append(Vector2i(nx, ny))
+	for cell in to_dilate:
+		terrain[cell.y * MAP_SIZE + cell.x] = TERRAIN_WATER

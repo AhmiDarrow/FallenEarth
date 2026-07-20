@@ -27,13 +27,14 @@ const ResourceVisualManagerScript = preload("res://scripts/ResourceVisualManager
 const EntityVisualComponentScript = preload("res://scripts/procedural/EntityVisualComponent.gd")
 const AppearanceManagerScript = preload("res://scripts/AppearanceManager.gd")
 
-const CELL_SIZE := 24
+const CELL_SIZE := 32
 
 var ground_layer: TileMapLayer
 var marker_layer: Node2D
 var mob_layer: Node2D
 var node_layer: Node2D
 var pickup_layer: Node2D
+var decor_layer: Node2D
 var settlement_layer: Node2D
 var station_layer: Node2D
 
@@ -56,6 +57,7 @@ func _ready() -> void:
 	mob_layer = get_node_or_null("MobLayer") as Node2D
 	node_layer = get_node_or_null("NodeLayer") as Node2D
 	pickup_layer = get_node_or_null("PickupLayer") as Node2D
+	decor_layer = get_node_or_null("DecorLayer") as Node2D
 	settlement_layer = get_node_or_null("SettlementLayer") as Node2D
 	station_layer = get_node_or_null("StationLayer") as Node2D
 	# Mob layer is y-sorted so entities stack correctly with the player.
@@ -67,6 +69,8 @@ func _ready() -> void:
 		node_layer.y_sort_enabled = true
 	if is_instance_valid(pickup_layer):
 		pickup_layer.y_sort_enabled = true
+	if is_instance_valid(decor_layer):
+		decor_layer.y_sort_enabled = true
 	if is_instance_valid(settlement_layer):
 		settlement_layer.y_sort_enabled = true
 	if is_instance_valid(station_layer):
@@ -83,6 +87,7 @@ func configure(map_data: Dictionary) -> void:
 	_clear_mobs()
 	_clear_nodes()
 	_clear_pickups()
+	_clear_decor()
 	_clear_buildings()
 
 	_current_map_data = map_data
@@ -106,8 +111,8 @@ func configure(map_data: Dictionary) -> void:
 	for y in size:
 		for x in size:
 			var t := int(terrain[y * size + x])
-			# Normalize legacy rift_scar=4 cells to ground (v0.4.0 Phase 0).
-			if t < 0 or t > TileSetSvc.TERRAIN_BLOCKED:
+			# Legacy rift_scar=4 no longer exists; terrain indices 0-4 are contiguous.
+			if t < 0 or t > TileSetSvc.TERRAIN_WATER:
 				t = TileSetSvc.TERRAIN_GROUND
 			var em := 0
 			if edge_mask.size() > 0:
@@ -120,19 +125,22 @@ func configure(map_data: Dictionary) -> void:
 	_populate_resource_nodes(map_data.get("resource_nodes", []))
 	# Spawn floor pickups (sticks, stones)
 	_populate_floor_pickups(map_data.get("floor_pickups", []))
-	# v0.10.0: batched MultiMesh visuals for all resource nodes + pickups.
+	# Spawn visual decor (rocks, ruins, flora)
+	_populate_decor(map_data.get("decor", []))
+	# v0.10.0: batched MultiMesh visuals for all resource nodes + pickups + decor.
 	if _visual_manager != null and is_instance_valid(_visual_manager):
 		_visual_manager.queue_free()
 	_visual_manager = ResourceVisualManagerScript.new()
 	_visual_manager.name = "ResourceVisualManager"
 	add_child(_visual_manager)
-	_visual_manager.setup(node_layer, pickup_layer)
+	_visual_manager.setup(node_layer, pickup_layer, decor_layer)
 	# Spawn cooking tables (Phase 3 follow-up: cooking station)
 	_populate_cooking_tables(map_data.get("cooking_tables", []))
 	# Spawn settlement structures (Phase 3: NPC towns). The settlement
 	# data comes from world_data.towns_seeded; we look that up via
 	# GameState. Each town is placed at its hex key (the player walks
-	# adjacent and presses E to enter the interior).
+	# adjacent and presses F to enter the interior — F is the canonical
+	# interact key per scripts/KeybindManager.gd).
 	_populate_settlements(_get_world_towns())
 	# v0.8.0: spawn building sprites from the procedural town layout
 	_populate_buildings(map_data.get("settlement", {}).get("structures", []))
@@ -332,6 +340,26 @@ func _populate_floor_pickups(pickups: Array) -> void:
 		_pickup_by_cell[cell] = pickup
 
 
+## Populate visual decor layer (rocks, ruins, flora). Each decor item is a
+## lightweight Node2D with position only — no interaction, no sprite (rendered
+## by ResourceVisualManager's MultiMesh batch).
+func _populate_decor(decor: Array) -> void:
+	if not is_instance_valid(decor_layer):
+		return
+	for entry in decor:
+		if not (entry is Dictionary):
+			continue
+		var cell: Vector2i = Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
+		var node := Node2D.new()
+		node.name = "Decor_%s_%d_%d" % [str(entry.get("id", "")), cell.x, cell.y]
+		node.position = cell_to_world(cell)
+		# Attach decor data as metadata for ResourceVisualManager (Node2D has no
+		# declared `decor_data` property so `node.set("decor_data", ...)` would
+		# silently drop the value; set_meta survives the round trip).
+		node.set_meta("decor_data", (entry as Dictionary).duplicate(true))
+		decor_layer.add_child(node)
+
+
 func get_resource_nodes() -> Array:
 	# Returns the live HarvestNode nodes currently in node_layer.
 	if not is_instance_valid(node_layer):
@@ -511,6 +539,12 @@ func _clear_pickups() -> void:
 			child.queue_free()
 	# v0.9.1c: clear the cell index too.
 	_pickup_by_cell.clear()
+
+
+func _clear_decor() -> void:
+	if is_instance_valid(decor_layer):
+		for child in decor_layer.get_children():
+			child.queue_free()
 
 
 func _clear_settlements() -> void:

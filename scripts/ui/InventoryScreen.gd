@@ -1,31 +1,24 @@
-## InventoryScreen — Wyvernbox-powered grid inventory with drag & drop,
-## weight display, stats panel, and tooltip.
+## InventoryScreen — Custom grid inventory with drag & drop,
+## weight display, and tooltip. Pure InventoryHandler, no Wyvernbox.
 class_name InventoryScreen
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
-const INVENTORY_PATH := "/root/InventoryManager"
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const CELL_SIZE := 48
 
 signal closed
-
-var _main_view: InventoryView
-var _tooltip: PanelContainer
 
 
 func _ready() -> void:
 	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var bg := ColorRect.new()
-	bg.color = Color(0.02, 0.02, 0.04, 0.92)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var bg := UH.make_backdrop()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	# Main window panel — fills parent with margins
-	var panel := PanelContainer.new()
-	panel.name = "WindowPanel"
+	var panel := UH.make_panel()
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	panel.offset_left = 0
 	panel.offset_top = 0
@@ -33,163 +26,71 @@ func _ready() -> void:
 	panel.offset_bottom = 0
 	add_child(panel)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox()
 	panel.add_child(vbox)
 
-	# Top bar
 	var top_bar := _make_top_bar()
 	vbox.add_child(top_bar)
 
-	# Main body: grid | stats
-	var body := HBoxContainer.new()
+	var body := UH.make_hbox(0)
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(body)
 
-	var grid_vbox := VBoxContainer.new()
+	var grid_vbox := UH.make_vbox(0)
 	grid_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	grid_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	body.add_child(grid_vbox)
 
-	_main_view = _make_grid_view()
-	grid_vbox.add_child(_main_view)
+	# v0.4.0 polish: label the top row as the hotbar so the player knows
+	# what the slots below this row are for.
+	var hotbar_label := UH.make_small_label("HOTBAR  (press 1-9 or click to quick-use)", MT.TEXT_ACCENT)
+	hotbar_label.name = "HotbarLabel"
+	grid_vbox.add_child(hotbar_label)
 
-	# Bottom info
-	var info := HBoxContainer.new()
+	var grid := InventoryGrid.new(InventoryHandler.GRID_W, InventoryHandler.GRID_H, CELL_SIZE)
+	grid.name = "MainGrid"
+	grid_vbox.add_child(grid)
+
+	var info := UH.make_hbox(0)
 	info.custom_minimum_size = Vector2(0, 30)
 	var wgt := _make_weight_label()
 	info.add_child(wgt)
-	grid_vbox.add_child(info)
-
-	# Stats panel on right
-	var stats := _make_stats_panel()
-	body.add_child(stats)
-
-	# Tooltip (mouse follower)
-	_tooltip = _make_tooltip()
-	_tooltip.hide()
-	add_child(_tooltip)
-
-	# Connect inventory signals
-	var inv: Node = get_node_or_null(INVENTORY_PATH)
-	if inv != null:
-		if inv.has_signal("inventory_changed"):
-			inv.connect("inventory_changed", _refresh_weight)
-		_refresh_weight()
-
-	# Connect grid signals for tooltip
-	_main_view.item_stack_selected.connect(_on_item_selected)
-	_main_view.item_stack_deselected.connect(_on_item_deselected)
+	vbox.add_child(info)
+	UH.make_scrollable(vbox)
 
 
 func _make_top_bar() -> Control:
-	var hb := HBoxContainer.new()
-	hb.custom_minimum_size = Vector2(0, 36)
-	var title := Label.new()
-	title.text = "INVENTORY"
-	title.add_theme_color_override("font_color", Color(0.95, 0.6, 0.1))
-	title.add_theme_font_size_override("font_size", 22)
-	hb.add_child(title)
-	hb.add_spacer(true)
-	var close_btn := Button.new()
-	close_btn.text = "X"
-	close_btn.pressed.connect(func(): closed.emit(); queue_free())
-	hb.add_child(close_btn)
-	return hb
+	var hbox := UH.make_hbox()
+	hbox.custom_minimum_size = Vector2(0, 36)
 
+	var title := UH.make_accent_label("Inventory", MT.FS_H2)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hbox.add_child(title)
 
-func _make_grid_view() -> InventoryView:
-	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
-	if inv_mgr == null or not inv_mgr.has_method("get_main_grid"):
-		return InventoryView.new()
-
-	var grid_inv = inv_mgr.get_main_grid()
-	var view := InventoryView.new()
-	view.name = "MainGrid"
-	view.inventory = grid_inv
-	view.cell_size = Vector2(CELL_SIZE, CELL_SIZE)
-	view.item_scene = preload("res://addons/wyvernbox_prefabs/item_stack_view.tscn")
-	view.selected_item_style = preload("res://addons/wyvernbox_prefabs/graphics/selected_cell.tres")
-	view.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	view.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	view.custom_minimum_size = Vector2(CELL_SIZE * 10, CELL_SIZE * 3)
-	view.show_backgrounds = true
-	view.mouse_filter = Control.MOUSE_FILTER_STOP
-
-	# Visible grid background so the 10x3 area is obvious
-	var grid_bg := ColorRect.new()
-	grid_bg.name = "GridBg"
-	grid_bg.color = Color(0.07, 0.07, 0.11, 0.95)
-	grid_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	view.add_child(grid_bg)
-	view.grid_background = NodePath("GridBg")
-
-	return view
+	var close_btn := UH.make_button("X", "danger", 32, 28)
+	close_btn.pressed.connect(_on_close)
+	hbox.add_child(close_btn)
+	return hbox
 
 
 func _make_weight_label() -> Label:
-	var lbl := Label.new()
+	var lbl := UH.make_small_label("", MT.TEXT_SECONDARY)
 	lbl.name = "WeightLabel"
-	lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	var ih := get_node_or_null("/root/InventoryHandler") as InventoryHandler
+	if ih != null and ih.has_signal("inventory_changed"):
+		if not ih.inventory_changed.is_connected(_refresh_weight.bind(lbl)):
+			ih.inventory_changed.connect(_refresh_weight.bind(lbl))
+	_refresh_weight(lbl)
 	return lbl
 
 
-func _make_stats_panel() -> Control:
-	var panel := VBoxContainer.new()
-	panel.custom_minimum_size = Vector2(140, 0)
-	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-
-	var title := Label.new()
-	title.text = "STATS"
-	title.add_theme_color_override("font_color", Color(0.95, 0.6, 0.1))
-	panel.add_child(title)
-
-	var stats := ["Encumbrance", "Defense", "Damage"]
-	for s in stats:
-		var lbl := Label.new()
-		lbl.text = s + ": --"
-		lbl.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
-		panel.add_child(lbl)
-	return panel
+func _refresh_weight(lbl: Label) -> void:
+	var ih := get_node_or_null("/root/InventoryHandler") as InventoryHandler
+	if ih != null:
+		lbl.text = "Weight: %.1f / %.1f" % [ih.current_weight, ih.max_weight]
 
 
-func _make_tooltip() -> PanelContainer:
-	var tip := preload("res://addons/wyvernbox_prefabs/tooltip.tscn").instantiate() as PanelContainer
-	tip.visible = false
-	tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	return tip
-
-
-func _on_item_selected(item_view: Node) -> void:
-	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
-	if inv_mgr == null:
-		return
-	var grid: GridInventory = inv_mgr.get_main_grid() if inv_mgr.has_method("get_main_grid") else null
-	if grid == null:
-		return
-	var cell_pos: Vector2 = _main_view.selected_cell
-	if cell_pos.x < 0 or cell_pos.y < 0:
-		return
-	var stack: ItemStack = grid.get_item_at_position(cell_pos.x, cell_pos.y)
-	if stack == null:
-		return
-	_tooltip.display_item(stack, item_view)
-	_tooltip.global_position = get_global_mouse_position() + Vector2(16, 16)
-	_tooltip.show()
-
-
-func _on_item_deselected(_item_view: Node) -> void:
-	_tooltip.hide()
-
-
-func _refresh_weight() -> void:
-	var inv_mgr: Node = get_node_or_null(INVENTORY_PATH)
-	if inv_mgr == null:
-		return
-	var lbl: Label = find_child("WeightLabel", true, false) as Label
-	if lbl == null:
-		return
-	var cur: float = inv_mgr.get("current_weight") if inv_mgr != null else 0.0
-	var max_w: float = inv_mgr.get("max_weight") if inv_mgr != null else 50.0
-	lbl.text = "Weight: %.1f / %.1f kg" % [cur, max_w]
-
+func _on_close() -> void:
+	closed.emit()
+	queue_free()
