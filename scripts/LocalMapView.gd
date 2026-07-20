@@ -101,13 +101,20 @@ func configure(map_data: Dictionary) -> void:
 	if terrain.is_empty():
 		return
 
+	var edge_mask: PackedByteArray = map_data.get("edge_mask", PackedByteArray())
+
 	for y in size:
 		for x in size:
 			var t := int(terrain[y * size + x])
 			# Normalize legacy rift_scar=4 cells to ground (v0.4.0 Phase 0).
 			if t < 0 or t > TileSetSvc.TERRAIN_BLOCKED:
 				t = TileSetSvc.TERRAIN_GROUND
-			ground_layer.set_cell(Vector2i(x, y), 0, TileSetSvc.atlas_coords(t))
+			var em := 0
+			if edge_mask.size() > 0:
+				var ei := y * size + x
+				if ei < edge_mask.size():
+					em = edge_mask[ei]
+			ground_layer.set_cell(Vector2i(x, y), 0, TileSetSvc.atlas_coords(t, int(em)))
 
 	# Spawn resource nodes (trees, formations, ore, crystals, fauna)
 	_populate_resource_nodes(map_data.get("resource_nodes", []))

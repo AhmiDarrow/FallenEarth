@@ -74,21 +74,71 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 	var rain: float = float(biome_tile.get("rainfall", 0.5))
 	var rift_chance: float = float(biome_tile.get("rift_chance", 0.3))
 
+	# Load per-biome terrain profile from data/biomes.json for noise and thresholds
+	var profile: Dictionary = _load_biome_terrain_profile(biome_name)
+
+	# FastNoiseLite for spatial coherence — creates landscape features (lakes, forests, rocky areas)
+	# rather than per-cell random speckle. Landscape layer gives large blobs, detail adds edge variation.
+	var landscape_noise := FastNoiseLite.new()
+	landscape_noise.seed = hash_seed(local_seed + "landscape")
+	landscape_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	landscape_noise.frequency = profile.get("noise_freq", 0.008)
+	landscape_noise.fractal_octaves = profile.get("noise_octaves", 3)
+
+	var detail_noise := FastNoiseLite.new()
+	detail_noise.seed = hash_seed(local_seed + "detail")
+	detail_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	detail_noise.frequency = profile.get("detail_freq", 0.03)
+	detail_noise.fractal_octaves = profile.get("detail_octaves", 2)
+
 	for y in MAP_SIZE:
 		for x in MAP_SIZE:
 			var idx := y * MAP_SIZE + x
-			var n := rng.randf()
 			var edge_dist := mini(mini(x, MAP_SIZE - 1 - x), mini(y, MAP_SIZE - 1 - y))
 			if edge_dist < 2:
 				terrain[idx] = TERRAIN_GROUND
-			elif n < 0.06 + elev * 0.04:
+				continue
+			# Combine landscape + detail noise, remap [-1,1] simplex to [0,1] range
+			var ln := landscape_noise.get_noise_2d(x, y) * 0.5 + 0.5
+			var dn := detail_noise.get_noise_2d(x, y) * 0.25 + 0.25
+			var n := clampf(ln + dn, 0.0, 1.0)
+			# Per-biome thresholds from data/biomes.json terrain_profile.
+			# rain/elev from WorldGenerator's climate model tweak proportions per hex.
+			var blocked_base: float = profile.get("blocked_base", 0.10)
+			var blocked_elev: float = profile.get("blocked_elev_factor", 0.06)
+			var veget_base: float = profile.get("vegetation_base", 0.25)
+			var veget_rain: float = profile.get("vegetation_rain_factor", 0.15)
+			var debris_t: float = profile.get("debris_threshold", 0.42)
+			var blocked_t := blocked_base + elev * blocked_elev
+			var veget_t := veget_base + rain * veget_rain
+			if n < blocked_t:
 				terrain[idx] = TERRAIN_BLOCKED
-			elif n < 0.18 + rain * 0.12:
+			elif n < veget_t:
 				terrain[idx] = TERRAIN_VEGETATION
-			elif n < 0.32:
+			elif n < debris_t:
 				terrain[idx] = TERRAIN_DEBRIS
 			else:
 				terrain[idx] = TERRAIN_GROUND
+
+	# Edge detection: compute a bitmask per cell indicating which cardinal
+	# neighbors have different terrain. N=1, S=2, W=4, E=8. Used by TileSetService
+	# to place edge-blend tiles for smoother terrain transitions.
+	var edge_mask := PackedByteArray()
+	edge_mask.resize(MAP_SIZE * MAP_SIZE)
+	for y in MAP_SIZE:
+		for x in MAP_SIZE:
+			var idx := y * MAP_SIZE + x
+			var t := int(terrain[idx])
+			var mask := 0
+			if y > 0 and int(terrain[idx - MAP_SIZE]) != t:
+				mask |= 1  # N
+			if y < MAP_SIZE - 1 and int(terrain[idx + MAP_SIZE]) != t:
+				mask |= 2  # S
+			if x > 0 and int(terrain[idx - 1]) != t:
+				mask |= 4  # W
+			if x < MAP_SIZE - 1 and int(terrain[idx + 1]) != t:
+				mask |= 8  # E
+			edge_mask[idx] = mask
 
 	# Clear a large homestead pocket at center so the player has room to explore on spawn.
 	var cx := int(MAP_SIZE / 2.0)
@@ -134,6 +184,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		"biome": biome_name,
 		"local_seed": local_seed,
 		"terrain": terrain,
+		"edge_mask": edge_mask,
 		"spawn": Vector2i(cx, cy),
 		"visited": false,
 		"explored_pct": 0.0,
@@ -549,6 +600,46 @@ static func _load_floor_pickup_densities() -> Dictionary:
 				_fp_cache = data.get("floor_pickup_density", {})
 				_fp_cache_mtime = ftime
 	return _fp_cache
+
+
+# Cached loader for terrain_profile from data/biomes.json.
+static var _tp_cache: Dictionary = {}
+static var _tp_cache_mtime: int = -1
+
+
+## Returns the terrain_profile dict for a biome, or empty dict if not found.
+## The profile contains noise frequency/octaves and terrain type thresholds.
+static func _load_biome_terrain_profile(biome_name: String) -> Dictionary:
+	var path := "res://data/biomes.json"
+	if not ResourceLoader.exists(path):
+		return {}
+	var ftime := FileAccess.get_modified_time(path)
+	var raw_list = null
+	if _tp_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Array = []
+			if raw is Array:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Array:
+					data = d
+			_tp_cache.clear()
+			for entry in data:
+				if entry is Dictionary:
+					var nm: String = str(entry.get("name", ""))
+					var prof: Dictionary = entry.get("terrain_profile", {})
+					if not nm.is_empty() and not prof.is_empty():
+						_tp_cache[nm] = prof
+			_tp_cache_mtime = ftime
+	return _tp_cache.get(biome_name, {
+		"noise_freq": 0.008, "noise_octaves": 3,
+		"detail_freq": 0.03, "detail_octaves": 2,
+		"blocked_base": 0.10, "blocked_elev_factor": 0.06,
+		"vegetation_base": 0.25, "vegetation_rain_factor": 0.15,
+		"debris_threshold": 0.42,
+	})
 
 
 static func get_terrain(map_data: Dictionary, x: int, y: int) -> int:

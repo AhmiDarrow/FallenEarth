@@ -102,6 +102,20 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 	var tile_map: Dictionary = {}
 	var biomes = _biome_definitions
 
+	# FastNoiseLite for coherent elevation and rainfall across hexes
+	# (neighbors get similar values instead of per-hex random jitter).
+	var elev_noise_gen := FastNoiseLite.new()
+	elev_noise_gen.seed = _seed.hash() + 1000
+	elev_noise_gen.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	elev_noise_gen.frequency = 0.03
+	elev_noise_gen.fractal_octaves = 3
+
+	var rain_noise_gen := FastNoiseLite.new()
+	rain_noise_gen.seed = _seed.hash() + 2000
+	rain_noise_gen.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	rain_noise_gen.frequency = 0.04
+	rain_noise_gen.fractal_octaves = 2
+
 	# Generate hex tiles in a large "sphere" patch using axial coords
 	# Track assigned biomes for neighbor clustering bonus
 	var assigned_biomes: Dictionary = {}  # key -> biome name
@@ -111,16 +125,18 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 			var lat = float(r) / float(_hex_radius) * 90.0  # -90 to 90
 			var abs_lat = abs(lat)
 
-			# Elevation noise (RimWorld hilliness/elev)
-			var elev_noise = (_rng.randf() - 0.5) * 2.0 + sin(lat * 0.05) * 0.3
-			var elevation = clamp(0.5 + elev_noise * 0.5, 0.0, 1.0)
+			# Elevation noise — FastNoiseLite at hex coordinates for spatial coherence.
+			# Latitude banding adds mountain ranges at certain latitudes.
+			var elev_noise = elev_noise_gen.get_noise_2d(q, r) + sin(lat * 0.08) * 0.25
+			var elevation = clamp(0.5 + elev_noise * 0.4, 0.0, 1.0)
 
 			# Temperature bias (colder poles)
 			var temp = 1.0 - (abs_lat / 90.0) * 0.8 - (elevation - 0.5) * 0.4
 			temp = clamp(temp, 0.0, 1.0)
 
-			# Rainfall / moisture noise (RimWorld rain)
-			var rain = clamp(0.5 + (_rng.randf() - 0.5) * 1.2 - (elevation - 0.5) * 0.6, 0.0, 1.0)
+			# Rainfall / moisture noise — coherent across hexes, reduced at high elevation
+			var rain_raw = rain_noise_gen.get_noise_2d(q, r) * 0.5 - (elevation - 0.5) * 0.6
+			var rain = clamp(0.5 + rain_raw, 0.0, 1.0)
 
 			# Count adjacent hexes by biome for clustering bonus
 			var neighbor_bonus: Dictionary = {}

@@ -3,150 +3,535 @@
     "name": "Ash Wastes",
     "description": "Barren, toxic dust plains. The common starter biome outside settlements. Twisted, irradiated scrub with constant wind-blown ash, low visibility, and nutrient-scarce soil.",
     "difficulty_tier": 2,
-    "level_range": {"min_level": 2, "max_level": 5},
+    "level_range": {
+      "min_level": 2,
+      "max_level": 5
+    },
     "rift_chance": 0.25,
     "danger_level": "medium",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["mutant", "human"],
+      "preferred_race_tags": [
+        "mutant",
+        "human"
+      ],
       "threat_multiplier": 1.3
     },
-    "survival_risks": ["Irradiation", "Dehydration", "Dust Storms", "Resource Scarcity"],
-    "resources": ["rusted_scrap", "irradiated_rations", "fungal_mats", "rad_mushrooms"],
-    "features": ["toxic_dust", "cracked_earth", "wind_swept_scrub"]
+    "survival_risks": [
+      "Irradiation",
+      "Dehydration",
+      "Dust Storms",
+      "Resource Scarcity"
+    ],
+    "resources": {
+      "common": [
+        "rusted_scrap"
+      ],
+      "uncommon": [
+        "irradiated_rations"
+      ],
+      "rare": [
+        "fungal_mats",
+        "rad_mushrooms"
+      ]
+    },
+    "features": [
+      "toxic_dust",
+      "cracked_earth",
+      "wind_swept_scrub"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.1,
+      "blocked_elev_factor": 0.06,
+      "vegetation_base": 0.22,
+      "vegetation_rain_factor": 0.12,
+      "debris_threshold": 0.42,
+      "noise_freq": 0.01,
+      "noise_octaves": 3,
+      "detail_freq": 0.04,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Rust Canyons",
     "description": "Deep canyons filled with rusted wreckage from the old corporate wars. High rift chance due to the fractures in reality here. Excellent for scavenging but extremely hazardous.",
     "difficulty_tier": 4,
-    "level_range": {"min_level": 6, "max_level": 12},
-    "rift_chance": 0.70,
+    "level_range": {
+      "min_level": 6,
+      "max_level": 12
+    },
+    "rift_chance": 0.7,
     "danger_level": "high",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["human", "cyborg"],
+      "preferred_race_tags": [
+        "human",
+        "cyborg"
+      ],
       "threat_multiplier": 1.6
     },
-    "survival_risks": ["Structural Collapse", "Rusted Shrapnel", "Feral Scavengers", "High Rift Activity"],
-    "resources": ["rusted_wreckage", "pre_war_parts", "scrap_metal", "corroded_electronics"],
-    "features": ["deep_canyons", "rusted_hulks", "unstable_bridges", "high_rift_density"]
+    "survival_risks": [
+      "Structural Collapse",
+      "Rusted Shrapnel",
+      "Feral Scavengers",
+      "High Rift Activity"
+    ],
+    "resources": {
+      "common": [
+        "rusted_wreckage"
+      ],
+      "uncommon": [
+        "pre_war_parts"
+      ],
+      "rare": [
+        "scrap_metal",
+        "corroded_electronics"
+      ]
+    },
+    "features": [
+      "deep_canyons",
+      "rusted_hulks",
+      "unstable_bridges",
+      "high_rift_density"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.1,
+      "blocked_elev_factor": 0.08,
+      "vegetation_base": 0.2,
+      "vegetation_rain_factor": 0.1,
+      "debris_threshold": 0.38,
+      "noise_freq": 0.012,
+      "noise_octaves": 4,
+      "detail_freq": 0.04,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Neon Bogs",
     "description": "Polluted wetlands with glowing flora. Bioluminescent plants and failing pre-Collapse power lines create an eerie, beautiful, and deadly landscape full of hidden toxins and rifts.",
     "difficulty_tier": 3,
-    "level_range": {"min_level": 4, "max_level": 8},
-    "rift_chance": 0.40,
+    "level_range": {
+      "min_level": 4,
+      "max_level": 8
+    },
+    "rift_chance": 0.4,
     "danger_level": "medium-high",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["sentientai", "vesperid"],
+      "preferred_race_tags": [
+        "sentientai",
+        "vesperid"
+      ],
       "threat_multiplier": 1.4
     },
-    "survival_risks": ["Toxic Sludge", "Electrified Water", "Bioluminescent Predators", "Sinkholes"],
-    "resources": ["neon_flora", "glowing_resin", "circuit_scrap", "bioluminescent_ooze"],
-    "features": ["glowing_wetlands", "sunken_ruins", "power_lines", "fog_pockets"]
+    "survival_risks": [
+      "Toxic Sludge",
+      "Electrified Water",
+      "Bioluminescent Predators",
+      "Sinkholes"
+    ],
+    "resources": {
+      "common": [
+        "neon_flora"
+      ],
+      "uncommon": [
+        "glowing_resin"
+      ],
+      "rare": [
+        "circuit_scrap",
+        "bioluminescent_ooze"
+      ]
+    },
+    "features": [
+      "glowing_wetlands",
+      "sunken_ruins",
+      "power_lines",
+      "fog_pockets"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.15,
+      "blocked_elev_factor": 0.04,
+      "vegetation_base": 0.3,
+      "vegetation_rain_factor": 0.18,
+      "debris_threshold": 0.48,
+      "noise_freq": 0.007,
+      "noise_octaves": 3,
+      "detail_freq": 0.03,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Scorched Plains",
     "description": "Cracked earth and constant oppressive heat. Low rift chance but punishing environment with little cover. Former farmlands and highways baked into glass-like surfaces.",
     "difficulty_tier": 1,
-    "level_range": {"min_level": 1, "max_level": 3},
+    "level_range": {
+      "min_level": 1,
+      "max_level": 3
+    },
     "rift_chance": 0.12,
     "danger_level": "medium",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["mutant", "revenant"],
+      "preferred_race_tags": [
+        "mutant",
+        "revenant"
+      ],
       "threat_multiplier": 1.1
     },
-    "survival_risks": ["Extreme Heat", "Dehydration", "Mirage Disorientation", "Fire Storms"],
-    "resources": ["heat_resistant_minerals", "dried_fungi", "charred_wreckage", "glass_shards"],
-    "features": ["cracked_earth", "heat_haze", "sun_baked_ruins", "sparse_vegetation"]
+    "survival_risks": [
+      "Extreme Heat",
+      "Dehydration",
+      "Mirage Disorientation",
+      "Fire Storms"
+    ],
+    "resources": {
+      "common": [
+        "heat_resistant_minerals"
+      ],
+      "uncommon": [
+        "dried_fungi"
+      ],
+      "rare": [
+        "charred_wreckage",
+        "glass_shards"
+      ]
+    },
+    "features": [
+      "cracked_earth",
+      "heat_haze",
+      "sun_baked_ruins",
+      "sparse_vegetation"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.06,
+      "blocked_elev_factor": 0.04,
+      "vegetation_base": 0.18,
+      "vegetation_rain_factor": 0.1,
+      "debris_threshold": 0.35,
+      "noise_freq": 0.006,
+      "noise_octaves": 2,
+      "detail_freq": 0.025,
+      "detail_octaves": 1
+    }
   },
   {
     "name": "Ironwood Thicket",
     "description": "Dense metallic trees and vines. The forest has been transmuted by Underearth energies into living iron and chrome-like growths. Hard to traverse, full of ambush points.",
     "difficulty_tier": 3,
-    "level_range": {"min_level": 4, "max_level": 8},
-    "rift_chance": 0.30,
+    "level_range": {
+      "min_level": 4,
+      "max_level": 8
+    },
+    "rift_chance": 0.3,
     "danger_level": "high",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["vesperid", "chthon"],
+      "preferred_race_tags": [
+        "vesperid",
+        "chthon"
+      ],
       "threat_multiplier": 1.7
     },
-    "survival_risks": ["Impaling Vines", "Magnetic Storms", "Ironroot Predators", "Navigation Loss"],
-    "resources": ["ironwood_bark", "metallic_vines", "ferro_resin", "living_metal_samples"],
-    "features": ["dense_metallic_forest", "vine_canopy", "magnetic_nodes", "twisted_trees"]
+    "survival_risks": [
+      "Impaling Vines",
+      "Magnetic Storms",
+      "Ironroot Predators",
+      "Navigation Loss"
+    ],
+    "resources": {
+      "common": [
+        "ironwood_bark"
+      ],
+      "uncommon": [
+        "metallic_vines"
+      ],
+      "rare": [
+        "ferro_resin",
+        "living_metal_samples"
+      ]
+    },
+    "features": [
+      "dense_metallic_forest",
+      "vine_canopy",
+      "magnetic_nodes",
+      "twisted_trees"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.1,
+      "blocked_elev_factor": 0.05,
+      "vegetation_base": 0.38,
+      "vegetation_rain_factor": 0.15,
+      "debris_threshold": 0.5,
+      "noise_freq": 0.009,
+      "noise_octaves": 3,
+      "detail_freq": 0.035,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Glass Dunes",
     "description": "Shimmering sand made of melted glass from ancient cataclysmic heat. High rift chance. The dunes sing in the wind and hide ancient structures and lethal crystal formations.",
     "difficulty_tier": 4,
-    "level_range": {"min_level": 6, "max_level": 12},
+    "level_range": {
+      "min_level": 6,
+      "max_level": 12
+    },
     "rift_chance": 0.75,
     "danger_level": "high",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["human", "cyborg"],
+      "preferred_race_tags": [
+        "human",
+        "cyborg"
+      ],
       "threat_multiplier": 1.5
     },
-    "survival_risks": ["Glass Storms", "Mirages", "Crystal Cuts", "Buried Rifts", "Dehydration"],
-    "resources": ["glass_shards", "melted_alloys", "prismatic_crystals", "buried_tech"],
-    "features": ["singing_dunes", "glass_crystals", "sunken_structures", "prismatic_reflections"]
+    "survival_risks": [
+      "Glass Storms",
+      "Mirages",
+      "Crystal Cuts",
+      "Buried Rifts",
+      "Dehydration"
+    ],
+    "resources": {
+      "common": [
+        "glass_shards"
+      ],
+      "uncommon": [
+        "melted_alloys"
+      ],
+      "rare": [
+        "prismatic_crystals",
+        "buried_tech"
+      ]
+    },
+    "features": [
+      "singing_dunes",
+      "glass_crystals",
+      "sunken_structures",
+      "prismatic_reflections"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.08,
+      "blocked_elev_factor": 0.05,
+      "vegetation_base": 0.15,
+      "vegetation_rain_factor": 0.08,
+      "debris_threshold": 0.36,
+      "noise_freq": 0.008,
+      "noise_octaves": 3,
+      "detail_freq": 0.03,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Corpse Fields",
     "description": "Old battlegrounds littered with bones and wreckage. The earth itself remembers the wars. High concentration of remains makes this a favored hunting ground for certain horrors and Revenants.",
     "difficulty_tier": 4,
-    "level_range": {"min_level": 6, "max_level": 12},
+    "level_range": {
+      "min_level": 6,
+      "max_level": 12
+    },
     "rift_chance": 0.55,
     "danger_level": "high",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["revenant", "nullborn"],
+      "preferred_race_tags": [
+        "revenant",
+        "nullborn"
+      ],
       "threat_multiplier": 1.8
     },
-    "survival_risks": ["Revenant Packs", "Unstable Ground", "Bone Traps", "Plague Pits", "High Rift Activity"],
-    "resources": ["ancient_bones", "war_scrap", "dog_tags", "undisturbed_caches"],
-    "features": ["mass_graves", "rusting_tanks", "bone_fields", "crater_lakes"]
+    "survival_risks": [
+      "Revenant Packs",
+      "Unstable Ground",
+      "Bone Traps",
+      "Plague Pits",
+      "High Rift Activity"
+    ],
+    "resources": {
+      "common": [
+        "ancient_bones"
+      ],
+      "uncommon": [
+        "war_scrap"
+      ],
+      "rare": [
+        "dog_tags",
+        "undisturbed_caches"
+      ]
+    },
+    "features": [
+      "mass_graves",
+      "rusting_tanks",
+      "bone_fields",
+      "crater_lakes"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.12,
+      "blocked_elev_factor": 0.05,
+      "vegetation_base": 0.18,
+      "vegetation_rain_factor": 0.1,
+      "debris_threshold": 0.38,
+      "noise_freq": 0.007,
+      "noise_octaves": 3,
+      "detail_freq": 0.03,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Stormspire Highlands",
     "description": "High plateaus with constant lightning and fierce winds. Very high rift chance. Ancient communication towers and corporate spires still crackle with power. Extremely dangerous but rich in energy resources.",
     "difficulty_tier": 5,
-    "level_range": {"min_level": 10, "max_level": 16},
+    "level_range": {
+      "min_level": 10,
+      "max_level": 16
+    },
     "rift_chance": 0.92,
     "danger_level": "extreme",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["sentientai", "cyborg"],
+      "preferred_race_tags": [
+        "sentientai",
+        "cyborg"
+      ],
       "threat_multiplier": 2.1
     },
-    "survival_risks": ["Constant Lightning", "High Winds", "Frequent Rifts", "EMP Surges", "Falls"],
-    "resources": ["storm_charged_cells", "lightning_glass", "tower_components", "volatile_energy"],
-    "features": ["lightning_towers", "wind_swept_plateaus", "frequent_rifts", "crackling_spires"]
+    "survival_risks": [
+      "Constant Lightning",
+      "High Winds",
+      "Frequent Rifts",
+      "EMP Surges",
+      "Falls"
+    ],
+    "resources": {
+      "common": [
+        "storm_charged_cells"
+      ],
+      "uncommon": [
+        "lightning_glass"
+      ],
+      "rare": [
+        "tower_components",
+        "volatile_energy"
+      ]
+    },
+    "features": [
+      "lightning_towers",
+      "wind_swept_plateaus",
+      "frequent_rifts",
+      "crackling_spires"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.14,
+      "blocked_elev_factor": 0.1,
+      "vegetation_base": 0.22,
+      "vegetation_rain_factor": 0.12,
+      "debris_threshold": 0.4,
+      "noise_freq": 0.014,
+      "noise_octaves": 4,
+      "detail_freq": 0.05,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Toxin Marshes",
     "description": "Heavily polluted swamps thick with chemical runoff and Underearth bio-contamination. The water and air are lethal. Home to resilient and mutated life adapted to the poison.",
     "difficulty_tier": 4,
-    "level_range": {"min_level": 6, "max_level": 12},
+    "level_range": {
+      "min_level": 6,
+      "max_level": 12
+    },
     "rift_chance": 0.65,
     "danger_level": "high",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["chthon", "vesperid"],
+      "preferred_race_tags": [
+        "chthon",
+        "vesperid"
+      ],
       "threat_multiplier": 1.9
     },
-    "survival_risks": ["Neurotoxins", "Corrosive Sludge", "Parasitic Infestations", "Drowning", "Hallucinations"],
-    "resources": ["toxic_sludge_paste", "venom_glands", "mutated_fungi", "chemical_residues"],
-    "features": ["poisoned_waters", "sinking_islands", "bioluminescent_ooze", "gas_vents"]
+    "survival_risks": [
+      "Neurotoxins",
+      "Corrosive Sludge",
+      "Parasitic Infestations",
+      "Drowning",
+      "Hallucinations"
+    ],
+    "resources": {
+      "common": [
+        "toxic_sludge_paste"
+      ],
+      "uncommon": [
+        "venom_glands"
+      ],
+      "rare": [
+        "mutated_fungi",
+        "chemical_residues"
+      ]
+    },
+    "features": [
+      "poisoned_waters",
+      "sinking_islands",
+      "bioluminescent_ooze",
+      "gas_vents"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.18,
+      "blocked_elev_factor": 0.04,
+      "vegetation_base": 0.28,
+      "vegetation_rain_factor": 0.16,
+      "debris_threshold": 0.45,
+      "noise_freq": 0.007,
+      "noise_octaves": 3,
+      "detail_freq": 0.03,
+      "detail_octaves": 2
+    }
   },
   {
     "name": "Dead City Outskirts",
-    "description": "Ruined megacity edges — extremely dangerous. Collapsed skyscrapers, collapsed subways, and countless rifts make this the most perilous surface biome. Only the desperate or well-armed enter.",
+    "description": "Ruined megacity edges â€” extremely dangerous. Collapsed skyscrapers, collapsed subways, and countless rifts make this the most perilous surface biome. Only the desperate or well-armed enter.",
     "difficulty_tier": 5,
-    "level_range": {"min_level": 10, "max_level": 16},
+    "level_range": {
+      "min_level": 10,
+      "max_level": 16
+    },
     "rift_chance": 0.88,
     "danger_level": "extreme",
     "wildlife_modifiers": {
-      "preferred_race_tags": ["revenant", "cyborg", "nullborn"],
+      "preferred_race_tags": [
+        "revenant",
+        "cyborg",
+        "nullborn"
+      ],
       "threat_multiplier": 2.3
     },
-    "survival_risks": ["Collapsed Structures", "Feral Gangs", "Frequent Massive Rifts", "Radiation Pockets", "Unknown Horrors"],
-    "resources": ["pre-collapse_tech", "black_market_caches", "corporate_vaults", "high_grade_scrap"],
-    "features": ["ruined_skyscrapers", "subway_entrances", "massive_rift_zones", "overgrown_streets"]
+    "survival_risks": [
+      "Collapsed Structures",
+      "Feral Gangs",
+      "Frequent Massive Rifts",
+      "Radiation Pockets",
+      "Unknown Horrors"
+    ],
+    "resources": {
+      "common": [
+        "pre-collapse_tech"
+      ],
+      "uncommon": [
+        "black_market_caches"
+      ],
+      "rare": [
+        "corporate_vaults",
+        "high_grade_scrap"
+      ]
+    },
+    "features": [
+      "ruined_skyscrapers",
+      "subway_entrances",
+      "massive_rift_zones",
+      "overgrown_streets"
+    ],
+    "terrain_profile": {
+      "blocked_base": 0.15,
+      "blocked_elev_factor": 0.06,
+      "vegetation_base": 0.2,
+      "vegetation_rain_factor": 0.1,
+      "debris_threshold": 0.4,
+      "noise_freq": 0.011,
+      "noise_octaves": 4,
+      "detail_freq": 0.04,
+      "detail_octaves": 2
+    }
   }
 ]
