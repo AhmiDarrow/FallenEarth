@@ -262,7 +262,7 @@ func _append_start_info(start: Dictionary) -> void:
 	# transient toast notification instead so the homestead hint still
 	# reaches the player.
 	var biome: String = str(start.get("name", "Unknown"))
-	_show_notification("[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?"))])
+	_show_notification("[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?")])
 
 
 func _setup_ui_scaling() -> void:
