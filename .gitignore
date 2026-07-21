@@ -60,5 +60,10 @@ Godot_v4.*.exe
 Godot_v4.*_console.exe
 Godot_v4.*.zip
 
+# Python worldgen test dumps (not game assets)
+generated_map_output.json
+maps/
+*.bmap
+
 # Vanished third-party addon (we use our own InventoryHandler now)
 addons/wyvernbox/
