@@ -1,15 +1,15 @@
 ## TileSetService — Builds native Godot TileSet resources for local map rendering.
 ##
-## One TileSet per biome. Each TileSet has a TileSetAtlasSource whose atlas is a
-## grid of 5 terrain types × 5 tiles each (center + N/S/W/E edge variants) = 25 tiles,
-## each 32×32 px. Edge variants have an 8-pixel visual band on the edge side to make
-## terrain transitions look intentional rather than sharp seams. The blocked center
-## tile carries a full-cell collision polygon so the player can't walk through it.
-## Water tiles are loaded from a shared PixelLab-generated base texture and
-## color-shifted per biome, with 8-frame animated flowing water.
+## One TileSet per biome. Ground uses Wang-based autotiling from a PixelLab
+## Wang spritesheet (ground_wang_32.png) with two terrain subtypes (A/B) for
+## natural-looking ground variety. Debris / vegetation / blocked use single-tile
+## edge variants (center + N/S/W/E) generated via procedural edge bands.
+## Water tiles are loaded from a shared PixelLab base texture and color-shifted per biome.
 ##
-## As of v0.4.0 Phase 0, rift_scar is no longer a terrain type — rifts are entities
-## spawned by RiftRunner and rendered as markers on the local map.
+## The atlas is a single image combining all terrain types. Ground Wang tiles
+## occupy the top-left grid (grid_cols × grid_rows), non-ground terrain tiles
+## sit below in column 0, and animated water tiles occupy rows below that across
+## all animation columns.
 class_name TileSetService
 extends RefCounted
 
@@ -22,21 +22,26 @@ const TERRAIN_WATER := 4
 
 const TERRAIN_NAMES := ["ground", "debris", "vegetation", "blocked", "water"]
 
-## Each terrain type has 5 atlas rows: 0=center (original), 1=N edge, 2=S edge, 3=W edge, 4=E edge.
-## Edge bands visually mark terrain transitions when placed beside a different terrain type.
+## Wang ground subtype IDs — each cell's ground can be subtype A or B.
+## The Wang spritesheet provides tiles for every corner combination of these two subtypes.
+const WANG_A := 0
+const WANG_B := 1
+
+## Non-ground terrain types each have 5 atlas rows: 0=center, 1=N, 2=S, 3=W, 4=E.
 const TILES_PER_TERRAIN := 5
+const EDGE_CENTER := 0
 const EDGE_N := 1
 const EDGE_S := 2
 const EDGE_W := 3
 const EDGE_E := 4
 
-## Edge direction bitmask constants (matches LocalMapGenerator edge_mask bits).
+## Edge direction bitmask (matches LocalMapGenerator edge_mask).
 const BIT_N := 1
 const BIT_S := 2
 const BIT_W := 4
 const BIT_E := 8
 
-## Water animation config — base texture from PixelLab, color-shifted per biome.
+## Water animation config.
 const WATER_ANIM_FRAMES := 8
 const WATER_ANIM_FPS := 1.0
 const WATER_BASE_PATH := "res://assets/tilesets/_water_base.png"
@@ -54,8 +59,6 @@ const BIOME_DIR := {
 	"Dead City Outskirts": "dead_city_outskirts",
 }
 
-## Fully opaque per-biome water colors. No ground bleed-through — water tiles
-## are solid with a subtle wave highlight baked in.
 const BIOME_WATER_COLORS := {
 	"Ash Wastes": Color(0.50, 0.55, 0.60, 1.0),
 	"Rust Canyons": Color(0.75, 0.40, 0.20, 1.0),
@@ -69,17 +72,20 @@ const BIOME_WATER_COLORS := {
 	"Dead City Outskirts": Color(0.40, 0.45, 0.55, 1.0),
 }
 
+## Atlas layout calculated in create_for_biome — available after first TileSet is built.
+static var _grid_cols := 4
+static var _grid_rows := 4
+static var _non_ground_row_start := 4   # row where debris/vegetation/blocked begin
+static var _water_row_start := 19       # row where water tiles begin
+
 
 static func biome_to_dir(biome_name: String) -> String:
 	return BIOME_DIR.get(biome_name, biome_name.to_snake_case())
 
 
-## Returns a fresh TileSet for the given biome, or null if the biome folder
-## or any required tile is missing. Atlas: 8×32=256 px wide, 25×32=800 px tall:
-## 4 terrain types (ground/debris/vegetation/blocked) × 5 edge variants each = 20 rows
-## using column 0, plus water (5 edge variants × 8 animation frames = 40 tiles in columns 0-7).
-## Edge tiles are generated procedurally from the center tile.
-## Water tiles are loaded from a shared PixelLab base texture and color-shifted per biome.
+## Creates a TileSet for the given biome. Ground uses Wang autotiling from
+## the PixelLab Wang spritesheet. Debris/vegetation/blocked use single-tile
+## edge variants. Water is animated and color-shifted.
 static func create_for_biome(biome_name: String) -> TileSet:
 	var dir_name := biome_to_dir(biome_name)
 	if dir_name.is_empty():
@@ -87,58 +93,72 @@ static func create_for_biome(biome_name: String) -> TileSet:
 		return null
 
 	var base_path := "res://assets/tilesets/%s" % dir_name
+
+	# Load the Wang ground spritesheet (32px per tile, resized from 64px source)
+	var wang_path := "%s/ground_wang_32.png" % base_path
+	var wang_img := _load_image_or_fallback(wang_path, "%s/ground.png" % base_path)
+	if wang_img == null:
+		push_error("[TileSetService] Missing ground texture for %s" % biome_name)
+		return null
+
+	# Calculate Wang grid dimensions (always column-major 4 cols)
+	var wang_w := wang_img.get_width()
+	var wang_h := wang_img.get_height()
+	var grid_cols := wang_w / CELL_SIZE
+	var grid_rows := wang_h / CELL_SIZE
+	_grid_cols = grid_cols
+	_grid_rows = grid_rows
+	# Rows for non-ground terrain types start after the Wang grid
+	_non_ground_row_start = grid_rows
+
+	# Load terrain images for debris, vegetation, blocked
+	var terrain_imgs: Array[Image] = []
+	for tn in ["debris", "vegetation", "blocked"]:
+		var path := "%s/%s.png" % [base_path, tn]
+		var img := _load_image(path)
+		if img == null:
+			push_error("[TileSetService] Missing %s for %s" % [tn, biome_name])
+			return null
+		terrain_imgs.append(img)
+
+	# Load water frames
 	var has_water_frames := false
 	var water_frames: Array[Image] = _load_water_frames(biome_name)
 	if water_frames.is_empty():
-		# Fallback: generate a single procedural water tile
 		water_frames = [_make_water_tile(biome_name)]
 	else:
 		has_water_frames = true
 
-	# Load terrain images (ground, debris, vegetation, blocked).
-	var loaded: Array[Image] = []
-	for terrain_name in ["ground", "debris", "vegetation", "blocked"]:
-		var path := "%s/%s.png" % [base_path, terrain_name]
-		if not ResourceLoader.exists(path):
-			push_error("[TileSetService] Missing tile for %s: %s" % [biome_name, path])
-			return null
-		var tex := load(path) as Texture2D
-		if tex == null:
-			push_error("[TileSetService] Failed to load texture: %s" % path)
-			return null
-		var img := tex.get_image()
-		if img == null:
-			push_error("[TileSetService] Texture has no Image: %s" % path)
-			return null
-		if img.get_format() != Image.FORMAT_RGBA8:
-			img.convert(Image.FORMAT_RGBA8)
-		img.resize(CELL_SIZE, CELL_SIZE, Image.INTERPOLATE_NEAREST)
-		loaded.append(img)
+	# --- Build combined atlas ---
+	var atlas_cols := maxi(grid_cols, WATER_ANIM_FRAMES)
+	var non_ground_terrains := 3  # debris, vegetation, blocked
+	_water_row_start = _non_ground_row_start + non_ground_terrains * TILES_PER_TERRAIN
+	var total_rows := _water_row_start + TILES_PER_TERRAIN  # 5 water edge variants
 
-	# Build atlas: cols = WATER_ANIM_FRAMES for water, 1 for other terrains.
-	# Row order per terrain: [center, N_edge, S_edge, W_edge, E_edge].
-	var atlas_cols := WATER_ANIM_FRAMES if has_water_frames else 1
-	var total_rows := loaded.size() * TILES_PER_TERRAIN + TILES_PER_TERRAIN  # 4 terrains + water
 	var atlas_img := Image.create(CELL_SIZE * atlas_cols, CELL_SIZE * total_rows, false, Image.FORMAT_RGBA8)
-	var terrain_idx := 0
-	for ti in loaded.size():
-		var center: Image = loaded[ti]
-		var base_row := ti * TILES_PER_TERRAIN
+
+	# Copy Wang ground spritesheet into top-left
+	atlas_img.blit_rect(wang_img, Rect2i(0, 0, wang_w, wang_h), Vector2i.ZERO)
+
+	# Place non-ground terrain tiles in column 0, rows below Wang grid
+	for ti in non_ground_terrains:
+		var center: Image = terrain_imgs[ti]
+		var base_row := _non_ground_row_start + ti * TILES_PER_TERRAIN
 		atlas_img.blit_rect(center, Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(0, base_row * CELL_SIZE))
 		atlas_img.blit_rect(_make_edge_tile(center, 0, -1), Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(0, (base_row + EDGE_N) * CELL_SIZE))
 		atlas_img.blit_rect(_make_edge_tile(center, 0, 1),  Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(0, (base_row + EDGE_S) * CELL_SIZE))
 		atlas_img.blit_rect(_make_edge_tile(center, -1, 0), Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(0, (base_row + EDGE_W) * CELL_SIZE))
 		atlas_img.blit_rect(_make_edge_tile(center, 1, 0),  Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(0, (base_row + EDGE_E) * CELL_SIZE))
 
-	# Place water: 5 edge variants × N frames.
-	var wrow := TERRAIN_WATER * TILES_PER_TERRAIN
+	# Place water: 5 edge variants × N animation frames, starting at _water_row_start
+	var wrow := _water_row_start
 	if has_water_frames:
 		for variant in TILES_PER_TERRAIN:
 			var row := wrow + variant
 			for frame in WATER_ANIM_FRAMES:
 				var fimg: Image = water_frames[frame]
 				var edge_img: Image
-				if variant == 0:
+				if variant == EDGE_CENTER:
 					edge_img = fimg
 				elif variant == EDGE_N:
 					edge_img = _make_edge_tile(fimg, 0, -1)
@@ -150,12 +170,11 @@ static func create_for_biome(biome_name: String) -> TileSet:
 					edge_img = _make_edge_tile(fimg, 1, 0)
 				atlas_img.blit_rect(edge_img, Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(frame * CELL_SIZE, row * CELL_SIZE))
 	else:
-		# Fallback: single-frame water
 		var fimg: Image = water_frames[0]
 		for variant in TILES_PER_TERRAIN:
 			var row := wrow + variant
 			var edge_img: Image
-			if variant == 0:
+			if variant == EDGE_CENTER:
 				edge_img = fimg
 			elif variant == EDGE_N:
 				edge_img = _make_edge_tile(fimg, 0, -1)
@@ -171,11 +190,18 @@ static func create_for_biome(biome_name: String) -> TileSet:
 	var source := TileSetAtlasSource.new()
 	source.texture = atlas_tex
 	source.texture_region_size = Vector2i(CELL_SIZE, CELL_SIZE)
-	# Create tiles for ground, debris, vegetation, blocked
-	for ti in 4:
-		var base_row := ti * TILES_PER_TERRAIN
+
+	# Create Wang ground tiles (all positions in the Wang grid)
+	for row in grid_rows:
+		for col in grid_cols:
+			source.create_tile(Vector2i(col, row))
+
+	# Create non-ground terrain tiles (column 0)
+	for ti in non_ground_terrains:
+		var base_row := _non_ground_row_start + ti * TILES_PER_TERRAIN
 		for slot in TILES_PER_TERRAIN:
 			source.create_tile(Vector2i(0, base_row + slot))
+
 	# Create water tiles (animated or static)
 	for variant in TILES_PER_TERRAIN:
 		var at_pos := Vector2i(0, wrow + variant)
@@ -192,10 +218,8 @@ static func create_for_biome(biome_name: String) -> TileSet:
 	ts.add_source(source)
 
 	# Collision on blocked and water center tiles.
-	var coll_rows := [TERRAIN_BLOCKED, TERRAIN_WATER]
-	for tr in coll_rows:
-		var row: int = tr * TILES_PER_TERRAIN
-		var td: TileData = source.get_tile_data(Vector2i(0, row), 0)
+	for tr in [TERRAIN_BLOCKED, TERRAIN_WATER]:
+		var td := _get_terrain_tile_data(source, tr, EDGE_CENTER)
 		if td != null:
 			td.add_collision_polygon(0)
 			td.set_collision_polygon_points(0, 0, PackedVector2Array([
@@ -208,13 +232,135 @@ static func create_for_biome(biome_name: String) -> TileSet:
 	return ts
 
 
-## Load the shared PixelLab water base texture, colorize it for the given biome,
-## and return WATER_ANIM_FRAMES animation frames as a flat array.
-## Falls back to procedural flat color if the base texture is missing.
+## Returns the TileData for a given terrain type's edge variant.
+static func _get_terrain_tile_data(source: TileSetAtlasSource, terrain: int, edge_variant: int) -> TileData:
+	var row: int
+	if terrain == TERRAIN_GROUND:
+		# Ground center = Wang tile (0,0)
+		return source.get_tile_data(Vector2i(0, 0), 0)
+	elif terrain == TERRAIN_WATER:
+		row = _water_row_start + edge_variant
+	else:
+		var ti := terrain - 1  # debris=0, vegetation=1, blocked=2
+		row = _non_ground_row_start + ti * TILES_PER_TERRAIN + edge_variant
+	return source.get_tile_data(Vector2i(0, row), 0)
+
+
+## Returns the atlas coordinates for a given terrain type + edge mask.
+## For GROUND cells: if edge_mask is 0 (all neighbors same), use the Wang
+## ground tile based on ground_variant corner pattern. Otherwise use edge variant.
+## For non-ground cells: always use edge variant tiles.
+## ground_var_pattern: 4-bit value [TL=8, TR=4, BR=2, BL=1] where each bit
+##   is 1 if that corner differs from the center cell's ground subtype.
+static func atlas_coords(terrain: int, edge_mask: int = 0, ground_var_pattern: int = 0) -> Vector2i:
+	if terrain == TERRAIN_GROUND:
+		if edge_mask != 0:
+			return _edge_coords_for(TERRAIN_GROUND, edge_mask)
+		else:
+			return _wang_ground_coords(ground_var_pattern)
+	elif terrain == TERRAIN_WATER:
+		return _edge_coords_for(TERRAIN_WATER, edge_mask)
+	else:
+		return _edge_coords_for(terrain, edge_mask)
+
+
+## Returns the atlas coords for a non-ground terrain type's edge variant.
+static func _edge_coords_for(terrain: int, edge_mask: int) -> Vector2i:
+	var variant_row := EDGE_CENTER
+	if edge_mask & BIT_N:
+		variant_row = EDGE_N
+	elif edge_mask & BIT_S:
+		variant_row = EDGE_S
+	elif edge_mask & BIT_W:
+		variant_row = EDGE_W
+	elif edge_mask & BIT_E:
+		variant_row = EDGE_E
+
+	var row: int
+	if terrain == TERRAIN_WATER:
+		row = _water_row_start + variant_row
+	elif terrain == TERRAIN_GROUND:
+		row = _non_ground_row_start + 0  # falls back to same as debris center? no... let me think
+		# Actually for GROUND edge variants, we don't have dedicated edge tiles.
+		# The Wang system handles same-terrain edges, and edge_mask=0 means no edge.
+		# When edge_mask != 0 but terrain == GROUND, we should still use the Wang
+		# center tile since there are no dedicated ground edge variant rows.
+		# But we return the Wang center tile since the edge band isn't needed
+		# for ground (the Wang tiles handle transitions internally).
+		return Vector2i(0, 0)
+	else:
+		var ti := terrain - 1  # debris=0, vegetation=1, blocked=2
+		row = _non_ground_row_start + ti * TILES_PER_TERRAIN + variant_row
+	return Vector2i(0, row)
+
+
+## Converts a 4-bit corner pattern to Wang atlas coords.
+## ground_var_pattern bits: [TL=8, TR=4, BR=2, BL=1]
+## Each bit is 0=same-as-center, 1=different-from-center.
+## Maps to Wang grid: col=(BL<<1)|BR, row=(TL<<1)|TR
+static func _wang_ground_coords(pattern: int) -> Vector2i:
+	var tl := 1 if (pattern & 8) else 0
+	var tr := 1 if (pattern & 4) else 0
+	var bl := 1 if (pattern & 1) else 0
+	var br := 1 if (pattern & 2) else 0
+	var col := (bl << 1) | br
+	var row := (tl << 1) | tr
+	return Vector2i(col, row)
+
+
+## Compute the ground variant corner pattern for a cell based on its
+## own variant and its neighbors' variants.
+##   self_variant: the center cell's ground subtype (WANG_A=0, WANG_B=1)
+##   nv: N neighbor variant (-1 if N is not ground)
+##   sv, wv, ev: S, W, E neighbor variants
+## Returns a 4-bit pattern [TL=8, TR=4, BR=2, BL=1] for wang_ground_coords.
+static func compute_wang_pattern(self_variant: int, nv: int, sv: int, wv: int, ev: int) -> int:
+	var pattern := 0
+	# Top-left corner: different if N or W differs
+	if (nv >= 0 and nv != self_variant) or (wv >= 0 and wv != self_variant):
+		pattern |= 8
+	# Top-right corner: different if N or E differs
+	if (nv >= 0 and nv != self_variant) or (ev >= 0 and ev != self_variant):
+		pattern |= 4
+	# Bottom-right corner: different if S or E differs
+	if (sv >= 0 and sv != self_variant) or (ev >= 0 and ev != self_variant):
+		pattern |= 2
+	# Bottom-left corner: different if S or W differs
+	if (sv >= 0 and sv != self_variant) or (wv >= 0 and wv != self_variant):
+		pattern |= 1
+	return pattern
+
+
+# --- Image loading utilities ---
+
+static func _load_image(path: String) -> Image:
+	if not ResourceLoader.exists(path):
+		return null
+	var tex := load(path) as Texture2D
+	if tex == null:
+		return null
+	var img := tex.get_image()
+	if img == null:
+		return null
+	if img.get_format() != Image.FORMAT_RGBA8:
+		img.convert(Image.FORMAT_RGBA8)
+	img.resize(CELL_SIZE, CELL_SIZE, Image.INTERPOLATE_NEAREST)
+	return img
+
+
+static func _load_image_or_fallback(path: String, fallback_path: String) -> Image:
+	var img := _load_image(path)
+	if img != null:
+		return img
+	if ResourceLoader.exists(fallback_path):
+		return _load_image(fallback_path)
+	return null
+
+
 static func _load_water_frames(biome_name: String) -> Array[Image]:
 	var frames: Array[Image] = []
 	if not ResourceLoader.exists(WATER_BASE_PATH):
-		push_warning("[TileSetService] No _water_base.png found — using procedural fallback for %s" % biome_name)
+		push_warning("[TileSetService] No _water_base.png — using procedural fallback for %s" % biome_name)
 		return frames
 	var tex := load(WATER_BASE_PATH) as Texture2D
 	if tex == null:
@@ -237,9 +383,6 @@ static func _load_water_frames(biome_name: String) -> Array[Image]:
 	return frames
 
 
-## Colorize an image by converting to luminance and applying the target color.
-## Preserves the source's brightness pattern while shifting hue to target_color.
-## Transparent background pixels are filled with a dark variant for solid coverage.
 static func _colorize_image(src: Image, target_color: Color) -> Image:
 	var w := src.get_width()
 	var h := src.get_height()
@@ -250,7 +393,6 @@ static func _colorize_image(src: Image, target_color: Color) -> Image:
 			var c := dst.get_pixel(x, y)
 			var lum := c.r * 0.299 + c.g * 0.587 + c.b * 0.114
 			if c.a < 0.5:
-				# Transparent background — fill with a darker solid variant
 				lum = 0.35
 			dst.set_pixel(x, y, Color(
 				target_color.r * lum,
@@ -261,8 +403,6 @@ static func _colorize_image(src: Image, target_color: Color) -> Image:
 	return dst
 
 
-## Procedurally generate a solid water tile with the biome's water color +
-## subtle wave highlights. Fallback when no PixelLab base texture exists.
 static func _make_water_tile(biome_name: String = "Ash Wastes") -> Image:
 	var wc: Color = BIOME_WATER_COLORS.get(biome_name, Color(0.2, 0.45, 0.75, 1.0))
 	var img := Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
@@ -276,8 +416,6 @@ static func _make_water_tile(biome_name: String = "Ash Wastes") -> Image:
 	return img
 
 
-## Generate an edge-variant tile by darkening an 8px band along one side.
-## dx/dy indicates the edge direction: (0,-1)=N, (0,1)=S, (-1,0)=W, (1,0)=E.
 static func _make_edge_tile(src: Image, dx: int, dy: int) -> Image:
 	var out := Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
 	out.blit_rect(src, Rect2i(0, 0, CELL_SIZE, CELL_SIZE), Vector2i(0, 0))
@@ -300,25 +438,6 @@ static func _make_edge_tile(src: Image, dx: int, dy: int) -> Image:
 	return out
 
 
-## Returns the cell coords inside a biome's atlas for a given terrain type.
-## terrain: TERRAIN_GROUND (0) through TERRAIN_BLOCKED (3).
-## edge_mask: bitmask from LocalMapGenerator edge_mask (0 = center, non-zero picks edge variant).
-static func atlas_coords(terrain: int, edge_mask: int = 0) -> Vector2i:
-	var row := terrain * TILES_PER_TERRAIN
-	# Map edge_mask bitmask to edge variant row offset
-	if edge_mask & BIT_N:
-		row += EDGE_N
-	elif edge_mask & BIT_S:
-		row += EDGE_S
-	elif edge_mask & BIT_W:
-		row += EDGE_W
-	elif edge_mask & BIT_E:
-		row += EDGE_E
-	else:
-		row += 0  # center
-	return Vector2i(0, row)
-
-
-## Legacy single-param version for callers that don't have edge_mask.
+## Legacy shortcut for callers that don't have edge_mask.
 static func atlas_coords_legacy(terrain: int) -> Vector2i:
-	return Vector2i(0, terrain * TILES_PER_TERRAIN)
+	return atlas_coords(terrain, 0, 0)

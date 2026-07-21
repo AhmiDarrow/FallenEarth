@@ -64,6 +64,10 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 	var biome_name: String = str(biome_tile.get("name", "Ash Wastes"))
 	var terrain := PackedByteArray()
 	terrain.resize(MAP_SIZE * MAP_SIZE)
+	# ground_variant: per-cell Wang subtype for GROUND cells (0=A, 1=B).
+	# Non-ground cells store 0. Used by TileSetService for Wang autotiling.
+	var ground_variant := PackedByteArray()
+	ground_variant.resize(MAP_SIZE * MAP_SIZE)
 	# occupied: PackedByteArray of length MAP_SIZE*MAP_SIZE, 1 = something
 	# already placed here (resource node, floor pickup, mob). Prevents
 	# double-stacking entities.
@@ -91,12 +95,21 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 	detail_noise.frequency = profile.get("detail_freq", 0.03)
 	detail_noise.fractal_octaves = profile.get("detail_octaves", 2)
 
+	# Ground variant noise — determines which Wang subtype (A/B) each GROUND cell gets.
+	# Medium-frequency noise produces natural-looking patches of variant ground.
+	var variant_noise := FastNoiseLite.new()
+	variant_noise.seed = hash_seed(local_seed + "variant")
+	variant_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	variant_noise.frequency = profile.get("variant_freq", 0.02)
+	variant_noise.fractal_octaves = 2
+
 	for y in MAP_SIZE:
 		for x in MAP_SIZE:
 			var idx := y * MAP_SIZE + x
 			var edge_dist := mini(mini(x, MAP_SIZE - 1 - x), mini(y, MAP_SIZE - 1 - y))
 			if edge_dist < 2:
 				terrain[idx] = TERRAIN_GROUND
+				ground_variant[idx] = 0 if variant_noise.get_noise_2d(x, y) < 0 else 1
 				continue
 			# Combine landscape + detail noise, remap [-1,1] simplex to [0,1] range
 			var ln := landscape_noise.get_noise_2d(x, y) * 0.5 + 0.5
@@ -119,6 +132,8 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				terrain[idx] = TERRAIN_DEBRIS
 			else:
 				terrain[idx] = TERRAIN_GROUND
+			# Assign ground variant for GROUND cells; non-ground = 0
+			ground_variant[idx] = 0 if variant_noise.get_noise_2d(x, y) < 0 else 1
 
 	# Phase: carve rivers (water channels) using a separate noise layer.
 	# Converts low-elevation cells in river noise troughs to TERRAIN_WATER.
@@ -153,14 +168,16 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 			var py := cy + dy
 			if px < 0 or py < 0 or px >= MAP_SIZE or py >= MAP_SIZE:
 				continue
-			terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
+			var idx := py * MAP_SIZE + px
+			terrain[idx] = TERRAIN_GROUND
+			ground_variant[idx] = 0
 
 	# v0.8.0: check if this hex has a town. If so, generate a procedural
 	# town layout (clearing + buildings + road) before placing other entities.
 	var town_data: Dictionary = _get_town_for_hex(q, r)
 	var settlement_data: Dictionary = {"structures": [], "npcs": [], "town_data": town_data, "boundary": null}
 	if not town_data.is_empty():
-		var structures: Array = _generate_town_layout(rng, town_data, terrain, occupied, Vector2i(cx, cy))
+		var structures: Array = _generate_town_layout(rng, town_data, terrain, ground_variant, occupied, Vector2i(cx, cy))
 		settlement_data["structures"] = structures
 		# Compute bounding box encompassing the clearing + all buildings
 		settlement_data["boundary"] = _compute_town_boundary(structures, Vector2i(cx, cy))
@@ -193,6 +210,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		"biome": biome_name,
 		"local_seed": local_seed,
 		"terrain": terrain,
+		"ground_variant": ground_variant,
 		"edge_mask": edge_mask,
 		"spawn": Vector2i(cx, cy),
 		"visited": false,
@@ -208,9 +226,10 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 
 
 # Place per-biome resource nodes (trees, formations, ore, crystals, fauna)
-# on walkable cells, avoiding the homestead pocket and edges. Returns a
-# list of {x, y, ...node_data} entries. The node_data is the JSON entry
-# from data/resource_nodes.json, augmented with the placed cell.
+# on walkable cells using noise-density maps and clustering for natural
+# spatial distribution. Returns a list of {x, y, ...node_data} entries.
+# The node_data is the JSON entry from data/resource_nodes.json augmented
+# with the placed cell.
 static func _emit_resource_nodes(
 		rng: RandomNumberGenerator,
 		biome_name: String,
@@ -221,11 +240,17 @@ static func _emit_resource_nodes(
 	var biome_data: Dictionary = _load_biome_resource_nodes(biome_name)
 	if biome_data.is_empty():
 		return []
+
+	var placement_noise: Dictionary = biome_data.get("placement_noise", {})
+	var category_defaults: Dictionary = biome_data.get("category_defaults", {})
+	var noise_cache: Dictionary = {}
 	var out: Array = []
+
 	# Categories in placement order; ore/crystals/rocks rarer first.
 	var categories := ["crystals", "ore", "rocks", "formations", "trees", "fauna"]
 	for category in categories:
 		var entries: Array = biome_data.get(category, [])
+		var cat_def: Dictionary = category_defaults.get(category, {})
 		for entry in entries:
 			if entry == null or not (entry is Dictionary):
 				continue
@@ -233,18 +258,116 @@ static func _emit_resource_nodes(
 			if density <= 0.0:
 				continue
 			var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
-			for _i in count:
-				var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn)
-				if pos.x < 0:
-					break
-				var placed: Dictionary = (entry as Dictionary).duplicate(true)
-				placed["x"] = pos.x
-				placed["y"] = pos.y
-				placed["category"] = category
-				# Harvestables block movement unless explicitly passable.
-				if not placed.has("passable"):
-					placed["passable"] = false
-				out.append(placed)
+
+			# Resolve placement params: entry overrides category default
+			var noise_channel: String = str(entry.get("noise_channel", cat_def.get("noise_channel", "")))
+			var cluster_radius: int = int(entry.get("cluster_radius", cat_def.get("cluster_radius", 0)))
+			var cluster_count: int = maxi(1, int(entry.get("cluster_count", cat_def.get("cluster_count", 0))))
+			var min_spacing: int = int(entry.get("min_spacing", cat_def.get("min_spacing", 0)))
+
+			# Get or create noise generator for this channel
+			var noise_gen: FastNoiseLite = null
+			var noise_threshold: float = 0.0
+			if not noise_channel.is_empty() and placement_noise.has(noise_channel):
+				if not noise_cache.has(noise_channel):
+					var nc: Dictionary = placement_noise[noise_channel]
+					var n := FastNoiseLite.new()
+					n.seed = hash_seed("%s#%s" % [biome_name, noise_channel])
+					n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+					n.frequency = float(nc.get("frequency", 0.01))
+					n.fractal_octaves = 2
+					noise_cache[noise_channel] = n
+				noise_gen = noise_cache[noise_channel] as FastNoiseLite
+				noise_threshold = float(placement_noise[noise_channel].get("threshold", 0.5))
+
+			# Track placed positions for spacing checks
+			var placed_positions: Array = []
+
+			if cluster_count > 1 and cluster_radius > 0:
+				# Cluster mode: place multiple items around noise-approved centers
+				var placed_total := 0
+				var max_attempts := ceili(count / cluster_count) * 30 + 60
+				var attempts := 0
+				while placed_total < count and attempts < max_attempts:
+					attempts += 1
+					var center: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
+					if center.x < 0:
+						break
+					# Noise check on cluster center
+					if noise_gen != null:
+						var nval := noise_gen.get_noise_2d(center.x, center.y) * 0.5 + 0.5
+						if nval < noise_threshold:
+							continue
+					# Reserve center cell
+					occupied[center.y * MAP_SIZE + center.x] = 1
+					var in_this_cluster := mini(cluster_count, count - placed_total)
+					for j in in_this_cluster:
+						var pos: Vector2i
+						if j == 0:
+							pos = center
+						else:
+							var ox := rng.randi_range(-cluster_radius, cluster_radius)
+							var oy := rng.randi_range(-cluster_radius, cluster_radius)
+							pos = Vector2i(center.x + ox, center.y + oy)
+							if pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE:
+								continue
+							var idx2 := pos.y * MAP_SIZE + pos.x
+							var t2 := int(terrain[idx2])
+							if t2 == TERRAIN_BLOCKED or t2 == TERRAIN_WATER:
+								continue
+							if int(occupied[idx2]) != 0:
+								continue
+							if min_spacing > 0:
+								var too_close := false
+								for pp in placed_positions:
+									if abs(pp.x - pos.x) <= min_spacing and abs(pp.y - pos.y) <= min_spacing:
+										too_close = true
+										break
+								if too_close:
+									continue
+							occupied[idx2] = 1
+						placed_positions.append(pos)
+						var placed: Dictionary = (entry as Dictionary).duplicate(true)
+						placed["x"] = pos.x
+						placed["y"] = pos.y
+						placed["category"] = category
+						if not placed.has("passable"):
+							placed["passable"] = false
+						out.append(placed)
+						placed_total += 1
+			else:
+				# Standard placement with optional noise filtering
+				var placed_total := 0
+				var max_attempts := count * 8
+				var attempts := 0
+				while placed_total < count and attempts < max_attempts:
+					attempts += 1
+					var pos: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
+					if pos.x < 0:
+						break
+					# Noise filter — reject if below threshold (cell stays free)
+					if noise_gen != null:
+						var nval := noise_gen.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5
+						if nval < noise_threshold:
+							continue
+					if min_spacing > 0:
+						var too_close := false
+						for pp in placed_positions:
+							if abs(pp.x - pos.x) <= min_spacing and abs(pp.y - pos.y) <= min_spacing:
+								too_close = true
+								break
+						if too_close:
+							continue
+					occupied[pos.y * MAP_SIZE + pos.x] = 1
+					placed_positions.append(pos)
+					var placed: Dictionary = (entry as Dictionary).duplicate(true)
+					placed["x"] = pos.x
+					placed["y"] = pos.y
+					placed["category"] = category
+					if not placed.has("passable"):
+						placed["passable"] = false
+					out.append(placed)
+					placed_total += 1
 	return out
 
 
@@ -341,13 +464,20 @@ static func _emit_decor(
 	var out: Array = []
 
 	# Noise field for clustering large decor items
-	var cluster_noise := FastNoiseLite.new()
-	cluster_noise.seed = hash_seed("%s#decor_cluster" % biome_name)
-	cluster_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	cluster_noise.frequency = profile.get("cluster_noise_freq", 0.02)
-	cluster_noise.fractal_octaves = 2
+	var large_noise := FastNoiseLite.new()
+	large_noise.seed = hash_seed("%s#decor_cluster" % biome_name)
+	large_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	large_noise.frequency = profile.get("cluster_noise_freq", 0.02)
+	large_noise.fractal_octaves = 2
+	var large_threshold: float = profile.get("cluster_threshold", 0.6)
 
-	var cluster_threshold: float = profile.get("cluster_threshold", 0.6)
+	# Noise field for small decor clustering (separate field for variety)
+	var small_noise := FastNoiseLite.new()
+	small_noise.seed = hash_seed("%s#decor_small" % biome_name)
+	small_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	small_noise.frequency = profile.get("small_cluster_noise_freq", 0.025)
+	small_noise.fractal_octaves = 2
+	var small_threshold: float = profile.get("small_cluster_threshold", 0.35)
 
 	# Phase 1: Large decor items — placed via noise clustering
 	var large_items: Array = decor_data.get("large", [])
@@ -358,21 +488,26 @@ static func _emit_decor(
 		if density <= 0.0:
 			continue
 		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
-		for _i in count:
-			var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn)
+		var attempts := 0
+		var placed_total := 0
+		var max_attempts := count * 8
+		while placed_total < count and attempts < max_attempts:
+			attempts += 1
+			var pos: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
 			if pos.x < 0:
 				break
-			# Check noise value — only place if above threshold (creates clusters)
-			var nval: float = cluster_noise.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5
-			if nval < cluster_threshold:
+			var nval: float = large_noise.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5
+			if nval < large_threshold:
 				continue
+			occupied[pos.y * MAP_SIZE + pos.x] = 1
 			var placed: Dictionary = (entry as Dictionary).duplicate(true)
 			placed["x"] = pos.x
 			placed["y"] = pos.y
 			placed["category"] = "decor_large"
 			out.append(placed)
+			placed_total += 1
 
-	# Phase 2: Small decor items — placed via density (scattered)
+	# Phase 2: Small decor items — placed via noise clustering
 	var small_items: Array = decor_data.get("small", [])
 	for entry in small_items:
 		if entry == null or not (entry is Dictionary):
@@ -381,15 +516,24 @@ static func _emit_decor(
 		if density <= 0.0:
 			continue
 		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
-		for _i in count:
-			var pos: Vector2i = _pick_walkable_cell(rng, terrain, occupied, spawn)
+		var attempts := 0
+		var placed_total := 0
+		var max_attempts := count * 8
+		while placed_total < count and attempts < max_attempts:
+			attempts += 1
+			var pos: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
 			if pos.x < 0:
 				break
+			var nval: float = small_noise.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5
+			if nval < small_threshold:
+				continue
+			occupied[pos.y * MAP_SIZE + pos.x] = 1
 			var placed: Dictionary = (entry as Dictionary).duplicate(true)
 			placed["x"] = pos.x
 			placed["y"] = pos.y
 			placed["category"] = "decor_small"
 			out.append(placed)
+			placed_total += 1
 
 	return out
 
@@ -424,6 +568,32 @@ static func _pick_walkable_cell(
 		if int(occupied[idx]) != 0:
 			continue
 		occupied[idx] = 1
+		return Vector2i(x, y)
+	return Vector2i(-1, -1)
+
+
+# Same as _pick_walkable_cell but does NOT mark the cell as occupied.
+# Use when extra conditions (noise, spacing) must be checked before
+# committing to the cell.
+static func _peek_walkable_cell(
+		rng: RandomNumberGenerator,
+		terrain: PackedByteArray,
+		occupied: PackedByteArray,
+		spawn: Vector2i,
+		spawn_buffer: int = 6
+	) -> Vector2i:
+	var max_attempts := 64
+	for _i in max_attempts:
+		var x: int = rng.randi_range(0, MAP_SIZE - 1)
+		var y: int = rng.randi_range(0, MAP_SIZE - 1)
+		if maxi(abs(x - spawn.x), abs(y - spawn.y)) < spawn_buffer:
+			continue
+		var idx := y * MAP_SIZE + x
+		var t := int(terrain[idx])
+		if t == TERRAIN_BLOCKED or t == TERRAIN_WATER:
+			continue
+		if int(occupied[idx]) != 0:
+			continue
 		return Vector2i(x, y)
 	return Vector2i(-1, -1)
 
@@ -532,6 +702,7 @@ static func _generate_town_layout(
 		rng: RandomNumberGenerator,
 		town_data: Dictionary,
 		terrain: PackedByteArray,
+		ground_variant: PackedByteArray,
 		occupied: PackedByteArray,
 		spawn: Vector2i
 ) -> Array:
@@ -555,6 +726,7 @@ static func _generate_town_layout(
 				continue
 			if dx * dx + dy * dy <= (clearing_radius + 1) * (clearing_radius + 1):
 				terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
+				ground_variant[py * MAP_SIZE + px] = 0
 
 	# Step 2: Place buildings evenly around the clearing
 	var n_buildings: int = buildings.size()
@@ -831,6 +1003,8 @@ static func _load_biome_decor_profile(biome_name: String) -> Dictionary:
 	return _dp_cache.get(biome_name, {
 		"cluster_noise_freq": 0.02,
 		"cluster_threshold": 0.65,
+		"small_cluster_noise_freq": 0.025,
+		"small_cluster_threshold": 0.35,
 		"large_density": 0.003,
 		"small_density": 0.014,
 	})

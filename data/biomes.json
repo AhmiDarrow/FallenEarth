@@ -53,6 +53,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.02,
       "cluster_threshold": 0.65,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.003,
       "small_density": 0.014
     }
@@ -112,6 +114,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.018,
       "cluster_threshold": 0.6,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.0045,
       "small_density": 0.012
     }
@@ -171,6 +175,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.015,
       "cluster_threshold": 0.58,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.005,
       "small_density": 0.017
     }
@@ -230,6 +236,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.012,
       "cluster_threshold": 0.7,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.003,
       "small_density": 0.013
     }
@@ -289,6 +297,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.02,
       "cluster_threshold": 0.55,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.005,
       "small_density": 0.013
     }
@@ -349,6 +359,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.016,
       "cluster_threshold": 0.62,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.003,
       "small_density": 0.014
     }
@@ -409,6 +421,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.014,
       "cluster_threshold": 0.58,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.005,
       "small_density": 0.015
     }
@@ -469,6 +483,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.022,
       "cluster_threshold": 0.6,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.004,
       "small_density": 0.012
     }
@@ -529,6 +545,8 @@
     "decor_profile": {
       "cluster_noise_freq": 0.013,
       "cluster_threshold": 0.56,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
       "large_density": 0.005,
       "small_density": 0.015
     }
@@ -589,8 +607,10 @@
     },
     "decor_profile": {
       "cluster_noise_freq": 0.019,
-      "cluster_threshold": 0.57,
-      "large_density": 0.005,
+"cluster_threshold": 0.57,
+      "small_cluster_noise_freq": 0.025,
+      "small_cluster_threshold": 0.35,
+      "large_density": 0.003,
       "small_density": 0.014
     }
   }

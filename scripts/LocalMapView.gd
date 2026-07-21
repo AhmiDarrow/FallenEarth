@@ -107,11 +107,11 @@ func configure(map_data: Dictionary) -> void:
 		return
 
 	var edge_mask: PackedByteArray = map_data.get("edge_mask", PackedByteArray())
+	var ground_variant: PackedByteArray = map_data.get("ground_variant", PackedByteArray())
 
 	for y in size:
 		for x in size:
 			var t := int(terrain[y * size + x])
-			# Legacy rift_scar=4 no longer exists; terrain indices 0-4 are contiguous.
 			if t < 0 or t > TileSetSvc.TERRAIN_WATER:
 				t = TileSetSvc.TERRAIN_GROUND
 			var em := 0
@@ -119,7 +119,18 @@ func configure(map_data: Dictionary) -> void:
 				var ei := y * size + x
 				if ei < edge_mask.size():
 					em = edge_mask[ei]
-			ground_layer.set_cell(Vector2i(x, y), 0, TileSetSvc.atlas_coords(t, int(em)))
+			# Compute Wang ground pattern for this cell
+			var wp := 0
+			if t == TileSetSvc.TERRAIN_GROUND and ground_variant.size() > 0:
+				var idx := y * size + x
+				if idx < ground_variant.size():
+					var sv := ground_variant[idx]
+					var nv := ground_variant[(y - 1) * size + x] if y > 0 and terrain[(y - 1) * size + x] == t else -1
+					var sv2 := ground_variant[(y + 1) * size + x] if y < size - 1 and terrain[(y + 1) * size + x] == t else -1
+					var wv := ground_variant[y * size + (x - 1)] if x > 0 and terrain[y * size + (x - 1)] == t else -1
+					var ev := ground_variant[y * size + (x + 1)] if x < size - 1 and terrain[y * size + (x + 1)] == t else -1
+					wp = TileSetSvc.compute_wang_pattern(sv, nv, sv2, wv, ev)
+			ground_layer.set_cell(Vector2i(x, y), 0, TileSetSvc.atlas_coords(t, int(em), wp))
 
 	# Spawn resource nodes (trees, formations, ore, crystals, fauna)
 	_populate_resource_nodes(map_data.get("resource_nodes", []))

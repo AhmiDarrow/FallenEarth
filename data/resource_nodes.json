@@ -2,6 +2,19 @@
   "_comment": "Per-biome harvestables + decor. Categories: trees (axe #trees), rocks (pickaxe #rocks), ore, formations, crystals. passable=false blocks walk (default for harvestables). Decor large=blocking; small flowers/bones may be passable. Sprites: resource_nodes/ + decor/ with 00-15 variants.",
   "biomes": {
     "Ash Wastes": {
+      "placement_noise": {
+        "forest": {"frequency": 0.01, "threshold": 0.5},
+        "rocky": {"frequency": 0.012, "threshold": 0.45},
+        "formations": {"frequency": 0.01, "threshold": 0.5},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.55}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "ash_scrub",
@@ -118,6 +131,20 @@
       "crystals": []
     },
     "Rust Canyons": {
+      "placement_noise": {
+        "forest": {"frequency": 0.008, "threshold": 0.45},
+        "rocky": {"frequency": 0.01, "threshold": 0.35},
+        "formations": {"frequency": 0.008, "threshold": 0.35},
+        "ore_rich": {"frequency": 0.012, "threshold": 0.45},
+        "crystalline": {"frequency": 0.02, "threshold": 0.55}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "withered_oak_rust",
@@ -265,6 +292,20 @@
       ]
     },
     "Neon Bogs": {
+      "placement_noise": {
+        "forest": {"frequency": 0.005, "threshold": 0.2},
+        "rocky": {"frequency": 0.015, "threshold": 0.5},
+        "formations": {"frequency": 0.012, "threshold": 0.45},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
+        "crystalline": {"frequency": 0.018, "threshold": 0.45}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "neon_kelp",
@@ -397,6 +438,19 @@
       ]
     },
     "Scorched Plains": {
+      "placement_noise": {
+        "forest": {"frequency": 0.012, "threshold": 0.55},
+        "rocky": {"frequency": 0.01, "threshold": 0.4},
+        "formations": {"frequency": 0.012, "threshold": 0.5},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.55}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "scorched_shrub",
@@ -498,6 +552,20 @@
       "crystals": []
     },
     "Ironwood Thicket": {
+      "placement_noise": {
+        "forest": {"frequency": 0.004, "threshold": 0.15},
+        "rocky": {"frequency": 0.015, "threshold": 0.5},
+        "formations": {"frequency": 0.012, "threshold": 0.45},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
+        "crystalline": {"frequency": 0.02, "threshold": 0.55}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "ironwood_spire",
@@ -630,6 +698,20 @@
       ]
     },
     "Glass Dunes": {
+      "placement_noise": {
+        "forest": {"frequency": 0.012, "threshold": 0.55},
+        "rocky": {"frequency": 0.008, "threshold": 0.35},
+        "formations": {"frequency": 0.012, "threshold": 0.45},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.5},
+        "crystalline": {"frequency": 0.015, "threshold": 0.4}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "glass_cactus",
@@ -762,6 +844,20 @@
       ]
     },
     "Corpse Fields": {
+      "placement_noise": {
+        "forest": {"frequency": 0.008, "threshold": 0.4},
+        "rocky": {"frequency": 0.012, "threshold": 0.45},
+        "formations": {"frequency": 0.008, "threshold": 0.35},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
+        "crystalline": {"frequency": 0.018, "threshold": 0.45}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "dead_tree",
@@ -879,6 +975,20 @@
       ]
     },
     "Stormspire Highlands": {
+      "placement_noise": {
+        "forest": {"frequency": 0.008, "threshold": 0.35},
+        "rocky": {"frequency": 0.008, "threshold": 0.35},
+        "formations": {"frequency": 0.012, "threshold": 0.4},
+        "ore_rich": {"frequency": 0.012, "threshold": 0.4},
+        "crystalline": {"frequency": 0.015, "threshold": 0.35}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "lightning_pine",
@@ -996,6 +1106,20 @@
       ]
     },
     "Toxin Marshes": {
+      "placement_noise": {
+        "forest": {"frequency": 0.006, "threshold": 0.25},
+        "rocky": {"frequency": 0.015, "threshold": 0.5},
+        "formations": {"frequency": 0.012, "threshold": 0.45},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
+        "crystalline": {"frequency": 0.018, "threshold": 0.45}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "toxic_bramble",
@@ -1113,6 +1237,19 @@
       ]
     },
     "Dead City Outskirts": {
+      "placement_noise": {
+        "forest": {"frequency": 0.012, "threshold": 0.55},
+        "rocky": {"frequency": 0.01, "threshold": 0.4},
+        "formations": {"frequency": 0.006, "threshold": 0.25},
+        "ore_rich": {"frequency": 0.015, "threshold": 0.5}
+      },
+      "category_defaults": {
+        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
+        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
+        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
+        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
+        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+      },
       "trees": [
         {
           "id": "withered_oak_city",
