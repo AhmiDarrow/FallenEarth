@@ -35,7 +35,7 @@ func _ready() -> void:
 	_enumerate_monitors()
 	_load_settings()
 	_apply_settings()
-	print("[DisplayManager] Initialized (v0.2.0).")
+	print("[DisplayManager] Initialized (v0.12.0).")
 
 
 # -- HUD state --

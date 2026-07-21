@@ -1,5 +1,30 @@
 ---
 
+## [v0.12.0] — 2026-07-21 — Living Local Map
+
+Harvestable overworld, visible props, wildlife spawn, minimap polish.
+
+### World & gathering
+- Resource nodes harvestable with category tools (`#trees` / `#rocks` / `#ore` / …)
+- Single-click context box + tool requirement tips + gather fail toasts
+- Per-biome trees, rocks, ore/formations/crystals, and full decor set
+- `entity_blocked` collision for harvestables/blocking decor (rebuild on load)
+- Spawn pocket uses Chebyshev buffer (no full-map empty cross)
+
+### Visuals
+- `ResourceVisualManager` uses shared-texture Sprite2Ds (MultiMesh transforms unreliable on 4.7)
+- Minimap: compact panel, soft grid, capped resource dots, clipped two-line footer
+
+### Wildlife
+- 10 predators + 10 vermin from PixelLab wired into `mobs.json` spawn pools
+- HubWorld spawn filter: `beast,mount,predator,vermin`
+- HP/damage resolved from `hp` / `base_stats` / `dps`
+
+### Worldgen (prior in branch)
+- Full geodesic hexasphere with balanced biomes
+
+---
+
 ## [v0.11.0] — 2026-07-07 — Combat Architecture Rewrite + UI Design System
 
 ### Combat Architecture Rewrite (v0.11.0)

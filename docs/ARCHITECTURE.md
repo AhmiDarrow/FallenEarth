@@ -1,6 +1,6 @@
 # ARCHITECTURE — Fallen Earth Godot Project + Multi-Agent Workflow
 
-**Version:** 0.11.0 (Godot 4.7.1) · **Save format:** 0.2.0 · See `docs/VERSION.md`
+**Version:** 0.12.0 (Godot 4.7.1) · **Save format:** 0.5.0 · See `docs/VERSION.md`
 
 ## Table of Contents
 1. [Game Architecture](#game-architecture)

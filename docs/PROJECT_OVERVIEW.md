@@ -1,6 +1,6 @@
 # PROJECT_OVERVIEW — Fallen Earth (Godot 4 Survival RPG)
 
-**Version:** 0.11.0 (2026-07-18) · Godot 4.7.1 · See `docs/VERSION.md` for phase map and save format.
+**Version:** 0.12.0 (2026-07-21) · Godot 4.7.1 · See `docs/VERSION.md` for phase map and save format.
 
 **Goal:** Build a top-down 2.5D apocalyptic sci-fi survival RPG in Godot 4 focused on exploration, rift-running, tactical grid combat, character progression, settlement building, and faction/lore systems. Data-driven design (JSON first) for easy iteration.
 

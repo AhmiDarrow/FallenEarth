@@ -1,9 +1,9 @@
 # CURRENT STATE — Fallen Earth
 
-**Version:** 0.11.0
-**Last Updated:** 2026-07-07 14:30
+**Version:** 0.12.0
+**Last Updated:** 2026-07-21
 **Active Agent:** Remedy (Hermes)
-**Current Phase:** UI Design System — COMPLETE. Graphical fixes COMPLETE.
+**Current Phase:** Living local map (harvest + wildlife) — COMPLETE.
 
 ## Summary
 
