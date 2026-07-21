@@ -6,63 +6,130 @@ class_name MasterTheme
 extends RefCounted
 
 # =============================================================================
-# SECTION 1 — Color Palette (warm earth tones)
+# SECTION 1 — Color Palette (runtime-switchable via ThemeManager)
 # =============================================================================
 
-const BG_DEEP       := Color(0.141, 0.118, 0.102)  # #241E1A
-const BG_SURFACE    := Color(0.180, 0.157, 0.141)  # #2E2824
-const BG_ELEVATED   := Color(0.227, 0.200, 0.180)  # #3A332E
-const BG_INPUT      := Color(0.141, 0.118, 0.102)  # #241E1A
-const BG_PANEL      := Color(0.180, 0.157, 0.141)  # #2E2824
+static var BG_DEEP       := Color(0.141, 0.118, 0.102)  # #241E1A
+static var BG_SURFACE    := Color(0.180, 0.157, 0.141)  # #2E2824
+static var BG_ELEVATED   := Color(0.227, 0.200, 0.180)  # #3A332E
+static var BG_INPUT      := Color(0.141, 0.118, 0.102)  # #241E1A
+static var BG_PANEL      := Color(0.180, 0.157, 0.141)  # #2E2824
 
-const BORDER_SUBTLE := Color(0.235, 0.208, 0.188)  # #3C3530
-const BORDER_STRONG := Color(0.353, 0.314, 0.282)  # #5A5048
-const BORDER_INPUT  := Color(0.235, 0.208, 0.188)  # #3C3530
+static var BORDER_SUBTLE := Color(0.235, 0.208, 0.188)  # #3C3530
+static var BORDER_STRONG := Color(0.353, 0.314, 0.282)  # #5A5048
+static var BORDER_INPUT  := Color(0.235, 0.208, 0.188)  # #3C3530
 
-const ACCENT_PRIMARY   := Color(0.788, 0.722, 0.588)  # #C9B896
-const ACCENT_SECONDARY := Color(0.459, 0.620, 0.682)  # #759EAE
-const ACCENT_DANGER    := Color(0.769, 0.251, 0.251)  # #C44040
-const ACCENT_SUCCESS   := Color(0.439, 0.608, 0.478)  # #709B7A
-const ACCENT_NEON      := Color(0.494, 0.427, 0.718)  # #7E6DB7
+static var ACCENT_PRIMARY   := Color(0.788, 0.722, 0.588)  # #C9B896
+static var ACCENT_SECONDARY := Color(0.459, 0.620, 0.682)  # #759EAE
+static var ACCENT_DANGER    := Color(0.769, 0.251, 0.251)  # #C44040
+static var ACCENT_SUCCESS   := Color(0.439, 0.608, 0.478)  # #709B7A
+static var ACCENT_NEON      := Color(0.494, 0.427, 0.718)  # #7E6DB7
 
-const TEXT_PRIMARY     := Color(0.910, 0.863, 0.773)  # #E8DCC5
-const TEXT_SECONDARY   := Color(0.651, 0.620, 0.580)  # #A69E94
-const TEXT_MUTED       := Color(0.475, 0.451, 0.420)  # #79736B
-const TEXT_ACCENT      := Color(0.788, 0.722, 0.588)  # #C9B896
-const TEXT_DANGER      := Color(0.769, 0.251, 0.251)  # #C44040
-const TEXT_SUCCESS     := Color(0.439, 0.608, 0.478)  # #709B7A
-const TEXT_LINK        := Color(0.459, 0.620, 0.682)  # #759EAE
+static var TEXT_PRIMARY     := Color(0.910, 0.863, 0.773)  # #E8DCC5
+static var TEXT_SECONDARY   := Color(0.651, 0.620, 0.580)  # #A69E94
+static var TEXT_MUTED       := Color(0.475, 0.451, 0.420)  # #79736B
+static var TEXT_ACCENT      := Color(0.788, 0.722, 0.588)  # #C9B896
+static var TEXT_DANGER      := Color(0.769, 0.251, 0.251)  # #C44040
+static var TEXT_SUCCESS     := Color(0.439, 0.608, 0.478)  # #709B7A
+static var TEXT_LINK        := Color(0.459, 0.620, 0.682)  # #759EAE
 
-const HP_FILL    := Color(0.769, 0.251, 0.251)  # #C44040
-const HP_BG      := Color(0.329, 0.157, 0.157)  # #542828
-const MP_FILL    := Color(0.376, 0.518, 0.675)  # #6084AC
-const MP_BG      := Color(0.173, 0.263, 0.373)  # #2C435F
-const XP_FILL    := Color(0.439, 0.608, 0.478)  # #709B7A
-const XP_BG      := Color(0.192, 0.325, 0.255)  # #315341
+static var HP_FILL    := Color(0.769, 0.251, 0.251)  # #C44040
+static var HP_BG      := Color(0.329, 0.157, 0.157)  # #542828
+static var MP_FILL    := Color(0.376, 0.518, 0.675)  # #6084AC
+static var MP_BG      := Color(0.173, 0.263, 0.373)  # #2C435F
+static var XP_FILL    := Color(0.439, 0.608, 0.478)  # #709B7A
+static var XP_BG      := Color(0.192, 0.325, 0.255)  # #315341
 
-const RARITY_COMMON    := Color(0.651, 0.620, 0.580)  # #A69E94
-const RARITY_UNCOMMON  := Color(0.439, 0.608, 0.478)  # #709B7A
-const RARITY_RARE      := Color(0.459, 0.620, 0.682)  # #759EAE
-const RARITY_EPIC      := Color(0.494, 0.427, 0.718)  # #7E6DB7
-const RARITY_LEGENDARY := Color(0.788, 0.722, 0.588)  # #C9B896
+static var RARITY_COMMON    := Color(0.651, 0.620, 0.580)  # #A69E94
+static var RARITY_UNCOMMON  := Color(0.439, 0.608, 0.478)  # #709B7A
+static var RARITY_RARE      := Color(0.459, 0.620, 0.682)  # #759EAE
+static var RARITY_EPIC      := Color(0.494, 0.427, 0.718)  # #7E6DB7
+static var RARITY_LEGENDARY := Color(0.788, 0.722, 0.588)  # #C9B896
 
-const OVERLAY_DARK  := Color(0.102, 0.082, 0.071, 0.85)  # #1A1512 @ 85%
-const OVERLAY_LIGHT := Color(0.141, 0.118, 0.102, 0.60)  # #241E1A @ 60%
+static var OVERLAY_DARK  := Color(0.102, 0.082, 0.071, 0.85)  # #1A1512 @ 85%
+static var OVERLAY_LIGHT := Color(0.141, 0.118, 0.102, 0.60)  # #241E1A @ 60%
 
-const GLOW_PRIMARY := Color(0.788, 0.722, 0.588)  # #C9B896
-const GLOW_RIFT    := Color(0.494, 0.427, 0.718)  # #7E6DB7
+static var SELECTED_BG   := Color(0.227, 0.200, 0.180)  # #3A332E
+static var SELECTED_TINT := Color(0.788, 0.722, 0.588)  # #C9B896
 
-const MM_PLAYER      := Color(0.400, 0.851, 1.000)  # #66D9FF
-const MM_DISCOVERED  := Color(0.451, 0.502, 0.424)  # #73806A
-const MM_CURRENT     := Color(1, 1, 1)
-const MM_RIFT        := Color(1.000, 0.851, 0.200)  # #FFD930
-const MM_RIFTSPIRE   := Color(1.000, 0.502, 0.149)  # #FF8026
-const MM_MOB_HOSTILE := Color(1.000, 0.502, 0.400)  # #FF8066
-const MM_MOB_NEUTRAL := Color(0.702, 0.851, 0.702)  # #B3D9B3
-const MM_GRID_LINE   := Color(0.200, 0.200, 0.220, 0.5)
+static var GLOW_PRIMARY := Color(0.788, 0.722, 0.588)  # #C9B896
+static var GLOW_RIFT    := Color(0.494, 0.427, 0.718)  # #7E6DB7
+
+static var MM_PLAYER      := Color(0.400, 0.851, 1.000)  # #66D9FF
+static var MM_DISCOVERED  := Color(0.451, 0.502, 0.424)  # #73806A
+static var MM_CURRENT     := Color(1, 1, 1)
+static var MM_RIFT        := Color(1.000, 0.851, 0.200)  # #FFD930
+static var MM_RIFTSPIRE   := Color(1.000, 0.502, 0.149)  # #FF8026
+static var MM_MOB_HOSTILE := Color(1.000, 0.502, 0.400)  # #FF8066
+static var MM_MOB_NEUTRAL := Color(0.702, 0.851, 0.702)  # #B3D9B3
+static var MM_GRID_LINE   := Color(0.200, 0.200, 0.220, 0.5)
+
+## Apply a theme data dictionary (from ThemeManager) at runtime.
+static func apply_theme_data(data: Dictionary) -> void:
+	if data.has("BG_DEEP"): BG_DEEP = data.BG_DEEP
+	if data.has("BG_SURFACE"): BG_SURFACE = data.BG_SURFACE
+	if data.has("BG_ELEVATED"): BG_ELEVATED = data.BG_ELEVATED
+	if data.has("BG_INPUT"): BG_INPUT = data.BG_INPUT
+	if data.has("BG_PANEL"): BG_PANEL = data.BG_PANEL
+	if data.has("BORDER_SUBTLE"): BORDER_SUBTLE = data.BORDER_SUBTLE
+	if data.has("BORDER_STRONG"): BORDER_STRONG = data.BORDER_STRONG
+	if data.has("BORDER_INPUT"): BORDER_INPUT = data.BORDER_INPUT
+	if data.has("ACCENT_PRIMARY"): ACCENT_PRIMARY = data.ACCENT_PRIMARY
+	if data.has("ACCENT_SECONDARY"): ACCENT_SECONDARY = data.ACCENT_SECONDARY
+	if data.has("ACCENT_DANGER"): ACCENT_DANGER = data.ACCENT_DANGER
+	if data.has("ACCENT_SUCCESS"): ACCENT_SUCCESS = data.ACCENT_SUCCESS
+	if data.has("ACCENT_NEON"): ACCENT_NEON = data.ACCENT_NEON
+	if data.has("TEXT_PRIMARY"): TEXT_PRIMARY = data.TEXT_PRIMARY
+	if data.has("TEXT_SECONDARY"): TEXT_SECONDARY = data.TEXT_SECONDARY
+	if data.has("TEXT_MUTED"): TEXT_MUTED = data.TEXT_MUTED
+	if data.has("TEXT_ACCENT"): TEXT_ACCENT = data.TEXT_ACCENT
+	if data.has("TEXT_DANGER"): TEXT_DANGER = data.TEXT_DANGER
+	if data.has("TEXT_SUCCESS"): TEXT_SUCCESS = data.TEXT_SUCCESS
+	if data.has("TEXT_LINK"): TEXT_LINK = data.TEXT_LINK
+	if data.has("HP_FILL"): HP_FILL = data.HP_FILL
+	if data.has("HP_BG"): HP_BG = data.HP_BG
+	if data.has("MP_FILL"): MP_FILL = data.MP_FILL
+	if data.has("MP_BG"): MP_BG = data.MP_BG
+	if data.has("XP_FILL"): XP_FILL = data.XP_FILL
+	if data.has("XP_BG"): XP_BG = data.XP_BG
+	if data.has("RARITY_COMMON"): RARITY_COMMON = data.RARITY_COMMON
+	if data.has("RARITY_UNCOMMON"): RARITY_UNCOMMON = data.RARITY_UNCOMMON
+	if data.has("RARITY_RARE"): RARITY_RARE = data.RARITY_RARE
+	if data.has("RARITY_EPIC"): RARITY_EPIC = data.RARITY_EPIC
+	if data.has("RARITY_LEGENDARY"): RARITY_LEGENDARY = data.RARITY_LEGENDARY
+	if data.has("OVERLAY_DARK"): OVERLAY_DARK = data.OVERLAY_DARK
+	if data.has("OVERLAY_LIGHT"): OVERLAY_LIGHT = data.OVERLAY_LIGHT
+	if data.has("SELECTED_BG"): SELECTED_BG = data.SELECTED_BG
+	if data.has("SELECTED_TINT"): SELECTED_TINT = data.SELECTED_TINT
+	if data.has("GLOW_PRIMARY"): GLOW_PRIMARY = data.GLOW_PRIMARY
+	if data.has("GLOW_RIFT"): GLOW_RIFT = data.GLOW_RIFT
+	if data.has("MM_PLAYER"): MM_PLAYER = data.MM_PLAYER
+	if data.has("MM_DISCOVERED"): MM_DISCOVERED = data.MM_DISCOVERED
+	if data.has("MM_CURRENT"): MM_CURRENT = data.MM_CURRENT
+	if data.has("MM_RIFT"): MM_RIFT = data.MM_RIFT
+	if data.has("MM_RIFTSPIRE"): MM_RIFTSPIRE = data.MM_RIFTSPIRE
+	if data.has("MM_MOB_HOSTILE"): MM_MOB_HOSTILE = data.MM_MOB_HOSTILE
+	if data.has("MM_MOB_NEUTRAL"): MM_MOB_NEUTRAL = data.MM_MOB_NEUTRAL
+	if data.has("MM_GRID_LINE"): MM_GRID_LINE = data.MM_GRID_LINE
 
 # =============================================================================
-# SECTION 2 — Size & Spacing Tokens
+# Default Font — Inter (open-source, free to use)
+# =============================================================================
+
+static var FONT_DEFAULT: Font = null
+static var FONT_BOLD: Font = null
+static var FONT_ITALIC: Font = null
+
+static func _ensure_font() -> Font:
+	if FONT_DEFAULT == null:
+		FONT_DEFAULT = load("res://assets/fonts/extras/ttf/Inter-Regular.ttf")
+		FONT_BOLD = load("res://assets/fonts/extras/ttf/Inter-Bold.ttf")
+		FONT_ITALIC = load("res://assets/fonts/extras/ttf/Inter-Italic.ttf")
+	return FONT_DEFAULT
+
+
+# =============================================================================
+# SECTION 2 — Size & Spacing Tokens (compile-time constants, not themeable)
 # =============================================================================
 
 const FS_HERO  := 42
@@ -273,7 +340,17 @@ static func apply_to(window: Window) -> void:
 static func _build_theme() -> Theme:
 	var t := Theme.new()
 
+	t.default_font = _ensure_font()
 	t.default_font_size = FS_BODY
+	t.set_font("RichTextLabel", "bold_font", FONT_BOLD)
+	t.set_font("RichTextLabel", "italic_font", FONT_ITALIC)
+	t.set_font("Label", "font", FONT_DEFAULT)
+	t.set_font("Button", "font", FONT_DEFAULT)
+	t.set_font("LineEdit", "font", FONT_DEFAULT)
+	t.set_font("ProgressBar", "font", FONT_DEFAULT)
+	t.set_font("CheckBox", "font", FONT_DEFAULT)
+	t.set_font("RichTextLabel", "font", FONT_DEFAULT)
+	t.set_font("TextEdit", "font", FONT_DEFAULT)
 	_set_theme_font_size(t, "Label", "font_size", FS_BODY)
 	_set_theme_font_size(t, "Button", "font_size", FS_BUTTON)
 	_set_theme_font_size(t, "LineEdit", "font_size", FS_BODY)
