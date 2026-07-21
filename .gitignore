@@ -59,3 +59,6 @@ cache/
 Godot_v4.3-stable_win64.exe
 Godot_v4.7.1-stable_win64.exe
 Godot_v4.7.1-stable_win64_console.exe
+
+# Vanished third-party addon (we use our own InventoryHandler now)
+addons/wyvernbox/
