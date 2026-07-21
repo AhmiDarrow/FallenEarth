@@ -126,9 +126,20 @@ theme_override_constants/margin_right = 4
 theme_override_constants/margin_bottom = 4
 
 [node name="HexGrid" type="Node2D" parent="VBox/ContentHBox/HexMargin"]
+visible = false
 
 [node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/HexMargin/HexGrid"]
 enabled = false
+
+[node name="GlobeContainer" type="SubViewportContainer" parent="VBox/ContentHBox/HexMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="VBox/ContentHBox/HexMargin/GlobeContainer"]
+size = Vector2i(600, 600)
+render_target_update_mode = 4
 
 [node name="SideVBox" type="VBoxContainer" parent="VBox/ContentHBox"]
 layout_mode = 2

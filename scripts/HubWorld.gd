@@ -131,6 +131,9 @@ var _mobs_container: Node2D = null
 # Guard against multiple combat initiations in the same frame
 var _combat_pending: bool = false
 
+# Active context menu (null when none open)
+var _context_menu: Control = null
+
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -361,6 +364,13 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	# Mouse double-click on world objects: block when UI overlay or paused.
+	if event is InputEventMouseButton and event.double_click and event.button_index == MOUSE_BUTTON_LEFT:
+		if _interaction_manager._is_ui_overlay_open() or get_tree().paused:
+			return
+		if _interaction_manager._on_double_click(get_local_mouse_position(), event.position):
+			return
+	# Keyboard-only input below this line.
 	if not (event is InputEventKey and event.pressed):
 		return	# Note: we do NOT early-return on `get_tree().paused` here. The
 	# character-menu hotkeys (I/E/C/P/S) must work even while the

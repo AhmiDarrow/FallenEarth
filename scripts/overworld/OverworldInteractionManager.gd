@@ -593,6 +593,229 @@ func _place_sleeping_bag() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Context menu (double-click)
+# ---------------------------------------------------------------------------
+
+const ContextMenuScript = preload("res://scripts/ui/ContextMenu.gd")
+
+## Entry point for mouse double-click on the world. Converts world position
+## to cell, builds relevant options, and shows a context menu.
+func _on_double_click(world_pos: Vector2, screen_pos: Vector2) -> bool:
+	if not is_instance_valid(_hw._map_view):
+		return false
+	_dismiss_context_menu()
+	var cell_size: int = _hw._map_view.get_cell_size()
+	var cell := Vector2i(
+		int(floor(world_pos.x / cell_size)),
+		int(floor(world_pos.y / cell_size)),
+	)
+	var options: Array = _build_context_options(cell)
+	if options.is_empty():
+		return false
+	_show_context_menu(screen_pos, options, cell)
+	return true
+
+
+## Build an array of {label, action} dicts for interactables at a cell.
+func _build_context_options(cell: Vector2i) -> Array:
+	var options: Array = []
+	var px: int = _hw._local_x
+	var py: int = _hw._local_y
+	var dist: int = max(abs(cell.x - px), abs(cell.y - py))
+
+	# 1. Resource node at this cell (within gather range)
+	var node_info: Dictionary = _get_resource_node_at(cell)
+	if not node_info.is_empty() and dist <= GATHER_RANGE_CELLS:
+		var node: Node2D = node_info.get("node")
+		if is_instance_valid(node):
+			var node_name: String = str(node_info.get("name", "Resource"))
+			var tool: Dictionary = _resolve_hotbar_tool()
+			if tool.is_empty():
+				tool = {"speed_mult": 1.0, "harvests": [], "name": "(bare hands)"}
+			var result: Dictionary = node.try_gather(tool)
+			if bool(result.get("ok", false)):
+				options.append({"label": "Mine " + node_name, "action": "gather"})
+			elif str(result.get("reason", "")) == "wrong_tool":
+				var hint: String = _nearest_tool_hint(node)
+				options.append({"label": hint, "action": ""})
+			elif str(result.get("reason", "")) == "depleted":
+				options.append({"label": "Depleted", "action": ""})
+
+	# 2. Building at this cell (within interact range)
+	if dist <= GATHER_RANGE_CELLS:
+		var bld: Node2D = _hw._map_view.get_building_at(cell)
+		if is_instance_valid(bld):
+			var role: String = bld.get_role() if bld.has_method("get_role") else ""
+			match role:
+				"trader":
+					options.append({"label": "Shop", "action": "shop"})
+				"quest_giver":
+					options.append({"label": "Quest Board", "action": "quest_board"})
+				_:
+					options.append({"label": "Enter", "action": "enter_building"})
+
+	# 3. Rift at player's current cell
+	if dist == 0:
+		if not _hw._rift_manager.get_rift_at_player().is_empty():
+			options.append({"label": "Enter Rift", "action": "enter_rift"})
+
+	# 4. Sleeping bag at this cell
+	if dist <= GATHER_RANGE_CELLS:
+		var bag: Node2D = _hw._map_view.get_sleeping_bag_at(cell)
+		if is_instance_valid(bag):
+			options.append({"label": "Set Respawn Point", "action": "set_respawn"})
+
+	# 5. Cooking table at this cell
+	if dist <= GATHER_RANGE_CELLS:
+		var ct: Node2D = _hw._map_view.get_cooking_table_at(cell)
+		if is_instance_valid(ct):
+			options.append({"label": "Cook", "action": "cook"})
+
+	return options
+
+
+## Get info about a resource node at the exact cell (radius=0).
+func _get_resource_node_at(cell: Vector2i) -> Dictionary:
+	if not is_instance_valid(_hw._map_view):
+		return {}
+	var entries: Array = _hw._map_view.get_resource_nodes_near(cell, 0)
+	if entries.is_empty():
+		return {}
+	var entry: Dictionary = entries[0]
+	var node: Node2D = entry.get("node")
+	if not is_instance_valid(node):
+		return {}
+	var nd: Dictionary = node.node_data if "node_data" in node else {}
+	return {
+		"node": node,
+		"name": str(nd.get("name", nd.get("id", "Resource"))),
+		"id": str(nd.get("id", "")),
+	}
+
+
+## Show the context menu popup at the given screen position.
+func _show_context_menu(screen_pos: Vector2, options: Array, cell: Vector2i) -> void:
+	_dismiss_context_menu()
+	if ContextMenuScript == null:
+		return
+	var menu: Control = ContextMenuScript.new()
+	menu.name = "ContextMenu"
+	var title: String = _context_menu_title(cell)
+	menu.action_selected.connect(_on_context_action)
+	var ui_canvas: CanvasLayer = _hw.get_node_or_null("UI_Canvas") as CanvasLayer
+	if is_instance_valid(ui_canvas):
+		ui_canvas.add_child(menu)
+	else:
+		_hw.add_child(menu)
+	menu.tree_exited.connect(_on_context_menu_closed)
+	menu.show_at(screen_pos, title, options, cell)
+	_hw._context_menu = menu
+
+
+## Called when the context menu node exits the scene tree (dismissed).
+func _on_context_menu_closed() -> void:
+	_hw._context_menu = null
+
+
+## Title for the context menu based on what's at the target cell.
+func _context_menu_title(cell: Vector2i) -> String:
+	var node_info: Dictionary = _get_resource_node_at(cell)
+	if not node_info.is_empty():
+		return str(node_info.get("name", "Resource"))
+	var bld: Node2D = _hw._map_view.get_building_at(cell)
+	if is_instance_valid(bld):
+		return bld.get_label() if bld.has_method("get_label") else "Building"
+	var bag: Node2D = _hw._map_view.get_sleeping_bag_at(cell)
+	if is_instance_valid(bag):
+		return "Sleeping Bag"
+	var ct: Node2D = _hw._map_view.get_cooking_table_at(cell)
+	if is_instance_valid(ct):
+		return ct.get_label() if ct.has_method("get_label") else "Cooking Table"
+	return "Interact"
+
+
+## Handle a selected action from the context menu.
+func _on_context_action(action: String, target_cell: Vector2i) -> void:
+	_hw._context_menu = null
+	match action:
+		"gather":
+			_start_gather_at_cell(target_cell)
+		"shop", "quest_board", "enter_building":
+			var bld: Node2D = _hw._map_view.get_building_at(target_cell)
+			if is_instance_valid(bld):
+				_interact_building(bld)
+		"enter_rift":
+			if not _hw._rift_manager.get_rift_at_player().is_empty():
+				_hw._rift_manager.open_rift_entry_ui()
+		"set_respawn":
+			var bag: Node2D = _hw._map_view.get_sleeping_bag_at(target_cell)
+			if is_instance_valid(bag):
+				_interact_sleeping_bag(bag)
+		"cook":
+			var ct: Node2D = _hw._map_view.get_cooking_table_at(target_cell)
+			if is_instance_valid(ct):
+				_open_cooking_table_ui()
+
+
+## Start gathering at a specific cell (used by context menu gather action).
+func _start_gather_at_cell(cell: Vector2i) -> void:
+	if is_instance_valid(_hw._gathering_node):
+		return
+	var candidates: Array = _hw._map_view.get_resource_nodes_near(cell, 0)
+	if candidates.is_empty():
+		return
+	var entry: Dictionary = candidates[0]
+	var node: Node2D = entry["node"]
+	if not is_instance_valid(node):
+		return
+	var tool: Dictionary = _resolve_hotbar_tool()
+	if tool.is_empty():
+		tool = {"speed_mult": 1.0, "harvests": [], "name": "(bare hands)"}
+	var result: Dictionary = node.try_gather(tool)
+	if not bool(result.get("ok", false)):
+		return
+	_hw._gathering_node = node
+	_hw._gather_total = float(result.get("secs", 1.0))
+	_hw._gather_timer = _hw._gather_total
+	_hw._gather_yield_preview = {
+		"yield_item": str(result.get("yield_item", "")),
+		"yield_qty": int(result.get("yield_qty", 0)),
+	}
+
+
+## Dismiss the active context menu if any.
+func _dismiss_context_menu() -> void:
+	if _hw._context_menu != null and is_instance_valid(_hw._context_menu):
+		_hw._context_menu.queue_free()
+	_hw._context_menu = null
+
+
+## Suggest what tool is needed for a node (from tools.json harvests).
+func _nearest_tool_hint(node: Node2D) -> String:
+	var nd: Dictionary = node.node_data if "node_data" in node else {}
+	var node_id: String = str(nd.get("id", ""))
+	if node_id.is_empty():
+		return "Wrong tool"
+	var path := "res://data/tools.json"
+	if not ResourceLoader.exists(path):
+		return "Needs: tool with harvests=" + node_id
+	var raw = load(path)
+	if raw == null:
+		return "Needs: tool with harvests=" + node_id
+	var data = raw.data if "data" in raw else raw
+	if not (data is Dictionary):
+		return "Needs: tool with harvests=" + node_id
+	var names: Array = []
+	for t in data.get("tools", []):
+		var harvests: Array = t.get("harvests", [])
+		if harvests.has(node_id) or harvests.has("*"):
+			names.append(str(t.get("name", t.get("id", "?"))))
+	if names.is_empty():
+		return "Needs: tool for " + node_id
+	return "Use: " + names[0]
+
+
+# ---------------------------------------------------------------------------
 # UI overlay check
 # ---------------------------------------------------------------------------
 

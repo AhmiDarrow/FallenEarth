@@ -11,6 +11,18 @@ const VERSION := "0.2.0"
 const DATA_PATH := "res://data/biomes.json"
 const FACTIONS_PATH := "res://data/factions.json"
 const TOWNS_PATH := "res://data/towns.json"
+const BIOME_CLIMATE_PROFILES: Dictionary = {
+	"Ash Wastes": [0.5, 0.7, 0.3, 0.5, 0.3, 0.6],
+	"Rust Canyons": [0.3, 0.5, 0.2, 0.5, 0.6, 0.9],
+	"Neon Bogs": [0.5, 0.7, 0.6, 0.9, 0.0, 0.3],
+	"Scorched Plains": [0.7, 1.0, 0.1, 0.4, 0.3, 0.6],
+	"Ironwood Thicket": [0.4, 0.6, 0.5, 0.8, 0.3, 0.7],
+	"Glass Dunes": [0.6, 0.9, 0.0, 0.3, 0.4, 0.7],
+	"Corpse Fields": [0.3, 0.6, 0.3, 0.6, 0.2, 0.5],
+	"Stormspire Highlands": [0.1, 0.4, 0.4, 0.7, 0.7, 1.0],
+	"Toxin Marshes": [0.4, 0.7, 0.7, 1.0, 0.0, 0.3],
+	"Dead City Outskirts": [0.3, 0.6, 0.3, 0.6, 0.4, 0.7],
+}
 var _hex_radius: int = 12  # Size of hex "sphere" patch (axial); set via generate() size param
 
 var _seed: String = ""
@@ -167,6 +179,44 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 			var key = "%d,%d" % [q, r]
 			tile_map[key] = tile
 
+	# --- Diversity pass: guarantee every biome from biomes.json gets at least one tile.
+	# Strong neighbor clustering + narrow climate envelopes can otherwise cause some
+	# biomes (Ash Wastes, Glass Dunes, Corpse Fields, etc.) to be completely absent.
+	var present: Dictionary = {}
+	for k in tile_map:
+		present[ str(tile_map[k].get("name", "")) ] = true
+	for b in biomes:
+		var bname: String = str(b.get("name", ""))
+		if present.has(bname):
+			continue
+		# Find best pure-climate location for this biome (avoid overwriting capitals later)
+		var best_k := ""
+		var best_s := -999.0
+		for k in tile_map:
+			var t: Dictionary = tile_map[k]
+			if t.get("is_riftspire", false) or t.get("is_town", false):
+				continue
+			var tt: float = float(t.get("temperature", 0.5))
+			var rr: float = float(t.get("rainfall", 0.5))
+			var ee: float = float(t.get("elevation", 0.5))
+			var s: float = _climate_score_for(tt, rr, ee, bname)
+			if s > best_s:
+				best_s = s
+				best_k = k
+		if best_k != "":
+			var forced: Dictionary = b.duplicate(true)
+			var old: Dictionary = tile_map[best_k]
+			forced["q"] = old.get("q")
+			forced["r"] = old.get("r")
+			forced["elevation"] = old.get("elevation")
+			forced["temperature"] = old.get("temperature")
+			forced["rainfall"] = old.get("rainfall")
+			forced["features"] = forced.get("features", []) + _get_features(float(old.get("elevation", 0.5)), float(old.get("rainfall", 0.5)))
+			forced["is_start_candidate"] = _is_good_start(forced)
+			if not forced.has("rift_chance"):
+				forced["rift_chance"] = 0.3
+			tile_map[best_k] = forced
+
 	_tile_map = tile_map
 	# Phase 3: place NPC towns and the Riftspire capital on the freshly
 	# generated hex map. Modifies _tile_map in place (adds a "town" or
@@ -179,42 +229,33 @@ func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 
 
 func _pick_biome_by_climate(temp: float, rain: float, elev: float, biomes: Array, neighbor_bonus: Dictionary = {}) -> Dictionary:
 	# Climate profile scoring: each biome has ideal ranges, score = proximity to ideal.
-	# Profiles: [temp_min, temp_max, rain_min, rain_max, elev_min, elev_max]
-	var profiles: Dictionary = {
-		"Ash Wastes": [0.5, 0.7, 0.3, 0.5, 0.3, 0.6],
-		"Rust Canyons": [0.3, 0.5, 0.2, 0.5, 0.6, 0.9],
-		"Neon Bogs": [0.5, 0.7, 0.6, 0.9, 0.0, 0.3],
-		"Scorched Plains": [0.7, 1.0, 0.1, 0.4, 0.3, 0.6],
-		"Ironwood Thicket": [0.4, 0.6, 0.5, 0.8, 0.3, 0.7],
-		"Glass Dunes": [0.6, 0.9, 0.0, 0.3, 0.4, 0.7],
-		"Corpse Fields": [0.3, 0.6, 0.3, 0.6, 0.2, 0.5],
-		"Stormspire Highlands": [0.1, 0.4, 0.4, 0.7, 0.7, 1.0],
-		"Toxin Marshes": [0.4, 0.7, 0.7, 1.0, 0.0, 0.3],
-		"Dead City Outskirts": [0.3, 0.6, 0.3, 0.6, 0.4, 0.7],
-	}
+	# Profiles live in BIOME_CLIMATE_PROFILES (populated from data/biomes.json names).
 
 	var best_score = -999.0
 	var best = biomes[0] if biomes.size() > 0 else {"name": "Ash Wastes"}
 	for b in biomes:
 		var name = b.get("name", "")
-		var p: Array = profiles.get(name, [0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
+		var score = _climate_score_for(temp, rain, elev, name)
 
-		# How well does this hex's climate fit the biome's ideal range?
-		var temp_fit = _range_fit(temp, p[0], p[1])
-		var rain_fit = _range_fit(rain, p[2], p[3])
-		var elev_fit = _range_fit(elev, p[4], p[5])
-		var score = (temp_fit + rain_fit + elev_fit) / 3.0 * 3.0
+		# Neighbor clustering bonus (scaled to not completely suppress rare biomes)
+		score += neighbor_bonus.get(name, 0.0) * 0.5
 
-		# Neighbor clustering bonus: +1.0 per adjacent hex with same biome
-		score += neighbor_bonus.get(name, 0.0)
-
-		# Small random jitter to break ties
-		score += _rng.randf_range(-0.2, 0.2)
+		# Jitter large enough to let extreme climates break clustering
+		score += _rng.randf_range(-0.6, 0.6)
 
 		if score > best_score:
 			best_score = score
 			best = b
 	return best.duplicate(true)
+
+
+## Pure climate fit (no neighbor, no jitter). Used by both picker and diversity enforcement.
+func _climate_score_for(temp: float, rain: float, elev: float, biome_name: String) -> float:
+	var p: Array = BIOME_CLIMATE_PROFILES.get(biome_name, [0.0, 1.0, 0.0, 1.0, 0.0, 1.0])
+	var tf = _range_fit(temp, p[0], p[1])
+	var rf = _range_fit(rain, p[2], p[3])
+	var ef = _range_fit(elev, p[4], p[5])
+	return tf + rf + ef
 
 
 ## Returns 0.0-1.0: how well `val` fits inside [lo, hi]. 1.0 = inside, falls off outside.
@@ -280,6 +321,99 @@ static func hex_shape(size: float) -> PackedVector2Array:
 		var angle := deg_to_rad(60.0 * i - 30.0)
 		points.append(Vector2(cos(angle) * size, sin(angle) * size))
 	return points
+
+
+## Map axial hex coord to a point on the sphere surface.
+## Uses the same 2D axial metric as axial_to_pixel so spacing is consistent.
+## This produces a much more even "hex sphere" than naive lat/lon.
+static func get_hex_spherical_pos(q: int, r: int, hex_radius: int, sphere_radius: float = 4.0) -> Vector3:
+	# Radial-from-map-center projection (gives the nicest uniform hex packing
+	# and connected look). We add a large polar shift so the patch is not
+	# stuck at the north pole but straddles a big portion of the sphere.
+	var px: float = sqrt(3.0) * float(q) + sqrt(3.0) / 2.0 * float(r)
+	var py: float = 1.5 * float(r)
+	var plane_dist: float = sqrt(px * px + py * py)
+
+	var ring_dist: float = plane_dist / sqrt(3.0)
+	var angular_step: float = deg_to_rad(9.0)
+	var polar: float = ring_dist * angular_step
+
+	# Shift so the "center" of the world sits well south of the north pole.
+	# This makes the hex landmass cross the equator and remain visible when
+	# the globe is spun to any side.
+	var polar_shift := deg_to_rad(58.0)
+	polar = polar + polar_shift
+	polar = min(polar, deg_to_rad(175.0))
+
+	var azimuth: float = atan2(px, py)
+
+	var sp: float = sin(polar)
+	var cp: float = cos(polar)
+
+	var x: float = sp * cos(azimuth) * sphere_radius
+	var y: float = cp * sphere_radius
+	var z: float = sp * sin(azimuth) * sphere_radius
+	return Vector3(x, y, z)
+
+
+## Creates a simple extruded hexagonal prism mesh (top + bottom + sides).
+## size = flat to flat radius of hex, height = extrusion along local Z.
+static func create_hex_prism_mesh(size: float, height: float) -> ArrayMesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var verts_top: Array[Vector3] = []
+	var verts_bot: Array[Vector3] = []
+	for i in 6:
+		var a := deg_to_rad(60.0 * i - 30.0)
+		verts_top.append(Vector3(cos(a) * size, sin(a) * size, height * 0.5))
+		verts_bot.append(Vector3(cos(a) * size, sin(a) * size, -height * 0.5))
+	var c_top := Vector3(0, 0, height * 0.5)
+	var c_bot := Vector3(0, 0, -height * 0.5)
+	# top cap (outward normal)
+	for i in 6:
+		var j := (i + 1) % 6
+		st.add_vertex(c_top)
+		st.add_vertex(verts_top[i])
+		st.add_vertex(verts_top[j])
+	# bottom cap
+	for i in 6:
+		var j := (i + 1) % 6
+		st.add_vertex(c_bot)
+		st.add_vertex(verts_bot[j])
+		st.add_vertex(verts_bot[i])
+	# sides
+	for i in 6:
+		var j := (i + 1) % 6
+		var t0 := verts_top[i]
+		var t1 := verts_top[j]
+		var b0 := verts_bot[i]
+		var b1 := verts_bot[j]
+		st.add_vertex(t0)
+		st.add_vertex(b0)
+		st.add_vertex(t1)
+		st.add_vertex(t1)
+		st.add_vertex(b0)
+		st.add_vertex(b1)
+	st.generate_normals()
+	return st.commit()
+
+
+## Generate approximately uniform points on a sphere using Fibonacci lattice.
+## Good for evenly distributing a fixed number of hex centers with minimal clustering.
+static func make_uniform_sphere_points(count: int, radius: float) -> Array[Vector3]:
+	if count <= 0:
+		return []
+	var pts: Array[Vector3] = []
+	var golden := (1.0 + sqrt(5.0)) / 2.0
+	for i in count:
+		var t := float(i) / float(count - 1) if count > 1 else 0.0
+		var polar := acos(1.0 - 2.0 * t)          # 0..PI
+		var az := 2.0 * PI * fmod(float(i) * golden, 1.0)
+		var x := sin(polar) * cos(az)
+		var y := cos(polar)
+		var z := sin(polar) * sin(az)
+		pts.append(Vector3(x, y, z) * radius)
+	return pts
 
 
 func get_hex_radius() -> int:

@@ -2,7 +2,7 @@
 Fallen Earth Terrain Generator Module
 
 Generates procedural terrain maps for Fallen Earth with support for:
-- Multiple biome types (desert, forest, swamp, tundra, ocean)
+- All 10 game biomes (Ash Wastes, Rust Canyons, Neon Bogs, etc.)
 - Procedural terrain height variation
 - Water level and flood zones
 - Biome adjacency and transition rules
@@ -10,48 +10,38 @@ Generates procedural terrain maps for Fallen Earth with support for:
 """
 
 import argparse
+import json
 import os
 import random
 import sys
 from typing import Tuple, Dict, Any, Optional
 
-# Add parent directory to path for biome_rules import
+# Import biome_rules helpers that now exist.
 sys.path.insert(0, os.path.dirname(__file__))
+from biome_rules import (
+    BIOME_CONFIGS,
+    _is_biome,
+    get_biome_feature_type,
+    get_difficulty_by_biome,
+    get_random_biome,
+)
 
-# Import what is actually available from biome_rules;
-# BIOME_RULES / BIOME_TYPES may be missing there -- define fallbacks below.
-try:
-    from biome_rules import (
-        get_biome_color_map,
-        get_difficulty_by_biome,
-        get_weather_by_biome,
-        _is_biome,
-        get_random_biome,
-        get_biome_feature_type,
-    )
-except ImportError:
-    pass  # biome_rules may not export everything terrain_generator needs
+# ---- Map game biome slugs to integer indices used by this module. ----
+BIOME_SLUGS: list[str] = list(BIOME_CONFIGS.keys())
 
-# ---- Fallback biome definitions (used when biome_rules is incomplete) ----
-# Maps uppercase biome names to integer indices used throughout this module.
-# These mirrors BIOME_ORDER from biome_rules.py and the BIOME_TYPES dict it should have.
-BIOME_INDEX = {
-    "DESERT": 0,
-    "TUNDRA": 1,
-    "FOREST": 2,
-    "SWAMP": 3,
-    "OCEAN": 4,
-}
+def _slug_index(slug: str) -> int:
+    try:
+        return BIOME_SLUGS.index(slug)
+    except ValueError:
+        return 0
 
-# Reverse lookup: index -> biome name (uppercase)
-_INDEX_TO_BIOME = {v: k for k, v in BIOME_INDEX.items()}
+BIOME_INDEX: Dict[str, int] = {s: i for i, s in enumerate(BIOME_SLUGS)}
+_INDEX_TO_BIOME: Dict[int, str] = {i: s for s, i in BIOME_INDEX.items()}
+BIOME_TYPES: Dict[str, int] = dict(BIOME_INDEX)  # external alias
 
-# Integer aliases used by the rest of this module.
-BIOME_TYPES: Dict[str, int] = {k: v for k, v in BIOME_INDEX.items()}
-
-
+# ---- Per-biome terrain rules ------------------------------------------------
 class _BiomeRule:
-    """Minimal biome rule shim so that code expecting rules.name etc. won't crash."""
+    """Terrain-generation parameters for one biome."""
 
     def __init__(self, name: str, base_terrain: int, terrain_noise: float):
         self.name = name
@@ -59,14 +49,17 @@ class _BiomeRule:
         self.terrain_noise = terrain_noise
 
 
-# Map integer biome indices -> rule objects (mirrors BIOME_RULES in biome_rules.py)
 BIOME_RULES: Dict[int, "_BiomeRule"] = {
-    0: _BiomeRule("desert", 1, 1.2),
-    1: _BiomeRule("tundra", 2, 1.8),
-    2: _BiomeRule("forest", 1, 1.4),
-    3: _BiomeRule("swamp", 0, 1.1),
-    4: _BiomeRule("ocean", 0, 1.0),
+    idx: _BiomeRule(name, 1, 1.4)
+    for idx, name in enumerate(BIOME_SLUGS)
 }
+# Tune individual biomes
+BIOME_RULES[0].terrain_noise = 1.2  # ash_wastes
+BIOME_RULES[1].terrain_noise = 1.7  # rust_canyons
+BIOME_RULES[3].terrain_noise = 1.0  # scorched_plains
+BIOME_RULES[4].base_terrain = 2     # ironwood_thicket
+BIOME_RULES[7].base_terrain = 2     # stormspire_highlands
+BIOME_RULES[8].base_terrain = 0     # toxin_marshes
 
 
 # ============== MAP CONFIGURATION ==============
@@ -78,28 +71,40 @@ NOISE_STRENGTH_MULTIPLIER = 1.8  # Amplifies noise values for terrain variation
 
 def _build_biome_adjacency() -> Dict[int, set]:
     """Build adjacency lookup: biome index -> set of compatible neighbor indices."""
-    # Name-level adjacency map (forest borders everything; desert is limited)
-    adj_names: Dict[str, set] = {
-        "forest": {"savanna", "desert", "tundra", "mountain", "grassland", "swamp"},
-        "savanna": {"savanna", "forest", "desert", "grassland", "mountain", "swamp"},
-        "desert": {"desert", "savanna", "grassland", "swamp"},
-        "tundra": {"tundra", "forest", "mountain", "snow", "ice_cap"},
-        "mountain": {"mountain", "forest", "savanna", "tundra", "grassland", "desert"},
-        "grassland": {"grassland", "forest", "savanna", "desert", "mountain", "swamp"},
-    }
+    n = len(BIOME_SLUGS)
+    # Most biomes can neighbour most others; restrict only by extreme differences.
+    # Group biomes by category, then allow all within same + adjacent groups.
+    categories: dict[str, set[int]] = {}
+    for idx, slug in enumerate(BIOME_SLUGS):
+        cfg = BIOME_CONFIGS[slug]
+        categories.setdefault(cfg.category, set()).add(idx)
 
-    # Map all known biome keys (from BIOME_TYPES + extra names) to indices.
-    # Direct mapping for our 5 biome indices.
-    result = {}
-    compat_sets = {
-        0: {0, 2, 3},       # DESERT -> desert, forest, swamp
-        1: {1, 2, 4},       # TUNDRA -> tundra, forest, ocean
-        2: {0, 1, 2, 3, 4}, # FOREST -> all (forest is universal)
-        3: {0, 2, 3},       # SWAMP -> desert, forest, swamp
-        4: {1, 2, 4},       # OCEAN -> tundra, forest, ocean
-    }
-    for idx, neighbors in compat_sets.items():
-        result[idx] = set(neighbors)
+    result: Dict[int, set] = {}
+    for idx_a, slug_a in enumerate(BIOME_SLUGS):
+        cat_a = BIOME_CONFIGS[slug_a].category
+        compatible: set = set()
+        for idx_b, slug_b in enumerate(BIOME_SLUGS):
+            cat_b = BIOME_CONFIGS[slug_b].category
+            # Same category always compatible
+            if cat_a == cat_b:
+                compatible.add(idx_b)
+                continue
+            # Nearby biome categories are broadly compatible
+            if cat_a in ("wasteland", "plain", "field",
+                         "desert", "canyon", "ruins"):
+                if cat_b in ("wasteland", "plain", "field",
+                             "desert", "canyon", "ruins",
+                             "highland", "forest"):
+                    compatible.add(idx_b)
+            elif cat_a in ("forest", "wetland", "marsh"):
+                if cat_b in ("forest", "wetland", "marsh",
+                             "plain", "field", "highland"):
+                    compatible.add(idx_b)
+            elif cat_a == "highland":
+                if cat_b in ("highland", "canyon", "forest",
+                             "plain", "field", "wasteland", "ruins"):
+                    compatible.add(idx_b)
+        result[idx_a] = compatible
     return result
 
 
@@ -153,7 +158,8 @@ def generate_terrain_map() -> Tuple[Dict[str, Any], Dict[str, Any]]:
 
     print(f"[Terrain Generator] Generated map with {metadata['biome_count']} biomes")
     for biome_idx, count in sorted(biome_distribution.items()):
-        name: str = BIOME_RULES.get(biome_idx).name if biome_idx in BIOME_RULES else f"Biome{biome_idx}"
+        slug = _INDEX_TO_BIOME.get(biome_idx, f"biome{biome_idx}")
+        name = BIOME_CONFIGS[slug].name if slug in BIOME_CONFIGS else slug
         pct = biome_distribution[biome_idx] * 100
         print(f"[Terrain Generator]   {name}: {count} tiles ({pct:.1f}%)")
 
@@ -195,17 +201,14 @@ def _generate_biome_layer(
 
 def _find_primary_biome(x: float, y: float) -> Optional[int]:
     """Find the primary biome that contains a given coordinate."""
-    # Check from most restrictive to least restrictive (desert first, then ocean)
-    for name in ["DESERT", "TUNDRA", "FOREST", "SWAMP"]:
-        biome_type = BIOME_TYPES[name]
-        if _is_biome(x, y, biome_type):
-            return biome_type
-
-    # Default to ocean for edge positions
-    if _is_biome(x, y, BIOME_TYPES["OCEAN"]):
-        return BIOME_TYPES["OCEAN"]
-
-    return BIOME_TYPES["FOREST"]  # Fallback
+    # Check each biome slug in priority order (rarer → common)
+    for slug in ["stormspire_highlands", "dead_city_outskirts",
+                 "rust_canyons", "glass_dunes", "corpse_fields",
+                 "toxin_marshes", "neon_bogs", "ironwood_thicket",
+                 "ash_wastes", "scorched_plains"]:
+        if _is_biome(x, y, slug):
+            return BIOME_INDEX[slug]
+    return BIOME_INDEX["scorched_plains"]
 
 
 def _expand_biome_region(
@@ -234,11 +237,16 @@ def _expand_biome_region(
 
     # Determine water level range for this biome
     water_range: Dict[int, Tuple[float, float]] = {
-        BIOME_TYPES["DESERT"]: (-2.5, -1.8),
-        BIOME_TYPES["FOREST"]: (-2.0, -1.3),
-        BIOME_TYPES["SWAMP"]: (-1.5, -0.5),
-        BIOME_TYPES["TUNDRA"]: (-2.8, -2.2),
-        BIOME_TYPES["OCEAN"]: (0.8, 2.0),
+        BIOME_INDEX["ash_wastes"]: (-2.5, -1.8),
+        BIOME_INDEX["scorched_plains"]: (-2.2, -1.5),
+        BIOME_INDEX["ironwood_thicket"]: (-1.8, -1.0),
+        BIOME_INDEX["neon_bogs"]: (-1.5, -0.5),
+        BIOME_INDEX["toxin_marshes"]: (-1.2, -0.3),
+        BIOME_INDEX["corpse_fields"]: (-2.0, -1.2),
+        BIOME_INDEX["glass_dunes"]: (-2.8, -2.2),
+        BIOME_INDEX["rust_canyons"]: (-2.5, -1.5),
+        BIOME_INDEX["stormspire_highlands"]: (-2.8, -1.8),
+        BIOME_INDEX["dead_city_outskirts"]: (-2.0, -1.0),
     }
     water_min, water_max = water_range.get(primary_biome, (-2.0, -1.5))
 
@@ -366,11 +374,15 @@ def _calculate_terrain_roughness(
     for (x, y) in edge_tiles:
         noise = random.gauss(0.5, 0.3)
 
-        # Tundra and ocean borders get mountainous terrain
-        if biome_map[(x, y)] in (BIOME_TYPES["TUNDRA"], BIOME_TYPES["OCEAN"]):
+        # High-elevation biomes get mountainous terrain
+        high_biomes = {BIOME_INDEX[s] for s in
+                       ["stormspire_highlands", "rust_canyons",
+                        "dead_city_outskirts"]}
+        forest_biomes = {BIOME_INDEX[s] for s in
+                         ["ironwood_thicket", "neon_bogs", "toxin_marshes"]}
+        if biome_map[(x, y)] in high_biomes:
             terrain_map[(x, y)] = max(terrain_map.get((x, y), 0) + int(noise * 2), 1)
-        # Forest edges can be hilly
-        elif biome_map[(x, y)] == BIOME_TYPES["FOREST"]:
+        elif biome_map[(x, y)] in forest_biomes:
             terrain_map[(x, y)] = max(terrain_map.get((x, y), 0) + int(noise), 0)
 
 
