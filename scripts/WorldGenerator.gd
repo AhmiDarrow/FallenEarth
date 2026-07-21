@@ -1,7 +1,7 @@
-## WorldGenerator -- Procedural hexagonal sphere world (RimWorld-inspired).
-## Uses axial hex coordinates (q,r) for sphere-like topology.
-## Biomes assigned via simulated latitude (temp), elevation noise, rainfall.
-## Player can choose starting tile like RimWorld landing site selection.
+## WorldGenerator -- Full geodesic hexasphere world (RimWorld-inspired site pick).
+## Topology: icosahedron frequency-F (10*F^2+2 tiles, 12 pentagons + hexes).
+## Keys remain "q,r" (q=id, r=0); adjacency via neighbor_keys, not axial offsets.
+## Biomes: lat/lon climate + noise + target-share rebalance. See ARCHITECTURE.md.
 class_name WorldGenerator
 extends Node
 
@@ -11,23 +11,47 @@ const VERSION := "0.2.0"
 const DATA_PATH := "res://data/biomes.json"
 const FACTIONS_PATH := "res://data/factions.json"
 const TOWNS_PATH := "res://data/towns.json"
+## Climate envelopes: [temp_lo, temp_hi, rain_lo, rain_hi, elev_lo, elev_hi]
 const BIOME_CLIMATE_PROFILES: Dictionary = {
-	"Ash Wastes": [0.5, 0.7, 0.3, 0.5, 0.3, 0.6],
-	"Rust Canyons": [0.3, 0.5, 0.2, 0.5, 0.6, 0.9],
-	"Neon Bogs": [0.5, 0.7, 0.6, 0.9, 0.0, 0.3],
-	"Scorched Plains": [0.7, 1.0, 0.1, 0.4, 0.3, 0.6],
-	"Ironwood Thicket": [0.4, 0.6, 0.5, 0.8, 0.3, 0.7],
-	"Glass Dunes": [0.6, 0.9, 0.0, 0.3, 0.4, 0.7],
-	"Corpse Fields": [0.3, 0.6, 0.3, 0.6, 0.2, 0.5],
-	"Stormspire Highlands": [0.1, 0.4, 0.4, 0.7, 0.7, 1.0],
-	"Toxin Marshes": [0.4, 0.7, 0.7, 1.0, 0.0, 0.3],
-	"Dead City Outskirts": [0.3, 0.6, 0.3, 0.6, 0.4, 0.7],
+	"Ash Wastes": [0.45, 0.75, 0.25, 0.55, 0.25, 0.65],
+	"Rust Canyons": [0.25, 0.55, 0.15, 0.55, 0.55, 0.95],
+	"Neon Bogs": [0.45, 0.75, 0.55, 0.95, 0.0, 0.35],
+	"Scorched Plains": [0.65, 1.0, 0.05, 0.35, 0.25, 0.65],
+	"Ironwood Thicket": [0.35, 0.65, 0.45, 0.85, 0.25, 0.75],
+	"Glass Dunes": [0.55, 0.95, 0.0, 0.30, 0.35, 0.75],
+	"Corpse Fields": [0.25, 0.60, 0.25, 0.65, 0.15, 0.55],
+	"Stormspire Highlands": [0.05, 0.40, 0.35, 0.75, 0.65, 1.0],
+	"Toxin Marshes": [0.35, 0.70, 0.65, 1.0, 0.0, 0.35],
+	"Dead City Outskirts": [0.30, 0.65, 0.25, 0.65, 0.35, 0.75],
 }
-var _hex_radius: int = 12  # Size of hex "sphere" patch (axial); set via generate() size param
+## Relative target share weights (normalized at runtime). Starter biomes slightly higher.
+const BIOME_TARGET_WEIGHTS: Dictionary = {
+	"Ash Wastes": 1.35,
+	"Rust Canyons": 0.95,
+	"Neon Bogs": 0.95,
+	"Scorched Plains": 1.05,
+	"Ironwood Thicket": 1.15,
+	"Glass Dunes": 0.90,
+	"Corpse Fields": 1.00,
+	"Stormspire Highlands": 0.90,
+	"Toxin Marshes": 0.95,
+	"Dead City Outskirts": 1.00,
+}
+## Soft cap: no biome may exceed this fraction after rebalance (medium worlds).
+const BIOME_MAX_SHARE := 0.18
+const BIOME_MIN_SHARE := 0.04
+## Pack hex flat-to-flat vs min neighbor gap (higher = tighter / closer together).
+const HEX_PACK_RATIO := 0.97
+var _hex_radius: int = 12  # UI size knob (8/12/18); maps to hexasphere frequency
+var _hex_frequency: int = 7  # geodesic frequency (tiles ≈ 10F²+2)
 
 var _seed: String = ""
 var _tile_map: Dictionary = {}  # key "q,r" -> tile dict
 var _biome_definitions: Array[Dictionary] = []
+## Full-sphere unit positions + adjacency (filled by generate / layout).
+static var _sphere_unit: Dictionary = {}  # key -> Vector3 (unit)
+static var _sphere_neighbors: Dictionary = {}  # key -> Array[String]
+static var _sphere_tile_count: int = 0
 
 
 ## Town and Riftspire data populated by _place_towns (called from generate()).
@@ -104,149 +128,352 @@ func _load_town_templates() -> void:
 	_town_templates = data.get("templates", {})
 
 
-## Generate hex sphere world (axial coords q,r). RimWorld-like: lat/temp + elev + noise for biome.
-## size: desired hex radius (small=6, medium=12, large=18)
+## Generate full-sphere hex world (Goldberg / hexasphere).
+## size UI knob: 8→F5(252), 12→F7(492), 18→F10(1002). Keys stay "q,r" with r=0, q=id.
 func generate(world_seed: String, difficulty_modifier: float = 1.0, size: int = 12) -> Dictionary:
 	_seed = world_seed
 	_hex_radius = size
+	_hex_frequency = size_to_hex_frequency(size)
 	randseed_from_string(world_seed)
+
+	var sphere: Dictionary = build_hexasphere(_hex_frequency, 1.0)
+	var unit_positions: PackedVector3Array = sphere.get("unit_positions", PackedVector3Array())
+	var neighbor_ids: Array = sphere.get("neighbor_ids", [])
+	var n_tiles: int = int(sphere.get("tile_count", 0))
 
 	var tile_map: Dictionary = {}
 	var biomes = _biome_definitions
 
-	# FastNoiseLite for coherent elevation and rainfall across hexes
-	# (neighbors get similar values instead of per-hex random jitter).
 	var elev_noise_gen := FastNoiseLite.new()
 	elev_noise_gen.seed = _seed.hash() + 1000
 	elev_noise_gen.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	elev_noise_gen.frequency = 0.03
+	elev_noise_gen.frequency = 0.55
 	elev_noise_gen.fractal_octaves = 3
 
 	var rain_noise_gen := FastNoiseLite.new()
 	rain_noise_gen.seed = _seed.hash() + 2000
 	rain_noise_gen.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	rain_noise_gen.frequency = 0.04
+	rain_noise_gen.frequency = 0.65
 	rain_noise_gen.fractal_octaves = 2
 
-	# Generate hex tiles in a large "sphere" patch using axial coords
-	# Track assigned biomes for neighbor clustering bonus
-	var assigned_biomes: Dictionary = {}  # key -> biome name
-	for q in range(-_hex_radius, _hex_radius + 1):
-		for r in range(max(-_hex_radius, -q - _hex_radius), min(_hex_radius, -q + _hex_radius) + 1):
-			# Simulate latitude from r (polar bias)
-			var lat = float(r) / float(_hex_radius) * 90.0  # -90 to 90
-			var abs_lat = abs(lat)
+	var biome_counts: Dictionary = {}
+	var tiles_placed: int = 0
+	var weight_sum: float = 0.0
+	for b in biomes:
+		weight_sum += float(BIOME_TARGET_WEIGHTS.get(str(b.get("name", "")), 1.0))
+	if weight_sum < 1e-6:
+		weight_sum = 1.0
 
-			# Elevation noise — FastNoiseLite at hex coordinates for spatial coherence.
-			# Latitude banding adds mountain ranges at certain latitudes.
-			var elev_noise = elev_noise_gen.get_noise_2d(q, r) + sin(lat * 0.08) * 0.25
-			var elevation = clamp(0.5 + elev_noise * 0.4, 0.0, 1.0)
+	var assigned_biomes: Dictionary = {}
+	_sphere_unit.clear()
+	_sphere_neighbors.clear()
+	_sphere_tile_count = n_tiles
 
-			# Temperature bias (colder poles)
-			var temp = 1.0 - (abs_lat / 90.0) * 0.8 - (elevation - 0.5) * 0.4
-			temp = clamp(temp, 0.0, 1.0)
+	for i in range(n_tiles):
+		var u: Vector3 = unit_positions[i]
+		var key: String = tile_key_from_id(i)
+		var q: int = i
+		var r: int = 0
 
-			# Rainfall / moisture noise — coherent across hexes, reduced at high elevation
-			var rain_raw = rain_noise_gen.get_noise_2d(q, r) * 0.5 - (elevation - 0.5) * 0.6
-			var rain = clamp(0.5 + rain_raw, 0.0, 1.0)
+		var lat: float = asin(clampf(u.y, -1.0, 1.0))  # -PI/2..PI/2
+		var lon: float = atan2(u.x, u.z)
+		var lat_n: float = lat / (PI * 0.5)  # -1..1
+		var abs_lat: float = absf(lat_n)
 
-			# Count adjacent hexes by biome for clustering bonus
-			var neighbor_bonus: Dictionary = {}
-			var dirs = [[+1, 0], [+1, -1], [0, -1], [-1, 0], [-1, +1], [0, +1]]
-			for d in dirs:
-				var nk: String = "%d,%d" % [q + d[0], r + d[1]]
-				if assigned_biomes.has(nk):
-					var nb: String = assigned_biomes[nk]
-					neighbor_bonus[nb] = neighbor_bonus.get(nb, 0.0) + 1.0
+		var elev_noise: float = elev_noise_gen.get_noise_3d(u.x, u.y, u.z)
+		var elevation: float = clampf(0.5 + elev_noise * 0.42 + abs_lat * 0.08, 0.0, 1.0)
 
-			# Pick biome based on temp/rain/elev + neighbor clustering
-			var chosen_biome = _pick_biome_by_climate(temp, rain, elevation, biomes, neighbor_bonus)
-			var chosen_name: String = chosen_biome.get("name", "")
-			assigned_biomes["%d,%d" % [q, r]] = chosen_name
+		# Hot equator, cold poles
+		var temp: float = 0.88 - abs_lat * 0.72 - (elevation - 0.5) * 0.35
+		temp = clampf(temp, 0.0, 1.0)
 
-			var tile: Dictionary = chosen_biome.duplicate(true)
-			if not tile.has("rift_chance"):
-				tile["rift_chance"] = 0.3
-			tile["rift_chance"] *= difficulty_modifier
-			tile["q"] = q
-			tile["r"] = r
-			tile["elevation"] = elevation
-			tile["temperature"] = temp
-			tile["rainfall"] = rain
-			tile["features"] = tile.get("features", []) + _get_features(elevation, rain)
-			tile["is_start_candidate"] = _is_good_start(tile)
+		var rain_raw: float = rain_noise_gen.get_noise_3d(u.x + 3.1, u.y - 1.7, u.z + 0.4) * 0.55
+		rain_raw -= (elevation - 0.5) * 0.45
+		rain_raw += (1.0 - abs_lat) * 0.08  # wetter tropics
+		var rain: float = clampf(0.5 + rain_raw, 0.0, 1.0)
 
-			var key = "%d,%d" % [q, r]
-			tile_map[key] = tile
+		var neighbor_bonus: Dictionary = {}
+		var nlist: Array = neighbor_ids[i] if i < neighbor_ids.size() else []
+		var nkeys: Array = []
+		for nid in nlist:
+			var nk: String = tile_key_from_id(int(nid))
+			nkeys.append(nk)
+			if assigned_biomes.has(nk):
+				var nb: String = assigned_biomes[nk]
+				neighbor_bonus[nb] = neighbor_bonus.get(nb, 0.0) + 1.0
 
-	# --- Diversity pass: guarantee every biome from biomes.json gets at least one tile.
-	# Strong neighbor clustering + narrow climate envelopes can otherwise cause some
-	# biomes (Ash Wastes, Glass Dunes, Corpse Fields, etc.) to be completely absent.
+		var chosen_biome = _pick_biome_by_climate(
+			temp, rain, elevation, biomes, neighbor_bonus, biome_counts, tiles_placed, weight_sum
+		)
+		var chosen_name: String = str(chosen_biome.get("name", ""))
+		assigned_biomes[key] = chosen_name
+		biome_counts[chosen_name] = int(biome_counts.get(chosen_name, 0)) + 1
+		tiles_placed += 1
+
+		var tile: Dictionary = chosen_biome.duplicate(true)
+		if not tile.has("rift_chance"):
+			tile["rift_chance"] = 0.3
+		tile["rift_chance"] *= difficulty_modifier
+		tile["q"] = q
+		tile["r"] = r
+		tile["id"] = i
+		tile["unit_pos"] = [u.x, u.y, u.z]  # JSON-safe; use unit_pos_vec()
+		tile["neighbor_keys"] = nkeys
+		tile["elevation"] = elevation
+		tile["temperature"] = temp
+		tile["rainfall"] = rain
+		tile["latitude"] = lat
+		tile["longitude"] = lon
+		tile["features"] = tile.get("features", []) + _get_features(elevation, rain)
+		tile["is_start_candidate"] = _is_good_start(tile)
+		tile_map[key] = tile
+		_sphere_unit[key] = u
+		_sphere_neighbors[key] = nkeys
+
+	_ensure_biome_diversity(tile_map, biomes)
+	_rebalance_biome_shares(tile_map, biomes)
+
+	# Refresh unit/neighbor caches after rebalance (keys unchanged)
+	for key in tile_map:
+		var t: Dictionary = tile_map[key]
+		if t.has("unit_pos"):
+			_sphere_unit[key] = unit_pos_vec(t)
+		if t.has("neighbor_keys"):
+			_sphere_neighbors[key] = t["neighbor_keys"]
+
+	_tile_map = tile_map
+	_place_towns()
+	world_generated.emit(world_seed)
+	return tile_map
+
+
+static func tile_key_from_id(id: int) -> String:
+	return "%d,0" % id
+
+
+## Coerce tile unit_pos (Vector3 or [x,y,z] array) to Vector3.
+static func unit_pos_vec(tile: Dictionary) -> Vector3:
+	return _coerce_vec3(tile.get("unit_pos", null))
+
+
+## Coerce Variant (Vector3 / Array / PackedFloat32Array) to Vector3.
+static func _coerce_vec3(raw: Variant) -> Vector3:
+	if raw is Vector3:
+		return raw
+	if raw is Array:
+		var a: Array = raw
+		if a.size() >= 3:
+			return Vector3(float(a[0]), float(a[1]), float(a[2]))
+	if raw is PackedFloat32Array:
+		var p: PackedFloat32Array = raw
+		if p.size() >= 3:
+			return Vector3(p[0], p[1], p[2])
+	return Vector3(0, 0, 1)
+
+
+static func size_to_hex_frequency(size: int) -> int:
+	if size <= 8:
+		return 5
+	if size <= 12:
+		return 7
+	return 10
+
+
+static func hexasphere_tile_count(frequency: int) -> int:
+	var f: int = maxi(frequency, 1)
+	return 10 * f * f + 2
+
+
+func _pick_biome_by_climate(
+	temp: float,
+	rain: float,
+	elev: float,
+	biomes: Array,
+	neighbor_bonus: Dictionary = {},
+	biome_counts: Dictionary = {},
+	tiles_placed: int = 0,
+	weight_sum: float = 1.0
+) -> Dictionary:
+	var best_score = -999.0
+	var best = biomes[0] if biomes.size() > 0 else {"name": "Ash Wastes"}
+	for b in biomes:
+		var name: String = str(b.get("name", ""))
+		var score: float = _climate_score_for(temp, rain, elev, name)
+
+		# Mild clustering so biomes form regions without continent-scale takeover
+		score += float(neighbor_bonus.get(name, 0.0)) * 0.22
+
+		# Soft target-share: penalize biomes already above their weight share
+		if tiles_placed > 8 and weight_sum > 0.0:
+			var w: float = float(BIOME_TARGET_WEIGHTS.get(name, 1.0))
+			var target: float = w / weight_sum
+			var share: float = float(biome_counts.get(name, 0)) / float(tiles_placed)
+			if share > target:
+				score -= (share - target) * 4.5
+			else:
+				score += (target - share) * 1.2
+
+		score += _rng.randf_range(-0.35, 0.35)
+
+		if score > best_score:
+			best_score = score
+			best = b
+	return best.duplicate(true)
+
+
+func _biome_def_by_name(biomes: Array, bname: String) -> Dictionary:
+	for b in biomes:
+		if str(b.get("name", "")) == bname:
+			return b
+	return {}
+
+
+func _write_biome_onto_tile(tile_map: Dictionary, key: String, biome_def: Dictionary) -> void:
+	if biome_def.is_empty() or not tile_map.has(key):
+		return
+	var old: Dictionary = tile_map[key]
+	if old.get("is_riftspire", false) or old.get("is_town", false):
+		return
+	var forced: Dictionary = biome_def.duplicate(true)
+	forced["q"] = old.get("q")
+	forced["r"] = old.get("r")
+	forced["id"] = old.get("id", old.get("q", 0))
+	forced["unit_pos"] = old.get("unit_pos")
+	forced["neighbor_keys"] = old.get("neighbor_keys", [])
+	forced["latitude"] = old.get("latitude")
+	forced["longitude"] = old.get("longitude")
+	forced["elevation"] = old.get("elevation")
+	forced["temperature"] = old.get("temperature")
+	forced["rainfall"] = old.get("rainfall")
+	var elev_f: float = float(old.get("elevation", 0.5))
+	var rain_f: float = float(old.get("rainfall", 0.5))
+	forced["features"] = forced.get("features", []) + _get_features(elev_f, rain_f)
+	forced["is_start_candidate"] = _is_good_start(forced)
+	if not forced.has("rift_chance"):
+		forced["rift_chance"] = 0.3
+	tile_map[key] = forced
+
+
+func _ensure_biome_diversity(tile_map: Dictionary, biomes: Array) -> void:
 	var present: Dictionary = {}
 	for k in tile_map:
-		present[ str(tile_map[k].get("name", "")) ] = true
+		present[str(tile_map[k].get("name", ""))] = true
 	for b in biomes:
 		var bname: String = str(b.get("name", ""))
 		if present.has(bname):
 			continue
-		# Find best pure-climate location for this biome (avoid overwriting capitals later)
 		var best_k := ""
 		var best_s := -999.0
 		for k in tile_map:
 			var t: Dictionary = tile_map[k]
 			if t.get("is_riftspire", false) or t.get("is_town", false):
 				continue
-			var tt: float = float(t.get("temperature", 0.5))
-			var rr: float = float(t.get("rainfall", 0.5))
-			var ee: float = float(t.get("elevation", 0.5))
-			var s: float = _climate_score_for(tt, rr, ee, bname)
+			var s: float = _climate_score_for(
+				float(t.get("temperature", 0.5)),
+				float(t.get("rainfall", 0.5)),
+				float(t.get("elevation", 0.5)),
+				bname
+			)
 			if s > best_s:
 				best_s = s
 				best_k = k
 		if best_k != "":
-			var forced: Dictionary = b.duplicate(true)
-			var old: Dictionary = tile_map[best_k]
-			forced["q"] = old.get("q")
-			forced["r"] = old.get("r")
-			forced["elevation"] = old.get("elevation")
-			forced["temperature"] = old.get("temperature")
-			forced["rainfall"] = old.get("rainfall")
-			forced["features"] = forced.get("features", []) + _get_features(float(old.get("elevation", 0.5)), float(old.get("rainfall", 0.5)))
-			forced["is_start_candidate"] = _is_good_start(forced)
-			if not forced.has("rift_chance"):
-				forced["rift_chance"] = 0.3
-			tile_map[best_k] = forced
-
-	_tile_map = tile_map
-	# Phase 3: place NPC towns and the Riftspire capital on the freshly
-	# generated hex map. Modifies _tile_map in place (adds a "town" or
-	# "riftspire" feature to the relevant tiles) and populates
-	# `_towns_seeded` / `_riftspire_hex_key`.
-	_place_towns()
-	world_generated.emit(world_seed)
-	return tile_map
+			_write_biome_onto_tile(tile_map, best_k, b)
+			present[bname] = true
 
 
-func _pick_biome_by_climate(temp: float, rain: float, elev: float, biomes: Array, neighbor_bonus: Dictionary = {}) -> Dictionary:
-	# Climate profile scoring: each biome has ideal ranges, score = proximity to ideal.
-	# Profiles live in BIOME_CLIMATE_PROFILES (populated from data/biomes.json names).
-
-	var best_score = -999.0
-	var best = biomes[0] if biomes.size() > 0 else {"name": "Ash Wastes"}
+func _rebalance_biome_shares(tile_map: Dictionary, biomes: Array) -> void:
+	var total: int = tile_map.size()
+	if total < 10 or biomes.is_empty():
+		return
+	var weight_sum: float = 0.0
 	for b in biomes:
-		var name = b.get("name", "")
-		var score = _climate_score_for(temp, rain, elev, name)
+		weight_sum += float(BIOME_TARGET_WEIGHTS.get(str(b.get("name", "")), 1.0))
+	if weight_sum < 1e-6:
+		weight_sum = float(biomes.size())
 
-		# Neighbor clustering bonus (scaled to not completely suppress rare biomes)
-		score += neighbor_bonus.get(name, 0.0) * 0.5
+	var max_allowed: int = maxi(int(ceil(float(total) * BIOME_MAX_SHARE)), 2)
+	var min_allowed: int = maxi(int(floor(float(total) * BIOME_MIN_SHARE)), 1)
 
-		# Jitter large enough to let extreme climates break clustering
-		score += _rng.randf_range(-0.6, 0.6)
+	# Count current
+	var counts: Dictionary = {}
+	var keys_by_biome: Dictionary = {}
+	for k in tile_map:
+		var t: Dictionary = tile_map[k]
+		if t.get("is_riftspire", false) or t.get("is_town", false):
+			continue
+		var n: String = str(t.get("name", ""))
+		counts[n] = int(counts.get(n, 0)) + 1
+		if not keys_by_biome.has(n):
+			keys_by_biome[n] = []
+		keys_by_biome[n].append(k)
 
-		if score > best_score:
-			best_score = score
-			best = b
-	return best.duplicate(true)
+	# Pull from over-represented into under-represented (climate-aware)
+	for _iter in range(total):  # bounded
+		var donor := ""
+		var donor_over := 0
+		var needy := ""
+		var needy_deficit := 0
+		for b in biomes:
+			var n: String = str(b.get("name", ""))
+			var c: int = int(counts.get(n, 0))
+			var w: float = float(BIOME_TARGET_WEIGHTS.get(n, 1.0))
+			var ideal: int = int(round(float(total) * (w / weight_sum)))
+			ideal = clampi(ideal, min_allowed, max_allowed)
+			if c > max_allowed and c - max_allowed > donor_over:
+				donor = n
+				donor_over = c - max_allowed
+			if c < min_allowed and min_allowed - c > needy_deficit:
+				needy = n
+				needy_deficit = min_allowed - c
+			# Also prefer filling toward ideal if no hard min breach
+			if needy == "" and c < ideal:
+				var def: int = ideal - c
+				if def > needy_deficit:
+					needy = n
+					needy_deficit = def
+			if donor == "" and c > ideal + 2:
+				var over: int = c - ideal
+				if over > donor_over:
+					donor = n
+					donor_over = over
+		if donor == "" or needy == "" or donor == needy:
+			break
+		var dkeys: Array = keys_by_biome.get(donor, [])
+		if dkeys.is_empty():
+			break
+		# Pick donor tile with best climate fit for needy biome
+		var best_i := 0
+		var best_s := -999.0
+		for i in range(dkeys.size()):
+			var tk: String = str(dkeys[i])
+			var t: Dictionary = tile_map[tk]
+			var s: float = _climate_score_for(
+				float(t.get("temperature", 0.5)),
+				float(t.get("rainfall", 0.5)),
+				float(t.get("elevation", 0.5)),
+				needy
+			)
+			# Prefer weak fit to current donor biome
+			s -= _climate_score_for(
+				float(t.get("temperature", 0.5)),
+				float(t.get("rainfall", 0.5)),
+				float(t.get("elevation", 0.5)),
+				donor
+			) * 0.35
+			if s > best_s:
+				best_s = s
+				best_i = i
+		var move_k: String = str(dkeys[best_i])
+		dkeys.remove_at(best_i)
+		keys_by_biome[donor] = dkeys
+		var bdef: Dictionary = _biome_def_by_name(biomes, needy)
+		_write_biome_onto_tile(tile_map, move_k, bdef)
+		counts[donor] = int(counts.get(donor, 1)) - 1
+		counts[needy] = int(counts.get(needy, 0)) + 1
+		if not keys_by_biome.has(needy):
+			keys_by_biome[needy] = []
+		keys_by_biome[needy].append(move_k)
 
 
 ## Pure climate fit (no neighbor, no jitter). Used by both picker and diversity enforcement.
@@ -293,6 +520,15 @@ func _is_good_start(tile: Dictionary) -> bool:
 func load_from_tile_map(tile_map: Dictionary, world_seed: String = "") -> void:
 	_tile_map = tile_map.duplicate(true)
 	_seed = world_seed
+	_sphere_unit.clear()
+	_sphere_neighbors.clear()
+	_sphere_tile_count = _tile_map.size()
+	for key in _tile_map:
+		var t: Dictionary = _tile_map[key]
+		if t.has("unit_pos"):
+			_sphere_unit[key] = unit_pos_vec(t)
+		if t.has("neighbor_keys"):
+			_sphere_neighbors[key] = t["neighbor_keys"]
 
 
 func get_tile_at(q: int, r: int) -> Dictionary:
@@ -303,6 +539,16 @@ func get_tile_at(q: int, r: int) -> Dictionary:
 
 
 static func hex_distance(q1: int, r1: int, q2: int, r2: int) -> int:
+	var k1: String = "%d,%d" % [q1, r1]
+	var k2: String = "%d,%d" % [q2, r2]
+	if _sphere_unit.has(k1) and _sphere_unit.has(k2) and _sphere_tile_count > 0:
+		var a: Vector3 = _coerce_vec3(_sphere_unit[k1])
+		var b: Vector3 = _coerce_vec3(_sphere_unit[k2])
+		var ang: float = a.angle_to(b)
+		var step: float = sqrt(4.0 * PI / float(_sphere_tile_count))
+		if step < 1e-6:
+			return 0
+		return maxi(0, int(round(ang / step)))
 	var s1 := -q1 - r1
 	var s2 := -q2 - r2
 	return int((abs(q1 - q2) + abs(r1 - r2) + abs(s1 - s2)) / 2.0)
@@ -323,37 +569,217 @@ static func hex_shape(size: float) -> PackedVector2Array:
 	return points
 
 
-## Map axial hex coord to a point on the sphere surface.
-## Uses the same 2D axial metric as axial_to_pixel so spacing is consistent.
-## This produces a much more even "hex sphere" than naive lat/lon.
-static func get_hex_spherical_pos(q: int, r: int, hex_radius: int, sphere_radius: float = 4.0) -> Vector3:
-	# Radial-from-map-center projection (gives the nicest uniform hex packing
-	# and connected look). We add a large polar shift so the patch is not
-	# stuck at the north pole but straddles a big portion of the sphere.
+## Axial hex plane metric (flat-top), same units as create_hex_points / packing.
+static func axial_to_plane(q: int, r: int) -> Vector2:
 	var px: float = sqrt(3.0) * float(q) + sqrt(3.0) / 2.0 * float(r)
 	var py: float = 1.5 * float(r)
-	var plane_dist: float = sqrt(px * px + py * py)
+	return Vector2(px, py)
 
-	var ring_dist: float = plane_dist / sqrt(3.0)
-	var angular_step: float = deg_to_rad(9.0)
-	var polar: float = ring_dist * angular_step
 
-	# Shift so the "center" of the world sits well south of the north pole.
-	# This makes the hex landmass cross the equator and remain visible when
-	# the globe is spun to any side.
-	var polar_shift := deg_to_rad(58.0)
-	polar = polar + polar_shift
-	polar = min(polar, deg_to_rad(175.0))
+## Max plane distance from origin for an axial disk of the given radius.
+static func hex_disk_max_plane_dist(hex_radius: int) -> float:
+	return float(maxi(hex_radius, 1)) * sqrt(3.0)
 
-	var azimuth: float = atan2(px, py)
 
-	var sp: float = sin(polar)
-	var cp: float = cos(polar)
+## Resolve sphere position for a tile (full hexasphere).
+static func get_hex_spherical_pos(
+	q: int,
+	r: int,
+	_hex_radius: int = 12,
+	sphere_radius: float = 4.0,
+	_half_span_deg: float = 72.0
+) -> Vector3:
+	var key: String = "%d,%d" % [q, r]
+	if _sphere_unit.has(key):
+		return _coerce_vec3(_sphere_unit[key]) * sphere_radius
+	if r == 0 and _sphere_unit.has(tile_key_from_id(q)):
+		return _coerce_vec3(_sphere_unit[tile_key_from_id(q)]) * sphere_radius
+	return Vector3(0.0, 0.0, sphere_radius)
 
-	var x: float = sp * cos(azimuth) * sphere_radius
-	var y: float = cp * sphere_radius
-	var z: float = sp * sin(azimuth) * sphere_radius
-	return Vector3(x, y, z)
+
+## Geodesic hexasphere: icosahedron frequency-F subdivision. Vertices = tile centers
+## (12 pentagons + hexes). Count = 10*F^2 + 2.
+static func build_hexasphere(frequency: int, sphere_radius: float = 1.0) -> Dictionary:
+	var F: int = maxi(frequency, 1)
+	var base: PackedVector3Array = _icosahedron_vertices()
+	var faces: Array = _icosahedron_faces()
+	var vert_list: Array[Vector3] = []
+	var vert_lookup: Dictionary = {}
+	var edges: Dictionary = {}
+
+	for face in faces:
+		var v0: Vector3 = base[int(face[0])]
+		var v1: Vector3 = base[int(face[1])]
+		var v2: Vector3 = base[int(face[2])]
+		var grid: Array = []
+		for i in range(F + 1):
+			var row: Array = []
+			for j in range(F - i + 1):
+				var k: int = F - i - j
+				var p: Vector3 = (v0 * float(k) + v1 * float(i) + v2 * float(j)) / float(F)
+				var nrm: Vector3 = p.normalized()
+				var qk: String = "%d_%d_%d" % [
+					int(round(nrm.x * 100000.0)),
+					int(round(nrm.y * 100000.0)),
+					int(round(nrm.z * 100000.0)),
+				]
+				var idx: int
+				if vert_lookup.has(qk):
+					idx = int(vert_lookup[qk])
+				else:
+					idx = vert_list.size()
+					vert_list.append(nrm)
+					vert_lookup[qk] = idx
+				row.append(idx)
+			grid.append(row)
+		for i in range(F + 1):
+			for j in range(F - i + 1):
+				var a: int = int(grid[i][j])
+				if j < F - i:
+					var b1: int = int(grid[i][j + 1])
+					var lo1: int = mini(a, b1)
+					var hi1: int = maxi(a, b1)
+					edges["%d,%d" % [lo1, hi1]] = true
+				if i < F and j <= F - i - 1:
+					var b2: int = int(grid[i + 1][j])
+					var lo2: int = mini(a, b2)
+					var hi2: int = maxi(a, b2)
+					edges["%d,%d" % [lo2, hi2]] = true
+				if i < F and j > 0:
+					var b3: int = int(grid[i + 1][j - 1])
+					var lo3: int = mini(a, b3)
+					var hi3: int = maxi(a, b3)
+					edges["%d,%d" % [lo3, hi3]] = true
+
+	var n: int = vert_list.size()
+	var adj_sets: Array = []
+	adj_sets.resize(n)
+	for i in range(n):
+		adj_sets[i] = {}
+	for ek in edges:
+		var parts: PackedStringArray = str(ek).split(",")
+		var ea: int = int(parts[0])
+		var eb: int = int(parts[1])
+		adj_sets[ea][eb] = true
+		adj_sets[eb][ea] = true
+
+	var unit_positions := PackedVector3Array()
+	unit_positions.resize(n)
+	var neighbor_ids: Array = []
+	neighbor_ids.resize(n)
+	_sphere_unit.clear()
+	_sphere_neighbors.clear()
+	_sphere_tile_count = n
+	for i in range(n):
+		unit_positions[i] = vert_list[i]
+		var ids: Array = (adj_sets[i] as Dictionary).keys()
+		ids.sort()
+		neighbor_ids[i] = ids
+		var key: String = tile_key_from_id(i)
+		_sphere_unit[key] = unit_positions[i]
+		var nkeys: Array = []
+		for nid in ids:
+			nkeys.append(tile_key_from_id(int(nid)))
+		_sphere_neighbors[key] = nkeys
+
+	return {
+		"tile_count": n,
+		"frequency": F,
+		"unit_positions": unit_positions,
+		"neighbor_ids": neighbor_ids,
+		"sphere_radius": sphere_radius,
+	}
+
+
+static func _icosahedron_vertices() -> PackedVector3Array:
+	var t: float = (1.0 + sqrt(5.0)) / 2.0
+	var raw: Array[Vector3] = [
+		Vector3(-1, t, 0), Vector3(1, t, 0), Vector3(-1, -t, 0), Vector3(1, -t, 0),
+		Vector3(0, -1, t), Vector3(0, 1, t), Vector3(0, -1, -t), Vector3(0, 1, -t),
+		Vector3(t, 0, -1), Vector3(t, 0, 1), Vector3(-t, 0, -1), Vector3(-t, 0, 1),
+	]
+	var out := PackedVector3Array()
+	out.resize(12)
+	for i in range(12):
+		out[i] = raw[i].normalized()
+	return out
+
+
+static func _icosahedron_faces() -> Array:
+	return [
+		[0, 11, 5], [0, 5, 1], [0, 1, 7], [0, 7, 10], [0, 10, 11],
+		[1, 5, 9], [5, 11, 4], [11, 10, 2], [10, 7, 6], [7, 1, 8],
+		[3, 9, 4], [3, 4, 2], [3, 2, 6], [3, 6, 8], [3, 8, 9],
+		[4, 9, 5], [2, 4, 11], [6, 2, 10], [8, 6, 7], [9, 8, 1],
+	]
+
+
+## Place every tile on the full sphere; size meshes from measured neighbor gap.
+static func build_hex_sphere_layout(tile_map: Dictionary, hex_radius: int, sphere_radius: float = 4.0) -> Dictionary:
+	var positions: Dictionary = {}
+	if not tile_map.is_empty():
+		var sample_key: String = str(tile_map.keys()[0])
+		var sample: Dictionary = tile_map[sample_key]
+		if not sample.has("unit_pos") and not _sphere_unit.has(sample_key):
+			build_hexasphere(size_to_hex_frequency(hex_radius), 1.0)
+
+	for key in tile_map:
+		var tile: Dictionary = tile_map[key]
+		if tile.has("unit_pos"):
+			positions[key] = unit_pos_vec(tile) * sphere_radius
+		elif _sphere_unit.has(key):
+			positions[key] = _coerce_vec3(_sphere_unit[key]) * sphere_radius
+		else:
+			var q: int = int(tile.get("q", 0))
+			var r: int = int(tile.get("r", 0))
+			positions[key] = get_hex_spherical_pos(q, r, hex_radius, sphere_radius)
+
+	var min_nn: float = 1e9
+	var max_nn: float = 0.0
+	var nn_count: int = 0
+	var sum_nn: float = 0.0
+	for key in tile_map:
+		var tile: Dictionary = tile_map[key]
+		var p0: Vector3 = positions[key]
+		var nkeys: Array = tile.get("neighbor_keys", _sphere_neighbors.get(key, []))
+		var local_min: float = 1e9
+		for nk in nkeys:
+			if not positions.has(str(nk)):
+				continue
+			var dist: float = p0.distance_to(positions[str(nk)])
+			if dist < 1e-6:
+				continue
+			if dist < local_min:
+				local_min = dist
+		if local_min < 1e8:
+			min_nn = minf(min_nn, local_min)
+			max_nn = maxf(max_nn, local_min)
+			sum_nn += local_min
+			nn_count += 1
+
+	if nn_count <= 0 or min_nn >= 1e8:
+		var step: float = sqrt(4.0 * PI / float(maxi(tile_map.size(), 1)))
+		min_nn = 2.0 * sphere_radius * sin(step * 0.5)
+		max_nn = min_nn
+		sum_nn = min_nn
+		nn_count = 1
+
+	var avg_nn: float = sum_nn / float(nn_count)
+	var pack_width: float = min_nn * HEX_PACK_RATIO
+	var hex_size: float = pack_width / sqrt(3.0)
+	var nn_ratio: float = max_nn / min_nn if min_nn > 1e-8 else 999.0
+	var pack_ratio: float = pack_width / min_nn if min_nn > 1e-8 else 999.0
+	return {
+		"positions": positions,
+		"hex_size": hex_size,
+		"min_neighbor": min_nn,
+		"avg_neighbor": avg_nn,
+		"max_neighbor": max_nn,
+		"nn_ratio": nn_ratio,
+		"pack_ratio": pack_ratio,
+		"sphere_radius": sphere_radius,
+		"tile_count": positions.size(),
+	}
 
 
 ## Creates a simple extruded hexagonal prism mesh (top + bottom + sides).
@@ -420,16 +846,17 @@ func get_hex_radius() -> int:
 	return _hex_radius
 
 
-## Get axial neighbors for hex movement (RimWorld tile travel)
+## Graph neighbors on the hexasphere (5 at pentagons, 6 at hexes).
 func get_neighbors(q: int, r: int) -> Array:
-	var dirs = [[+1, 0], [+1, -1], [0, -1], [-1, 0], [-1, +1], [0, +1]]
-	var neigh = []
-	for d in dirs:
-		var nq = q + d[0]
-		var nr = r + d[1]
-		var t = get_tile_at(nq, nr)
-		if not t.is_empty():
-			neigh.append({"q": nq, "r": nr, "tile": t})
+	var key: String = "%d,%d" % [q, r]
+	var tile: Dictionary = get_tile_at(q, r)
+	var nkeys: Array = tile.get("neighbor_keys", _sphere_neighbors.get(key, []))
+	var neigh: Array = []
+	for nk in nkeys:
+		var t: Dictionary = _tile_map.get(str(nk), {})
+		if t.is_empty():
+			continue
+		neigh.append({"q": int(t.get("q", 0)), "r": int(t.get("r", 0)), "tile": t, "key": str(nk)})
 	return neigh
 
 

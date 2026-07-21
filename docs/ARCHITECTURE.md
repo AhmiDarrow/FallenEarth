@@ -355,8 +355,8 @@ scripts/
 ## Game Flow
 
 1. **New Game** (MainMenu)
-2. **World generation**: Hexagonal sphere world (hex tiles with spherical topology, biomes via noise/lat-lon)
-3. **Start tile selection**: Player chooses starting grid/tile on the sphere
+2. **World generation**: Full geodesic hexasphere (icosahedron frequency-F; 12 pentagons + hexes), biomes via lat/lon + noise + target-share rebalance
+3. **Start tile selection**: Player chooses starting tile on the 3D globe / 2D equirect unwrap
 4. **Character creation**: Race/class/appearance from data
 5. **Local overworld**: 512x512 playfield for the chosen sphere hex. WASD exploration; walk off map edge to enter adjacent hex
 6. **World Map** (M key): Strategic sphere view — factions, quests, rift activity, fog-of-war
@@ -367,10 +367,37 @@ scripts/
 
 ## Two-Layer World Model
 
-- **Planet layer** (`WorldGenerator` + `WorldMapScreen`): hex sphere, biome/climate metadata, travel, factions, quests
+- **Planet layer** (`WorldGenerator` + `WorldGeneration` 3D preview + `WorldMapScreen`): full-sphere hexasphere, biome/climate metadata, travel, factions, quests
 - **Local layer** (`LocalMapGenerator` + `HubWorld`): one 512x512 procedural map per hex (`hex_states` in GameState), edge-connected to neighbors
 
 **Loop**: Local exploration → Enter rift → Dungeon → Close rift → Return to local map → World Map for strategic travel
+
+---
+
+## Planet Hexasphere (2026-07-20)
+
+True full-globe coverage. Not an axial disk projected onto a sphere.
+
+| Concern | Implementation |
+|---------|----------------|
+| Topology | Geodesic icosahedron, frequency `F`. Tile count = `10*F²+2` (12 vertices degree-5 / pentagons, rest hexes) |
+| Size UI | Small `R=8→F=5` (252), Medium `R=12→F=7` (492), Large `R=18→F=10` (1002) via `size_to_hex_frequency` |
+| Tile keys | Still `"q,r"` strings for GameState compatibility. On sphere: `key = "%d,0" % id` (`q=id`, `r=0`) |
+| Adjacency | Graph on each tile: `neighbor_keys: Array[String]` (5 or 6). Use `get_neighbors(q,r)` — do **not** assume axial `±1` offsets |
+| Distance | `hex_distance` uses angular step on unit sphere when `_sphere_unit` cache is filled |
+| Positions | Tile field `unit_pos: [x,y,z]` (JSON-safe array). Coerce with `WorldGenerator.unit_pos_vec(tile)` / `_coerce_vec3` |
+| Packing | `HEX_PACK_RATIO=0.97`; `hex_size = (min_nn * ratio) / √3`. Shared prism mesh; tangent from first graph neighbor |
+| Climate | Lat/lon from unit position + FastNoise elev/rain; `BIOME_CLIMATE_PROFILES` + `BIOME_TARGET_WEIGHTS`; soft `BIOME_MAX_SHARE=0.18` / `MIN=0.04` + `_rebalance_biome_shares` |
+| Caches | Static `_sphere_unit`, `_sphere_neighbors`, `_sphere_tile_count` filled by `generate` / `build_hexasphere` / `load_from_tile_map` |
+| 3D preview | `WorldGeneration._render_3d_globe` → `build_hex_sphere_layout` |
+| 2D map | `WorldMapScreen` plots lon/lat from `unit_pos` (equirect unwrap) |
+| Diag | `tools/diag_hex_sphere_pack.gd` (headless), `tools/check_hex_spacing.py` — gates count, nn_ratio≤1.40, pack∈[0.90,0.99], 8 octants, biome shares |
+
+**Gotchas**
+- Never `positions.get(key, expensive_default())` — GDScript evaluates defaults eagerly; use `has` then branch.
+- Never store raw `unit_pos` arrays into `_sphere_unit` without `_coerce_vec3` / `unit_pos_vec`.
+- Pure axial neighbor math is wrong on the sphere; always use `neighbor_keys`.
+- Euler: a closed sphere cannot be all hexes — the 12 pentagons are required.
 
 ---
 

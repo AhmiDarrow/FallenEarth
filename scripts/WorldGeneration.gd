@@ -221,14 +221,15 @@ func _render_3d_globe() -> void:
 	vp.add_child(root)
 	_globe_root = root
 
+	# Thin underlay only — hexasphere tiles cover the full globe
 	var base := MeshInstance3D.new()
 	var sph := SphereMesh.new()
-	sph.radius = 3.88
-	sph.height = 7.76
+	sph.radius = 3.72
+	sph.height = 7.44
 	base.mesh = sph
 	var base_mat := StandardMaterial3D.new()
-	base_mat.albedo_color = Color(0.18, 0.18, 0.21)
-	base_mat.roughness = 0.85
+	base_mat.albedo_color = Color(0.06, 0.06, 0.08)
+	base_mat.roughness = 0.95
 	base.material_override = base_mat
 	root.add_child(base)
 
@@ -251,29 +252,39 @@ func _render_3d_globe() -> void:
 	_camera_3d.transform.basis = Basis.looking_at(-_camera_3d.position.normalized(), Vector3.UP)
 	_pitch_pivot.add_child(_camera_3d)
 
-	# Place hexes from axial q,r so neighbors stay adjacent on the sphere
+	# Fit hex disk to sphere per world size; size meshes from measured min gap
 	var sphere_r: float = 4.0
 	var hex_radius: int = _world_size
 	if world_generator != null:
 		hex_radius = world_generator.get_hex_radius()
 
-	# Chord length between axial neighbors (~1 ring unit at 9° angular step)
-	var angular_step: float = deg_to_rad(9.0)
-	var avg_nn: float = 2.0 * sphere_r * sin(angular_step * 0.5)
-	var hex_3d_size: float = (avg_nn / sqrt(3.0)) * 1.06
-	var hex_h: float = 0.18
+	var layout: Dictionary = WorldGenerator.build_hex_sphere_layout(generated_world, hex_radius, sphere_r)
+	var positions: Dictionary = layout.get("positions", {})
+	var hex_3d_size: float = float(layout.get("hex_size", 0.35))
+	var hex_h: float = clampf(hex_3d_size * 0.42, 0.08, 0.22)
 	var hex_mesh: ArrayMesh = WorldGenerator.create_hex_prism_mesh(hex_3d_size, hex_h)
+	var marker_r: float = clampf(hex_3d_size * 0.22, 0.05, 0.12)
 
 	for key in generated_world:
 		var tile: Dictionary = generated_world[key]
 		var q: int = int(tile.get("q", 0))
 		var r: int = int(tile.get("r", 0))
-		var pos: Vector3 = WorldGenerator.get_hex_spherical_pos(q, r, hex_radius, sphere_r)
+		var pos: Vector3
+		if positions.has(key):
+			pos = positions[key] as Vector3
+		else:
+			pos = WorldGenerator.get_hex_spherical_pos(q, r, hex_radius, sphere_r)
 		var radial: Vector3 = pos.normalized()
 
-		# Tangent from +q neighbor keeps flat edges aligned with the grid
-		var pos_q: Vector3 = WorldGenerator.get_hex_spherical_pos(q + 1, r, hex_radius, sphere_r)
-		var tangent: Vector3 = (pos_q - pos)
+		# Tangent from first sphere-graph neighbor (hexasphere adjacency)
+		var tangent: Vector3 = Vector3.ZERO
+		var nkeys: Array = tile.get("neighbor_keys", [])
+		if nkeys.size() > 0:
+			var nkey: String = str(nkeys[0])
+			var pos_n: Vector3 = pos
+			if positions.has(nkey):
+				pos_n = positions[nkey] as Vector3
+			tangent = pos_n - pos
 		if tangent.length_squared() < 1e-10:
 			tangent = radial.cross(Vector3.UP)
 			if tangent.length_squared() < 1e-10:
@@ -281,12 +292,11 @@ func _render_3d_globe() -> void:
 		tangent = tangent.normalized()
 		var bitangent: Vector3 = radial.cross(tangent).normalized()
 		tangent = bitangent.cross(radial).normalized()
-		# Mesh lies in XY with +Z as prism top → map Z to outward radial
 		var basis := Basis(tangent, bitangent, radial)
 
 		var mi := MeshInstance3D.new()
 		mi.mesh = hex_mesh
-		mi.transform = Transform3D(basis, pos + radial * (hex_h * 0.35))
+		mi.transform = Transform3D(basis, pos + radial * (hex_h * 0.28))
 
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = _biome_color(str(tile.get("name", "")))
@@ -305,10 +315,10 @@ func _render_3d_globe() -> void:
 		if tile.get("is_riftspire", false) or tile.get("is_town", false):
 			var marker := MeshInstance3D.new()
 			var ms := SphereMesh.new()
-			ms.radius = 0.09
-			ms.height = 0.18
+			ms.radius = marker_r
+			ms.height = marker_r * 2.0
 			marker.mesh = ms
-			marker.position = pos + radial * 0.28
+			marker.position = pos + radial * (hex_h * 0.5 + marker_r * 1.2)
 			var mm := StandardMaterial3D.new()
 			mm.albedo_color = RIFT_COLOR if tile.get("is_riftspire", false) else SETTLEMENT_COLOR
 			mm.emission_enabled = true
@@ -325,7 +335,16 @@ func _render_3d_globe() -> void:
 	if start_tile_key != "" and _hex_3d.has(start_tile_key):
 		_highlight_3d_selection(start_tile_key)
 
-	print("[WorldGeneration] 3D globe: %d hexes on sphere" % _hex_3d.size())
+	print(
+		"[WorldGeneration] 3D globe: %d hexes | r=%d | min_nn=%.3f avg_nn=%.3f hex_size=%.3f"
+		% [
+			_hex_3d.size(),
+			hex_radius,
+			float(layout.get("min_neighbor", 0.0)),
+			float(layout.get("avg_neighbor", 0.0)),
+			hex_3d_size,
+		]
+	)
 
 
 func _update_globe_camera() -> void:
@@ -502,9 +521,9 @@ func _update_world_info_label() -> void:
 		return
 
 	var size_name := "Medium"
-	if _world_size == 8:
+	if _world_size <= int(SIZE_RADII["small"]):
 		size_name = "Small"
-	elif _world_size == 23:
+	elif _world_size >= int(SIZE_RADII["large"]):
 		size_name = "Large"
 
 	var biome_counts: Dictionary = {}

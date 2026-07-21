@@ -71,6 +71,19 @@ The file has been created and verified. The "Missing data: enemy_archetypes.json
 
 ---
 
+## 2026-07-20 Full Hexasphere Planet Layer
+- **Replaced** axial disk + equirectangular/azimuthal patch with **geodesic icosahedron** full coverage.
+- **Counts:** F=5→252, F=7→492, F=10→1002 (`10*F²+2`). UI size 8/12/18 maps via `size_to_hex_frequency`.
+- **Keys:** `"%d,0" % id` keeps `"q,r"` string API; **neighbors are graph** (`neighbor_keys`), not axial ±1.
+- **unit_pos:** stored as `[x,y,z]` array for JSON saves; always coerce with `unit_pos_vec` / `_coerce_vec3`.
+- **Pack:** `HEX_PACK_RATIO=0.97`; layout sizes shared hex prism from `min_nn`.
+- **Biomes:** climate profiles + target weights + max/min share rebalance (no Scorched monopoly).
+- **Diag:** `tools/diag_hex_sphere_pack.gd`, `tools/check_hex_spacing.py` — require 8-octant coverage.
+- **GDScript gotcha:** `dict.get(k, f())` always runs `f()`; use `has` + branch (fixed cast storm in globe render).
+- Details: `docs/ARCHITECTURE.md` § Planet Hexasphere.
+
+---
+
 ## 2026-07-04 PixelLab Sprite Generation — Human Male Complete
 
 ### API Setup

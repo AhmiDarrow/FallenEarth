@@ -105,7 +105,14 @@ func _build_world_view() -> void:
 		elif q == _selected_q and r == _selected_r:
 			btn.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
 
-		var pos := WorldGenerator.axial_to_pixel(q, r, HEX_SIZE)
+		var pos: Vector2
+		if tile.has("unit_pos"):
+			var u: Vector3 = WorldGenerator.unit_pos_vec(tile)
+			var lon: float = atan2(u.x, u.z)
+			var lat: float = asin(clampf(u.y, -1.0, 1.0))
+			pos = Vector2(lon, -lat) * HEX_SIZE * 9.0
+		else:
+			pos = WorldGenerator.axial_to_pixel(q, r, HEX_SIZE)
 		btn.position = pos - Vector2(25, 22)
 		btn.pressed.connect(_on_hex_pressed.bind(q, r))
 		world_grid.add_child(btn)
