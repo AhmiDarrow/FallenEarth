@@ -33,6 +33,7 @@ var _defaults: Dictionary = {
 	"hotbar_8":     KEY_8,
 	"hotbar_9":     KEY_9,
 	"hotbar_0":     KEY_0,
+	"ride":         KEY_R,
 	"pause_menu":   KEY_ESCAPE,
 	"tab_next":     KEY_TAB,
 	"tab_prev":     KEY_TAB,  # Shift+Tab handled in code
@@ -62,6 +63,7 @@ var _labels: Dictionary = {
 	"hotbar_8":     "Hotbar 8",
 	"hotbar_9":     "Hotbar 9",
 	"hotbar_0":     "Hotbar 0",
+	"ride":         "Ride / Dismount Mount",
 	"pause_menu":   "Pause / Menu",
 	"tab_next":     "Next Tab",
 	"tab_prev":     "Previous Tab",
@@ -70,7 +72,7 @@ var _labels: Dictionary = {
 ## Groups for organized display. Each group is [label, Array of action names].
 var _groups: Array[Array] = [
 	["Movement", ["move_up", "move_down", "move_left", "move_right"]],
-	["Gameplay", ["interact", "world_map", "pause_menu"]],
+	["Gameplay", ["interact", "ride", "world_map", "pause_menu"]],
 	["Character", ["inventory", "equipment", "crafting", "jobs", "party", "stats"]],
 	["Hotbar", ["hotbar_1", "hotbar_2", "hotbar_3", "hotbar_4", "hotbar_5",
 				 "hotbar_6", "hotbar_7", "hotbar_8", "hotbar_9", "hotbar_0"]],

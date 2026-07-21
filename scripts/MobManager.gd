@@ -1,7 +1,7 @@
 ## MobManager — Loads mob data from res://data/mobs.json and manages spawning
 ## Autoload singleton for overworld/underearth mob management.
 
-class_name MobManager extends Node
+extends Node
 
 
 signal mob_spawned(mob_data: Dictionary)
@@ -50,30 +50,40 @@ func _load_mob_data(path: String = "") -> bool:
 	if result.has("overworld"):
 		var ow: Variant = result["overworld"]
 		if ow is Dictionary:
-			overworld_cache["neutral"] = (ow.get("neutral", []) if ow.get("neutral") is Array else []) as Array
-			overworld_cache["aggressive"] = (ow.get("aggressive", []) if ow.get("aggressive") is Array else []) as Array
-	
+			var neutral_src: Array = ow.get("neutral", []) if ow.get("neutral") is Array else []
+			var aggressive_src: Array = ow.get("aggressive", []) if ow.get("aggressive") is Array else []
+			overworld_cache["neutral"] = neutral_src
+			overworld_cache["aggressive"] = aggressive_src
+
 	# Parse rift-only mobs
+	rift_only_cache.clear()
 	if result.has("rift_only"):
 		var rift_var: Variant = result["rift_only"]
 		if rift_var is Array:
-			rift_only_cache = rift_var as Array[Dictionary]
-	
+			for entry in (rift_var as Array):
+				if entry is Dictionary:
+					rift_only_cache.append(entry as Dictionary)
+
 	# Parse underearth parts (raw template list)
 	if result.has("underearth_parts"):
 		var parts: Variant = result["underearth_parts"]
 		if parts is Dictionary:
 			for key in ["head_types", "body_types", "limb_types", "tail_types"]:
 				if parts.has(key):
+					var opt_src: Array = parts[key] if parts[key] is Array else []
 					underearth_defs.append({
 						"type": key,
-						"options": (parts[key] if parts[key] is Array else []) as Array
+						"options": opt_src,
 					})
-	
+
 	# Parse tameable fruits
+	tameable_fruits.clear()
 	if result.has("tameable_fruits"):
 		var fruits: Variant = result["tameable_fruits"]
-		tameable_fruits = (fruits if fruits is Array else []) as Array[Dictionary]
+		if fruits is Array:
+			for entry in (fruits as Array):
+				if entry is Dictionary:
+					tameable_fruits.append(entry as Dictionary)
 	
 	# Load sprite definitions
 	_load_sprites()
@@ -122,7 +132,15 @@ func get_mobs_by_context(context: String) -> Array[Dictionary]:
 	for mobility in ["neutral", "aggressive"]:
 		if overworld_cache.has(mobility):
 			for m in overworld_cache[mobility]:
-				if m is Dictionary and m.get("spawn_context", "upworld") == context:
+				if not m is Dictionary:
+					continue
+				var sc: Variant = m.get("spawn_context", "upworld")
+				var zone: String
+				if sc is Dictionary:
+					zone = str(sc.get("zone", "upworld"))
+				else:
+					zone = str(sc)
+				if zone == context or zone == "both":
 					result.append(m.duplicate(true))
 	if context == "rift":
 		for m in rift_only_cache:

@@ -1,18 +1,19 @@
 class_name BattleResultsUI
 extends Control
+
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 ## End-of-battle results panel. Shows XP, EC, and loot gained on
 ## victory, or a defeat message on loss. A "Continue" button dismisses
 ## the panel and triggers a callback.
 
-const COLOR_BG := Color(0.04, 0.04, 0.08, 0.94)
-const COLOR_BORDER_WIN := Color(0.85, 0.75, 0.30, 1.0)
-const COLOR_BORDER_LOSS := Color(0.75, 0.25, 0.25, 1.0)
-const COLOR_TITLE := Color(1.0, 0.95, 0.80)
-const COLOR_LABEL := Color(0.85, 0.85, 0.95)
-const COLOR_VALUE := Color(1.0, 0.97, 0.92)
-const COLOR_LOOT := Color(0.60, 0.90, 0.65)
-const COLOR_BUTTON := Color(0.95, 0.85, 0.55)
-const COLOR_BUTTON_BORDER := Color(0.45, 0.45, 0.55, 1.0)
+var COLOR_BG := MT.OVERLAY_DARK
+var COLOR_BORDER_WIN := MT.ACCENT_PRIMARY
+var COLOR_BORDER_LOSS := MT.ACCENT_DANGER
+var COLOR_TITLE := MT.TEXT_PRIMARY
+var COLOR_LABEL := MT.TEXT_SECONDARY
+var COLOR_VALUE := MT.TEXT_PRIMARY
+var COLOR_LOOT := MT.TEXT_SUCCESS
 
 var _on_continue: Callable = Callable()
 
@@ -35,15 +36,10 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	size = vp_size
 
 	# Dark background panel covering full screen
-	var bg_panel := PanelContainer.new()
+	var bg_panel := UH.make_backdrop()
 	bg_panel.position = Vector2.ZERO
 	bg_panel.size = vp_size
-	bg_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg_panel)
-	var bg_sb := StyleBoxFlat.new()
-	bg_sb.bg_color = Color(0.0, 0.0, 0.0, 0.6)
-	bg_panel.add_theme_stylebox_override("panel", bg_sb)
-	# Dark backdrop
 
 	# Center results box
 	var panel_w: float = min(440.0, vp_size.x * 0.4)
@@ -51,27 +47,16 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	var panel_x: float = (vp_size.x - panel_w) * 0.5
 	var panel_y: float = (vp_size.y - panel_h) * 0.5
 
-	var panel := PanelContainer.new()
+	var border_color: Color = COLOR_BORDER_WIN if victory else COLOR_BORDER_LOSS
+	var panel := UH.make_panel(COLOR_BG, border_color, 8, 3)
 	panel.position = Vector2(panel_x, panel_y)
 	panel.size = Vector2(panel_w, panel_h)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	add_child(panel)
 
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = COLOR_BG
-	var border_color: Color = COLOR_BORDER_WIN if victory else COLOR_BORDER_LOSS
-	sb.border_width_left = 3
-	sb.border_width_top = 3
-	sb.border_width_right = 3
-	sb.border_width_bottom = 3
-	sb.border_color = border_color
-	sb.corner_radius_top_left = 8
-	sb.corner_radius_top_right = 8
-	sb.corner_radius_bottom_left = 8
-	sb.corner_radius_bottom_right = 8
-	panel.add_theme_stylebox_override("panel", sb)
-
 	# Inner margin
-	var margin := MarginContainer.new()
+	var margin := UH.make_margin(24)
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	margin.add_theme_constant_override("margin_left", 24)
 	margin.add_theme_constant_override("margin_right", 24)
@@ -79,23 +64,18 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	margin.add_theme_constant_override("margin_bottom", 20)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
+	var vbox := UH.make_vbox(12)
 	margin.add_child(vbox)
 
 	# Title
-	var title := Label.new()
+	var title := UH.make_label("VICTORY" if victory else "DEFEAT", 28, COLOR_TITLE)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", COLOR_TITLE)
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 4)
-	title.text = "VICTORY" if victory else "DEFEAT"
 	vbox.add_child(title)
 
 	# Separator
-	var sep := HSeparator.new()
-	sep.add_theme_constant_override("separation", 8)
+	var sep := UH.make_separator()
 	vbox.add_child(sep)
 
 	if victory:
@@ -105,30 +85,21 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 		vbox.add_child(_make_row("EarthCoin Gained:", str(ec)))
 		# Loot
 		if loot.size() > 0:
-			var loot_label := Label.new()
+			var loot_label := UH.make_label("Loot:", 14, COLOR_LABEL)
 			loot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-			loot_label.add_theme_font_size_override("font_size", 14)
-			loot_label.add_theme_color_override("font_color", COLOR_LABEL)
-			loot_label.text = "Loot:"
 			vbox.add_child(loot_label)
 			for drop in loot:
 				var item_id: String = str(drop.get("item_id", "?"))
-				var qty: int = int(drop.get("qty", 1))
+				var qty: int = int(drop.get("count", 1))
 				var display_name := _resolve_item_name(item_id)
-				var loot_line := Label.new()
+				var loot_line := UH.make_label("  %s x%d" % [display_name, qty], 13, COLOR_LOOT)
 				loot_line.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-				loot_line.add_theme_font_size_override("font_size", 13)
-				loot_line.add_theme_color_override("font_color", COLOR_LOOT)
 				loot_line.add_theme_color_override("font_outline_color", Color.BLACK)
 				loot_line.add_theme_constant_override("outline_size", 2)
-				loot_line.text = "  %s x%d" % [display_name, qty]
 				vbox.add_child(loot_line)
 		else:
-			var no_loot := Label.new()
+			var no_loot := UH.make_muted_label("No loot dropped.")
 			no_loot.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-			no_loot.add_theme_font_size_override("font_size", 13)
-			no_loot.add_theme_color_override("font_color", COLOR_LABEL)
-			no_loot.text = "No loot dropped."
 			vbox.add_child(no_loot)
 
 	# Spacer
@@ -138,39 +109,29 @@ func _build_ui(victory: bool, xp: int, ec: int, loot: Array) -> void:
 	vbox.add_child(spacer)
 
 	# Continue button
-	var btn_container := HBoxContainer.new()
-	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	var btn_container := UH.make_center_hbox()
 	vbox.add_child(btn_container)
 
-	var btn := Button.new()
-	btn.text = "Continue"
-	btn.custom_minimum_size = Vector2(160, 40)
+	var btn := UH.make_button("Continue", "primary", 160, 40)
 	btn.pressed.connect(_on_continue_pressed)
 	btn_container.add_child(btn)
-	ButtonStyleHelper.apply_primary(btn)
-	btn.add_theme_color_override("font_color", Color(0.95, 0.85, 0.55))
+
+	UH.make_scrollable(vbox)
 
 
 func _make_row(label_text: String, value_text: String) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
-	var lbl := Label.new()
-	lbl.add_theme_font_size_override("font_size", 15)
-	lbl.add_theme_color_override("font_color", COLOR_LABEL)
-	lbl.text = label_text
+	var row := UH.make_hbox(8)
+	var lbl := UH.make_label(label_text, 15, COLOR_LABEL)
 	row.add_child(lbl)
-	var val := Label.new()
-	val.add_theme_font_size_override("font_size", 15)
-	val.add_theme_color_override("font_color", COLOR_VALUE)
+	var val := UH.make_label(value_text, 15, COLOR_VALUE)
 	val.add_theme_color_override("font_outline_color", Color.BLACK)
 	val.add_theme_constant_override("outline_size", 2)
-	val.text = value_text
 	row.add_child(val)
 	return row
 
 
 func _resolve_item_name(item_id: String) -> String:
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if inv != null and inv.has_method("get_item_name"):
 		return str(inv.call("get_item_name", item_id))
 	return item_id.replace("_", " ").capitalize()

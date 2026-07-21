@@ -7,11 +7,12 @@ extends Control
 ## stage.
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
-const DEFAULT_BG := Color(0.05, 0.05, 0.10, 0.92)
-const COLOR_BORDER := Color(0.40, 0.55, 0.75, 1.0)
-const COLOR_TEXT := Color(1.0, 0.97, 0.92)
-const COLOR_DIM := Color(0.85, 0.85, 0.95)
+var DEFAULT_BG := MT.OVERLAY_DARK
+var COLOR_BORDER := MT.BORDER_STRONG
+var COLOR_TEXT := MT.TEXT_PRIMARY
+var COLOR_DIM := MT.TEXT_SECONDARY
 const WIDTH := 360
 const HEIGHT := 64
 
@@ -29,33 +30,27 @@ func _ready() -> void:
 
 
 func _build_children() -> void:
-	_panel = PanelContainer.new()
+	_panel = UH.make_panel(DEFAULT_BG, COLOR_BORDER, 6, 2)
 	_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_panel)
-	_panel.add_theme_stylebox_override("panel", MT.panel(DEFAULT_BG, COLOR_BORDER, 6, 2))
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(0)
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	vbox.add_theme_constant_override("separation", 0)
 	_panel.add_child(vbox)
-	_label = Label.new()
+	_label = UH.make_label("", 16, COLOR_TEXT)
 	_label.name = "Title"
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_label.add_theme_color_override("font_color", COLOR_TEXT)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_label.add_theme_constant_override("outline_size", 3)
-	_label.add_theme_font_size_override("font_size", 16)
 	_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(_label)
-	_sub = Label.new()
+	_sub = UH.make_label("", 12, COLOR_DIM)
 	_sub.name = "Sub"
 	_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_sub.add_theme_color_override("font_color", COLOR_DIM)
 	_sub.add_theme_color_override("font_outline_color", Color.BLACK)
 	_sub.add_theme_constant_override("outline_size", 2)
-	_sub.add_theme_font_size_override("font_size", 12)
 	_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_sub.visible = false
 	vbox.add_child(_sub)

@@ -100,7 +100,7 @@ func _test_loot_roller_dry() -> void:
 func _test_loot_roller_with_managers() -> void:
 	print("[smoke-p2] test: LootRoller.roll_and_apply")
 	var prog: Node = ProgressionMgrScript.new()
-	var inv: Node = preload("res://scripts/InventoryManager.gd").new()
+	var inv: Node = preload("res://scripts/InventoryHandler.gd").new()
 	root.add_child(prog)
 	root.add_child(inv)
 	await process_frame
@@ -174,7 +174,7 @@ func _test_hud_composes() -> void:
 	print("[smoke-p2] test: HUD composes all sub-components")
 	var prog: Node = ProgressionMgrScript.new()
 	root.add_child(prog)
-	var inv: Node = preload("res://scripts/InventoryManager.gd").new()
+	var inv: Node = preload("res://scripts/InventoryHandler.gd").new()
 	root.add_child(inv)
 	await process_frame
 	# Build a HUD as a child of the scene tree root

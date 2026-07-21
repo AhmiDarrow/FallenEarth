@@ -1,6 +1,9 @@
 ## TradeUI — Trade window overlay for player-to-player trading
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
+
 signal trade_closed()
 
 var _trade_manager: Node = null
@@ -25,80 +28,71 @@ func _init(partner_id: int, partner_name: String) -> void:
 
 
 func _build_ui() -> void:
-	var panel := PanelContainer.new()
+	var panel := UH.make_surface_panel()
 	panel.size = Vector2(500, 360)
 	panel.position = Vector2.ZERO
 	add_child(panel)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(6)
 	vbox.size = Vector2(480, 340)
 	vbox.position = Vector2(10, 10)
-	vbox.add_theme_constant_override("separation", 6)
 	panel.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "Trading with %s" % _partner_name
+	var title := UH.make_accent_label("Trading with %s" % _partner_name, 16)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 16)
 	vbox.add_child(title)
 
-	var hbox := HBoxContainer.new()
-	hbox.size_flags_horizontal = SIZE_EXPAND_FILL
-	hbox.add_theme_constant_override("separation", 12)
+	var hbox := UH.make_hbox(12, true)
 	vbox.add_child(hbox)
 
 	# My side
-	var my_side := VBoxContainer.new()
-	my_side.size_flags_horizontal = SIZE_EXPAND_FILL
+	var my_side := UH.make_vbox(0, true)
 	hbox.add_child(my_side)
-	var my_label := Label.new()
-	my_label.text = "Your items:"
+	var my_label := UH.make_label("Your items:")
 	my_side.add_child(my_label)
-	_my_slot_container = VBoxContainer.new()
-	_my_slot_container.add_theme_constant_override("separation", 2)
+	_my_slot_container = UH.make_vbox(2)
 	my_side.add_child(_my_slot_container)
-	var add_btn := Button.new()
-	add_btn.text = "+ Add Item"
+	var add_btn := UH.make_button("+ Add Item")
 	add_btn.pressed.connect(_show_add_item_dialog)
 	my_side.add_child(add_btn)
 
 	# Partner side
-	var partner_side := VBoxContainer.new()
-	partner_side.size_flags_horizontal = SIZE_EXPAND_FILL
+	var partner_side := UH.make_vbox(0, true)
 	hbox.add_child(partner_side)
-	var partner_label := Label.new()
-	partner_label.text = "%s's items:" % _partner_name
+	var partner_label := UH.make_label("%s's items:" % _partner_name)
 	partner_side.add_child(partner_label)
-	_partner_slot_container = VBoxContainer.new()
-	_partner_slot_container.add_theme_constant_override("separation", 2)
+	_partner_slot_container = UH.make_vbox(2)
 	partner_side.add_child(_partner_slot_container)
 
 	# Status
-	_status_label = Label.new()
+	_status_label = UH.make_label("", MT.FS_BODY, Color(0.7, 0.7, 0.8))
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_status_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
 	vbox.add_child(_status_label)
 
 	# Buttons
-	var btn_hbox := HBoxContainer.new()
-	btn_hbox.add_theme_constant_override("separation", 8)
+	var btn_hbox := UH.make_hbox(8)
 	vbox.add_child(btn_hbox)
-	_confirm_btn = Button.new()
-	_confirm_btn.text = "Confirm Trade"
+	_confirm_btn = UH.make_button("Confirm Trade")
 	_confirm_btn.pressed.connect(_on_confirm)
 	_confirm_btn.disabled = true
 	btn_hbox.add_child(_confirm_btn)
-	_cancel_btn = Button.new()
-	_cancel_btn.text = "Cancel"
+	_cancel_btn = UH.make_button("Cancel")
 	_cancel_btn.pressed.connect(_on_cancel)
 	btn_hbox.add_child(_cancel_btn)
 
+	UH.make_scrollable(vbox)
+
 
 func _show_add_item_dialog() -> void:
-	var im: Node = get_node_or_null("/root/InventoryManager")
-	if im == null or not im.has_method("get_items"):
+	var im: Node = get_node_or_null("/root/InventoryHandler")
+	if im == null:
 		return
-	var items: Array = im.get_items()
+	var items: Array = []
+	for y in range(InventoryHandler.GRID_H):
+		for x in range(InventoryHandler.GRID_W):
+			var slot: Dictionary = im.get_slot(x, y)
+			if not slot.is_empty():
+				items.append({"item_id": slot.get("id", ""), "qty": slot.get("count", 0)})
 	var popup := Window.new()
 	popup.title = "Select Item to Offer"
 	popup.size = Vector2i(300, 300)
@@ -106,29 +100,26 @@ func _show_add_item_dialog() -> void:
 	popup.exclusive = true
 	add_child(popup)
 	popup.close_requested.connect(popup.queue_free)
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(0, true, true)
 	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	popup.add_child(vbox)
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	vbox.add_child(scroll)
-	var list := VBoxContainer.new()
-	list.add_theme_constant_override("separation", 2)
+	var list := UH.make_vbox(2, true)
 	scroll.add_child(list)
 	for item in items:
-		var btn := Button.new()
+		var btn := UH.make_button("", "primary", 260, 28)
 		var item_id: String = str(item.get("item_id", item.get("id", "")))
 		var qty: int = int(item.get("qty", item.get("quantity", 1)))
 		btn.text = "%s x%d" % [item_id, qty]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		btn.custom_minimum_size = Vector2(260, 28)
 		btn.pressed.connect(func() -> void:
 			if _trade_manager != null and _trade_manager.has_method("add_item"):
 				_trade_manager.add_item(item_id, 1)
 			popup.queue_free()
 		)
 		list.add_child(btn)
-	var close_btn := Button.new()
-	close_btn.text = "Close"
+	var close_btn := UH.make_button("Close")
 	close_btn.pressed.connect(func() -> void: popup.queue_free())
 	vbox.add_child(close_btn)
 	popup.popup_centered()
@@ -140,14 +131,11 @@ func refresh(my_items: Array, partner_items: Array) -> void:
 		c.queue_free()
 	for i in my_items.size():
 		var item: Dictionary = my_items[i] as Dictionary
-		var row := HBoxContainer.new()
-		var label := Label.new()
-		label.text = "%s x%d" % [item.get("item_id", "?"), item.get("qty", 1)]
+		var row := UH.make_hbox(0)
+		var label := UH.make_label("%s x%d" % [item.get("item_id", "?"), item.get("qty", 1)])
 		label.size_flags_horizontal = SIZE_EXPAND_FILL
 		row.add_child(label)
-		var remove_btn := Button.new()
-		remove_btn.text = "X"
-		remove_btn.custom_minimum_size = Vector2(24, 24)
+		var remove_btn := UH.make_button("X", "ghost", 24, 24)
 		var idx := i
 		remove_btn.pressed.connect(func() -> void:
 			if _trade_manager != null and _trade_manager.has_method("remove_offer_item"):
@@ -160,8 +148,7 @@ func refresh(my_items: Array, partner_items: Array) -> void:
 	for c in _partner_slot_container.get_children():
 		c.queue_free()
 	for item in partner_items:
-		var label := Label.new()
-		label.text = "%s x%d" % [item.get("item_id", "?"), item.get("qty", 1)]
+		var label := UH.make_label("%s x%d" % [item.get("item_id", "?"), item.get("qty", 1)])
 		_partner_slot_container.add_child(label)
 
 	# Update confirm button

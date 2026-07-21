@@ -1,6 +1,6 @@
 {
   "_comment": "Room definitions for spatial settlement interiors. Grid: 12 wide × 10 tall. # = wall, . = floor, X = exit. Exits connect to other rooms via target_room + target_x/y. Furniture: type (table, barrel, sign, bench, shelf, crate, anvil, forge, rack, podium, dummy), x, y.",
-  "cell_size": 24,
+  "cell_size": 32,
   "grid_w": 12,
   "grid_h": 10,
   "rooms": {

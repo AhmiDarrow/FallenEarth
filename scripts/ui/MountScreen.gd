@@ -3,6 +3,7 @@ class_name MountScreen
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const TMM_PATH := "/root/TamedMobManager"
 
 var _mount_list: VBoxContainer
@@ -21,84 +22,66 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var hbox := HBoxContainer.new()
+	var hbox := UH.make_hbox(12)
 	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	hbox.add_theme_constant_override("separation", 12)
 	add_child(hbox)
 
 	# Left: mount list
-	var left_panel := PanelContainer.new()
-	left_panel.custom_minimum_size = Vector2(240, 0)
+	var left_panel := UH.make_surface_panel(Vector2(240, 0))
 	left_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(left_panel)
-	var left_vbox := VBoxContainer.new()
+	var left_vbox := UH.make_vbox()
 	left_panel.add_child(left_vbox)
 
-	var title := Label.new()
-	title.text = "[ Mounts ]"
-	title.add_theme_color_override("font_color", MT.TEXT_ACCENT)
-	title.add_theme_font_size_override("font_size", MT.FS_H2)
+	var title := UH.make_accent_label("[ Mounts ]", MT.FS_H2)
 	left_vbox.add_child(title)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	left_vbox.add_child(scroll)
 
-	_mount_list = VBoxContainer.new()
-	_mount_list.add_theme_constant_override("separation", 4)
-	_mount_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_mount_list = UH.make_vbox(4, true, false)
 	scroll.add_child(_mount_list)
 
 	# Right: detail panel
-	var right_panel := PanelContainer.new()
-	right_panel.custom_minimum_size = Vector2(280, 260)
+	var right_panel := UH.make_surface_panel(Vector2(280, 260))
 	hbox.add_child(right_panel)
-	var right_vbox := VBoxContainer.new()
+	var right_vbox := UH.make_vbox()
 	right_panel.add_child(right_vbox)
 
-	var detail_title := Label.new()
-	detail_title.text = "[ Mount Details ]"
-	detail_title.add_theme_color_override("font_color", MT.TEXT_ACCENT)
-	detail_title.add_theme_font_size_override("font_size", MT.FS_H2)
+	var detail_title := UH.make_accent_label("[ Mount Details ]", MT.FS_H2)
 	right_vbox.add_child(detail_title)
 
-	_detail_name = Label.new()
-	_detail_name.add_theme_font_size_override("font_size", MT.FS_BODY)
+	_detail_name = UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 	right_vbox.add_child(_detail_name)
 
-	_detail_species = Label.new()
-	_detail_species.add_theme_font_size_override("font_size", MT.FS_BODY)
+	_detail_species = UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 	right_vbox.add_child(_detail_species)
 
-	_detail_speed = Label.new()
-	_detail_speed.add_theme_font_size_override("font_size", MT.FS_BODY)
+	_detail_speed = UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 	right_vbox.add_child(_detail_speed)
 
-	_detail_active = Label.new()
-	_detail_active.add_theme_font_size_override("font_size", MT.FS_BODY)
+	_detail_active = UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 	right_vbox.add_child(_detail_active)
 
 	right_vbox.add_spacer(true)
 
 	# Action buttons
-	var btn_hbox := HBoxContainer.new()
-	btn_hbox.add_theme_constant_override("separation", 8)
+	var btn_hbox := UH.make_hbox(8)
 	right_vbox.add_child(btn_hbox)
 
-	var set_active_btn := Button.new()
-	set_active_btn.text = "Set Active"
+	var set_active_btn := UH.make_button("Set Active")
 	set_active_btn.pressed.connect(_on_set_active)
 	btn_hbox.add_child(set_active_btn)
 
-	var rename_btn := Button.new()
-	rename_btn.text = "Rename"
+	var rename_btn := UH.make_button("Rename")
 	rename_btn.pressed.connect(_on_rename)
 	btn_hbox.add_child(rename_btn)
 
-	var release_btn := Button.new()
-	release_btn.text = "Release"
+	var release_btn := UH.make_button("Release")
 	release_btn.pressed.connect(_on_release)
 	btn_hbox.add_child(release_btn)
+
+	UH.make_scrollable(right_vbox)
 
 
 func _refresh() -> void:
@@ -120,12 +103,9 @@ func _refresh() -> void:
 		if not (m is Dictionary):
 			continue
 		var mob: Dictionary = m as Dictionary
-		var btn := Button.new()
+		var cname: String = str(mob.get("name", "Mount"))
+		var btn := UH.make_button(cname, "primary", 0, 32, true)
 		var mid: String = str(mob.get("id", ""))
-		var cname: String = str(mob.get("custom_name", mob.get("name", "Mob")))
-		btn.text = cname
-		btn.custom_minimum_size = Vector2(0, 32)
-		btn.toggle_mode = true
 		btn.pressed.connect(_on_mount_selected.bind(mid))
 		_mount_list.add_child(btn)
 		if mid == _selected_id:
@@ -163,52 +143,30 @@ func _on_rename() -> void:
 	if cur_name.is_empty():
 		return
 
-	var popup := PanelContainer.new()
+	var popup := UH.make_panel(MT.OVERLAY_DARK, MT.BORDER_SUBTLE, MT.RADIUS_LG, 2, Vector2(280, 120))
 	popup.name = "RenamePopup"
 	popup.position = Vector2(size.x * 0.5 - 140, size.y * 0.5 - 60)
-	popup.custom_minimum_size = Vector2(280, 120)
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.04, 0.08, 0.95)
-	sb.border_width_left = 2
-	sb.border_width_top = 2
-	sb.border_width_right = 2
-	sb.border_width_bottom = 2
-	sb.border_color = Color(0.3, 0.3, 0.4)
-	sb.corner_radius_top_left = 6
-	sb.corner_radius_top_right = 6
-	sb.corner_radius_bottom_left = 6
-	sb.corner_radius_bottom_right = 6
-	popup.add_theme_stylebox_override("panel", sb)
 	add_child(popup)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(8)
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 8)
 	popup.add_child(vbox)
 
-	var lbl := Label.new()
-	lbl.text = "Enter new name:"
-	lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.95))
+	var lbl := UH.make_label("Enter new name:")
 	vbox.add_child(lbl)
 
-	var line_edit := LineEdit.new()
+	var line_edit := UH.make_line_edit("", 0, 30)
 	line_edit.text = cur_name
 	line_edit.select_all()
 	vbox.add_child(line_edit)
 
-	var btn_hbox := HBoxContainer.new()
-	btn_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	btn_hbox.add_theme_constant_override("separation", 8)
+	var btn_hbox := UH.make_center_hbox()
 	vbox.add_child(btn_hbox)
 
-	var ok_btn := Button.new()
-	ok_btn.text = "OK"
-	ok_btn.custom_minimum_size = Vector2(80, 30)
+	var ok_btn := UH.make_button("OK", "primary", 80, 30)
 	btn_hbox.add_child(ok_btn)
 
-	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(80, 30)
+	var cancel_btn := UH.make_button("Cancel", "secondary", 80, 30)
 	btn_hbox.add_child(cancel_btn)
 
 	var self_ref: WeakRef = weakref(self)
@@ -273,9 +231,6 @@ func _show_detail(mid: String) -> void:
 
 
 func _no_mounts_label() -> void:
-	var lbl := Label.new()
-	lbl.text = "No tamed mounts yet."
-	lbl.add_theme_color_override("font_color", MT.TEXT_MUTED)
-	lbl.add_theme_font_size_override("font_size", MT.FS_BODY)
+	var lbl := UH.make_muted_label("No tamed mounts yet.")
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_mount_list.add_child(lbl)

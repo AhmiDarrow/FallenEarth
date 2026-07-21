@@ -8,9 +8,21 @@ const MobDataRef = preload("res://scripts/mob/MobData.gd")
 signal mob_reached_player(mob_data: MobDataRef)
 
 
-const CELL_SIZE := 24
+const CELL_SIZE := 32
 ## Mobs farther than this (Chebyshev cells) from the player skip AI ticking.
 const TICK_RANGE := 48
+
+## Maps MobAIController.State to animation name for MobInstance.
+const STATE_ANIM_MAP: Dictionary = {
+	MobAIController.State.IDLE: "idle",
+	MobAIController.State.WANDER: "walk",
+	MobAIController.State.AGGRO: "walk",
+	MobAIController.State.ATTACK: "attack",
+	MobAIController.State.FLEE: "walk",
+	MobAIController.State.SKITTISH: "walk",
+	MobAIController.State.PATROL: "walk",
+	MobAIController.State.RETURN_TO_SPAWN: "walk",
+}
 
 var _entries: Dictionary = {}
 var _is_cell_walkable: Callable
@@ -37,6 +49,11 @@ func add_mob(data: MobDataRef, mob_node: Node2D) -> void:
 	ai.setup(data.grid_x, data.grid_y, _is_cell_walkable, Callable())
 	ai.aggro_range = mini(data.aggro_range, 3)
 	ai.mob_type = data.mob_type
+	ai.wildlife_class = data.wildlife_class
+	if data.wildlife_class == "vermin":
+		ai.skittish_range = 8
+	# Wire AI state changes to mob animation
+	ai.state_changed.connect(_on_mob_state_changed.bind(mob_node))
 	add_child(ai)
 	_entries[key] = {
 		"data": data,
@@ -104,7 +121,7 @@ func tick_all(delta: float, player_x: int, player_y: int) -> void:
 		var old_y: int = data.grid_y
 		ai.tick(delta, player_x, player_y)
 		match ai.current_state:
-			MobAIController.State.WANDER, MobAIController.State.AGGRO, MobAIController.State.RETURN_TO_SPAWN, MobAIController.State.FLEE:
+			MobAIController.State.WANDER, MobAIController.State.AGGRO, MobAIController.State.RETURN_TO_SPAWN, MobAIController.State.FLEE, MobAIController.State.SKITTISH:
 				var target: Vector2i = ai.get_wander_target()
 				if target.x != old_x or target.y != old_y:
 					if _is_cell_walkable.call(target.x, target.y):
@@ -145,11 +162,11 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 		data.grid_y = target.y
 		var ai: MobAIController = entry.get("ai") as MobAIController
 		if ai != null:
-			if ai.current_state == MobAIController.State.WANDER:
-				ai.confirm_arrival()
-			elif ai.current_state == MobAIController.State.AGGRO or ai.current_state == MobAIController.State.ATTACK:
-				ai.grid_x = target.x
-				ai.grid_y = target.y
+				if ai.current_state == MobAIController.State.WANDER or ai.current_state == MobAIController.State.SKITTISH:
+					ai.confirm_arrival()
+				elif ai.current_state == MobAIController.State.AGGRO or ai.current_state == MobAIController.State.ATTACK:
+					ai.grid_x = target.x
+					ai.grid_y = target.y
 		# Update GameState position so persistence + combat work correctly
 		if _game_state != null and is_instance_valid(_game_state) and _mob_key_fn.is_valid():
 			var new_key: String = _mob_key_fn.call(_hex_q, _hex_r, target.x, target.y)
@@ -160,6 +177,23 @@ func _start_move(entry: Dictionary, target: Vector2i) -> void:
 				_game_state.set_overworld_mob(new_key, updated)
 	)
 	entry["tween"] = tw
+
+
+## Called when MobAIController emits state_changed.
+## Maps the new state to an animation name and plays it on the mob node.
+func _on_mob_state_changed(_old_state: int, new_state: int, mob_node: Node2D) -> void:
+	var anim_name: String = STATE_ANIM_MAP.get(new_state, "idle")
+	if mob_node.has_method("play_animation"):
+		mob_node.play_animation(anim_name)
+
+
+## Play the death animation on a mob node (one-shot, non-looping).
+## Call this when a mob's HP reaches 0 instead of instantly removing it.
+func play_mob_death(mob_node: Node2D) -> void:
+	if not is_instance_valid(mob_node):
+		return
+	if mob_node.has_method("play_animation"):
+		mob_node.play_animation("death")
 
 
 func _remove_entry(key: String) -> void:

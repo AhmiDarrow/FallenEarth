@@ -4,6 +4,7 @@ class_name PauseMenu
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 signal resumed()
 signal save_requested()
@@ -34,6 +35,7 @@ func _ready() -> void:
 	$VBoxContainer/OptionsBtn.pressed.connect(_on_options)
 	$VBoxContainer/ExitMenuBtn.pressed.connect(_on_exit_to_menu)
 	$VBoxContainer/ExitDesktopBtn.pressed.connect(_on_exit_desktop)
+	UH.make_scrollable($VBoxContainer)
 
 
 func open() -> void:
@@ -104,7 +106,10 @@ func _list_saves() -> Array[Dictionary]:
 		if FileAccess.file_exists(path):
 			var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 			if is_instance_valid(file):
-				var data: Dictionary = JSON.parse_string(file.get_as_text()) as Dictionary
+				var raw := file.get_as_text()
+				file.close()
+				var parsed: Variant = JSON.parse_string(raw)
+				var data: Dictionary = parsed if parsed is Dictionary else {}
 				var c: Variant = data.get("character", {})
 				if (not c is Dictionary) or c.is_empty():
 					c = data.get("game_state", {})
@@ -125,7 +130,6 @@ func _list_saves() -> Array[Dictionary]:
 					"class": cls,
 					"autosave": data.get("autosave", false),
 				})
-				file.close()
 	return slots
 
 
@@ -143,28 +147,23 @@ func _show_save_popup(slots: Array[Dictionary], gs: GameState) -> void:
 	add_child(_save_popup)
 	_save_popup.close_requested.connect(_save_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
 	_save_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Select a slot to save:"
+	var title := UH.make_label("Select a slot to save:", MT.FS_BODY, MT.TEXT_PRIMARY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(title)
 
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	scroll.custom_minimum_size = Vector2(380, 220)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	var list := UH.make_vbox(6, true)
 	scroll.add_child(list)
 
 	for entry in slots:
-		var btn := Button.new()
+		var btn := UH.make_button("", "ghost", 360, 36)
 		var autosave_tag := " [autosave]" if entry.get("autosave", false) else ""
 		var detail := ""
 		if entry.get("race", "") != "":
@@ -179,8 +178,7 @@ func _show_save_popup(slots: Array[Dictionary], gs: GameState) -> void:
 		)
 		list.add_child(btn)
 
-	var cancel := Button.new()
-	cancel.text = "Cancel"
+	var cancel := UH.make_button("Cancel", "secondary")
 	cancel.pressed.connect(func() -> void: _save_popup.hide())
 	root.add_child(cancel)
 
@@ -201,28 +199,23 @@ func _show_load_popup(slots: Array[Dictionary]) -> void:
 	add_child(_load_popup)
 	_load_popup.close_requested.connect(_load_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
 	_load_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Select a save slot:"
+	var title := UH.make_label("Select a save slot:", MT.FS_BODY, MT.TEXT_PRIMARY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(title)
 
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	scroll.custom_minimum_size = Vector2(380, 220)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	var list := UH.make_vbox(6, true)
 	scroll.add_child(list)
 
 	for entry in slots:
-		var btn := Button.new()
+		var btn := UH.make_button("", "ghost", 360, 36)
 		var autosave_tag := " [autosave]" if entry.get("autosave", false) else ""
 		var detail := ""
 		if entry.get("race", "") != "":
@@ -243,8 +236,7 @@ func _show_load_popup(slots: Array[Dictionary]) -> void:
 		)
 		list.add_child(btn)
 
-	var cancel := Button.new()
-	cancel.text = "Cancel"
+	var cancel := UH.make_button("Cancel", "secondary")
 	cancel.pressed.connect(func() -> void: _load_popup.hide())
 	root.add_child(cancel)
 

@@ -7,6 +7,8 @@ class_name KeybindsScreen
 extends Control
 
 const KM_PATH := "/root/KeybindManager"
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 var _list_vbox: VBoxContainer
 var _status_label: Label
@@ -22,52 +24,39 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var outer := VBoxContainer.new()
+	var outer := UH.make_vbox(8)
 	outer.set_anchors_preset(Control.PRESET_FULL_RECT)
-	outer.add_theme_constant_override("separation", 8)
 	add_child(outer)
 
 	# Title
-	var title := RichTextLabel.new()
-	title.bbcode_enabled = true
+	var title := UH.make_rich_header("[center][b]KEYBINDS[/b][/center]")
 	title.fit_content = true
-	title.text = "[center][b]KEYBINDS[/b][/center]"
 	title.custom_minimum_size = Vector2(0, 36)
 	outer.add_child(title)
 
 	# Rebinding prompt (hidden by default)
-	_rebinding_label = Label.new()
-	_rebinding_label.text = "Press a key to bind..."
-	_rebinding_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.3))
-	_rebinding_label.add_theme_font_size_override("font_size", 16)
+	_rebinding_label = UH.make_label("Press a key to bind...", 16, MT.ACCENT_PRIMARY)
 	_rebinding_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_rebinding_label.visible = false
 	outer.add_child(_rebinding_label)
 
 	# Scroll container
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	outer.add_child(scroll)
 
-	_list_vbox = VBoxContainer.new()
-	_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_list_vbox.add_theme_constant_override("separation", 2)
+	_list_vbox = UH.make_vbox(2, true, false)
 	scroll.add_child(_list_vbox)
 
 	# Bottom row: status + buttons
-	var bottom := HBoxContainer.new()
-	bottom.add_theme_constant_override("separation", 12)
+	var bottom := UH.make_hbox(12)
 	outer.add_child(bottom)
 
-	_status_label = Label.new()
+	_status_label = UH.make_label("", MT.FS_BODY, MT.TEXT_MUTED)
 	_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_status_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
 	bottom.add_child(_status_label)
 
-	var reset_btn := Button.new()
-	reset_btn.text = "Reset All"
-	reset_btn.custom_minimum_size = Vector2(120, 32)
+	var reset_btn := UH.make_button("Reset All", "primary", 120, 32)
 	reset_btn.pressed.connect(_on_reset_all)
 	bottom.add_child(reset_btn)
 
@@ -87,10 +76,7 @@ func _populate_bindings() -> void:
 		var actions: Array = group[1] as Array
 
 		# Section header
-		var header := Label.new()
-		header.text = "  %s" % group_label
-		header.add_theme_color_override("font_color", Color(0.7, 0.6, 0.9))
-		header.add_theme_font_size_override("font_size", 13)
+		var header := UH.make_label("  %s" % group_label, 13, MT.ACCENT_NEON)
 		header.custom_minimum_size = Vector2(0, 24)
 		_list_vbox.add_child(header)
 
@@ -101,31 +87,24 @@ func _populate_bindings() -> void:
 
 
 func _make_row(action: String, km: Node) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	var row := UH.make_hbox(8)
 	row.custom_minimum_size = Vector2(0, 30)
 
 	# Action label
-	var lbl := Label.new()
-	lbl.text = "    %s" % km.get_label(action)
+	var lbl := UH.make_label("    %s" % km.get_label(action))
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	lbl.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	lbl.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
 	row.add_child(lbl)
 
 	# Key binding button
 	var keycode: int = km.get_keycode(action)
-	var btn := Button.new()
+	var btn := UH.make_button(km.get_key_name(keycode), "primary", 140, 28)
 	btn.name = "Btn_%s" % action
-	btn.text = km.get_key_name(keycode)
-	btn.custom_minimum_size = Vector2(140, 28)
-	btn.toggle_mode = false
 	btn.pressed.connect(_on_bind_pressed.bind(action))
 	row.add_child(btn)
 
 	# Reset button
-	var reset_btn := Button.new()
-	reset_btn.text = "x"
-	reset_btn.custom_minimum_size = Vector2(28, 28)
+	var reset_btn := UH.make_button("x", "ghost", 28, 28)
 	reset_btn.tooltip_text = "Reset to default"
 	reset_btn.pressed.connect(_on_reset_action.bind(action))
 	row.add_child(reset_btn)

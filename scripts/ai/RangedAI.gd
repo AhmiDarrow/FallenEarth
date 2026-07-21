@@ -13,7 +13,7 @@ func decide(state: Dictionary) -> Dictionary:
 	if enemies.is_empty():
 		return {"type": "wait", "score": 0.0}
 	var my_pos: Vector2i = self_unit.get("pos", Vector2i.ZERO)
-	var weapon_range: int = int(self_unit.get("weapon_range", 3))
+	var weapon_range: int = int(self_unit.get("attack_range", 3))
 	var height_map: Dictionary = state.get("height_map", {})
 	var reachable: Array = state.get("reachable", []) as Array
 	var attackable: Array = state.get("attackable", []) as Array

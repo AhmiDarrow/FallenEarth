@@ -7,10 +7,19 @@
       "station": "none",
       "level_required": 1,
       "ingredients": [
-        {"item": "stick", "qty": 1},
-        {"item": "stone", "qty": 2}
+        {
+          "item_id": "stick",
+          "count": 1
+        },
+        {
+          "item_id": "stone",
+          "count": 2
+        }
       ],
-      "result": {"item": "axe_stone", "qty": 1},
+      "result": {
+        "item_id": "axe_stone",
+        "count": 1
+      },
       "category": "tool"
     },
     {
@@ -19,10 +28,19 @@
       "station": "none",
       "level_required": 1,
       "ingredients": [
-        {"item": "stick", "qty": 1},
-        {"item": "stone", "qty": 2}
+        {
+          "item_id": "stick",
+          "count": 1
+        },
+        {
+          "item_id": "stone",
+          "count": 2
+        }
       ],
-      "result": {"item": "pickaxe_stone", "qty": 1},
+      "result": {
+        "item_id": "pickaxe_stone",
+        "count": 1
+      },
       "category": "tool"
     },
     {
@@ -31,9 +49,15 @@
       "station": "none",
       "level_required": 1,
       "ingredients": [
-        {"item": "withered_branch", "qty": 1}
+        {
+          "item_id": "withered_branch",
+          "count": 1
+        }
       ],
-      "result": {"item": "bandage", "qty": 1},
+      "result": {
+        "item_id": "bandage",
+        "count": 1
+      },
       "category": "consumable"
     },
     {
@@ -42,9 +66,15 @@
       "station": "cooking_table",
       "level_required": 1,
       "ingredients": [
-        {"item": "raw_meat", "qty": 1}
+        {
+          "item_id": "raw_meat",
+          "count": 1
+        }
       ],
-      "result": {"item": "cooked_meat", "qty": 1},
+      "result": {
+        "item_id": "cooked_meat",
+        "count": 1
+      },
       "category": "food"
     },
     {
@@ -53,10 +83,19 @@
       "station": "cooking_table",
       "level_required": 5,
       "ingredients": [
-        {"item": "withered_branch", "qty": 2},
-        {"item": "teal_crystal", "qty": 1}
+        {
+          "item_id": "withered_branch",
+          "count": 2
+        },
+        {
+          "item_id": "teal_crystal",
+          "count": 1
+        }
       ],
-      "result": {"item": "mana_potion", "qty": 1},
+      "result": {
+        "item_id": "mana_potion",
+        "count": 1
+      },
       "category": "consumable"
     },
     {
@@ -65,10 +104,19 @@
       "station": "cooking_table",
       "level_required": 3,
       "ingredients": [
-        {"item": "kelp_fibre", "qty": 1},
-        {"item": "rusted_scrap", "qty": 1}
+        {
+          "item_id": "kelp_fibre",
+          "count": 1
+        },
+        {
+          "item_id": "rusted_scrap",
+          "count": 1
+        }
       ],
-      "result": {"item": "antidote", "qty": 1},
+      "result": {
+        "item_id": "antidote",
+        "count": 1
+      },
       "category": "consumable"
     },
     {
@@ -77,11 +125,23 @@
       "station": "none",
       "level_required": 5,
       "ingredients": [
-        {"item": "withered_branch", "qty": 4},
-        {"item": "iron_ore", "qty": 2},
-        {"item": "teal_crystal", "qty": 1}
+        {
+          "item_id": "withered_branch",
+          "count": 4
+        },
+        {
+          "item_id": "iron_ore",
+          "count": 2
+        },
+        {
+          "item_id": "teal_crystal",
+          "count": 1
+        }
       ],
-      "result": {"item": "cooking_table", "qty": 1},
+      "result": {
+        "item_id": "cooking_table",
+        "count": 1
+      },
       "category": "station"
     },
     {
@@ -90,11 +150,23 @@
       "station": "none",
       "level_required": 1,
       "ingredients": [
-        {"item": "kelp_fibre", "qty": 5},
-        {"item": "withered_branch", "qty": 3},
-        {"item": "stone", "qty": 2}
+        {
+          "item_id": "kelp_fibre",
+          "count": 5
+        },
+        {
+          "item_id": "withered_branch",
+          "count": 3
+        },
+        {
+          "item_id": "stone",
+          "count": 2
+        }
       ],
-      "result": {"item": "sleeping_bag", "qty": 1},
+      "result": {
+        "item_id": "sleeping_bag",
+        "count": 1
+      },
       "category": "utility"
     }
   ]

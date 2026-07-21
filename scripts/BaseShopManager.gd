@@ -113,14 +113,14 @@ func can_afford_offer(archetype: String) -> Dictionary:
 		return {"ok": false, "reason": "no_progression_manager"}
 	if int(prog.ec) < int(offer.get("cost_ec", 0)):
 		return {"ok": false, "reason": "Not enough EC (need %d)" % int(offer.get("cost_ec", 0))}
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if inv == null:
 		return {"ok": false, "reason": "no_inventory_manager"}
 	for ing in offer.get("cost_items", []):
 		if not (ing is Dictionary):
 			continue
-		if int(inv.get_count(str(ing.get("item", "")))) < int(ing.get("qty", 1)):
-			return {"ok": false, "reason": "Missing %dx %s" % [int(ing.get("qty", 1)), str(ing.get("item", ""))]}
+		if int(inv.get_count(str(ing.get("item_id", "")))) < int(ing.get("count", 1)):
+			return {"ok": false, "reason": "Missing %dx %s" % [int(ing.get("count", 1)), str(ing.get("item_id", ""))]}
 	return {"ok": true, "reason": ""}
 
 
@@ -142,14 +142,14 @@ func open_shop_for_npc(npc_id: String, archetype: String) -> bool:
 		return false
 	# Deduct cost
 	var prog: Node = get_node_or_null("/root/ProgressionManager")
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	if prog != null and int(offer.get("cost_ec", 0)) > 0:
 		prog.spend_ec(int(offer.get("cost_ec", 0)))
 	for ing in offer.get("cost_items", []):
 		if not (ing is Dictionary):
 			continue
 		if inv != null:
-			inv.remove_item(str(ing.get("item", "")), int(ing.get("qty", 1)))
+			inv.remove_item(str(ing.get("item_id", "")), int(ing.get("count", 1)))
 	open_shops.append({
 		"shop_type": shop_type,
 		"npc_id": npc_id,
@@ -194,73 +194,73 @@ func restore_from_snapshot(snap: Dictionary) -> void:
 
 func _stock_weapons() -> Array:
 	return [
-		{"item": "withered_branch", "qty": 10, "buy_price": 4},
-		{"item": "iron_ore",        "qty": 8,  "buy_price": 8},
-		{"item": "copper_ore",      "qty": 4,  "buy_price": 16},
+		{"item_id": "withered_branch", "count": 10, "buy_price": 4},
+		{"item_id": "iron_ore", "count": 8,  "buy_price": 8},
+		{"item_id": "copper_ore", "count": 4,  "buy_price": 16},
 	]
 
 
 func _stock_armor() -> Array:
 	return [
-		{"item": "withered_branch", "qty": 10, "buy_price": 4},
-		{"item": "iron_ore",        "qty": 8,  "buy_price": 8},
-		{"item": "ironwood_bark",   "qty": 5,  "buy_price": 12},
+		{"item_id": "withered_branch", "count": 10, "buy_price": 4},
+		{"item_id": "iron_ore", "count": 8,  "buy_price": 8},
+		{"item_id": "ironwood_bark", "count": 5,  "buy_price": 12},
 	]
 
 
 func _stock_consumables() -> Array:
 	return [
-		{"item": "bandage",         "qty": 5,  "buy_price": 8},
-		{"item": "kelp_fibre",      "qty": 6,  "buy_price": 4},
+		{"item_id": "bandage", "count": 5,  "buy_price": 8},
+		{"item_id": "kelp_fibre", "count": 6,  "buy_price": 4},
 	]
 
 
 func _stock_ammo() -> Array:
 	return [
-		{"item": "withered_branch", "qty": 20, "buy_price": 3},
-		{"item": "iron_ore",        "qty": 10, "buy_price": 7},
+		{"item_id": "withered_branch", "count": 20, "buy_price": 3},
+		{"item_id": "iron_ore", "count": 10, "buy_price": 7},
 	]
 
 
 func _stock_tools() -> Array:
 	return [
-		{"item": "withered_branch", "qty": 15, "buy_price": 3},
-		{"item": "stone",           "qty": 20, "buy_price": 2},
+		{"item_id": "withered_branch", "count": 15, "buy_price": 3},
+		{"item_id": "stone", "count": 20, "buy_price": 2},
 	]
 
 
 func _stock_rare() -> Array:
 	return [
-		{"item": "teal_crystal",     "qty": 2,  "buy_price": 50},
-		{"item": "void_shard",      "qty": 1,  "buy_price": 100},
-		{"item": "ember_crystal",    "qty": 2,  "buy_price": 80},
+		{"item_id": "teal_crystal", "count": 2,  "buy_price": 50},
+		{"item_id": "void_shard", "count": 1,  "buy_price": 100},
+		{"item_id": "ember_crystal", "count": 2,  "buy_price": 80},
 	]
 
 
 func _stock_scavenger() -> Array:
 	return [
-		{"item": "withered_branch", "qty": 30, "buy_price": 2},
-		{"item": "stone",           "qty": 30, "buy_price": 1},
-		{"item": "rusted_scrap",     "qty": 5,  "buy_price": 8},
+		{"item_id": "withered_branch", "count": 30, "buy_price": 2},
+		{"item_id": "stone", "count": 30, "buy_price": 1},
+		{"item_id": "rusted_scrap", "count": 5,  "buy_price": 8},
 	]
 
 
 func _stock_faction() -> Array:
 	return [
-		{"item": "iron_ore",        "qty": 10, "buy_price": 6},
-		{"item": "copper_ore",      "qty": 5,  "buy_price": 12},
-		{"item": "starmetal_ore",   "qty": 2,  "buy_price": 50},
+		{"item_id": "iron_ore", "count": 10, "buy_price": 6},
+		{"item_id": "copper_ore", "count": 5,  "buy_price": 12},
+		{"item_id": "starmetal_ore", "count": 2,  "buy_price": 50},
 	]
 
 
 func _stock_tavern() -> Array:
 	return [
-		{"item": "bandage",         "qty": 10, "buy_price": 5},
-		{"item": "kelp_fibre",      "qty": 8,  "buy_price": 3},
+		{"item_id": "bandage", "count": 10, "buy_price": 5},
+		{"item_id": "kelp_fibre", "count": 8,  "buy_price": 3},
 	]
 
 
 func _stock_trainer() -> Array:
 	return [
-		{"item": "teal_crystal",     "qty": 3,  "buy_price": 30},
+		{"item_id": "teal_crystal", "count": 3,  "buy_price": 30},
 	]

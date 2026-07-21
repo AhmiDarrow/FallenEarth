@@ -327,9 +327,16 @@ static func _get_mob_pool(spawn_context: String, biome: String = "") -> Array[Di
 		var mobs: Array = _mob_cache.get("overworld", {}).get(category, [])
 		for mob in mobs:
 			if mob is Dictionary:
-				var ctx: String = str(mob.get("spawn_context", "upworld"))
+				var sc: Variant = mob.get("spawn_context", "upworld")
+				var ctx: String
+				if sc is Dictionary:
+					ctx = str(sc.get("zone", "upworld"))
+				else:
+					ctx = str(sc)
 				if ctx == spawn_context or ctx == "both":
 					if _biome_matches(mob, biome):
+						if spawn_context != "rift" and (mob.get("is_boss", false) or mob.has("rift_type")):
+							continue
 						pool.append(mob)
 	if spawn_context == "rift":
 		var rift_mobs: Array = _mob_cache.get("rift_only", [])
@@ -343,14 +350,16 @@ static func _get_mob_pool(spawn_context: String, biome: String = "") -> Array[Di
 static func _biome_matches(mob: Dictionary, biome: String) -> bool:
 	if biome.is_empty():
 		return true
-	if not mob.has("preferred_biomes"):
-		return true
-	var preferred: Variant = mob["preferred_biomes"]
-	if preferred is Array:
-		for b in preferred:
-			if str(b) == biome:
-				return true
-		return false
+	if mob.has("preferred_biomes"):
+		var preferred: Variant = mob["preferred_biomes"]
+		if preferred is Array:
+			for b in preferred:
+				if str(b) == biome:
+					return true
+			return false
+	var sc: Variant = mob.get("spawn_context", {})
+	if sc is Dictionary and sc.has("biome"):
+		return str(sc["biome"]) == biome
 	return true
 
 
@@ -442,6 +451,10 @@ static func build_overworld(char_data: Dictionary, mob: Dictionary, tile_key: St
 			equip_data["attack"] = int(equip_stats.get("attack", 0))
 		if not equip_data.has("defense") or int(equip_data.get("defense", 0)) == 0:
 			equip_data["defense"] = int(equip_stats.get("defense", 0))
+		# Wire weapon range from EquipmentManager into character_data
+		var eq_range: int = int(equip_stats.get("attack_range", 0))
+		if eq_range > 0:
+			equip_data["attack_range"] = eq_range
 	return {
 		"character_data": equip_data,
 		"enemy_templates": enemies,

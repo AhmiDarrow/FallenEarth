@@ -49,6 +49,12 @@
       "noise_octaves": 3,
       "detail_freq": 0.04,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.02,
+      "cluster_threshold": 0.65,
+      "large_density": 0.003,
+      "small_density": 0.014
     }
   },
   {
@@ -102,6 +108,12 @@
       "noise_octaves": 4,
       "detail_freq": 0.04,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.018,
+      "cluster_threshold": 0.6,
+      "large_density": 0.0045,
+      "small_density": 0.012
     }
   },
   {
@@ -155,6 +167,12 @@
       "noise_octaves": 3,
       "detail_freq": 0.03,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.015,
+      "cluster_threshold": 0.58,
+      "large_density": 0.005,
+      "small_density": 0.017
     }
   },
   {
@@ -208,6 +226,12 @@
       "noise_octaves": 2,
       "detail_freq": 0.025,
       "detail_octaves": 1
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.012,
+      "cluster_threshold": 0.7,
+      "large_density": 0.003,
+      "small_density": 0.013
     }
   },
   {
@@ -261,6 +285,12 @@
       "noise_octaves": 3,
       "detail_freq": 0.035,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.02,
+      "cluster_threshold": 0.55,
+      "large_density": 0.005,
+      "small_density": 0.013
     }
   },
   {
@@ -315,6 +345,12 @@
       "noise_octaves": 3,
       "detail_freq": 0.03,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.016,
+      "cluster_threshold": 0.62,
+      "large_density": 0.003,
+      "small_density": 0.014
     }
   },
   {
@@ -369,6 +405,12 @@
       "noise_octaves": 3,
       "detail_freq": 0.03,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.014,
+      "cluster_threshold": 0.58,
+      "large_density": 0.005,
+      "small_density": 0.015
     }
   },
   {
@@ -423,6 +465,12 @@
       "noise_octaves": 4,
       "detail_freq": 0.05,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.022,
+      "cluster_threshold": 0.6,
+      "large_density": 0.004,
+      "small_density": 0.012
     }
   },
   {
@@ -477,6 +525,12 @@
       "noise_octaves": 3,
       "detail_freq": 0.03,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.013,
+      "cluster_threshold": 0.56,
+      "large_density": 0.005,
+      "small_density": 0.015
     }
   },
   {
@@ -532,6 +586,12 @@
       "noise_octaves": 4,
       "detail_freq": 0.04,
       "detail_octaves": 2
+    },
+    "decor_profile": {
+      "cluster_noise_freq": 0.019,
+      "cluster_threshold": 0.57,
+      "large_density": 0.005,
+      "small_density": 0.014
     }
   }
 ]

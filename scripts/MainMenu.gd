@@ -2,6 +2,7 @@
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 @onready var new_game_btn: Button = $VBoxContainer/NewGameButton as Button
 @onready var load_game_btn: Button = $VBoxContainer/LoadGameButton as Button
@@ -10,6 +11,7 @@ const MT = preload("res://assets/ui/MasterTheme.gd")
 @onready var mods_btn: Button = get_node_or_null("VBoxContainer/ModsButton") as Button
 @onready var exit_btn: Button = $VBoxContainer/ExitButton as Button
 
+var _main_vbox: VBoxContainer
 var save_dir: String = "user://saves/"
 var _load_popup: Window = null
 var _mp_popup: Window = null
@@ -29,6 +31,8 @@ func _ready() -> void:
 	if mods_btn != null:
 		MT.apply_secondary(mods_btn)
 		mods_btn.pressed.connect(_on_mods)
+	_main_vbox = $VBoxContainer
+	var _scroll := UH.make_scrollable(_main_vbox)
 	# Wire signals
 	new_game_btn.pressed.connect(_on_new_game)
 	load_game_btn.pressed.connect(_on_load_game)
@@ -47,16 +51,15 @@ func _ready() -> void:
 
 
 func save_game_label_text(text: String) -> void:
-	if has_node("VBoxContainer/SaveLabel"):
-		$VBoxContainer/SaveLabel.text = text
+	if _main_vbox != null and _main_vbox.has_node("SaveLabel"):
+		_main_vbox.get_node("SaveLabel").text = text
 	else:
-		var label: Label = Label.new()
+		var label := UH.make_label(text, MT.FS_BODY, MT.TEXT_PRIMARY)
 		label.name = "SaveLabel"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.autowrap_mode = TextServer.AUTOWRAP_WORD
 		label.custom_minimum_size = Vector2(280, 30)
-		$VBoxContainer.add_child(label)
-		label.text = text
+		_main_vbox.add_child(label)
 
 
 func _on_new_game() -> void:
@@ -104,7 +107,10 @@ func _list_saves() -> Array[Dictionary]:
 		if FileAccess.file_exists(path):
 			var file: FileAccess = FileAccess.open(path, FileAccess.READ)
 			if is_instance_valid(file):
-				var data: Dictionary = JSON.parse_string(file.get_as_text()) as Dictionary
+				var raw := file.get_as_text()
+				file.close()
+				var parsed: Variant = JSON.parse_string(raw)
+				var data: Dictionary = parsed if parsed is Dictionary else {}
 				var c: Variant = data.get("character", {})
 				if (not c is Dictionary) or c.is_empty():
 					c = data.get("game_state", {})
@@ -125,7 +131,6 @@ func _list_saves() -> Array[Dictionary]:
 					"class": cls,
 					"autosave": data.get("autosave", false),
 				})
-				file.close()
 	return slots
 
 
@@ -151,28 +156,23 @@ func _show_load_popup(slots: Array[Dictionary]) -> void:
 	add_child(_load_popup)
 	_load_popup.close_requested.connect(_load_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
 	_load_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Select a save slot:"
+	var title := UH.make_label("Select a save slot:", MT.FS_BODY, MT.TEXT_PRIMARY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(title)
 
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	scroll.custom_minimum_size = Vector2(380, 220)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	var list := UH.make_vbox(6, true)
 	scroll.add_child(list)
 
 	for entry in slots:
-		var btn := Button.new()
+		var btn := UH.make_button("", "ghost", 360, 36)
 		var autosave_tag := " [autosave]" if entry.get("autosave", false) else ""
 		var detail := ""
 		if entry.get("race", "") != "":
@@ -188,8 +188,7 @@ func _show_load_popup(slots: Array[Dictionary]) -> void:
 		)
 		list.add_child(btn)
 
-	var cancel := Button.new()
-	cancel.text = "Cancel"
+	var cancel := UH.make_button("Cancel", "secondary")
 	cancel.pressed.connect(func() -> void: _load_popup.hide())
 	root.add_child(cancel)
 
@@ -214,60 +213,39 @@ func _show_multiplayer_menu() -> void:
 	add_child(_mp_popup)
 	_mp_popup.close_requested.connect(_mp_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(12)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 12)
 	_mp_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Play with friends"
+	var title := UH.make_label("Play with friends", MT.FS_H3, MT.TEXT_PRIMARY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 18)
 	root.add_child(title)
 
-	var desc := Label.new()
-	desc.text = "Host a game or join one over LAN / direct connection."
+	var desc := UH.make_label("Host a game or join one over LAN / direct connection.", MT.FS_SMALL, MT.TEXT_SECONDARY)
 	desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	desc.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
 	root.add_child(desc)
 
 	root.add_child(_make_spacer(8))
 
-	var host_btn := Button.new()
-	host_btn.text = "Host Game"
-	host_btn.custom_minimum_size = Vector2(300, 50)
-	host_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var host_btn := UH.make_button("Host Game", "primary", 300, 50)
 	host_btn.pressed.connect(_on_host_game)
-	ButtonStyleHelper.apply_primary(host_btn)
 	root.add_child(host_btn)
 
-	var join_btn := Button.new()
-	join_btn.text = "Join Game"
-	join_btn.custom_minimum_size = Vector2(300, 50)
-	join_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var join_btn := UH.make_button("Join Game", "secondary", 300, 50)
 	join_btn.pressed.connect(_on_join_game)
-	ButtonStyleHelper.apply_secondary(join_btn)
 	root.add_child(join_btn)
 
-	var scan_btn := Button.new()
-	scan_btn.text = "Scan LAN"
-	scan_btn.custom_minimum_size = Vector2(300, 30)
-	scan_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var scan_btn := UH.make_button("Scan LAN", "secondary", 300, 30)
 	scan_btn.pressed.connect(_on_scan_lan)
-	ButtonStyleHelper.apply_secondary(scan_btn)
 	root.add_child(scan_btn)
 
 	root.add_child(_make_spacer(8))
 
-	var back_btn := Button.new()
-	back_btn.text = "Back"
-	back_btn.custom_minimum_size = Vector2(300, 30)
-	back_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var back_btn := UH.make_button("Back", "danger", 300, 30)
 	back_btn.pressed.connect(func() -> void:
 		_mp_popup.hide()
 	)
-	ButtonStyleHelper.apply_danger(back_btn)
 	root.add_child(back_btn)
 
 	_mp_popup.popup_centered()
@@ -322,26 +300,22 @@ func _show_lan_list(lobbies: Array) -> void:
 	add_child(_load_popup)
 	_load_popup.close_requested.connect(_load_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_load_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Select a game to join:"
+	var title := UH.make_label("Select a game to join:", MT.FS_BODY, MT.TEXT_PRIMARY)
 	root.add_child(title)
 
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	scroll.custom_minimum_size = Vector2(380, 200)
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	root.add_child(scroll)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	var list := UH.make_vbox(6, true)
 	scroll.add_child(list)
 
 	for entry in lobbies:
-		var btn := Button.new()
+		var btn := UH.make_button("", "ghost", 360, 36)
 		btn.text = "%s — %d players (%s)" % [entry.name, entry.players, entry.host]
 		btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		btn.custom_minimum_size = Vector2(360, 36)
@@ -353,8 +327,7 @@ func _show_lan_list(lobbies: Array) -> void:
 		)
 		list.add_child(btn)
 
-	var cancel := Button.new()
-	cancel.text = "Cancel"
+	var cancel := UH.make_button("Cancel", "secondary")
 	cancel.pressed.connect(func() -> void: _load_popup.hide())
 	root.add_child(cancel)
 
@@ -373,27 +346,20 @@ func _show_join_dialog() -> void:
 	add_child(_load_popup)
 	_load_popup.close_requested.connect(_load_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(12)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 12)
 	_load_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Enter host IP address:"
+	var title := UH.make_label("Enter host IP address:", MT.FS_BODY, MT.TEXT_PRIMARY)
 	root.add_child(title)
 
-	var ip_input := LineEdit.new()
-	ip_input.placeholder_text = "e.g. 192.168.1.100"
-	ip_input.custom_minimum_size = Vector2(300, 36)
+	var ip_input := UH.make_line_edit("e.g. 192.168.1.100", 300, 36)
 	root.add_child(ip_input)
 
-	var port_input := LineEdit.new()
-	port_input.placeholder_text = "Port (default: 28900)"
-	port_input.custom_minimum_size = Vector2(300, 36)
+	var port_input := UH.make_line_edit("Port (default: 28900)", 300, 36)
 	root.add_child(port_input)
 
-	var connect_btn := Button.new()
-	connect_btn.text = "Connect"
+	var connect_btn := UH.make_button("Connect", "primary")
 	connect_btn.pressed.connect(func() -> void:
 		var host := ip_input.text.strip_edges()
 		var port_str := port_input.text.strip_edges()
@@ -408,8 +374,7 @@ func _show_join_dialog() -> void:
 	)
 	root.add_child(connect_btn)
 
-	var cancel := Button.new()
-	cancel.text = "Cancel"
+	var cancel := UH.make_button("Cancel", "secondary")
 	cancel.pressed.connect(func() -> void: _load_popup.hide())
 	root.add_child(cancel)
 
@@ -441,12 +406,11 @@ func _show_lobby_panel(is_server: bool) -> void:
 	add_child(_load_popup)
 	_load_popup.close_requested.connect(_load_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
 	_load_popup.add_child(root)
 
-	var status := Label.new()
+	var status := UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 	if is_server:
 		var lm: Node = get_node_or_null("/root/LobbyManager")
 		var code := ""
@@ -458,11 +422,10 @@ func _show_lobby_panel(is_server: bool) -> void:
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	root.add_child(status)
 
-	var list_title := Label.new()
-	list_title.text = "Players in lobby:"
+	var list_title := UH.make_label("Players in lobby:", MT.FS_BODY, MT.TEXT_PRIMARY)
 	root.add_child(list_title)
 
-	var player_list := VBoxContainer.new()
+	var player_list := UH.make_vbox(4)
 	player_list.name = "PlayerList"
 	root.add_child(player_list)
 
@@ -470,31 +433,25 @@ func _show_lobby_panel(is_server: bool) -> void:
 	var lm: Node = get_node_or_null("/root/LobbyManager")
 	if lm != null and lm.has_method("get_player_list"):
 		for p in lm.get_player_list():
-			var lbl := Label.new()
-			lbl.text = "- %s" % p.name
+			var lbl := UH.make_label("- %s" % p.name)
 			player_list.add_child(lbl)
 
 	# Party invite button (host only)
 	if is_server:
-		var party_btn := Button.new()
-		party_btn.text = "Invite All to Party"
+		var party_btn := UH.make_button("Invite All to Party", "secondary")
 		party_btn.pressed.connect(_on_invite_all_to_party)
-		ButtonStyleHelper.apply_secondary(party_btn)
 		root.add_child(party_btn)
 
-	var start_btn := Button.new()
+	var start_btn: Button
 	if is_server:
-		start_btn.text = "Start Game"
+		start_btn = UH.make_button("Start Game", "primary")
 		start_btn.pressed.connect(_on_start_game)
-		ButtonStyleHelper.apply_primary(start_btn)
 	else:
-		start_btn.text = "Leave"
+		start_btn = UH.make_button("Leave", "danger")
 		start_btn.pressed.connect(_on_leave_lobby)
-		ButtonStyleHelper.apply_danger(start_btn)
 	root.add_child(start_btn)
 
-	var back_btn := Button.new()
-	back_btn.text = "Disconnect"
+	var back_btn := UH.make_button("Disconnect", "secondary")
 	back_btn.pressed.connect(_on_leave_lobby)
 	root.add_child(back_btn)
 
@@ -580,38 +537,30 @@ func _show_mods_popup() -> void:
 	add_child(_mods_popup)
 	_mods_popup.close_requested.connect(_mods_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
 	_mods_popup.add_child(root)
 
-	var title := Label.new()
-	title.text = "Installed Mods"
+	var title := UH.make_label("Installed Mods", MT.FS_H3, MT.TEXT_PRIMARY)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 18)
 	root.add_child(title)
 
-	var hint := Label.new()
-	hint.text = "Mods are loaded from %s at startup. Restart the game after adding or removing mods." % ProjectSettings.globalize_path(ModLoader.MODS_DIR)
+	var hint := UH.make_label(
+		"Mods are loaded from %s at startup. Restart the game after adding or removing mods." % ProjectSettings.globalize_path(ModLoader.MODS_DIR),
+		MT.FS_SMALL, MT.TEXT_SECONDARY)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
-	hint.add_theme_font_size_override("font_size", 12)
 	root.add_child(hint)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	root.add_child(scroll)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	var list := UH.make_vbox(6, true)
 	scroll.add_child(list)
 
 	var manifests: Dictionary = ModLoader.manifests
 	if manifests.is_empty() and ModLoader.failed_mods.is_empty():
-		var empty := Label.new()
-		empty.text = "No mods installed."
+		var empty := UH.make_label("No mods installed.", MT.FS_BODY, MT.TEXT_PRIMARY)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		list.add_child(empty)
 	for mod_id in manifests:
@@ -619,25 +568,17 @@ func _show_mods_popup() -> void:
 	for failed_entry in ModLoader.failed_mods:
 		var failed_id: String = str(failed_entry)
 		if not manifests.has(failed_id):
-			var lbl := Label.new()
-			lbl.text = "✖ %s — failed to load (invalid manifest or script)" % failed_id
-			lbl.add_theme_color_override("font_color", Color(0.9, 0.45, 0.4))
+			var lbl := UH.make_label("✖ %s — failed to load (invalid manifest or script)" % failed_id, MT.FS_SMALL, MT.TEXT_DANGER)
 			list.add_child(lbl)
 
-	var open_btn := Button.new()
-	open_btn.text = "Open Mods Folder"
-	open_btn.custom_minimum_size = Vector2(0, 36)
+	var open_btn := UH.make_button("Open Mods Folder", "secondary", 0, 36)
 	open_btn.pressed.connect(func() -> void:
 		OS.shell_open(ProjectSettings.globalize_path(ModLoader.MODS_DIR))
 	)
-	ButtonStyleHelper.apply_secondary(open_btn)
 	root.add_child(open_btn)
 
-	var close := Button.new()
-	close.text = "Close"
-	close.custom_minimum_size = Vector2(0, 36)
+	var close := UH.make_button("Close", "danger", 0, 36)
 	close.pressed.connect(func() -> void: _mods_popup.hide())
-	ButtonStyleHelper.apply_danger(close)
 	root.add_child(close)
 
 	_mods_popup.popup_centered()
@@ -645,38 +586,33 @@ func _show_mods_popup() -> void:
 
 func _make_mod_row(manifest: Dictionary) -> Control:
 	var mod_id: String = str(manifest.get("id", "?"))
-	var panel := PanelContainer.new()
-	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var panel := UH.make_surface_panel()
 
-	var row := VBoxContainer.new()
-	row.add_theme_constant_override("separation", 2)
+	var row := UH.make_vbox(2)
 	panel.add_child(row)
 
-	var header := HBoxContainer.new()
-	header.add_theme_constant_override("separation", 8)
+	var header := UH.make_hbox(8)
 	row.add_child(header)
 
-	var name_lbl := Label.new()
+	var name_lbl := UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 	var author: String = str(manifest.get("author", ""))
 	var author_txt: String = " — by %s" % author if not author.is_empty() else ""
 	name_lbl.text = "%s v%s%s" % [str(manifest.get("name", mod_id)), str(manifest.get("version", "?")), author_txt]
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(name_lbl)
 
-	var status := Label.new()
+	var status := UH.make_label("", MT.FS_SMALL, MT.TEXT_SUCCESS)
 	if ModLoader.failed_mods.has(mod_id):
 		status.text = "Failed"
-		status.add_theme_color_override("font_color", Color(0.9, 0.45, 0.4))
+		status.add_theme_color_override("font_color", MT.TEXT_DANGER)
 	else:
 		status.text = "Loaded"
-		status.add_theme_color_override("font_color", Color(0.5, 0.85, 0.5))
+		status.add_theme_color_override("font_color", MT.TEXT_SUCCESS)
 	header.add_child(status)
 
 	var all_settings: Dictionary = ModAPI.get_all_settings()
 	if all_settings.has(mod_id) and not (all_settings[mod_id] as Dictionary).is_empty():
-		var settings_btn := Button.new()
-		settings_btn.text = "Settings"
-		settings_btn.custom_minimum_size = Vector2(90, 28)
+		var settings_btn := UH.make_button("Settings", "ghost", 90, 28)
 		var display_name: String = str(manifest.get("name", mod_id))
 		settings_btn.pressed.connect(func() -> void:
 			_show_mod_settings_popup(mod_id, display_name)
@@ -685,11 +621,8 @@ func _make_mod_row(manifest: Dictionary) -> Control:
 
 	var description: String = str(manifest.get("description", ""))
 	if not description.is_empty():
-		var desc := Label.new()
-		desc.text = description
+		var desc := UH.make_label(description, MT.FS_SMALL, MT.TEXT_MUTED)
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		desc.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
-		desc.add_theme_font_size_override("font_size", 12)
 		row.add_child(desc)
 
 	return panel
@@ -708,26 +641,21 @@ func _show_mod_settings_popup(mod_id: String, mod_name: String) -> void:
 	add_child(_mod_settings_popup)
 	_mod_settings_popup.close_requested.connect(_mod_settings_popup.hide)
 
-	var root := VBoxContainer.new()
+	var root := UH.make_vbox(8)
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	root.add_theme_constant_override("separation", 8)
 	_mod_settings_popup.add_child(root)
 
-	var hint := Label.new()
-	hint.text = "Changes are saved immediately. Some settings may require a restart."
+	var hint := UH.make_label(
+		"Changes are saved immediately. Some settings may require a restart.",
+		MT.FS_SMALL, MT.TEXT_SECONDARY)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	hint.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
-	hint.add_theme_font_size_override("font_size", 12)
 	root.add_child(hint)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	root.add_child(scroll)
 
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 6)
+	var list := UH.make_vbox(6, true)
 	scroll.add_child(list)
 
 	var all_settings: Dictionary = ModAPI.get_all_settings()
@@ -737,26 +665,23 @@ func _show_mod_settings_popup(mod_id: String, mod_name: String) -> void:
 		var info: Dictionary = settings[setting_key]
 		var setting_type: String = str(info.get("type", "float"))
 
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
+		var row := UH.make_hbox(8)
 		list.add_child(row)
 
-		var lbl := Label.new()
-		lbl.text = str(info.get("display_name", setting_key))
+		var lbl := UH.make_label(str(info.get("display_name", setting_key)))
 		lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(lbl)
 
 		if setting_type == "bool":
-			var cb := CheckBox.new()
+			var cb := UH.make_checkbox("")
 			cb.button_pressed = bool(info.get("value", false))
 			cb.toggled.connect(func(pressed: bool) -> void:
 				ModAPI.set_setting(mod_id, setting_key, pressed)
 			)
 			row.add_child(cb)
 		else:
-			var edit := LineEdit.new()
+			var edit := UH.make_line_edit("", 140)
 			edit.text = str(info.get("value", ""))
-			edit.custom_minimum_size = Vector2(140, 0)
 			var apply := func(text: String) -> void:
 				var value: Variant = text
 				if setting_type == "float":
@@ -768,9 +693,7 @@ func _show_mod_settings_popup(mod_id: String, mod_name: String) -> void:
 			edit.focus_exited.connect(func() -> void: apply.call(edit.text))
 			row.add_child(edit)
 
-	var close := Button.new()
-	close.text = "Close"
-	close.custom_minimum_size = Vector2(0, 36)
+	var close := UH.make_button("Close", "secondary", 0, 36)
 	close.pressed.connect(func() -> void: _mod_settings_popup.hide())
 	ButtonStyleHelper.apply_secondary(close)
 	root.add_child(close)

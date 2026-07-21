@@ -7,6 +7,9 @@
 class_name LootPopup
 extends Label
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
+
 const LIFETIME := 1.5
 const RISE_PX := 28.0
 const FONT_SIZE := 16
@@ -17,7 +20,7 @@ var _start_y: float = 0.0
 
 func _ready() -> void:
 	# Style
-	add_theme_color_override("font_color", Color(1, 0.95, 0.7))
+	add_theme_color_override("font_color", MT.TEXT_ACCENT)
 	add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	add_theme_constant_override("outline_size", 3)
 	add_theme_font_size_override("font_size", FONT_SIZE)

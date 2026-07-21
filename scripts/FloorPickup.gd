@@ -10,7 +10,7 @@
 class_name FloorPickup
 extends Node2D
 
-const INVENTORY_PATH := "/root/InventoryManager"
+const INVENTORY_PATH := "/root/InventoryHandler"
 
 @export var item_id: String = ""
 @export var item_qty: int = 1
@@ -59,7 +59,7 @@ func collect() -> int:
 	return item_qty
 
 
-func get_cell(cell_size: int = 24) -> Vector2i:
+func get_cell(cell_size: int = 32) -> Vector2i:
 	return Vector2i(
 		int(floor(global_position.x / cell_size)),
 		int(floor(global_position.y / cell_size))

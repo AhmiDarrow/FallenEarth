@@ -167,9 +167,9 @@ func can_upgrade() -> Dictionary:
 	for ing in next.get("cost_items", []):
 		if not (ing is Dictionary):
 			continue
-		var item_id: String = str(ing.get("item", ""))
-		var qty: int = int(ing.get("qty", 1))
-		var inv: Node = get_node_or_null("/root/InventoryManager")
+		var item_id: String = str(ing.get("item_id", ""))
+		var qty: int = int(ing.get("count", 1))
+		var inv: Node = get_node_or_null("/root/InventoryHandler")
 		if inv == null or int(inv.get_count(item_id)) < qty:
 			return {"ok": false, "reason": "Missing %dx %s" % [qty, item_id]}
 	return {"ok": true, "reason": ""}
@@ -183,7 +183,7 @@ func upgrade() -> bool:
 		return false
 	var next: Dictionary = get_next_upgrade()
 	var prog: Node = get_node_or_null(PROGRESSION_PATH)
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	# Deduct EC
 	if prog != null and int(next.get("cost_ec", 0)) > 0:
 		prog.spend_ec(int(next.get("cost_ec", 0)))
@@ -192,7 +192,7 @@ func upgrade() -> bool:
 		if not (ing is Dictionary):
 			continue
 		if inv != null:
-			inv.remove_item(str(ing.get("item", "")), int(ing.get("qty", 1)))
+			inv.remove_item(str(ing.get("item_id", "")), int(ing.get("count", 1)))	
 	level = int(next.get("level", level + 1))
 	base_upgraded.emit(level, get_capacity())
 	print("[BaseManager] Upgraded to level %d, capacity %d" % [level, get_capacity()])

@@ -4,6 +4,7 @@ class_name RiftEntryUI
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 signal proceed_requested(rift_data: Dictionary)
 signal cancelled
@@ -23,55 +24,34 @@ func setup(rift: Dictionary) -> void:
 
 
 func _build_ui() -> void:
-	var backdrop := ColorRect.new()
-	backdrop.color = Color(0, 0, 0, 0.75)
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(backdrop)
+	UH.apply_backdrop(self)
 
 	var _center := CenterContainer.new()
 	_center.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(_center)
-	_panel = PanelContainer.new()
+	_panel = UH.make_elevated_panel()
 	_center.add_child(_panel)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
+	var margin := UH.make_margin(16)
 	_panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
+	var vbox := UH.make_vbox(8)
 	margin.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "Rift Entry"
-	title.add_theme_color_override("font_color", Color(0.9, 0.7, 1.0))
-	title.add_theme_font_size_override("font_size", 22)
+	var title := UH.make_label("Rift Entry", 22, MT.ACCENT_NEON)
 	vbox.add_child(title)
 
-	var rift_id := Label.new()
-	rift_id.text = str(_rift_data.get("rift_id", "Unknown Rift"))
-	rift_id.add_theme_color_override("font_color", Color(0.7, 0.7, 0.85))
-	rift_id.add_theme_font_size_override("font_size", 13)
+	var rift_id := UH.make_label(str(_rift_data.get("rift_id", "Unknown Rift")), 13, MT.TEXT_SECONDARY)
 	vbox.add_child(rift_id)
 
 	var remaining: float = float(_rift_data.get("duration", 600.0))
 	var mins := maxi(0, int(remaining / 60.0))
-	var time_label := Label.new()
-	time_label.text = "Time remaining: ~%d min" % mins
-	time_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
-	time_label.add_theme_font_size_override("font_size", 12)
+	var time_label := UH.make_label("Time remaining: ~%d min" % mins, 12, MT.TEXT_SECONDARY)
 	vbox.add_child(time_label)
 
-	var sep := HSeparator.new()
-	vbox.add_child(sep)
+	vbox.add_child(UH.make_separator())
 
-	var party_header := Label.new()
-	party_header.text = "Party"
-	party_header.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
-	party_header.add_theme_font_size_override("font_size", 16)
+	var party_header := UH.make_label("Party", 16, Color(0.85, 0.95, 1.0))
 	vbox.add_child(party_header)
 
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
@@ -81,46 +61,33 @@ func _build_ui() -> void:
 	var player_name: String = str(char_data.get("name", "Player"))
 	var player_class: String = str(char_data.get("class", "?"))
 	var player_level: int = int(char_data.get("level", 1))
-	var player_label := Label.new()
-	player_label.text = "★ %s — %s  Lv.%d  (You)" % [player_name, player_class, player_level]
-	player_label.add_theme_color_override("font_color", Color(0.4, 0.85, 1.0))
-	player_label.add_theme_font_size_override("font_size", 13)
+	var player_label := UH.make_label("★ %s — %s  Lv.%d  (You)" % [player_name, player_class, player_level], 13, Color(0.4, 0.85, 1.0))
 	vbox.add_child(player_label)
 
 	# Companion rows
 	var companions: Array = char_data.get("companions", [])
 	if companions.is_empty():
-		var no_comp := Label.new()
-		no_comp.text = "  (no companions recruited)"
-		no_comp.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
-		no_comp.add_theme_font_size_override("font_size", 11)
+		var no_comp := UH.make_label("  (no companions recruited)", 11, Color(0.55, 0.55, 0.6))
 		vbox.add_child(no_comp)
 	else:
 		for comp in companions:
 			var comp_name: String = str(comp.get("name", "?"))
 			var comp_class: String = str(comp.get("class", "?"))
 			var comp_level: int = int(comp.get("level", 1))
-			var comp_label := Label.new()
-			comp_label.text = "  ◆ %s — %s  Lv.%d" % [comp_name, comp_class, comp_level]
-			comp_label.add_theme_color_override("font_color", Color(0.75, 0.85, 0.95))
-			comp_label.add_theme_font_size_override("font_size", 12)
+			var comp_label := UH.make_label("  ◆ %s — %s  Lv.%d" % [comp_name, comp_class, comp_level], 12, Color(0.75, 0.85, 0.95))
 			vbox.add_child(comp_label)
 
 	vbox.add_spacer(true)
 
-	var proceed_btn := Button.new()
-	proceed_btn.text = "Proceed with Rift Run"
-	proceed_btn.custom_minimum_size = Vector2(260, 42)
+	var proceed_btn := UH.make_button("Proceed with Rift Run", "primary", 260, 42)
 	proceed_btn.pressed.connect(_on_proceed)
 	vbox.add_child(proceed_btn)
-	ButtonStyleHelper.apply_primary(proceed_btn)
 
-	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.custom_minimum_size = Vector2(120, 32)
+	var cancel_btn := UH.make_button("Cancel", "secondary", 120, 32)
 	cancel_btn.pressed.connect(_on_cancel)
 	vbox.add_child(cancel_btn)
-	ButtonStyleHelper.apply_secondary(cancel_btn)
+
+	UH.make_scrollable(vbox)
 
 
 func _on_proceed() -> void:

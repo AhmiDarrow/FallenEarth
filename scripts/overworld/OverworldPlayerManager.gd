@@ -124,6 +124,9 @@ func _try_cross_edge(dx: int, dy: int) -> void:
 	var local_pos: Vector2i = gs.get_local_position()
 	_hw._local_x = local_pos.x
 	_hw._local_y = local_pos.y
+	# Reset mount follower to player position on hex transition
+	if _hw._mount_follower != null and is_instance_valid(_hw._mount_follower) and _hw._mount_follower.has_method("set_grid_position"):
+		_hw._mount_follower.set_grid_position(_hw._local_x, _hw._local_y)
 	# Sync hex coords to mob manager
 	if _hw._mob_manager != null and is_instance_valid(_hw._mob_manager):
 		_hw._mob_manager.set_hex_coords(_hw._player_q, _hw._player_r)

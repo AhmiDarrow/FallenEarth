@@ -9,6 +9,7 @@ class_name MissionBoardInterface
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const MISSION_PATH := "/root/MissionManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const HUB_PATH := "/root/HubWorld"
@@ -26,59 +27,41 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var bg := UH.make_backdrop()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	var root_vbox := VBoxContainer.new()
+	var root_vbox := UH.make_vbox(8)
 	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root_vbox.add_theme_constant_override("separation", 8)
 	add_child(root_vbox)
 
 	# Title
-	var title := Label.new()
-	title.text = "[ Mission Board ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 22)
+	var title := UH.make_accent_label("[ Mission Board ]", 22)
 	root_vbox.add_child(title)
 
 	# Subtitle
-	var sub := Label.new()
-	sub.text = "Available offers:"
-	sub.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
-	sub.add_theme_font_size_override("font_size", 14)
+	var sub := UH.make_label("Available offers:", 14, MT.TEXT_LINK)
 	root_vbox.add_child(sub)
 
 	# Scrollable list
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root_vbox.add_child(scroll)
-	var list := VBoxContainer.new()
+	var list := UH.make_vbox(0, true, false)
 	list.name = "OfferList"
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
 
 	# Bottom bar: status + close
-	var bottom := HBoxContainer.new()
+	var bottom := UH.make_hbox(0)
 	bottom.custom_minimum_size = Vector2(0, 32)
 	root_vbox.add_child(bottom)
-	var status_label := Label.new()
+	var status_label := UH.make_label("", 13, MT.TEXT_SUCCESS)
 	status_label.name = "StatusLabel"
-	status_label.text = ""
-	status_label.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
-	status_label.add_theme_font_size_override("font_size", 13)
 	status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(status_label)
-	var close := Button.new()
-	close.text = "Close"
-	close.custom_minimum_size = Vector2(80, 32)
+	var close := UH.make_button("Close", "secondary", 80, 32)
 	close.pressed.connect(_on_close_pressed)
 	bottom.add_child(close)
-	ButtonStyleHelper.apply_secondary(close)
 
 
 func _refresh() -> void:
@@ -111,25 +94,21 @@ func _populate() -> void:
 	for child in list.get_children():
 		child.queue_free()
 	if _offers.is_empty():
-		var ph := Label.new()
-		ph.text = "(no offers available right now)"
-		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		var ph := UH.make_muted_label("(no offers available right now)")
 		list.add_child(ph)
 		return
 	for offer in _offers:
-		var row := HBoxContainer.new()
+		var row := UH.make_hbox(0)
 		row.custom_minimum_size = Vector2(0, 36)
 		list.add_child(row)
-		var info := Label.new()
-		info.text = "%s — %s" % [
+		var info := UH.make_label("%s — %s" % [
 			str(offer.get("title", "Mission")),
 			str(offer.get("description", "no description"))
-		]
+		])
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		row.add_child(info)
-		var accept_btn := Button.new()
-		accept_btn.text = "Accept"
+		var accept_btn := UH.make_button("Accept")
 		accept_btn.pressed.connect(_on_accept_pressed.bind(offer))
 		row.add_child(accept_btn)
 

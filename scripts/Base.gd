@@ -15,6 +15,7 @@ class_name Base
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const BASE_PATH := "/root/BaseManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const EQUIP_PATH := "/root/EquipmentManager"
@@ -75,32 +76,22 @@ func setup(base_state: Dictionary, hub: Node) -> void:
 
 
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var bg := UH.make_backdrop(MT.OVERLAY_DARK)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Title
-	var title := Label.new()
+	var title := UH.make_accent_label("[ Base ]", MT.FS_H1)
 	title.name = "Title"
-	title.text = "[ Base ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 28)
 	title.position = Vector2(20, 16)
 	add_child(title)
 	# Level / capacity
-	var cap := Label.new()
+	var cap := UH.make_label("", MT.FS_STAT, MT.TEXT_LINK)
 	cap.name = "CapLabel"
-	cap.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
-	cap.add_theme_font_size_override("font_size", 16)
 	cap.position = Vector2(20, 56)
 	add_child(cap)
 	# Residents
-	var res_label := Label.new()
+	var res_label := UH.make_label("Residents:", MT.FS_STAT, MT.TEXT_SUCCESS)
 	res_label.name = "ResLabel"
-	res_label.text = "Residents:"
-	res_label.add_theme_color_override("font_color", Color(0.75, 0.95, 0.75))
-	res_label.add_theme_font_size_override("font_size", 14)
 	res_label.position = Vector2(20, 96)
 	add_child(res_label)
 	var res_scroll := ScrollContainer.new()
@@ -113,74 +104,50 @@ func _build_ui() -> void:
 	res_vbox.name = "ResList"
 	res_scroll.add_child(res_vbox)
 	# Settlement name field
-	var name_label := Label.new()
+	var name_label := UH.make_label("Settlement name (unlocks at 20 residents):", MT.FS_STAT, MT.ACCENT_PRIMARY)
 	name_label.name = "NameLabel"
-	name_label.text = "Settlement name (unlocks at 20 residents):"
-	name_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.6))
-	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.position = Vector2(20, 420)
 	add_child(name_label)
-	var name_edit := LineEdit.new()
+	var name_edit := UH.make_line_edit("Type a name...", 360, 32)
 	name_edit.name = "NameEdit"
-	name_edit.placeholder_text = "Type a name..."
 	name_edit.position = Vector2(20, 446)
-	name_edit.custom_minimum_size = Vector2(360, 32)
 	name_edit.editable = false
 	add_child(name_edit)
-	var name_btn := Button.new()
+	var name_btn := UH.make_button("Set name", "primary", 100, 32)
 	name_btn.name = "NameButton"
-	name_btn.text = "Set name"
 	name_btn.position = Vector2(20, 484)
-	name_btn.custom_minimum_size = Vector2(100, 32)
 	name_btn.pressed.connect(_on_name_button_pressed)
 	add_child(name_btn)
-	ButtonStyleHelper.apply_primary(name_btn)
 	# Upgrade section
-	var upg_label := Label.new()
+	var upg_label := UH.make_label("Upgrade:", MT.FS_STAT, MT.TEXT_PRIMARY)
 	upg_label.name = "UpgLabel"
-	upg_label.text = "Upgrade:"
-	upg_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.75))
-	upg_label.add_theme_font_size_override("font_size", 14)
 	upg_label.position = Vector2(400, 96)
 	add_child(upg_label)
-	var upg_info := Label.new()
+	var upg_info := UH.make_label("", 13, Color.WHITE)
 	upg_info.name = "UpgInfo"
-	upg_info.add_theme_color_override("font_color", Color.WHITE)
-	upg_info.add_theme_font_size_override("font_size", 13)
 	upg_info.position = Vector2(400, 120)
 	upg_info.custom_minimum_size = Vector2(360, 200)
 	upg_info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	add_child(upg_info)
-	var upg_btn := Button.new()
+	var upg_btn := UH.make_button("Upgrade", "primary", 140, 40)
 	upg_btn.name = "UpgButton"
-	upg_btn.text = "Upgrade"
 	upg_btn.position = Vector2(400, 340)
-	upg_btn.custom_minimum_size = Vector2(140, 40)
 	upg_btn.pressed.connect(_on_upgrade_pressed)
 	add_child(upg_btn)
-	ButtonStyleHelper.apply_primary(upg_btn)
 	# Status line
-	var status := Label.new()
+	var status := UH.make_label("", MT.FS_STAT, MT.TEXT_SUCCESS)
 	status.name = "StatusLabel"
-	status.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
-	status.add_theme_font_size_override("font_size", 14)
 	status.position = Vector2(20, size.y - 70)
 	status.custom_minimum_size = Vector2(740, 30)
 	add_child(status)
 	# Close
-	var close := Button.new()
-	close.text = "Leave base"
+	var close := UH.make_button("Leave base", "danger", 120, 40)
 	close.position = Vector2(size.x - 140, size.y - 50)
-	close.custom_minimum_size = Vector2(120, 40)
 	close.pressed.connect(_on_close_pressed)
 	add_child(close)
-	ButtonStyleHelper.apply_danger(close)
 	# Shop section (Phase 7)
-	var shop_label := Label.new()
+	var shop_label := UH.make_label("Base shops (offered by residents):", MT.FS_STAT, MT.TEXT_ACCENT)
 	shop_label.name = "ShopLabel"
-	shop_label.text = "Base shops (offered by residents):"
-	shop_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.95))
-	shop_label.add_theme_font_size_override("font_size", 14)
 	shop_label.position = Vector2(400, 420)
 	add_child(shop_label)
 	var shop_scroll := ScrollContainer.new()
@@ -223,14 +190,10 @@ func _populate() -> void:
 		for child in res_vbox.get_children():
 			child.queue_free()
 		for r in snap.get("residents", []):
-			var row := Label.new()
-			row.text = "• %s" % str(r)
-			row.add_theme_color_override("font_color", Color.WHITE)
+			var row := UH.make_label("• %s" % str(r), MT.FS_BODY, Color.WHITE)
 			res_vbox.add_child(row)
 		if res_vbox.get_child_count() == 0:
-			var empty := Label.new()
-			empty.text = "(no residents — dismiss party members to send them here)"
-			empty.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+			var empty := UH.make_muted_label("(no residents — dismiss party members to send them here)")
 			res_vbox.add_child(empty)
 	# Settlement name field
 	if has_node("NameEdit"):
@@ -253,7 +216,7 @@ func _populate() -> void:
 					continue
 				if ing_text != "":
 					ing_text += "\n  "
-				ing_text += "%dx %s" % [int(ing.get("qty", 1)), ing.get("item", "?")]
+				ing_text += "%dx %s" % [int(ing.get("count", 1)), ing.get("item_id", "?")]	
 			$UpgInfo.text = "Next: %s (L%d required, %d EC, items below)\n\nItems:\n  %s" % [
 				str(next_upg.get("name", "?")),
 				int(next_upg.get("level_required", 0)),
@@ -279,16 +242,12 @@ func _populate_shops(residents: Array) -> void:
 		child.queue_free()
 	var bsm: Node = get_node_or_null(BASE_SHOP_PATH)
 	if bsm == null:
-		var ph := Label.new()
-		ph.text = "(BaseShopManager unavailable)"
-		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		var ph := UH.make_muted_label("(BaseShopManager unavailable)")
 		shop_vbox.add_child(ph)
 		return
 	var pm: Node = get_node_or_null(PARTY_PATH)
 	if residents.is_empty():
-		var ph := Label.new()
-		ph.text = "(dismiss party members to send them here, then they may offer a shop)"
-		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		var ph := UH.make_muted_label("(dismiss party members to send them here, then they may offer a shop)")
 		shop_vbox.add_child(ph)
 		return
 	for resident_id in residents:
@@ -303,10 +262,10 @@ func _populate_shops(residents: Array) -> void:
 		var offer: Dictionary = bsm.get_offer(archetype)
 		if offer.is_empty():
 			continue  # no offer for this archetype
-		var row := HBoxContainer.new()
+		var row := UH.make_hbox()
 		row.custom_minimum_size = Vector2(0, 28)
 		shop_vbox.add_child(row)
-		var info := Label.new()
+		var info := UH.make_label("", MT.FS_BODY, MT.TEXT_PRIMARY)
 		var shop_type: String = str(offer.get("shop_type", ""))
 		var open_now: bool = bsm.is_shop_open(shop_type)
 		if open_now:
@@ -317,7 +276,7 @@ func _populate_shops(residents: Array) -> void:
 			]
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(info)
-		var action_btn := Button.new()
+		var action_btn := UH.make_button("", "primary")
 		if open_now:
 			action_btn.text = "Visit"
 			action_btn.pressed.connect(_on_visit_shop_pressed.bind(shop_type, resident_id))

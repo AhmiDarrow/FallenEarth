@@ -21,7 +21,7 @@ ITEMS_JSON = ROOT / "data" / "items.json"
 OUT_DIR = ROOT / "assets" / "sprites" / "items"
 GDFILE = OUT_DIR / ".gdignore"
 
-CELL = 24
+CELL = 32
 
 # Item category -> base hue (used to choose the fill color, then
 # tinted by rarity).

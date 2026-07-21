@@ -5,10 +5,15 @@
 class_name DialogueUI
 extends Control
 
+
 signal dialogue_finished
 signal choice_made(choice_index: int)
 signal action_triggered(action: String)
 signal invite_requested(npc_id: String)
+
+const PORTRAIT_RACE_MAP := {
+	"ai": "sentientai",
+}
 
 var _role: String = ""
 var _current_node: Dictionary = {}
@@ -24,7 +29,12 @@ var _choices_container: VBoxContainer = null
 var _close_button: Button = null
 var _invite_button: Button = null
 
+var _npc_portrait: TextureRect = null
+var _player_portrait: TextureRect = null
+
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
+
 
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -34,15 +44,12 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var backdrop := ColorRect.new()
+	var backdrop := UH.make_backdrop()
 	backdrop.name = "Backdrop"
-	backdrop.color = Color(0, 0, 0, 0.75)
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
 	# Panel container (centered at bottom)
-	_panel = PanelContainer.new()
+	_panel = UH.make_surface_panel()
 	_panel.name = "Panel"
 	_panel.offset_left = 60
 	_panel.offset_right = -60
@@ -51,60 +58,84 @@ func _build_ui() -> void:
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
 
-	var margin := MarginContainer.new()
+	var margin := UH.make_margin(12)
 	margin.name = "Margin"
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
 	margin.add_theme_constant_override("margin_top", 8)
 	margin.add_theme_constant_override("margin_bottom", 8)
 	_panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(6)
 	vbox.name = "VBox"
-	vbox.add_theme_constant_override("separation", 8)
 	margin.add_child(vbox)
 
+	# --- Speaker section: NPC portrait + name + text ---
+	var speaker_hbox := UH.make_hbox(10)
+	speaker_hbox.name = "SpeakerHBox"
+	vbox.add_child(speaker_hbox)
+
+	_npc_portrait = TextureRect.new()
+	_npc_portrait.name = "NpcPortrait"
+	_npc_portrait.custom_minimum_size = Vector2(64, 64)
+	_npc_portrait.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	_npc_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_npc_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	speaker_hbox.add_child(_npc_portrait)
+
+	var speaker_vbox := UH.make_vbox(4, true)
+	speaker_vbox.name = "SpeakerVBox"
+	speaker_hbox.add_child(speaker_vbox)
+
 	# Speaker name
-	_speaker_label = Label.new()
+	_speaker_label = UH.make_accent_label("", 14)
 	_speaker_label.name = "SpeakerLabel"
-	_speaker_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	_speaker_label.add_theme_font_size_override("font_size", 14)
 	_speaker_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	_speaker_label.add_theme_constant_override("outline_size", 2)
-	vbox.add_child(_speaker_label)
+	speaker_vbox.add_child(_speaker_label)
 
 	# Dialogue text
-	_text_label = RichTextLabel.new()
+	_text_label = UH.make_rich_section("")
 	_text_label.name = "TextLabel"
-	_text_label.bbcode_enabled = true
 	_text_label.fit_content = true
-	_text_label.custom_minimum_size = Vector2(0, 60)
+	_text_label.custom_minimum_size = Vector2(0, 40)
 	_text_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(_text_label)
+	speaker_vbox.add_child(_text_label)
+
+	# --- Player section: player portrait + choices ---
+	var player_hbox := UH.make_hbox(10)
+	player_hbox.name = "PlayerHBox"
+	player_hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	vbox.add_child(player_hbox)
+
+	_player_portrait = TextureRect.new()
+	_player_portrait.name = "PlayerPortrait"
+	_player_portrait.custom_minimum_size = Vector2(64, 64)
+	_player_portrait.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	_player_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_player_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	player_hbox.add_child(_player_portrait)
+
+	var player_vbox := UH.make_vbox(4, true)
+	player_vbox.name = "PlayerVBox"
+	player_hbox.add_child(player_vbox)
 
 	# Choices container
-	_choices_container = VBoxContainer.new()
+	_choices_container = UH.make_vbox(4)
 	_choices_container.name = "Choices"
-	_choices_container.add_theme_constant_override("separation", 4)
-	vbox.add_child(_choices_container)
+	player_vbox.add_child(_choices_container)
 
 	# Close button (for end-of-dialogue)
-	_close_button = Button.new()
+	_close_button = UH.make_button("Close", "primary", 100, 28)
 	_close_button.name = "CloseButton"
-	_close_button.text = "Close"
-	_close_button.custom_minimum_size = Vector2(100, 28)
 	_close_button.pressed.connect(_on_close_pressed)
 	_close_button.visible = false
-	vbox.add_child(_close_button)
+	player_vbox.add_child(_close_button)
 
 	# Invite button (shown when NPC is recruitable)
-	_invite_button = Button.new()
+	_invite_button = UH.make_button("Invite to Party", "primary", 140, 28)
 	_invite_button.name = "InviteButton"
-	_invite_button.text = "Invite to Party"
-	_invite_button.custom_minimum_size = Vector2(140, 28)
 	_invite_button.pressed.connect(_on_invite_pressed)
 	_invite_button.visible = false
-	vbox.add_child(_invite_button)
+	player_vbox.add_child(_invite_button)
 
 
 func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_gender: String = "", npc_id: String = "") -> void:
@@ -113,6 +144,8 @@ func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_g
 	_npc_race = npc_race
 	_npc_gender = npc_gender
 	_npc_id = npc_id
+	_load_npc_portrait()
+	_load_player_portrait()
 	_check_invite_eligibility()
 
 	var dm: Node = get_node_or_null("/root/DialogueManager")
@@ -128,6 +161,51 @@ func start_dialogue(role: String, npc_name: String, npc_race: String = "", npc_g
 
 	_show_node(greeting)
 	visible = true
+
+
+func _load_npc_portrait() -> void:
+	if not is_instance_valid(_npc_portrait):
+		return
+	var race_key: String = _resolve_portrait_race(_npc_race)
+	var idx: int = abs(_npc_id.hash()) % 6 + 1
+	var path: String = "res://assets/portraits/%s_%s/portrait_%02d.png" % [race_key, _npc_gender, idx]
+	if ResourceLoader.exists(path):
+		_npc_portrait.texture = load(path)
+		_npc_portrait.visible = true
+	else:
+		_npc_portrait.texture = null
+		_npc_portrait.visible = false
+
+
+func _load_player_portrait() -> void:
+	if not is_instance_valid(_player_portrait):
+		return
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not gs.has_method("get_character_data"):
+		_player_portrait.visible = false
+		return
+	var data: Dictionary = gs.get_character_data()
+	if data.is_empty():
+		_player_portrait.visible = false
+		return
+	var race: String = str(data.get("race", ""))
+	var appearance: Dictionary = data.get("appearance", {})
+	var gender: String = str(appearance.get("gender", "male"))
+	var portrait: int = int(appearance.get("portrait", 1))
+	var race_key: String = _resolve_portrait_race(race)
+	var path: String = "res://assets/portraits/%s_%s/portrait_%02d.png" % [race_key, gender, portrait]
+	if ResourceLoader.exists(path):
+		_player_portrait.texture = load(path)
+		_player_portrait.visible = true
+	else:
+		_player_portrait.texture = null
+		_player_portrait.visible = false
+
+
+func _resolve_portrait_race(race_key: String) -> String:
+	if PORTRAIT_RACE_MAP.has(race_key.to_lower()):
+		return PORTRAIT_RACE_MAP[race_key.to_lower()]
+	return race_key.to_lower()
 
 
 func _check_invite_eligibility() -> void:
@@ -177,10 +255,8 @@ func _show_node(node: Dictionary) -> void:
 		for i in range(choices.size()):
 			var choice: Dictionary = choices[i]
 			var choice_text: String = str(choice.get("text", ""))
-			var btn := Button.new()
+			var btn := UH.make_button(choice_text, "ghost", 0, 28)
 			btn.name = "Choice%d" % i
-			btn.text = choice_text
-			btn.custom_minimum_size = Vector2(0, 28)
 			btn.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			var idx: int = i
 			btn.pressed.connect(func(): _on_choice_pressed(idx))

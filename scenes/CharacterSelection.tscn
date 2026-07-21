@@ -31,68 +31,71 @@ expand_mode = 1
 stretch_mode = 6
 modulate = Color(1, 1, 1, 0.6)
 
-[node name="MainVBox" type="VBoxContainer" parent="."]
+[node name="MainScroll" type="ScrollContainer" parent="."]
 layout_mode = 1
 anchors_preset = -1
 anchor_left = 0.15
-anchor_top = 0.1
+anchor_top = 0.06
 anchor_right = 0.85
-anchor_bottom = 0.9
+anchor_bottom = 0.92
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
+
+[node name="MainVBox" type="VBoxContainer" parent="MainScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 8
 
-[node name="TitleLabel" type="RichTextLabel" parent="MainVBox"]
-custom_minimum_size = Vector2(400, 50)
+[node name="TitleLabel" type="RichTextLabel" parent="MainScroll/MainVBox"]
+custom_minimum_size = Vector2(400, 36)
 layout_mode = 2
 size_flags_horizontal = 4
 bbcode_enabled = true
 text = "[center][b]FALLEN EARTH[/b][br]Create Your Character[/center]"
 autowrap_mode = 4
 
-[node name="BackRow" type="HBoxContainer" parent="MainVBox"]
+[node name="BackRow" type="HBoxContainer" parent="MainScroll/MainVBox"]
 layout_mode = 2
 
-[node name="BackButton" type="Button" parent="MainVBox/BackRow"]
+[node name="BackButton" type="Button" parent="MainScroll/MainVBox/BackRow"]
 custom_minimum_size = Vector2(120, 36)
 layout_mode = 2
 text = "Back"
 
-[node name="Spacer" type="Control" parent="MainVBox/BackRow"]
+[node name="Spacer" type="Control" parent="MainScroll/MainVBox/BackRow"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="NameHBox" type="HBoxContainer" parent="MainVBox"]
+[node name="NameHBox" type="HBoxContainer" parent="MainScroll/MainVBox"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="NameLabel" type="Label" parent="MainVBox/NameHBox"]
+[node name="NameLabel" type="Label" parent="MainScroll/MainVBox/NameHBox"]
 layout_mode = 2
 text = "Your Name:"
 
-[node name="NameEdit" type="LineEdit" parent="MainVBox/NameHBox"]
+[node name="NameEdit" type="LineEdit" parent="MainScroll/MainVBox/NameHBox"]
 custom_minimum_size = Vector2(200, 30)
 layout_mode = 2
-size_flags_horizontal = 3
 placeholder_text = "Enter your name (optional, defaults to Recruit)"
 max_length = 32
 
-[node name="GenderHBox" type="HBoxContainer" parent="MainVBox"]
+[node name="GenderHBox" type="HBoxContainer" parent="MainScroll/MainVBox"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="GenderLabel" type="Label" parent="MainVBox/GenderHBox"]
+[node name="GenderLabel" type="Label" parent="MainScroll/MainVBox/GenderHBox"]
 layout_mode = 2
 text = "Gender:"
 
-[node name="GenderButtonList" type="HBoxContainer" parent="MainVBox/GenderHBox"]
+[node name="GenderButtonList" type="HBoxContainer" parent="MainScroll/MainVBox/GenderHBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="RaceHeader" type="RichTextLabel" parent="MainVBox"]
+[node name="RaceHeader" type="RichTextLabel" parent="MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -100,22 +103,23 @@ size_flags_vertical = 0
 bbcode_enabled = true
 text = "[b]Select Your Origin & Race:[/b]"
 
-[node name="RacesHBox" type="HBoxContainer" parent="MainVBox"]
+[node name="RacesHBox" type="HBoxContainer" parent="MainScroll/MainVBox"]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="UpworldPanel" type="PanelContainer" parent="MainVBox/RacesHBox"]
-custom_minimum_size = Vector2(280, 140)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UpworldVBox" type="VBoxContainer" parent="MainVBox/RacesHBox/UpworldPanel"]
+[node name="UpworldPanel" type="PanelContainer" parent="MainScroll/MainVBox/RacesHBox"]
+custom_minimum_size = Vector2(360, 220)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="UpworldLabel" type="RichTextLabel" parent="MainVBox/RacesHBox/UpworldPanel/UpworldVBox"]
+[node name="UpworldVBox" type="VBoxContainer" parent="MainScroll/MainVBox/RacesHBox/UpworldPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UpworldLabel" type="RichTextLabel" parent="MainScroll/MainVBox/RacesHBox/UpworldPanel/UpworldVBox"]
 custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -123,28 +127,29 @@ size_flags_vertical = 0
 bbcode_enabled = true
 text = "[b]Upworld[/b]"
 
-[node name="UpworldScroll" type="ScrollContainer" parent="MainVBox/RacesHBox/UpworldPanel/UpworldVBox"]
+[node name="UpworldScroll" type="ScrollContainer" parent="MainScroll/MainVBox/RacesHBox/UpworldPanel/UpworldVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="UpworldButtonList" type="VBoxContainer" parent="MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll"]
+[node name="UpworldButtonList" type="VBoxContainer" parent="MainScroll/MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 3
 
-[node name="UnderworldPanel" type="PanelContainer" parent="MainVBox/RacesHBox"]
-custom_minimum_size = Vector2(280, 140)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UnderworldVBox" type="VBoxContainer" parent="MainVBox/RacesHBox/UnderworldPanel"]
+[node name="UnderworldPanel" type="PanelContainer" parent="MainScroll/MainVBox/RacesHBox"]
+custom_minimum_size = Vector2(360, 220)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="UnderworldLabel" type="RichTextLabel" parent="MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox"]
+[node name="UnderworldVBox" type="VBoxContainer" parent="MainScroll/MainVBox/RacesHBox/UnderworldPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="UnderworldLabel" type="RichTextLabel" parent="MainScroll/MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox"]
 custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -152,18 +157,18 @@ size_flags_vertical = 0
 bbcode_enabled = true
 text = "[b]Underworld[/b]"
 
-[node name="UnderworldScroll" type="ScrollContainer" parent="MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox"]
+[node name="UnderworldScroll" type="ScrollContainer" parent="MainScroll/MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="UnderworldButtonList" type="VBoxContainer" parent="MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll"]
+[node name="UnderworldButtonList" type="VBoxContainer" parent="MainScroll/MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 3
 
-[node name="ClassHeader" type="RichTextLabel" parent="MainVBox"]
+[node name="ClassHeader" type="RichTextLabel" parent="MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -171,17 +176,18 @@ size_flags_vertical = 0
 bbcode_enabled = true
 text = "[b]Select Your Class:[/b]"
 
-[node name="ClassPanel" type="PanelContainer" parent="MainVBox"]
-custom_minimum_size = Vector2(0, 100)
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="ClassVBox" type="VBoxContainer" parent="MainVBox/ClassPanel"]
+[node name="ClassPanel" type="PanelContainer" parent="MainScroll/MainVBox"]
+custom_minimum_size = Vector2(0, 240)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ClassLabel" type="RichTextLabel" parent="MainVBox/ClassPanel/ClassVBox"]
+[node name="ClassVBox" type="VBoxContainer" parent="MainScroll/MainVBox/ClassPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="ClassLabel" type="RichTextLabel" parent="MainScroll/MainVBox/ClassPanel/ClassVBox"]
 custom_minimum_size = Vector2(0, 26)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -189,18 +195,18 @@ size_flags_vertical = 0
 bbcode_enabled = true
 text = "[b]Archetype[/b]"
 
-[node name="ClassScrollContainer" type="ScrollContainer" parent="MainVBox/ClassPanel/ClassVBox"]
+[node name="ClassScrollContainer" type="ScrollContainer" parent="MainScroll/MainVBox/ClassPanel/ClassVBox"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="ClassButtonList" type="VBoxContainer" parent="MainVBox/ClassPanel/ClassVBox/ClassScrollContainer"]
+[node name="ClassButtonList" type="VBoxContainer" parent="MainScroll/MainVBox/ClassPanel/ClassVBox/ClassScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 4
 
-[node name="SelectionSummary" type="RichTextLabel" parent="MainVBox"]
+[node name="SelectionSummary" type="RichTextLabel" parent="MainScroll/MainVBox"]
 custom_minimum_size = Vector2(0, 28)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -208,18 +214,18 @@ size_flags_vertical = 0
 bbcode_enabled = true
 text = "[i]Select race + class (name optional) then click Confirm below[/i]"
 
-[node name="BottomBar" type="HBoxContainer" parent="MainVBox"]
+[node name="BottomBar" type="HBoxContainer" parent="MainScroll/MainVBox"]
 layout_mode = 2
 size_flags_vertical = 0
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="ConfirmButton" type="Button" parent="MainVBox/BottomBar"]
+[node name="ConfirmButton" type="Button" parent="MainScroll/MainVBox/BottomBar"]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 text = "✔ Confirm & Enter the Wastes"
 
-[node name="ResetButton" type="Button" parent="MainVBox/BottomBar"]
+[node name="ResetButton" type="Button" parent="MainScroll/MainVBox/BottomBar"]
 custom_minimum_size = Vector2(80, 48)
 layout_mode = 2
 text = "Reset"

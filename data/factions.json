@@ -5,15 +5,21 @@
     "motto": "Order from the ashes.",
     "description": "Old-world corporate coalition controlling heavy industry and mercenary forces. They view the Underearth as a resource to be exploited rather than feared. Primary Upworld / Human power.",
     "starting_rep": 10,
-    "npc_types": ["mercenary", "engineer"]
+    "npc_types": [
+      "mercenary",
+      "engineer"
+    ]
   },
   {
     "name": "Hollow Covenant",
     "origin_key": "underworld",
     "motto": "We are the children of what came before.",
-    "description": "Theocratic-technocratic alliance of Chthon, Vesperid, and Nullborn leaders. Believe the Underearth is not a curse, but a gift — and that humanity’s future lies below. Primary Underworld power.",
+    "description": "Theocratic-technocratic alliance of Chthon, Vesperid, and Nullborn leaders. Believe the Underearth is not a curse, but a gift \u00e2\u20ac\u201d and that humanity\u00e2\u20ac\u2122s future lies below. Primary Underworld power.",
     "starting_rep": 0,
-    "npc_types": ["cultist", "shaman"]
+    "npc_types": [
+      "cultist",
+      "shaman"
+    ]
   },
   {
     "name": "Ash Serpents",
@@ -21,7 +27,10 @@
     "motto": "The wasteland belongs to those bold enough to ride it.",
     "description": "Ruthless surface raiders and smugglers who specialize in deep Underearth runs. Known for using modified beasts as mounts.",
     "starting_rep": -5,
-    "npc_types": ["raider", "smuggler"]
+    "npc_types": [
+      "raider",
+      "smuggler"
+    ]
   },
   {
     "name": "Veilwardens",
@@ -29,15 +38,20 @@
     "motto": "What slept must stay asleep.",
     "description": "Secretive cult obsessed with recovering forbidden knowledge from the Underearth. Many members are Nullborn.",
     "starting_rep": 0,
-    "npc_types": ["archivist", "cultist"]
+    "npc_types": [
+      "archivist",
+      "cultist"
+    ]
   },
   {
     "name": "Neon Choir",
     "origin_key": "independent",
     "motto": "Upgrade or expire.",
-    "description": "Tech cult that worships and modifies unstable AI and cybernetics. Extremely fashionable in Riftspire’s underworld clubs.",
+    "description": "Tech cult that worships and modifies unstable AI and cybernetics. Extremely fashionable in Riftspire\u00e2\u20ac\u2122s underworld clubs.",
     "starting_rep": 5,
-    "npc_types": ["tech_cultist"]
+    "npc_types": [
+      "tech_cultist"
+    ]
   },
   {
     "name": "Dust Parliament",
@@ -45,15 +59,21 @@
     "motto": "All voices. No masters.",
     "description": "Loose alliance of independent settlement leaders attempting to remain neutral between the Iron Accord and Hollow Covenant.",
     "starting_rep": 0,
-    "npc_types": ["negotiator", "settler"]
+    "npc_types": [
+      "negotiator",
+      "settler"
+    ]
   },
   {
     "name": "Bone Circuit",
     "origin_key": "independent",
     "motto": "Every piece has a price.",
-    "description": "Controls much of Riftspire’s organ, cybernetic, and monster-part black market trade. Extremely dangerous and well-connected.",
+    "description": "Controls much of Riftspire\u00e2\u20ac\u2122s organ, cybernetic, and monster-part black market trade. Extremely dangerous and well-connected.",
     "starting_rep": -10,
-    "npc_types": ["blacksmith", "trader"]
+    "npc_types": [
+      "blacksmith",
+      "trader"
+    ]
   },
   {
     "name": "Black Ledger",
@@ -61,7 +81,10 @@
     "motto": "Knowledge is the only real currency.",
     "description": "Network of spies, hackers, and information brokers who sell secrets to the highest bidder. Operate across Riftspire and surface outposts. Motivation: profit and survival.",
     "starting_rep": 0,
-    "npc_types": ["broker", "spy"]
+    "npc_types": [
+      "broker",
+      "spy"
+    ]
   },
   {
     "name": "Last Caravans",
@@ -69,7 +92,10 @@
     "motto": "We carry everyone. We trust no one.",
     "description": "Massive convoys of heavily armed nomadic traders who travel between settlements. Fiercely protect their neutrality. Hate both major powers equally.",
     "starting_rep": 5,
-    "npc_types": ["trader", "caravan_guard"]
+    "npc_types": [
+      "trader",
+      "caravan_guard"
+    ]
   },
   {
     "name": "Echo Wardens",
@@ -77,6 +103,9 @@
     "motto": "The past must not be forgotten.",
     "description": "Small but respected archivists and historians dedicated to preserving pre-collapse knowledge. Maintain hidden archives and are generally left alone.",
     "starting_rep": 10,
-    "npc_types": ["historian", "archivist"]
+    "npc_types": [
+      "historian",
+      "archivist"
+    ]
   }
 ]

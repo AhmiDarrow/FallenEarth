@@ -1,4 +1,3 @@
-## RiftInstance — Procedural explorable dungeon: rooms, encounters, boss at end, core to close.
 class_name RiftInstance extends Control
 
 const EncounterBuilder = preload("res://scripts/CombatEncounterBuilder.gd")
@@ -16,24 +15,22 @@ var _player_y: int = 0
 var _rift_cleared: bool = false
 
 var _runner: Node = null
-var _grid_cells: Array[Button] = []
-var _dungeon_w: int = 15
-var _dungeon_h: int = 11
 var _pause_menu: PauseMenu = null
 
-@onready var status_label: RichTextLabel = $MainVBox/StatusLabel as RichTextLabel
-@onready var grid_container: GridContainer = $MainVBox/GridPanel/GridContainer as GridContainer
-@onready var loot_panel: VBoxContainer = $MainVBox/LootPanel as VBoxContainer
-@onready var loot_label: RichTextLabel = $MainVBox/LootPanel/LootLabel as RichTextLabel
-@onready var clear_btn: Button = $MainVBox/ActionsHBox/ClearRiftButton as Button
-@onready var back_btn: Button = $MainVBox/ActionsHBox/BackButton as Button
-@onready var instructions_label: RichTextLabel = $MainVBox/InstructionsLabel as RichTextLabel
-@onready var log_label: RichTextLabel = $MainVBox/LogLabel as RichTextLabel
+@onready var rift_map_view: Node2D = $RiftMapView
+@onready var status_label: RichTextLabel = $UI_Canvas/HeaderPanel/StatusLabel as RichTextLabel
+@onready var instructions_label: RichTextLabel = $UI_Canvas/InstructionsLabel as RichTextLabel
+@onready var log_label: RichTextLabel = $UI_Canvas/LogLabel as RichTextLabel
+@onready var clear_btn: Button = $UI_Canvas/BottomPanel/ActionsHBox/ClearRiftButton as Button
+@onready var back_btn: Button = $UI_Canvas/BottomPanel/ActionsHBox/BackButton as Button
+@onready var loot_panel: Panel = $UI_Canvas/LootPanel as Panel
+@onready var loot_label: RichTextLabel = $UI_Canvas/LootPanel/LootVBox/LootLabel as RichTextLabel
+@onready var loot_close_btn: Button = $UI_Canvas/LootPanel/LootVBox/LootCloseBtn as Button
 
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	print("[RiftInstance] Procedural rift dungeon loading.")
+	print("[RiftInstance] TileMap-based rift dungeon loading.")
 
 	if has_node("/root/RiftRunner"):
 		_runner = get_node("/root/RiftRunner")
@@ -44,7 +41,7 @@ func _ready() -> void:
 	_load_rift_context()
 	_ensure_dungeon()
 	_enter_dungeon_mode()
-	# Audio: rift music + eerie drone ambient.
+
 	var mm: Node = get_node_or_null("/root/MusicManager")
 	if mm != null and mm.has_method("play_track"):
 		mm.call("play_track", "rift")
@@ -82,59 +79,29 @@ func _ensure_dungeon() -> void:
 
 
 func _enter_dungeon_mode() -> void:
-	_dungeon_w = int(_dungeon.get("width", 15))
-	_dungeon_h = int(_dungeon.get("height", 11))
-	grid_container.columns = _dungeon_w
-
 	var pp: Dictionary = _dungeon.get("player_pos", {}) as Dictionary
 	_player_x = int(pp.get("x", 1))
-	_player_y = int(pp.get("y", _dungeon_h - 2))
+	_player_y = int(pp.get("y", 1))
+
+	if is_instance_valid(rift_map_view) and rift_map_view.has_method("configure"):
+		rift_map_view.configure(_dungeon, _biome_key)
+		rift_map_view.set_player_cell(Vector2i(_player_x, _player_y))
+		rift_map_view.reveal_around_player(Vector2i(_player_x, _player_y))
 
 	clear_btn.pressed.connect(_on_close_rift_core_pressed)
 	back_btn.pressed.connect(_on_back_pressed)
-	if has_node("MainVBox/ActionsHBox/EndTurnButton"):
-		$MainVBox/ActionsHBox/EndTurnButton.visible = false
-
-	_setup_grid()
-	_refresh_dungeon_ui()
+	loot_close_btn.pressed.connect(_on_loot_closed)
 
 	if is_instance_valid(_runner):
 		_runner.start_run(_rift_id, 1.0, _biome_key)
 
+	var w: int = _dungeon.get("width", 31)
+	var h: int = _dungeon.get("height", 23)
 	instructions_label.text = (
-		"[center]Explore the rift dungeon. [color=#e57373]✕[/color] = encounter, "
-		+ "[color=#ef5350]☠[/color] = boss, [color=#b39ddb]◆[/color] = core (after boss). WASD to move.[/center]"
+		"[center]WASD to move • ⚔ encounter • ☠ boss • ◆ core[/center]"
 	)
-	log_label.text = "[i]%d rooms generated. Reach the boss chamber.[/i]" % int(_dungeon.get("room_count", 0))
-
-
-func _setup_grid() -> void:
-	for child in grid_container.get_children():
-		child.queue_free()
-	_grid_cells.clear()
-	for y in range(_dungeon_h):
-		for x in range(_dungeon_w):
-			var cell := Button.new()
-			cell.custom_minimum_size = Vector2(28, 26)
-			cell.focus_mode = Control.FOCUS_ALL
-			cell.pressed.connect(_on_cell_pressed.bind(x, y))
-			var style := StyleBoxFlat.new()
-			style.bg_color = Color(0.08, 0.06, 0.1)
-			style.border_width_left = 1
-			style.border_width_top = 1
-			style.border_width_right = 1
-			style.border_width_bottom = 1
-			style.border_color = Color(0.25, 0.2, 0.35)
-			cell.add_theme_stylebox_override("normal", style)
-			var focus_style := StyleBoxFlat.new()
-			focus_style.border_width_left = 2
-			focus_style.border_width_top = 2
-			focus_style.border_width_right = 2
-			focus_style.border_width_bottom = 2
-			focus_style.border_color = Color.WHITE
-			cell.add_theme_stylebox_override("focus", focus_style)
-			grid_container.add_child(cell)
-			_grid_cells.append(cell)
+	log_label.text = "[i]Rift size: %d×%d. Reach the boss chamber.[/i]" % [w, h]
+	status_label.text = "[b]Rift:[/b] %s  [b]Biome:[/b] %s" % [_rift_id, _biome_key]
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -164,15 +131,11 @@ func _unhandled_input(event: InputEvent) -> void:
 	_try_move_to(_player_x + dx, _player_y + dy)
 
 
-func _on_cell_pressed(x: int, y: int) -> void:
-	_try_move_to(x, y)
-
-
 func _try_move_to(x: int, y: int) -> void:
 	if _rift_cleared:
 		return
 	var dist: int = absi(x - _player_x) + absi(y - _player_y)
-	if dist != 1 and not (x == _player_x and y == _player_y):
+	if dist != 1:
 		return
 	if not DungeonGen.is_walkable(_dungeon, x, y):
 		return
@@ -180,6 +143,10 @@ func _try_move_to(x: int, y: int) -> void:
 	_player_x = x
 	_player_y = y
 	_save_player_pos()
+
+	if is_instance_valid(rift_map_view):
+		rift_map_view.set_player_cell(Vector2i(_player_x, _player_y))
+		rift_map_view.reveal_around_player(Vector2i(_player_x, _player_y))
 
 	var cell: Dictionary = DungeonGen.tile_at(_dungeon, x, y)
 	var tile_type: String = str(cell.get("type", ""))
@@ -196,10 +163,9 @@ func _try_move_to(x: int, y: int) -> void:
 		DungeonGen.TILE_CORE:
 			if bool(cell.get("locked", true)):
 				log_label.text = "[i]Core locked — defeat the boss first.[/i]"
-			_refresh_dungeon_ui()
-			return
 
-	_refresh_dungeon_ui()
+	var boss_down: bool = bool(_dungeon.get("boss_defeated", false))
+	_status_update(boss_down)
 
 
 func _trigger_combat(encounter_type: String, tile_key: String) -> void:
@@ -230,47 +196,11 @@ func _save_player_pos() -> void:
 		gs.set_pending_rift(ctx)
 
 
-func _refresh_dungeon_ui() -> void:
-	for i in range(_grid_cells.size()):
-		var x: int = i % _dungeon_w
-		var y: int = int(i / float(_dungeon_w))
-		var cell: Button = _grid_cells[i]
-		var tile: Dictionary = DungeonGen.tile_at(_dungeon, x, y)
-		var tile_type: String = str(tile.get("type", DungeonGen.TILE_WALL))
-		var txt: String = ""
-		var bg: Color = Color(0.06, 0.05, 0.08)
-
-		match tile_type:
-			DungeonGen.TILE_WALL:
-				bg = Color(0.04, 0.03, 0.06)
-			DungeonGen.TILE_FLOOR, DungeonGen.TILE_ENTRANCE:
-				bg = Color(0.12, 0.1, 0.16)
-			DungeonGen.TILE_ENCOUNTER:
-				bg = Color(0.35, 0.12, 0.12) if not bool(tile.get("cleared", false)) else Color(0.12, 0.1, 0.16)
-				if not bool(tile.get("cleared", false)):
-					txt = "✕"
-			DungeonGen.TILE_BOSS:
-				if not bool(_dungeon.get("boss_defeated", false)):
-					bg = Color(0.55, 0.1, 0.1)
-					txt = "☠"
-			DungeonGen.TILE_CORE:
-				bg = Color(0.3, 0.18, 0.45)
-				txt = "◇" if bool(tile.get("locked", true)) else "◆"
-
-		if x == _player_x and y == _player_y:
-			txt = "◎"
-			bg = Color(0.18, 0.5, 0.32)
-
-		cell.text = txt
-		var style: StyleBoxFlat = cell.get_theme_stylebox("normal").duplicate() as StyleBoxFlat
-		style.bg_color = bg
-		cell.add_theme_stylebox_override("normal", style)
-
-	var boss_down: bool = bool(_dungeon.get("boss_defeated", false))
-	clear_btn.disabled = not boss_down or _player_at_core() == false
+func _status_update(boss_down: bool) -> void:
+	clear_btn.disabled = not boss_down or not _player_at_core()
 	status_label.text = (
-		"[b]Rift:[/b] %s  [b]Biome:[/b] %s  [b]Pos:[/b] (%d,%d)  [b]Boss:[/b] %s  [b]Rooms:[/b] %d"
-		% [_rift_id, _biome_key, _player_x, _player_y, "defeated" if boss_down else "active", int(_dungeon.get("room_count", 0))]
+		"[b]Rift:[/b] %s  [b]Biome:[/b] %s  [b]Pos:[/b] (%d,%d)  [b]Boss:[/b] %s"
+		% [_rift_id, _biome_key, _player_x, _player_y, "defeated" if boss_down else "active"]
 	)
 
 
@@ -300,17 +230,23 @@ func _on_close_rift_core_pressed() -> void:
 
 	_rift_cleared = true
 	_dungeon["rift_cleared"] = true
-	loot_panel.visible = true
-	var loot_text := "[b]RIFT CLOSED — LOOT ACQUIRED:[/b]\n"
+
+	instructions_label.text = "[center]Rift closed. Loot acquired.[/center]"
+
+	var loot_panel_label: RichTextLabel = loot_label
+	var loot_text := "[b]LOOT ACQUIRED:[/b]\n"
 	for item in loot:
 		loot_text += "• %s (%s)\n" % [item.get("name", "Item"), item.get("type", "?")]
-	loot_label.text = loot_text
+	loot_panel_label.text = loot_text
+	loot_panel.visible = true
+
+
+func _on_loot_closed() -> void:
+	loot_panel.visible = false
 	back_btn.text = "⬅ Return to Overworld"
-	instructions_label.text = "[center]Rift closed. Return to overworld.[/center]"
 
 
 func _on_back_pressed() -> void:
-	# Multiplayer: broadcast rift exit to all clients
 	var ns: Node = get_node_or_null("/root/NetworkSync")
 	if ns != null and ns.has_method("sync_rift_exit"):
 		var nm: Node = get_node_or_null("/root/NetworkManager")

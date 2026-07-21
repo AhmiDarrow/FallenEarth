@@ -175,6 +175,36 @@ func add_scene_to(parent_path: String, scene_path: String) -> void:
 
 
 # ---------------------------------------------------------------------------
+# Theme Registration
+# ---------------------------------------------------------------------------
+
+## Deferred theme registrations (ThemeManager may not be ready during startup).
+var _pending_themes: Array[Dictionary] = []
+
+func register_theme(mod_id: String, theme_name: String, display_name: String, theme_data: Dictionary) -> void:
+	var tm := get_node_or_null("/root/ThemeManager")
+	if tm != null and tm.has_method("register_theme"):
+		tm.register_theme(mod_id, theme_name, display_name, theme_data)
+	else:
+		_pending_themes.append({
+			"mod_id": mod_id,
+			"name": theme_name,
+			"display_name": display_name,
+			"data": theme_data,
+		})
+		_forward_pending_themes.call_deferred()
+
+
+func _forward_pending_themes() -> void:
+	var tm := get_node_or_null("/root/ThemeManager")
+	if tm == null or not tm.has_method("register_theme"):
+		return
+	for entry in _pending_themes:
+		tm.register_theme(entry.mod_id, entry.name, entry.display_name, entry.data)
+	_pending_themes.clear()
+
+
+# ---------------------------------------------------------------------------
 # Mod Settings
 # ---------------------------------------------------------------------------
 

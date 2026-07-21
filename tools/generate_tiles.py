@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 TILESET_DIR = ROOT / "assets" / "tilesets"
 GDFILE = TILESET_DIR / ".gdignore"
 
-CELL = 24
+CELL = 32
 
 # Per-biome palette: (ground, debris, vegetation, rock, ground_alt).
 # rock is the color of boulder/rock overlays in the BLOCKED tile, drawn on

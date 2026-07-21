@@ -117,12 +117,9 @@ func _connect_game_signals() -> void:
 	_connect_signal_if_exists("/root/GameState", "class_xp_gained",
 		func(amount, total_xp): emit("xp_gained", {"amount": amount, "total_xp": total_xp}))
 
-	_connect_signal_if_exists("/root/InventoryManager", "inventory_changed",
+	_connect_signal_if_exists("/root/InventoryHandler", "inventory_changed",
 		func(): emit("inventory_changed", {}))
-	_connect_signal_if_exists("/root/InventoryManager", "item_added",
-		func(item_id, qty): emit("item_acquired", {"item_id": item_id, "qty": qty}))
-	_connect_signal_if_exists("/root/InventoryManager", "item_full",
-		func(item_id): emit("item_full", {"item_id": item_id}))
+	# InventoryHandler no longer emits item_added / item_full — use inventory_changed
 
 	_connect_signal_if_exists("/root/ProgressionManager", "xp_changed",
 		func(current_xp, xp_to_next): emit("xp_changed", {"current_xp": current_xp, "xp_to_next": xp_to_next}))

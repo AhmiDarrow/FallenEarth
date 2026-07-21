@@ -5,7 +5,7 @@
 ##   - data/loot_tables.json (per-biome item pools)
 ##   - data/mobs.json (per-mob drop table — `drops: [{item_id, chance, qty}]`)
 ## Writes the results to:
-##   - InventoryManager (items)
+##   - InventoryHandler (items)
 ##   - ProgressionManager (XP + EC)
 ##
 ## If the mob has an explicit `drops` list, that takes priority over
@@ -26,7 +26,7 @@ const EC_PER_LEVEL_BONUS_MAX := 5
 
 ## Roll drops + XP + EC for a defeated mob. Returns a result dictionary:
 ##   {item_drops: [{item_id, qty}, ...], xp: int, ec: int}
-## Applies the results to InventoryManager + ProgressionManager as a
+## Applies the results to InventoryHandler + ProgressionManager as a
 ## side effect. Pass null for inv / prog to skip the side effect (e.g.
 ## in a smoke test).
 static func roll_and_apply(

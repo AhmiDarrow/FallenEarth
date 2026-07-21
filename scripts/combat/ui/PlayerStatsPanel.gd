@@ -2,6 +2,7 @@ class_name PlayerStatsPanel
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 var _name_label: Label
 var _class_label: Label
@@ -20,32 +21,26 @@ func _ready() -> void:
 
 
 func _build_children() -> void:
-	var panel := PanelContainer.new()
+	var panel := UH.make_panel(MT.BG_DEEP, MT.BORDER_STRONG, MT.RADIUS_LG, 2)
 	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_DEEP, MT.BORDER_STRONG, MT.RADIUS_LG, 2))
 	add_child(panel)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(4)
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 
-	_name_label = Label.new()
+	_name_label = UH.make_label("", 14, MT.TEXT_PRIMARY)
 	_name_label.name = "PlayerName"
 	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_name_label.add_theme_color_override("font_color", Color(1.0, 0.97, 0.92))
 	_name_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_name_label.add_theme_constant_override("outline_size", 2)
-	_name_label.add_theme_font_size_override("font_size", 14)
 	vbox.add_child(_name_label)
 
-	_class_label = Label.new()
+	_class_label = UH.make_label("", 11, MT.TEXT_LINK)
 	_class_label.name = "PlayerClass"
 	_class_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	_class_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_class_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	_class_label.add_theme_constant_override("outline_size", 1)
-	_class_label.add_theme_font_size_override("font_size", 11)
 	vbox.add_child(_class_label)
 
 	var hp_row := Control.new()
@@ -55,25 +50,23 @@ func _build_children() -> void:
 
 	_hp_bg = ColorRect.new()
 	_hp_bg.name = "HPBg"
-	_hp_bg.color = Color(0.15, 0.05, 0.05)
+	_hp_bg.color = MT.HP_BG
 	_hp_bg.position = Vector2(0, 0)
 	_hp_bg.size = Vector2(140, 10)
 	hp_row.add_child(_hp_bg)
 
 	_hp_bar = ColorRect.new()
 	_hp_bar.name = "HPBar"
-	_hp_bar.color = Color(0.6, 0.15, 0.15)
+	_hp_bar.color = MT.HP_FILL
 	_hp_bar.position = Vector2(0, 0)
 	_hp_bar.size = Vector2(140, 10)
 	hp_row.add_child(_hp_bar)
 
-	_hp_label = Label.new()
+	_hp_label = UH.make_label("", 9, Color.WHITE)
 	_hp_label.name = "HPText"
 	_hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_hp_label.add_theme_color_override("font_color", Color.WHITE)
 	_hp_label.add_theme_constant_override("outline_size", 1)
-	_hp_label.add_theme_font_size_override("font_size", 9)
 	_hp_label.position = Vector2(0, 0)
 	_hp_label.size = Vector2(140, 10)
 	hp_row.add_child(_hp_label)
@@ -85,25 +78,23 @@ func _build_children() -> void:
 
 	_mp_bg = ColorRect.new()
 	_mp_bg.name = "MPBg"
-	_mp_bg.color = Color(0.05, 0.08, 0.15)
+	_mp_bg.color = MT.MP_BG
 	_mp_bg.position = Vector2(0, 0)
 	_mp_bg.size = Vector2(140, 10)
 	mp_row.add_child(_mp_bg)
 
 	_mp_bar = ColorRect.new()
 	_mp_bar.name = "MPBar"
-	_mp_bar.color = Color(0.15, 0.3, 0.6)
+	_mp_bar.color = MT.MP_FILL
 	_mp_bar.position = Vector2(0, 0)
 	_mp_bar.size = Vector2(140, 10)
 	mp_row.add_child(_mp_bar)
 
-	_mp_label = Label.new()
+	_mp_label = UH.make_label("", 9, Color.WHITE)
 	_mp_label.name = "MPText"
 	_mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_mp_label.add_theme_color_override("font_color", Color.WHITE)
 	_mp_label.add_theme_constant_override("outline_size", 1)
-	_mp_label.add_theme_font_size_override("font_size", 9)
 	_mp_label.position = Vector2(0, 0)
 	_mp_label.size = Vector2(140, 10)
 	mp_row.add_child(_mp_label)

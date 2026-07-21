@@ -15,6 +15,7 @@ var attack_damage: int = 6
 var armor: int = 0
 var aggro_range: int = 5
 var mob_type: String = "aggressive"
+var wildlife_class: String = ""
 var threat_mult: float = 1.0
 var grid_x: int = 0
 var grid_y: int = 0
@@ -34,6 +35,7 @@ static func from_enemy_dict(enemy: Dictionary, local_x: int, local_y: int) -> Mo
 	d.armor = int(enemy.get("armor", 0))
 	d.aggro_range = mini(int(enemy.get("aggro_range", 3)), 3)
 	d.mob_type = str(enemy.get("mob_type", enemy.get("ai_archetype", "aggressive")))
+	d.wildlife_class = str(enemy.get("wildlife_class", ""))
 	d.threat_mult = float(enemy.get("threat_mult", 1.0))
 	d.grid_x = local_x
 	d.grid_y = local_y
@@ -60,3 +62,9 @@ func to_enemy_dict() -> Dictionary:
 
 func sprite_path() -> String:
 	return "res://assets/mobs/%s.png" % sprite_id
+
+func sprite_frames_path() -> String:
+	return "res://assets/mobs/%s/%s.tres" % [sprite_id, sprite_id]
+
+func has_animation_data() -> bool:
+	return ResourceLoader.exists(sprite_frames_path())

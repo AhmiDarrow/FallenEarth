@@ -16,7 +16,7 @@ const SettlementMgrScript = preload("res://scripts/SettlementManager.gd")
 const ShopScript = preload("res://scripts/ui/ShopInterface.gd")
 const MBScript = preload("res://scripts/ui/MissionBoardInterface.gd")
 const SettlementScript = preload("res://scripts/Settlement.gd")
-const InvMgrScript = preload("res://scripts/InventoryManager.gd")
+const InvMgrScript = preload("res://scripts/InventoryHandler.gd")
 const ProgMgrScript = preload("res://scripts/ProgressionManager.gd")
 const PartyMgrScript = preload("res://scripts/PartyNPCManager.gd")
 const LocalMapViewScript = preload("res://scripts/LocalMapView.gd")
@@ -119,7 +119,7 @@ func _test_settlement_manager_enter_leave() -> void:
 
 func _test_shop_buy_sell() -> void:
 	print("[smoke-p3b] test: ShopInterface buy / sell")
-	# Use the autoload InventoryManager and ProgressionManager (the
+	# Use the autoload InventoryHandler and ProgressionManager (the
 	# shop looks up by autoload path). Set the autoload's EC to a known
 	# value, then test the buy/sell round-trip.
 	var prog: Node = root.get_node_or_null("ProgressionManager")
@@ -129,9 +129,9 @@ func _test_shop_buy_sell() -> void:
 	# Set EC to 50 (default) for this test
 	prog.ec = 50
 	prog.ec_changed.emit(prog.ec)
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if inv == null:
-		_fail("Shop: InventoryManager autoload not available")
+		_fail("Shop: InventoryHandler autoload not available")
 		return
 	# Clear any existing stick/stone
 	while inv.has_item("stick", 1):

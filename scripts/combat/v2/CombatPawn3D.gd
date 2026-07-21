@@ -169,8 +169,27 @@ func _load_sprite() -> void:
 
 	var tres_path: String = ""
 	var fallback_png: String = ""
+	var armored_path: bool = false
 	if res.team == "player":
-		var base: String = "%s%s_%s/%s_%s" % [CHAR_FOLDER, res.race, res.gender, res.race, res.gender]
+		var base: String = "%s%s_%s/" % [CHAR_FOLDER, res.race, res.gender]
+		var armor_state: String = ""
+		var em: Node = get_node_or_null("/root/EquipmentManager")
+		if em != null and em.has_method("get_equipment"):
+			var eq: Dictionary = em.call("get_equipment", "player")
+			var item_id: String = str(eq.get("armor", ""))
+			if not item_id.is_empty() and item_id.begins_with("armor_"):
+				var rest: String = item_id.substr("armor_".length())
+				var parts: PackedStringArray = rest.split("_t")
+				if parts.size() == 2:
+					var armor_type: String = parts[0].to_lower().strip_edges()
+					if not armor_type.is_empty():
+						armor_state = "armor_%s" % armor_type
+		if not armor_state.is_empty():
+			armored_path = true
+			base += armor_state + "/"
+		base += "%s_%s" % [res.race, res.gender]
+		if not armor_state.is_empty():
+			base += "_" + armor_state
 		tres_path = base + ".tres"
 		fallback_png = base + "_S.png"
 	else:
@@ -195,11 +214,42 @@ func _load_sprite() -> void:
 		_anim_library["idle"] = [load(fallback_png)]
 		_anim_speeds["idle"] = 5.0
 		_anim_loops["idle"] = true
+	elif armored_path:
+		# Armor state sprite not available — fall back to base unarmored sprite
+		var base_base: String = "%s%s_%s/%s_%s" % [CHAR_FOLDER, res.race, res.gender, res.race, res.gender]
+		var base_tres: String = base_base + ".tres"
+		if ResourceLoader.exists(base_tres):
+			var sf: SpriteFrames = load(base_tres)
+			var anim_names: PackedStringArray = sf.get_animation_names()
+			for aname in anim_names:
+				var fc: int = sf.get_frame_count(aname)
+				var frames: Array[Texture2D] = []
+				for i in range(fc):
+					frames.append(sf.get_frame_texture(aname, i))
+				_anim_library[aname] = frames
+				_anim_speeds[aname] = sf.get_animation_speed(aname)
+				_anim_loops[aname] = sf.get_animation_loop(aname)
+		else:
+			var base_png: String = base_base + "_S.png"
+			if ResourceLoader.exists(base_png):
+				_anim_library["idle"] = [load(base_png)]
+				_anim_speeds["idle"] = 5.0
+				_anim_loops["idle"] = true
+			else:
+				_anim_library["idle"] = [_make_placeholder()]
+				_anim_speeds["idle"] = 5.0
+				_anim_loops["idle"] = true
+				scale_vec = Vector3(0.8, 0.8, 0.8)
 	else:
 		_anim_library["idle"] = [_make_placeholder()]
 		_anim_speeds["idle"] = 5.0
 		_anim_loops["idle"] = true
 		scale_vec = Vector3(0.8, 0.8, 0.8)
+
+	if res.team == "player" and armored_path and not _anim_library.is_empty():
+		var em2: Node = get_node_or_null("/root/EquipmentManager")
+		if em2 != null and em2.has_method("get_armor_color"):
+			_sprite.modulate = em2.call("get_armor_color", "player")
 
 	_switch_anim("idle")
 	_sprite.scale = scale_vec
@@ -396,7 +446,8 @@ func _play_death() -> void:
 		# Calculate death anim duration from speed + frame count
 		var fc: int = _anim_frames.size()
 		var dur: float = float(fc) / maxf(_anim_speed, 0.001)
-		var tween: Tween = create_tween().set_delay(dur)
+		var tween: Tween = create_tween()
+		tween.tween_interval(dur)
 		tween.tween_callback(func():
 			if is_inside_tree():
 				_sprite.modulate = Color(0.4, 0.4, 0.4, 0.5)

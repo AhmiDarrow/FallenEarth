@@ -12,7 +12,7 @@ extends SceneTree
 
 const PartyNPCMgrScript = preload("res://scripts/PartyNPCManager.gd")
 const CraftingMgrScript = preload("res://scripts/CraftingManager.gd")
-const InventoryMgrScript = preload("res://scripts/InventoryManager.gd")
+const InventoryMgrScript = preload("res://scripts/InventoryHandler.gd")
 const CharacterMenuScript = preload("res://scripts/ui/CharacterMenu.gd")
 const PartyScreenScript = preload("res://scripts/ui/PartyScreen.gd")
 const EquipmentScreenScript = preload("res://scripts/ui/EquipmentScreen.gd")

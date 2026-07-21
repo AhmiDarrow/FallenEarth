@@ -598,7 +598,7 @@ func _show_battle_results(victory: bool) -> void:
 	# Roll and apply rewards
 	var loot_result := {}
 	var gs: GameState = get_node_or_null("/root/GameState") as GameState
-	var inv: Node = get_node_or_null("/root/InventoryManager")
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
 	var prog: Node = get_node_or_null("/root/ProgressionManager")
 	if not mob_data.is_empty():
 		var LootRollerScript = preload("res://scripts/LootRoller.gd")
@@ -944,7 +944,7 @@ func _attempt_tame(target: CombatPawn3D) -> void:
 	if not char_data.is_empty():
 		player_level = int(char_data.get("level", 1))
 
-	var mob_data: Dictionary = _find_mob_template_for(target.res.id)
+	var mob_data: Dictionary = _find_mob_template_for(target.res.sprite_id)
 	var is_tamable: bool = bool(mob_data.get("is_tamable", false))
 	if not is_tamable:
 		return

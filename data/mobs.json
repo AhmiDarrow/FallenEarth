@@ -6,103 +6,139 @@
                 "name": "Ashveil Grazer",
                 "type": "herd_beast",
                 "description": "Slow fungal herd beast.",
-                "hp": 60,
                 "armor": 2,
-                "attack_damage": 6,
                 "threat_range": 3,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "ashveil_grazer",
                 "drops": [
                     {
                         "item_id": "raw_meat",
                         "chance": 0.4,
-                        "qty": 1
+                        "count": 1
                     }
                 ],
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 60,
+                    "armor": 2,
+                    "dex": 6
+                },
+                "dps": 3
             },
             {
                 "id": "lumen_drifter",
                 "name": "Lumen Drifter",
                 "type": "float_jelly",
                 "description": "Bioluminescent floating jelly that provides light.",
-                "hp": 40,
                 "armor": 0,
-                "attack_damage": 4,
                 "threat_range": 5,
                 "visual_preset": "beast_floater",
-                "spawn_context": "both",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "lumen_drifter",
-                "ai_archetype": "defensive"
+                "ai_archetype": "defensive",
+                "base_stats": {
+                    "health": 40,
+                    "armor": 0,
+                    "dex": 4
+                },
+                "dps": 2
             },
             {
                 "id": "rustcarapace_scuttler",
                 "name": "Rustcarapace Scuttler",
                 "type": "scavenger_crab",
                 "description": "Armored scrap cleaner.",
-                "hp": 80,
                 "armor": 8,
-                "attack_damage": 10,
                 "threat_range": 2,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "rustcarapace_scuttler",
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 80,
+                    "armor": 8,
+                    "dex": 10
+                },
+                "dps": 6
             },
             {
                 "id": "silkroot_tapper",
                 "name": "Silkroot Tapper",
                 "type": "stationary_plant",
                 "description": "Rooted resin producer.",
-                "hp": 50,
                 "armor": 3,
-                "attack_damage": 5,
                 "threat_range": 1,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "silkroot_tapper",
                 "drops": [
                     {
                         "item_id": "ironwood_bark",
                         "chance": 0.4,
-                        "qty": 1
+                        "count": 1
                     }
                 ],
-                "ai_archetype": "defensive"
+                "ai_archetype": "defensive",
+                "base_stats": {
+                    "health": 50,
+                    "armor": 3,
+                    "dex": 5
+                },
+                "dps": 3
             },
             {
                 "id": "echo_chorister",
                 "name": "Echo Chorister",
                 "type": "colony_beast",
                 "description": "Singing burrow colony.",
-                "hp": 70,
                 "armor": 4,
-                "attack_damage": 8,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "echo_chorister",
                 "drops": [
                     {
                         "item_id": "raw_meat",
                         "chance": 0.3,
-                        "qty": 1
+                        "count": 1
                     }
                 ],
-                "ai_archetype": "defensive"
+                "ai_archetype": "defensive",
+                "base_stats": {
+                    "health": 70,
+                    "armor": 4,
+                    "dex": 8
+                },
+                "dps": 4
             },
             {
                 "id": "iron_buck",
                 "name": "Iron Buck",
                 "type": "herd_beast",
                 "description": "Metallic forest stag. Neutral unless provoked.",
-                "hp": 75,
                 "armor": 6,
-                "attack_damage": 10,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ironwood Thicket"
+                },
                 "sprite_id": "iron_buck",
                 "preferred_biomes": [
                     "Ironwood Thicket",
@@ -112,244 +148,374 @@
                     {
                         "item_id": "raw_meat",
                         "chance": 0.5,
-                        "qty": 2
+                        "count": 2
                     },
                     {
                         "item_id": "ironwood_bark",
                         "chance": 0.3,
-                        "qty": 1
+                        "count": 1
                     }
                 ],
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 75,
+                    "armor": 6,
+                    "dex": 10
+                },
+                "dps": 6
             },
             {
                 "id": "blight_toad",
                 "name": "Blight Toad",
                 "type": "amphibian",
                 "description": "Bloated toxic toad with paralyzing tongue.",
-                "hp": 55,
                 "armor": 3,
                 "threat_range": 3,
-                "attack_damage": 8,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Neon Bogs"
+                },
                 "sprite_id": "blight_toad",
                 "preferred_biomes": [
                     "Neon Bogs",
                     "Toxin Marshes"
                 ],
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 55,
+                    "armor": 3,
+                    "dex": 8
+                },
+                "dps": 4
             },
             {
                 "id": "dust_devil",
                 "name": "Dust Devil",
                 "type": "swarm_insect",
                 "description": "Dust-colored moth swarm. Drains moisture.",
-                "hp": 20,
                 "armor": 0,
-                "attack_damage": 5,
                 "threat_range": 6,
                 "swarm_count_min": 4,
                 "swarm_count_max": 10,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "dust_devil",
                 "preferred_biomes": [
                     "Ash Wastes",
                     "Scorched Plains",
                     "Glass Dunes"
                 ],
-                "ai_archetype": "ranged"
+                "ai_archetype": "ranged",
+                "base_stats": {
+                    "health": 20,
+                    "armor": 0,
+                    "dex": 5
+                },
+                "dps": 3
             },
             {
                 "id": "ember_strider",
                 "name": "Ember Strider",
                 "type": "herd_beast",
                 "description": "Lizard-like quadruped with smoldering hide. Docile unless cornered.",
-                "hp": 45,
                 "armor": 1,
-                "attack_damage": 5,
                 "threat_range": 3,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Scorched Plains"
+                },
                 "sprite_id": "ember_strider",
-                "preferred_biomes": ["Scorched Plains"],
+                "preferred_biomes": [
+                    "Scorched Plains"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.25}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.25
+                },
+                "base_stats": {
+                    "health": 45,
+                    "armor": 1,
+                    "dex": 5
+                },
+                "dps": 3
             },
             {
                 "id": "cinder_hound",
                 "name": "Cinder Hound",
                 "type": "pack_predator",
                 "description": "Ash-colored canine with glowing ember eyes. Curious but skittish.",
-                "hp": 50,
                 "armor": 2,
-                "attack_damage": 6,
                 "threat_range": 3,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "cinder_hound",
-                "preferred_biomes": ["Ash Wastes"],
+                "preferred_biomes": [
+                    "Ash Wastes"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.2}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.2
+                },
+                "base_stats": {
+                    "health": 50,
+                    "armor": 2,
+                    "dex": 6
+                },
+                "dps": 3
             },
             {
                 "id": "glowfin_stalker",
                 "name": "Glowfin Stalker",
                 "type": "amphibian",
                 "description": "Bioluminescent cat-like amphibian that prowls neon-lit waters.",
-                "hp": 55,
                 "armor": 2,
-                "attack_damage": 7,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Neon Bogs"
+                },
                 "sprite_id": "glowfin_stalker",
-                "preferred_biomes": ["Neon Bogs"],
+                "preferred_biomes": [
+                    "Neon Bogs"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.2}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.2
+                },
+                "base_stats": {
+                    "health": 55,
+                    "armor": 2,
+                    "dex": 7
+                },
+                "dps": 4
             },
             {
                 "id": "ironjaw_stag",
                 "name": "Ironjaw Stag",
                 "type": "herd_beast",
                 "description": "Metallic-antlered stag with iron-reinforced hide. Regal and calm.",
-                "hp": 65,
                 "armor": 4,
-                "attack_damage": 8,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ironwood Thicket"
+                },
                 "sprite_id": "ironjaw_stag",
-                "preferred_biomes": ["Ironwood Thicket"],
+                "preferred_biomes": [
+                    "Ironwood Thicket"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.3}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.3
+                },
+                "base_stats": {
+                    "health": 65,
+                    "armor": 4,
+                    "dex": 8
+                },
+                "dps": 4
             },
             {
                 "id": "rustfang_wolf",
                 "name": "Rustfang Wolf",
                 "type": "pack_predator",
                 "description": "Feral wolf with rusted metal plating along its spine. Territorial.",
-                "hp": 60,
                 "armor": 3,
-                "attack_damage": 9,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Rust Canyons"
+                },
                 "sprite_id": "rustfang_wolf",
-                "preferred_biomes": ["Rust Canyons"],
+                "preferred_biomes": [
+                    "Rust Canyons"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.25}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.25
+                },
+                "base_stats": {
+                    "health": 60,
+                    "armor": 3,
+                    "dex": 9
+                },
+                "dps": 5
             },
             {
                 "id": "sandglass_rattler",
                 "name": "Sandglass Rattler",
                 "type": "crystal_reptile",
                 "description": "Serpent-like quadruped with glass-crystal scales that shimmer in the heat.",
-                "hp": 55,
                 "armor": 2,
-                "attack_damage": 8,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Glass Dunes"
+                },
                 "sprite_id": "sandglass_rattler",
-                "preferred_biomes": ["Glass Dunes"],
+                "preferred_biomes": [
+                    "Glass Dunes"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.3}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.3
+                },
+                "base_stats": {
+                    "health": 55,
+                    "armor": 2,
+                    "dex": 8
+                },
+                "dps": 4
             },
             {
                 "id": "bonegrinder",
                 "name": "Bonegrinder",
                 "type": "scavenger_beetle",
                 "description": "Massive bone-plated beetle that rolls debris through the corpse fields.",
-                "hp": 75,
                 "armor": 6,
-                "attack_damage": 10,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Corpse Fields"
+                },
                 "sprite_id": "bonegrinder",
-                "preferred_biomes": ["Corpse Fields"],
+                "preferred_biomes": [
+                    "Corpse Fields"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.15}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.15
+                },
+                "base_stats": {
+                    "health": 75,
+                    "armor": 6,
+                    "dex": 10
+                },
+                "dps": 6
             },
             {
                 "id": "toxic_salamander",
                 "name": "Toxic Salamander",
                 "type": "amphibian",
                 "description": "Four-legged amphibian with dripping venom sacs. Surprisingly gentle.",
-                "hp": 55,
                 "armor": 3,
-                "attack_damage": 7,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Toxin Marshes"
+                },
                 "sprite_id": "toxic_salamander",
-                "preferred_biomes": ["Toxin Marshes"],
+                "preferred_biomes": [
+                    "Toxin Marshes"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.15}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.15
+                },
+                "base_stats": {
+                    "health": 55,
+                    "armor": 3,
+                    "dex": 7
+                },
+                "dps": 4
             },
             {
                 "id": "stormmane_elk",
                 "name": "Stormmane Elk",
                 "type": "herd_beast",
                 "description": "Proud elk with crackling lightning antlers. Found only in the highlands.",
-                "hp": 80,
                 "armor": 4,
-                "attack_damage": 12,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Stormspire Highlands"
+                },
                 "sprite_id": "stormmane_elk",
-                "preferred_biomes": ["Stormspire Highlands"],
+                "preferred_biomes": [
+                    "Stormspire Highlands"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.35}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.35
+                },
+                "base_stats": {
+                    "health": 80,
+                    "armor": 4,
+                    "dex": 12
+                },
+                "dps": 7
             },
             {
                 "id": "city_crawler",
                 "name": "City Crawler",
                 "type": "scavenger_beetle",
                 "description": "Armored scavenger that picks through ruins. Calm and steady.",
-                "hp": 70,
                 "armor": 5,
-                "attack_damage": 10,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Dead City Outskirts"
+                },
                 "sprite_id": "city_crawler",
-                "preferred_biomes": ["Dead City Outskirts"],
+                "preferred_biomes": [
+                    "Dead City Outskirts"
+                ],
                 "ai_archetype": "defensive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.2}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.2
+                },
+                "base_stats": {
+                    "health": 70,
+                    "armor": 5,
+                    "dex": 10
+                },
+                "dps": 6
             }
         ],
         "aggressive": [
@@ -358,186 +524,257 @@
                 "name": "Charnel Stalker",
                 "type": "pack_predator",
                 "description": "Pack-hunting quadruped predator with tendrils.",
-                "hp": 90,
                 "armor": 5,
-                "attack_damage": 15,
                 "threat_range": 8,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "both",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "charnel_stalker",
                 "drops": [
                     {
                         "item_id": "raw_meat",
                         "chance": 0.6,
-                        "qty": 2
+                        "count": 2
                     }
                 ],
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 90,
+                    "armor": 5,
+                    "dex": 15
+                },
+                "dps": 8
             },
             {
                 "id": "voidspine_leech",
                 "name": "Voidspine Leech",
                 "type": "energy_drainer",
                 "description": "Parasitic energy drainer.",
-                "hp": 70,
                 "armor": 3,
-                "attack_damage": 12,
                 "drain_rate": 5,
                 "threat_range": 6,
                 "visual_preset": "beast_floater",
-                "spawn_context": "rift",
+                "spawn_context": {
+                    "zone": "rift",
+                    "biome": "Rift Core"
+                },
                 "sprite_id": "voidspine_leech",
                 "rift_type": "void",
-                "ai_archetype": "ranged"
+                "ai_archetype": "ranged",
+                "base_stats": {
+                    "health": 70,
+                    "armor": 3,
+                    "dex": 12
+                },
+                "dps": 7
             },
             {
                 "id": "mycelial_behemoth",
                 "name": "Mycelial Behemoth",
                 "type": "spore_hulk",
                 "description": "Massive spore-hurling hulk.",
-                "hp": 200,
                 "armor": 12,
-                "attack_damage": 25,
                 "threat_range": 10,
                 "visual_preset": "beast_behemoth",
-                "spawn_context": "both",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "mycelial_behemoth",
                 "drops": [
                     {
                         "item_id": "raw_meat",
                         "chance": 0.8,
-                        "qty": 3
+                        "count": 3
                     }
                 ],
-                "ai_archetype": "boss"
+                "ai_archetype": "boss",
+                "base_stats": {
+                    "health": 200,
+                    "armor": 12,
+                    "dex": 25
+                },
+                "dps": 14
             },
             {
                 "id": "glimmer_swarm",
                 "name": "Glimmer Swarm",
                 "type": "coordinated_insects",
                 "description": "Coordinated acidic insects.",
-                "hp": 30,
                 "armor": 1,
-                "attack_damage": 8,
                 "threat_range": 7,
                 "swarm_count_min": 3,
                 "swarm_count_max": 8,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "glimmer_swarm",
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 30,
+                    "armor": 1,
+                    "dex": 8
+                },
+                "dps": 4
             },
             {
                 "id": "ferroclaw_reaver",
                 "name": "Ferroclaw Reaver",
                 "type": "magnetic_horror",
                 "description": "Ferro-organic horror with magnetic and drilling traits.",
-                "hp": 150,
                 "armor": 15,
-                "attack_damage": 30,
                 "threat_range": 9,
                 "visual_preset": "mechanical_default",
-                "spawn_context": "rift",
+                "spawn_context": {
+                    "zone": "rift",
+                    "biome": "Rift Core"
+                },
                 "sprite_id": "ferroclaw_reaver",
                 "rift_type": "energy",
-                "ai_archetype": "boss"
+                "ai_archetype": "boss",
+                "base_stats": {
+                    "health": 150,
+                    "armor": 15,
+                    "dex": 30
+                },
+                "dps": 16
             },
             {
                 "id": "ash_crawler",
                 "name": "Ash Crawler",
                 "type": "scavenger_beetle",
                 "description": "Ash-colored wasteland beetle. Common in wastes, stronger in rifts.",
-                "hp": 65,
                 "armor": 6,
-                "attack_damage": 10,
                 "threat_range": 5,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "both",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "rustcarapace_scuttler",
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 65,
+                    "armor": 6,
+                    "dex": 10
+                },
+                "dps": 6
             },
             {
                 "id": "rift_elk",
                 "name": "Rift Elk",
                 "type": "herd_beast",
                 "description": "Large elk with glowing antlers. Neutral upworld, aggressive in rifts.",
-                "hp": 85,
                 "armor": 4,
-                "attack_damage": 12,
                 "threat_range": 6,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "both",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "rift_elk",
                 "drops": [
                     {
                         "item_id": "raw_meat",
                         "chance": 0.6,
-                        "qty": 2
+                        "count": 2
                     }
                 ],
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 85,
+                    "armor": 4,
+                    "dex": 12
+                },
+                "dps": 7
             },
             {
                 "id": "fungal_hurler",
                 "name": "Fungal Hurler",
                 "type": "spore_thrower",
                 "description": "Spore-throwing brute with mushroom cap.",
-                "hp": 130,
                 "armor": 8,
-                "attack_damage": 18,
                 "threat_range": 7,
                 "visual_preset": "beast_behemoth",
-                "spawn_context": "both",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "fungal_hurler",
-                "ai_archetype": "caster"
+                "ai_archetype": "caster",
+                "base_stats": {
+                    "health": 130,
+                    "armor": 8,
+                    "dex": 18
+                },
+                "dps": 10
             },
             {
                 "id": "glass_serpent",
                 "name": "Glass Serpent",
                 "type": "crystal_reptile",
                 "description": "Crystalline desert serpent with refractive scales.",
-                "hp": 75,
                 "armor": 5,
-                "attack_damage": 14,
                 "threat_range": 7,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Glass Dunes"
+                },
                 "sprite_id": "glass_serpent",
                 "preferred_biomes": [
                     "Glass Dunes",
                     "Scorched Plains"
                 ],
-                "ai_archetype": "ranged"
+                "ai_archetype": "ranged",
+                "base_stats": {
+                    "health": 75,
+                    "armor": 5,
+                    "dex": 14
+                },
+                "dps": 8
             },
             {
                 "id": "bone_crawler",
                 "name": "Bone Crawler",
                 "type": "carrion_centipede",
                 "description": "Bone-armored centipede that feeds on corpses.",
-                "hp": 60,
                 "armor": 7,
-                "attack_damage": 11,
                 "threat_range": 5,
                 "visual_preset": "beast_insectoid",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Corpse Fields"
+                },
                 "sprite_id": "bone_crawler",
                 "preferred_biomes": [
                     "Corpse Fields",
                     "Ash Wastes"
                 ],
-                "ai_archetype": "aggressive"
+                "ai_archetype": "aggressive",
+                "base_stats": {
+                    "health": 60,
+                    "armor": 7,
+                    "dex": 11
+                },
+                "dps": 6
             },
             {
                 "id": "storm_raptor",
                 "name": "Storm Raptor",
                 "type": "flying_beast",
                 "description": "Lightning-fast highland raptor with feathered wings.",
-                "hp": 80,
                 "armor": 3,
-                "attack_damage": 16,
                 "threat_range": 8,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Stormspire Highlands"
+                },
                 "sprite_id": "storm_raptor",
                 "preferred_biomes": [
                     "Stormspire Highlands",
@@ -547,200 +784,316 @@
                     {
                         "item_id": "raw_meat",
                         "chance": 0.5,
-                        "qty": 2
+                        "count": 2
                     }
                 ],
-                "ai_archetype": "ranged"
+                "ai_archetype": "ranged",
+                "base_stats": {
+                    "health": 80,
+                    "armor": 3,
+                    "dex": 16
+                },
+                "dps": 9
             },
             {
                 "id": "flameback_charger",
                 "name": "Flameback Charger",
                 "type": "herd_beast",
                 "description": "Aggressive burning quadruped that charges intruders without warning.",
-                "hp": 55,
                 "armor": 2,
-                "attack_damage": 8,
                 "threat_range": 4,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Scorched Plains"
+                },
                 "sprite_id": "flameback_charger",
-                "preferred_biomes": ["Scorched Plains"],
+                "preferred_biomes": [
+                    "Scorched Plains"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.3}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.3
+                },
+                "base_stats": {
+                    "health": 55,
+                    "armor": 2,
+                    "dex": 8
+                },
+                "dps": 4
             },
             {
                 "id": "dust_lurker",
                 "name": "Dust Lurker",
                 "type": "pack_predator",
                 "description": "Camouflaged ash predator that ambushes from dust clouds.",
-                "hp": 65,
                 "armor": 4,
-                "attack_damage": 10,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
                 "sprite_id": "dust_lurker",
-                "preferred_biomes": ["Ash Wastes"],
+                "preferred_biomes": [
+                    "Ash Wastes"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.25}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.25
+                },
+                "base_stats": {
+                    "health": 65,
+                    "armor": 4,
+                    "dex": 10
+                },
+                "dps": 6
             },
             {
                 "id": "bogmire_crawler",
                 "name": "Bogmire Crawler",
                 "type": "amphibian",
                 "description": "Slimy bog predator that drags prey into toxic waters.",
-                "hp": 75,
                 "armor": 5,
-                "attack_damage": 12,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Neon Bogs"
+                },
                 "sprite_id": "bogmire_crawler",
-                "preferred_biomes": ["Neon Bogs"],
+                "preferred_biomes": [
+                    "Neon Bogs"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.15}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.15
+                },
+                "base_stats": {
+                    "health": 75,
+                    "armor": 5,
+                    "dex": 12
+                },
+                "dps": 7
             },
             {
                 "id": "brambleback_beast",
                 "name": "Brambleback Beast",
                 "type": "herd_beast",
                 "description": "Ironwood-thicket brute with thorny metallic vines across its back.",
-                "hp": 85,
                 "armor": 7,
-                "attack_damage": 14,
                 "threat_range": 6,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ironwood Thicket"
+                },
                 "sprite_id": "brambleback_beast",
-                "preferred_biomes": ["Ironwood Thicket"],
+                "preferred_biomes": [
+                    "Ironwood Thicket"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.2}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.2
+                },
+                "base_stats": {
+                    "health": 85,
+                    "armor": 7,
+                    "dex": 14
+                },
+                "dps": 8
             },
             {
                 "id": "canyon_grinder",
                 "name": "Canyon Grinder",
                 "type": "scavenger_beetle",
                 "description": "Heavy rust-colored beetle with mandibles that crush scrap metal.",
-                "hp": 90,
                 "armor": 6,
-                "attack_damage": 16,
                 "threat_range": 6,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Rust Canyons"
+                },
                 "sprite_id": "canyon_grinder",
-                "preferred_biomes": ["Rust Canyons"],
+                "preferred_biomes": [
+                    "Rust Canyons"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.15}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.15
+                },
+                "base_stats": {
+                    "health": 90,
+                    "armor": 6,
+                    "dex": 16
+                },
+                "dps": 9
             },
             {
                 "id": "dune_prowler",
                 "name": "Dune Prowler",
                 "type": "pack_predator",
                 "description": "Lean glass-scaled predator that stalks prey across shimmering dunes.",
-                "hp": 80,
                 "armor": 4,
-                "attack_damage": 15,
                 "threat_range": 7,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Glass Dunes"
+                },
                 "sprite_id": "dune_prowler",
-                "preferred_biomes": ["Glass Dunes"],
+                "preferred_biomes": [
+                    "Glass Dunes"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.35}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.35
+                },
+                "base_stats": {
+                    "health": 80,
+                    "armor": 4,
+                    "dex": 15
+                },
+                "dps": 8
             },
             {
                 "id": "carrion_stalker",
                 "name": "Carrion Stalker",
                 "type": "pack_predator",
                 "description": "Bone-white hound that hunts in packs across the corpse fields.",
-                "hp": 85,
                 "armor": 5,
-                "attack_damage": 14,
                 "threat_range": 6,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Corpse Fields"
+                },
                 "sprite_id": "carrion_stalker",
-                "preferred_biomes": ["Corpse Fields"],
+                "preferred_biomes": [
+                    "Corpse Fields"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.2}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.2
+                },
+                "base_stats": {
+                    "health": 85,
+                    "armor": 5,
+                    "dex": 14
+                },
+                "dps": 8
             },
             {
                 "id": "miasma_toad",
                 "name": "Miasma Toad",
                 "type": "amphibian",
                 "description": "Grotesquely swollen toad that exudes poison gas clouds.",
-                "hp": 70,
                 "armor": 4,
-                "attack_damage": 12,
                 "threat_range": 5,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Toxin Marshes"
+                },
                 "sprite_id": "miasma_toad",
-                "preferred_biomes": ["Toxin Marshes"],
+                "preferred_biomes": [
+                    "Toxin Marshes"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.1}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.1
+                },
+                "base_stats": {
+                    "health": 70,
+                    "armor": 4,
+                    "dex": 12
+                },
+                "dps": 7
             },
             {
                 "id": "thunderclaw_raptor",
                 "name": "Thunderclaw Raptor",
                 "type": "flying_beast",
                 "description": "Lightning-infused winged predator that strikes from storm clouds.",
-                "hp": 100,
                 "armor": 5,
-                "attack_damage": 20,
                 "threat_range": 8,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Stormspire Highlands"
+                },
                 "sprite_id": "thunderclaw_raptor",
-                "preferred_biomes": ["Stormspire Highlands"],
+                "preferred_biomes": [
+                    "Stormspire Highlands"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.4}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.4
+                },
+                "base_stats": {
+                    "health": 100,
+                    "armor": 5,
+                    "dex": 20
+                },
+                "dps": 11
             },
             {
                 "id": "ruin_hound",
                 "name": "Ruin Hound",
                 "type": "pack_predator",
                 "description": "Cybernetically-enhanced feral hound that patrols ruined city streets.",
-                "hp": 95,
                 "armor": 7,
-                "attack_damage": 18,
                 "threat_range": 7,
                 "visual_preset": "beast_quadruped",
-                "spawn_context": "upworld",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Dead City Outskirts"
+                },
                 "sprite_id": "ruin_hound",
-                "preferred_biomes": ["Dead City Outskirts"],
+                "preferred_biomes": [
+                    "Dead City Outskirts"
+                ],
                 "ai_archetype": "aggressive",
                 "is_tamable": true,
                 "tamable_type": "mount",
                 "tame_difficulty": 0.5,
-                "mount_bonus": {"movement_speed_mult": 1.25}
+                "mount_bonus": {
+                    "movement_speed_mult": 1.25
+                },
+                "base_stats": {
+                    "health": 95,
+                    "armor": 7,
+                    "dex": 18
+                },
+                "dps": 10
             }
         ]
     },
@@ -750,123 +1103,179 @@
             "name": "Void Stalker",
             "type": "rift_predator",
             "description": "Fast void hunter that phases in and out of reality.",
-            "hp": 95,
             "armor": 4,
-            "attack_damage": 18,
             "threat_range": 9,
             "visual_preset": "rift_void",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "void_stalker",
             "rift_type": "void",
-            "ai_archetype": "aggressive"
+            "ai_archetype": "aggressive",
+            "base_stats": {
+                "health": 95,
+                "armor": 4,
+                "dex": 18
+            },
+            "dps": 10
         },
         {
             "id": "abyssal_weaver",
             "name": "Abyssal Weaver",
             "type": "rift_spider",
             "description": "Void web-spider that traps prey in reality tears.",
-            "hp": 80,
             "armor": 5,
-            "attack_damage": 14,
             "threat_range": 7,
             "visual_preset": "rift_void",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "abyssal_weaver",
             "rift_type": "void",
-            "ai_archetype": "caster"
+            "ai_archetype": "caster",
+            "base_stats": {
+                "health": 80,
+                "armor": 5,
+                "dex": 14
+            },
+            "dps": 8
         },
         {
             "id": "null_shade",
             "name": "Null Shade",
             "type": "rift_wraith",
             "description": "Stealth void wraith. Shimmers between dimensions.",
-            "hp": 70,
             "armor": 2,
-            "attack_damage": 20,
             "threat_range": 8,
             "visual_preset": "rift_void",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "void_stalker",
             "rift_type": "void",
-            "ai_archetype": "aggressive"
+            "ai_archetype": "aggressive",
+            "base_stats": {
+                "health": 70,
+                "armor": 2,
+                "dex": 20
+            },
+            "dps": 11
         },
         {
             "id": "lifecycle_horror",
             "name": "Lifecycle Horror",
             "type": "rift_aberration",
             "description": "Regenerating life-form that splits when damaged.",
-            "hp": 180,
             "armor": 8,
-            "attack_damage": 22,
             "threat_range": 8,
             "visual_preset": "rift_life",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "lifecycle_horror",
             "rift_type": "life",
-            "ai_archetype": "boss"
+            "ai_archetype": "boss",
+            "base_stats": {
+                "health": 180,
+                "armor": 8,
+                "dex": 22
+            },
+            "dps": 12
         },
         {
             "id": "spore_phantom",
             "name": "Spore Phantom",
             "type": "rift_spore",
             "description": "Floating spore cloud that poisons and confuses.",
-            "hp": 60,
             "armor": 1,
-            "attack_damage": 10,
             "threat_range": 6,
             "drain_rate": 8,
             "visual_preset": "rift_life",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "spore_phantom",
             "rift_type": "life",
-            "ai_archetype": "caster"
+            "ai_archetype": "caster",
+            "base_stats": {
+                "health": 60,
+                "armor": 1,
+                "dex": 10
+            },
+            "dps": 6
         },
         {
             "id": "arc_dynamo",
             "name": "Arc Dynamo",
             "type": "rift_machine",
             "description": "Orbital energy construct with lightning arcs.",
-            "hp": 85,
             "armor": 6,
-            "attack_damage": 16,
             "threat_range": 7,
             "visual_preset": "rift_energy",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "arc_dynamo",
             "rift_type": "energy",
-            "ai_archetype": "caster"
+            "ai_archetype": "caster",
+            "base_stats": {
+                "health": 85,
+                "armor": 6,
+                "dex": 16
+            },
+            "dps": 9
         },
         {
             "id": "storm_herald",
             "name": "Storm Herald",
             "type": "rift_storm",
             "description": "Massive energy boss. Commands lightning.",
-            "hp": 250,
             "armor": 10,
-            "attack_damage": 35,
             "threat_range": 10,
             "visual_preset": "rift_energy",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "storm_herald",
             "rift_type": "energy",
             "is_boss": true,
-            "ai_archetype": "boss"
+            "ai_archetype": "boss",
+            "base_stats": {
+                "health": 250,
+                "armor": 10,
+                "dex": 35
+            },
+            "dps": 19
         },
         {
             "id": "rift_maw",
             "name": "Rift Maw",
             "type": "rift_gatekeeper",
             "description": "Rift core guardian. Devours anything near the core.",
-            "hp": 300,
             "armor": 12,
-            "attack_damage": 40,
             "threat_range": 10,
             "visual_preset": "rift_energy",
-            "spawn_context": "rift",
+            "spawn_context": {
+                "zone": "rift",
+                "biome": "Rift Core"
+            },
             "sprite_id": "rift_maw",
             "rift_type": "energy",
             "is_boss": true,
-            "ai_archetype": "boss"
+            "ai_archetype": "boss",
+            "base_stats": {
+                "health": 300,
+                "armor": 12,
+                "dex": 40
+            },
+            "dps": 22
         }
     ],
     "underearth_parts": {

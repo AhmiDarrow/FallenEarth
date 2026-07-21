@@ -17,7 +17,7 @@ from PIL import Image, ImageDraw
 ROOT = Path(__file__).resolve().parent.parent
 BUILDING_DIR = ROOT / "assets" / "sprites" / "buildings"
 
-CELL = 24
+CELL = 32
 
 # Building definitions: (sprite_id, w_cells, h_cells, base_color, roof_color, detail_color)
 BUILDINGS = [

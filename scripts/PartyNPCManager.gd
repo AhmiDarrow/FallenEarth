@@ -28,7 +28,7 @@
 ## now. GameState.SaveManager is the canonical layer (Phase 8).
 extends Node
 
-const INVENTORY_PATH := "/root/InventoryManager"
+const INVENTORY_PATH := "/root/InventoryHandler"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 const PROGRESSION_PATH := "/root/ProgressionManager"
 const FACTION_PATH := "/root/GameState"
@@ -37,9 +37,9 @@ signal available_changed
 signal party_changed
 signal npc_invited(npc_id: String)
 signal npc_dismissed(npc_id: String)
-
 # Slots used in the equipment sub-dict
-const EQUIP_SLOTS := ["head", "chest", "legs", "boots", "mainhand", "offhand", "tool", "acc1", "acc2"]
+const EQUIP_SLOTS := ["armor", "mainhand", "offhand", "tool", "acc1", "acc2"]
+
 
 # Loaded in _ready
 var _templates: Array = []
@@ -135,7 +135,7 @@ func _seed_phase3_test_npcs() -> void:
 			"gender": "female",
 			"level": 3,
 			"role": "scavenger",
-			"sprite_path": "res://assets/characters/human_female/human_female_base.png",
+			"sprite_path": "res://assets/characters/human_female/human_female_S.png",
 			"faction_rep_requirements": {},
 			"quest_unlock": null,
 			"template_id": "phase3_test",
@@ -150,7 +150,7 @@ func _seed_phase3_test_npcs() -> void:
 			"gender": "male",
 			"level": 5,
 			"role": "medic",
-			"sprite_path": "res://assets/characters/human_male/human_male_base.png",
+			"sprite_path": "res://assets/characters/human_male/human_male_S.png",
 			"faction_rep_requirements": {"Iron Accord": 5},
 			"quest_unlock": null,
 			"template_id": "phase3_test",
@@ -165,7 +165,7 @@ func _seed_phase3_test_npcs() -> void:
 			"gender": "female",
 			"level": 8,
 			"role": "warden",
-			"sprite_path": "res://assets/characters/human_female/human_female_base.png",
+			"sprite_path": "res://assets/characters/human_female/human_female_S.png",
 			"faction_rep_requirements": {"Iron Accord": 20},
 			"quest_unlock": null,
 			"template_id": "phase3_test",
@@ -464,11 +464,10 @@ func _generate_npc_for_settlement(tpl: Dictionary, player_level: int, biome: Str
 			var w: Dictionary = em.get_weapon(str(class_data.get("name", "")), tier)
 			if not w.is_empty():
 				equipment["mainhand"] = str(w.get("id", ""))
-			for slot in ["head", "chest", "legs", "boots"]:
-				var a: Dictionary = em.get_armor(str(class_data.get("name", "")), slot, tier)
-				if not a.is_empty():
-					equipment[slot] = str(a.get("id", ""))
-					break
+			var armor_type: String = em.get_starting_armor_type(str(class_data.get("name", "")))
+			var a: Dictionary = em.get_armor(armor_type, tier)
+			if not a.is_empty():
+				equipment["armor"] = str(a.get("id", ""))
 	var fr: Dictionary = {}
 	if tpl.get("min_faction_rep", null) != null:
 		fr["any_faction"] = int(tpl.get("min_faction_rep"))
@@ -569,12 +568,11 @@ func _generate_npc_from_template(tpl: Dictionary, player_level: int, biome: Stri
 			var w: Dictionary = em.get_weapon(str(class_data.get("name", "")), tier)
 			if not w.is_empty():
 				equipment["mainhand"] = str(w.get("id", ""))
-			# Equip one armor piece (head)
-			for slot in ["head", "chest", "legs", "boots"]:
-				var a: Dictionary = em.get_armor(str(class_data.get("name", "")), slot, tier)
-				if not a.is_empty():
-					equipment[slot] = str(a.get("id", ""))
-					break
+			# Equip the class's armor suit at the chosen tier
+			var armor_type: String = em.get_starting_armor_type(str(class_data.get("name", "")))
+			var a: Dictionary = em.get_armor(armor_type, tier)
+			if not a.is_empty():
+				equipment["armor"] = str(a.get("id", ""))
 	# Invite requirements: copied from the template
 	var fr: Dictionary = {}
 	if tpl.get("min_faction_rep", null) != null:
@@ -641,7 +639,7 @@ func _race_sprite(race_data: Dictionary, gender: String) -> String:
 	# Map the race's visual_tag + gender to a sprite path
 	var vis: String = str(race_data.get("visual_tag", "human"))
 	var g: String = "male" if gender == "male" else "female"
-	return "res://assets/characters/%s_%s/%s_%s_base.png" % [vis, g, vis, g]
+	return "res://assets/characters/%s_%s/%s_%s_S.png" % [vis, g, vis, g]
 
 
 func _empty_equipment() -> Dictionary:

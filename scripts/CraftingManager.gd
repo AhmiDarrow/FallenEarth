@@ -11,7 +11,7 @@
 ## Their UIs (WorktableUI, ArmorTableUI, BlacksmithUI) are added as
 ## separate scripts in this phase.
 ##
-## Persistence: like InventoryManager, this is non-persistent in
+## Persistence: like InventoryHandler, this is non-persistent in
 ## Phase 3. GameState.SaveManager is the canonical layer; will be
 ## extended in Phase 8 to include the unlocked-recipe list.
 extends Node
@@ -99,25 +99,25 @@ func refresh_unlocked(player_level: int) -> void:
 ## Returns true if the player can craft this recipe (has all
 ## ingredients + meets level). Doesn't check station — the station UI
 ## does that. Optional `inv` parameter lets the caller pass a specific
-## InventoryManager (for tests or for non-autoload inventories).
+## InventoryHandler (for tests or for non-autoload inventories).
 ## Defaults to the autoload.
 func can_craft(recipe_id: String, inv: Node = null) -> bool:
 	var r: Dictionary = _recipes.get(recipe_id, {})
 	if r.is_empty():
 		return false
 	if inv == null:
-		inv = get_node_or_null("/root/InventoryManager")
+		inv = get_node_or_null("/root/InventoryHandler")
 	if inv == null:
 		return false
 	for ing in r.get("ingredients", []):
 		if not (ing is Dictionary):
 			return false
-		if not inv.has_item(str(ing.get("item", "")), int(ing.get("qty", 1))):
+		if not inv.has_item(str(ing.get("item_id", "")), int(ing.get("count", 1))):
 			return false
 	return true
 
 
-## Spend ingredients and add the result to InventoryManager. Returns
+## Spend ingredients and add the result to InventoryHandler. Returns
 ## true on success. Optional `inv` parameter (same as can_craft).
 func craft(recipe_id: String, inv: Node = null) -> bool:
 	var r: Dictionary = _recipes.get(recipe_id, {})
@@ -125,7 +125,7 @@ func craft(recipe_id: String, inv: Node = null) -> bool:
 		recipe_craft_failed.emit(recipe_id, "unknown_recipe")
 		return false
 	if inv == null:
-		inv = get_node_or_null("/root/InventoryManager")
+		inv = get_node_or_null("/root/InventoryHandler")
 	if inv == null:
 		recipe_craft_failed.emit(recipe_id, "no_inventory")
 		return false
@@ -134,11 +134,11 @@ func craft(recipe_id: String, inv: Node = null) -> bool:
 		return false
 	# Consume ingredients
 	for ing in r.get("ingredients", []):
-		inv.remove_item(str(ing.get("item", "")), int(ing.get("qty", 1)))
+		inv.remove_item(str(ing.get("item_id", "")), int(ing.get("count", 1)))
 	# Add result
 	var result: Dictionary = r.get("result", {})
-	var result_item: String = str(result.get("item", ""))
-	var result_qty: int = int(result.get("qty", 1))
+	var result_item: String = str(result.get("item_id", ""))
+	var result_qty: int = int(result.get("count", 1))
 	if not result_item.is_empty() and result_qty > 0:
 		inv.add_item(result_item, result_qty)
 	recipe_crafted.emit(recipe_id)

@@ -113,7 +113,7 @@ func _setup_player_visual() -> void:
 
 func _build_local_view() -> void:
 	if is_instance_valid(_hw._player_visual):
-		var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 24
+		var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 32
 		_hw._player_visual.position = Vector2(
 			_hw._local_x * cell_size + cell_size * 0.5,
 			_hw._local_y * cell_size + cell_size * 0.5
@@ -142,7 +142,7 @@ func _refresh_markers() -> void:
 		_hw._mob_pool.return_all()
 	if _hw._mob_manager != null and is_instance_valid(_hw._mob_manager):
 		_hw._mob_manager.clear_all()
-	var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 24
+	var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 32
 
 	# Player visual is handled by _player_visual node — skip circle marker
 	var gs := _hw._gs
@@ -248,7 +248,7 @@ func _faction_color(faction_key: String) -> Color:
 	return Color.from_hsv(h, 0.6, 0.9)
 
 
-func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 24) -> void:
+func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 32) -> void:
 	if not is_instance_valid(_hw._map_view):
 		return
 	var node: Node2D = _hw._map_view.call("add_marker", Vector2i(x, y), color, symbol, kind) as Node2D
@@ -256,7 +256,7 @@ func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cel
 		_hw._marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = node
 
 
-func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 24, mob_data: Dictionary = {}) -> void:
+func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 32, mob_data: Dictionary = {}) -> void:
 	if sprite_id.is_empty():
 		return
 	# New system: MobInstance from pool + MobData + MobManager.

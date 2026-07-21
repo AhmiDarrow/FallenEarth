@@ -27,6 +27,7 @@ var available_classes: Array[String] = []
 var _race_info_cache: Dictionary = {}
 var _portrait_preview: TextureRect = null
 var _portrait_index_label: Label = null
+var _info_popup: Window = null
 
 
 func _ready() -> void:
@@ -34,17 +35,27 @@ func _ready() -> void:
 	if bg != null:
 		bg.color = MT.BG_DEEP
 	# Style buttons
-	ButtonStyleHelper.apply_secondary($MainVBox/BackRow/BackButton)
-	ButtonStyleHelper.apply_primary($MainVBox/BottomBar/ConfirmButton)
-	ButtonStyleHelper.apply_ghost($MainVBox/BottomBar/ResetButton)
+	ButtonStyleHelper.apply_secondary($MainScroll/MainVBox/BackRow/BackButton)
+	ButtonStyleHelper.apply_primary($MainScroll/MainVBox/BottomBar/ConfirmButton)
+	ButtonStyleHelper.apply_ghost($MainScroll/MainVBox/BottomBar/ResetButton)
 	# Wire signals
-	$MainVBox/BackRow/BackButton.pressed.connect(_on_back_pressed)
-	$MainVBox/BottomBar/ConfirmButton.pressed.connect(_on_confirm_pressed)
-	$MainVBox/BottomBar/ResetButton.pressed.connect(reset_selection)
+	$MainScroll/MainVBox/BackRow/BackButton.pressed.connect(_on_back_pressed)
+	$MainScroll/MainVBox/BottomBar/ConfirmButton.pressed.connect(_on_confirm_pressed)
+	$MainScroll/MainVBox/BottomBar/ResetButton.pressed.connect(reset_selection)
 	character_created_and_ready.connect(_on_character_created_and_ready)
 	
+	# Apply MT theme to static scene labels
+	$MainScroll/MainVBox/RaceHeader.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	$MainScroll/MainVBox/ClassHeader.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	$MainScroll/MainVBox/SelectionSummary.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
+	$MainScroll/MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldLabel.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	$MainScroll/MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldLabel.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	$MainScroll/MainVBox/ClassPanel/ClassVBox/ClassLabel.add_theme_color_override("font_color", MT.TEXT_ACCENT)
+	$MainScroll/MainVBox/NameHBox/NameLabel.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
+	$MainScroll/MainVBox/GenderHBox/GenderLabel.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
+
 	# Connect name field to update summary
-	var name_edit := $MainVBox/NameHBox/NameEdit as LineEdit
+	var name_edit := $MainScroll/MainVBox/NameHBox/NameEdit as LineEdit
 	if is_instance_valid(name_edit):
 		name_edit.text_changed.connect(_on_name_changed)
 	
@@ -81,64 +92,62 @@ func _load_race_data() -> Dictionary:
 	return _race_info_cache
 
 
-func _create_race_button(race_key: String, info: Dictionary) -> Button:
-	var btn := Button.new()
-	btn.text = ("%s" % race_key).capitalize()
-	btn.custom_minimum_size = Vector2(0, 36)
-	btn.add_theme_color_override("font_color", Color.WHITE)
-	btn.size_flags_horizontal = 3
+func _create_race_button(race_key: String, info: Dictionary) -> HBoxContainer:
+	var btn := UIHelper.make_button(("%s" % race_key).capitalize(), "ghost", 0, 36)
 	btn.set_meta("race_key", race_key)
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.add_theme_color_override("font_color", Color.WHITE)
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.1, 0.25)
+	style.bg_color = MT.BG_SURFACE
 	style.border_width_bottom = 1
 	style.border_width_top = 1
 	style.border_width_left = 1
 	style.border_width_right = 1
-	style.border_color = Color(0.4, 0.3, 0.6)
+	style.border_color = MT.ACCENT_NEON
 	btn.add_theme_stylebox_override("normal", style)
 	var hover_style := style.duplicate()
-	hover_style.bg_color = Color(0.25, 0.15, 0.35)
+	hover_style.bg_color = MT.BG_ELEVATED
 	btn.add_theme_stylebox_override("hover", hover_style)
 
 	var desc: String = info.get("description", "A character.") as String
-	var base: Dictionary = info.get("base_stats", {}) as Dictionary
-	var stats_str = "STR:%d DEX:%d CON:%d INT:%d WIS:%d CHA:%d" % [
-		base.get("str", 10), base.get("dex", 10), base.get("con", 10),
-		base.get("int", 10), base.get("wis", 10), base.get("cha", 10)
-	]
-	btn.tooltip_text = "%s\nBase: %s" % [desc, stats_str]
-	
+	btn.tooltip_text = desc
+
 	_apply_race_button_style(btn, race_key == _selected_race_key)
-	
 	btn.pressed.connect(_on_race_selected.bind(race_key))
-	return btn
+
+	var info_btn := _make_info_button()
+	info_btn.tooltip_text = "Show details"
+	info_btn.pressed.connect(_on_race_info_pressed.bind(race_key))
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.add_child(btn)
+	row.add_child(info_btn)
+	return row
 
 func _apply_race_button_style(btn: Button, is_selected: bool):
+	var style := StyleBoxFlat.new()
 	if is_selected:
-		btn.self_modulate = Color(1.0, 1.0, 0.6)
-		var sel_style := StyleBoxFlat.new()
-		sel_style.bg_color = Color(0.3, 0.25, 0.45)
-		sel_style.border_width_bottom = 2
-		sel_style.border_width_top = 2
-		sel_style.border_width_left = 2
-		sel_style.border_width_right = 2
-		sel_style.border_color = Color(0.85, 0.75, 1.0)
-		btn.add_theme_stylebox_override("normal", sel_style)
+		btn.self_modulate = MT.ACCENT_PRIMARY
+		style.bg_color = MT.ACCENT_NEON
+		style.border_width_bottom = 2
+		style.border_width_top = 2
+		style.border_width_left = 2
+		style.border_width_right = 2
+		style.border_color = MT.ACCENT_PRIMARY
 	else:
 		btn.self_modulate = Color.WHITE
-		# Re-apply base if needed (simple approach)
-		var base_style := StyleBoxFlat.new()
-		base_style.bg_color = Color(0.15, 0.1, 0.25)
-		base_style.border_width_bottom = 1
-		base_style.border_width_top = 1
-		base_style.border_width_left = 1
-		base_style.border_width_right = 1
-		base_style.border_color = Color(0.4, 0.3, 0.6)
-		btn.add_theme_stylebox_override("normal", base_style)
+		style.bg_color = MT.BG_SURFACE
+		style.border_width_bottom = 1
+		style.border_width_top = 1
+		style.border_width_left = 1
+		style.border_width_right = 1
+		style.border_color = MT.ACCENT_NEON
+	btn.add_theme_stylebox_override("normal", style)
 
 func prefill_upworld_races():
-	var container := $MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll/UpworldButtonList as VBoxContainer
+	var container := $MainScroll/MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll/UpworldButtonList as VBoxContainer
 	if not is_instance_valid(container):
 		push_error("[CharacterSelection] UpworldButtonList not found in scene.")
 		return
@@ -154,14 +163,14 @@ func prefill_upworld_races():
 	for race_key in upworld.keys():
 		available_races.append(race_key)
 		var info: Dictionary = upworld[race_key] as Dictionary
-		var btn := _create_race_button(race_key, info)
-		container.add_child(btn)
+		var row := _create_race_button(race_key, info)
+		container.add_child(row)
 	
 	container.queue_sort()
 	print("[CharacterSelection] Populated Upworld races: %d" % upworld.size())
 
 func prefill_underworld_races():
-	var container := $MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll/UnderworldButtonList as VBoxContainer
+	var container := $MainScroll/MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll/UnderworldButtonList as VBoxContainer
 	if not is_instance_valid(container):
 		push_error("[CharacterSelection] UnderworldButtonList not found in scene.")
 		return
@@ -175,8 +184,8 @@ func prefill_underworld_races():
 	for race_key in underworld.keys():
 		available_races.append(race_key)
 		var info: Dictionary = underworld[race_key] as Dictionary
-		var btn := _create_race_button(race_key, info)
-		container.add_child(btn)
+		var row := _create_race_button(race_key, info)
+		container.add_child(row)
 	
 	container.queue_sort()
 	print("[CharacterSelection] Populated Underworld races: %d" % underworld.size())
@@ -193,20 +202,33 @@ func _on_race_selected(race_key: String):
 
 func _update_all_race_buttons():
 	# Update Upworld list
-	var up_container := $MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll/UpworldButtonList as VBoxContainer
+	var up_container := $MainScroll/MainVBox/RacesHBox/UpworldPanel/UpworldVBox/UpworldScroll/UpworldButtonList as VBoxContainer
 	if is_instance_valid(up_container):
-		for child in up_container.get_children():
-			if child is Button and child.has_meta("race_key"):
-				var key: String = child.get_meta("race_key")
-				_apply_race_button_style(child, key == _selected_race_key)
-	
+		for wrapper in up_container.get_children():
+			if not (wrapper is HBoxContainer):
+				continue
+			var key: String = _race_key_from_row(wrapper)
+			if key.is_empty():
+				continue
+			_apply_race_button_style(wrapper.get_child(0), key == _selected_race_key)
+
 	# Update Underworld list
-	var under_container := $MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll/UnderworldButtonList as VBoxContainer
+	var under_container := $MainScroll/MainVBox/RacesHBox/UnderworldPanel/UnderworldVBox/UnderworldScroll/UnderworldButtonList as VBoxContainer
 	if is_instance_valid(under_container):
-		for child in under_container.get_children():
-			if child is Button and child.has_meta("race_key"):
-				var key: String = child.get_meta("race_key")
-				_apply_race_button_style(child, key == _selected_race_key)
+		for wrapper in under_container.get_children():
+			if not (wrapper is HBoxContainer):
+				continue
+			var key: String = _race_key_from_row(wrapper)
+			if key.is_empty():
+				continue
+			_apply_race_button_style(wrapper.get_child(0), key == _selected_race_key)
+
+
+func _race_key_from_row(wrapper: Container) -> String:
+	for c in wrapper.get_children():
+		if c is Button and c.has_meta("race_key"):
+			return c.get_meta("race_key")
+	return ""
 
 
 # ===================================================================
@@ -238,7 +260,7 @@ func prefill_class_buttons(force_new: bool = true):
 	if force_new == false and not available_classes.is_empty():
 		return
 	
-	var scroll := $MainVBox/ClassPanel/ClassVBox/ClassScrollContainer/ClassButtonList as VBoxContainer
+	var scroll := $MainScroll/MainVBox/ClassPanel/ClassVBox/ClassScrollContainer/ClassButtonList as VBoxContainer
 	if is_instance_valid(scroll):
 		for child in scroll.get_children():
 			child.queue_free()
@@ -250,50 +272,38 @@ func prefill_class_buttons(force_new: bool = true):
 	for entry: Variant in data:
 		if entry is Dictionary and entry.has("name"):
 			var key: String = (entry as Dictionary)["name"] as String
-			
-			var btn := Button.new()
-			btn.text = ("%s" % key).capitalize()
-			btn.custom_minimum_size = Vector2(0, 40)
-			btn.add_theme_color_override("font_color", Color.WHITE)
-			btn.size_flags_horizontal = 3  # fill + expand
-			btn.set_meta("class_key", key)
 
-			# Give buttons a visible dark style so they show on dark background
+			var btn := UIHelper.make_button(("%s" % key).capitalize(), "ghost", 0, 40)
+			btn.set_meta("class_key", key)
+			btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			btn.add_theme_color_override("font_color", Color.WHITE)
+
 			var style := StyleBoxFlat.new()
-			style.bg_color = Color(0.15, 0.1, 0.25)
+			style.bg_color = MT.BG_SURFACE
 			style.border_width_bottom = 1
 			style.border_width_top = 1
 			style.border_width_left = 1
 			style.border_width_right = 1
-			style.border_color = Color(0.4, 0.3, 0.6)
+			style.border_color = MT.ACCENT_NEON
 			btn.add_theme_stylebox_override("normal", style)
 			var hover_style := style.duplicate()
-			hover_style.bg_color = Color(0.25, 0.15, 0.35)
+			hover_style.bg_color = MT.BG_ELEVATED
 			btn.add_theme_stylebox_override("hover", hover_style)
 
-			btn.self_modulate = Color(1.0, 1.0, 0.6) if key == _selected_class_key else Color.WHITE
+			btn.self_modulate = MT.ACCENT_PRIMARY if key == _selected_class_key else Color.WHITE
 			var desc: String = entry.get("description", "") as String
 			btn.tooltip_text = desc if desc != "" else ""
-			
-			var stat_desc: String = ""
-			var mods: Dictionary = entry.get("stat_mods", {}) as Dictionary
-			for k: String in mods:
-				stat_desc += "%s%+d " % [k.to_upper(), mods[k]]
-			if not stat_desc.is_empty():
-				btn.tooltip_text += "\nMods: %s" % stat_desc
-			var combat: Dictionary = entry.get("combat", {}) as Dictionary
-			if not combat.is_empty():
-				btn.tooltip_text += "\n[FFT] Role: %s | MP: %d | Range: %d" % [
-					combat.get("role", "?"), combat.get("mp_max", 0), combat.get("weapon_range", 1),
-				]
-			var prog: Dictionary = entry.get("progression", {}) as Dictionary
-			if not prog.is_empty():
-				var max_lv: int = int(prog.get("max_level", 256))
-				var ab_count: int = (combat.get("abilities", []) as Array).size()
-				btn.tooltip_text += "\n[Progression] Lv.1–%d | %d abilities unlock over time" % [max_lv, ab_count]
-			
 			btn.pressed.connect(_on_class_selected.bind(key))
-			scroll.add_child(btn)
+
+			var info_btn := _make_info_button()
+			info_btn.tooltip_text = "Show details"
+			info_btn.pressed.connect(_on_class_info_pressed.bind(key))
+
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 4)
+			row.add_child(btn)
+			row.add_child(info_btn)
+			scroll.add_child(row)
 
 	# Force layout update so the list is visible immediately
 	scroll.queue_sort()
@@ -305,14 +315,18 @@ func prefill_class_buttons(force_new: bool = true):
 
 func _on_class_selected(class_key: String):
 	_selected_class_key = class_key
-	
-	var scroll := $MainVBox/ClassPanel/ClassVBox/ClassScrollContainer/ClassButtonList as VBoxContainer
+
+	var scroll := $MainScroll/MainVBox/ClassPanel/ClassVBox/ClassScrollContainer/ClassButtonList as VBoxContainer
 	if is_instance_valid(scroll):
-		for child in scroll.get_children():
-			if child is Button and child.has_meta("class_key"):
-				var key: String = child.get_meta("class_key")
-				child.self_modulate = Color(1.0, 1.0, 0.6) if key == class_key else Color.WHITE
-	
+		for wrapper in scroll.get_children():
+			if not (wrapper is HBoxContainer):
+				continue
+			for c in wrapper.get_children():
+				if c is Button and c.has_meta("class_key"):
+					var key: String = c.get_meta("class_key")
+					c.self_modulate = MT.ACCENT_PRIMARY if key == class_key else Color.WHITE
+					break
+
 	_update_selection_summary()
 	print("[CharacterSelection] Selected class: %s" % class_key)
 
@@ -322,7 +336,7 @@ func _on_class_selected(class_key: String):
 # ===================================================================
 
 func _build_gender_buttons():
-	var list := $MainVBox/GenderHBox/GenderButtonList as HBoxContainer
+	var list := $MainScroll/MainVBox/GenderHBox/GenderButtonList as HBoxContainer
 	if not is_instance_valid(list):
 		push_error("[CharacterSelection] GenderButtonList not found.")
 		return
@@ -330,10 +344,7 @@ func _build_gender_buttons():
 		child.queue_free()
 	var group := ButtonGroup.new()
 	for gender in ["male", "female"]:
-		var btn := Button.new()
-		btn.text = gender.capitalize()
-		btn.custom_minimum_size = Vector2(120, 32)
-		btn.toggle_mode = true
+		var btn := UIHelper.make_button(gender.capitalize(), "ghost", 120, 32, true)
 		btn.button_group = group
 		btn.set_meta("gender", gender)
 		_apply_gender_button_style(btn, gender == _selected_gender)
@@ -356,53 +367,50 @@ func _get_portrait_race_key() -> String:
 
 
 func _build_portrait_picker() -> void:
-	var existing := $MainVBox/PortraitHBox
-	if is_instance_valid(existing):
-		for child in existing.get_children():
-			child.queue_free()
-		existing.queue_free()
+	var mv: VBoxContainer = $MainScroll/MainVBox
+	if is_instance_valid(mv):
+		for child in mv.get_children():
+			if child.name == "PortraitHBox":
+				for c in child.get_children():
+					c.queue_free()
+				child.queue_free()
 
-	var hbox := HBoxContainer.new()
+	var hbox := UIHelper.make_hbox(12)
 	hbox.name = "PortraitHBox"
-	hbox.alignment = HBoxContainer.ALIGNMENT_CENTER
-	hbox.add_theme_constant_override("separation", 12)
 
 	_portrait_preview = TextureRect.new()
 	_portrait_preview.name = "PortraitPreview"
-	_portrait_preview.custom_minimum_size = Vector2(80, 80)
-	_portrait_preview.expand_mode = TextureRect.EXPAND_KEEP_SIZE
+	_portrait_preview.custom_minimum_size = Vector2(210, 210)
+	_portrait_preview.size = Vector2(210, 210)
+	_portrait_preview.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_portrait_preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	_portrait_preview.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_portrait_preview.add_theme_stylebox_override("normal",
+		MT.panel(MT.BG_SURFACE, MT.BORDER_STRONG, MT.RADIUS_LG, MT.BORDER_WIDTH))
 	hbox.add_child(_portrait_preview)
 
-	var btn_vbox := VBoxContainer.new()
-	btn_vbox.alignment = VBoxContainer.ALIGNMENT_CENTER
-	btn_vbox.add_theme_constant_override("separation", 4)
+	var btn_vbox := UIHelper.make_vbox(2)
+	btn_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 
-	var prev_btn := Button.new()
-	prev_btn.text = "<"
-	prev_btn.custom_minimum_size = Vector2(40, 28)
+	var prev_btn := UIHelper.make_button("<", "ghost", 40, 36)
 	prev_btn.pressed.connect(_on_portrait_prev)
 	btn_vbox.add_child(prev_btn)
 
-	_portrait_index_label = Label.new()
-	_portrait_index_label.text = "1/6"
+	_portrait_index_label = UIHelper.make_accent_label("1/6", MT.FS_SMALL)
 	_portrait_index_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_portrait_index_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	_portrait_index_label.add_theme_font_size_override("font_size", 12)
 	btn_vbox.add_child(_portrait_index_label)
 
-	var next_btn := Button.new()
-	next_btn.text = ">"
-	next_btn.custom_minimum_size = Vector2(40, 28)
+	var next_btn := UIHelper.make_button(">", "ghost", 40, 36)
 	next_btn.pressed.connect(_on_portrait_next)
 	btn_vbox.add_child(next_btn)
 
 	hbox.add_child(btn_vbox)
 
-	var name_hbox := $MainVBox/NameHBox
-	if is_instance_valid(name_hbox):
-		$MainVBox.add_child_below_node(name_hbox, hbox)
+	if is_instance_valid(mv):
+		var name_hbox := mv.get_node_or_null("NameHBox")
+		var insert_idx: int = name_hbox.get_index() + 1 if is_instance_valid(name_hbox) else mv.get_child_count()
+		mv.add_child(hbox)
+		mv.move_child(hbox, insert_idx)
 
 	_update_portrait_preview()
 
@@ -449,29 +457,29 @@ func _on_gender_selected(gender: String) -> void:
 func _apply_gender_button_style(btn: Button, is_selected: bool):
 	var style := StyleBoxFlat.new()
 	if is_selected:
-		style.bg_color = Color(0.3, 0.25, 0.45)
+		style.bg_color = MT.ACCENT_NEON
 		style.border_width_bottom = 2
 		style.border_width_top = 2
 		style.border_width_left = 2
 		style.border_width_right = 2
-		style.border_color = Color(0.85, 0.75, 1.0)
-		btn.self_modulate = Color(1.0, 1.0, 0.6)
+		style.border_color = MT.ACCENT_PRIMARY
+		btn.self_modulate = MT.ACCENT_PRIMARY
 	else:
-		style.bg_color = Color(0.15, 0.1, 0.25)
+		style.bg_color = MT.BG_SURFACE
 		style.border_width_bottom = 1
 		style.border_width_top = 1
 		style.border_width_left = 1
 		style.border_width_right = 1
-		style.border_color = Color(0.4, 0.3, 0.6)
+		style.border_color = MT.ACCENT_NEON
 		btn.self_modulate = Color.WHITE
 	btn.add_theme_stylebox_override("normal", style)
 	var hover_style := style.duplicate()
-	hover_style.bg_color = Color(0.25, 0.15, 0.35)
+	hover_style.bg_color = MT.BG_ELEVATED
 	btn.add_theme_stylebox_override("hover", hover_style)
 
 
 func _update_gender_buttons():
-	var list := $MainVBox/GenderHBox/GenderButtonList as HBoxContainer
+	var list := $MainScroll/MainVBox/GenderHBox/GenderButtonList as HBoxContainer
 	if not is_instance_valid(list):
 		return
 	for child in list.get_children():
@@ -480,11 +488,11 @@ func _update_gender_buttons():
 
 
 func _update_selection_summary():
-	var name_edit := $MainVBox/NameHBox/NameEdit as LineEdit
+	var name_edit := $MainScroll/MainVBox/NameHBox/NameEdit as LineEdit
 	var char_name := name_edit.text.strip_edges() if is_instance_valid(name_edit) else ""
 	
-	var summary := $MainVBox/SelectionSummary as RichTextLabel
-	var confirm_btn := $MainVBox/BottomBar/ConfirmButton as Button
+	var summary := $MainScroll/MainVBox/SelectionSummary as RichTextLabel
+	var confirm_btn := $MainScroll/MainVBox/BottomBar/ConfirmButton as Button
 	
 	var can_proceed := not _selected_race_key.is_empty() and not _selected_class_key.is_empty()
 	
@@ -531,7 +539,7 @@ func _on_name_changed(_new_text: String):
 	_update_selection_summary()
 
 func _on_confirm_pressed():
-	var name_edit := $MainVBox/NameHBox/NameEdit as LineEdit
+	var name_edit := $MainScroll/MainVBox/NameHBox/NameEdit as LineEdit
 	var char_name := name_edit.text.strip_edges() if is_instance_valid(name_edit) else ""
 	
 	if _selected_race_key.is_empty() or _selected_class_key.is_empty():
@@ -624,11 +632,11 @@ func reset_selection():
 	_selected_race_key = ""
 	_selected_class_key = ""
 	_selected_gender = "male"
-	
-	var name_edit := $MainVBox/NameHBox/NameEdit as LineEdit
+
+	var name_edit := $MainScroll/MainVBox/NameHBox/NameEdit as LineEdit
 	if is_instance_valid(name_edit):
 		name_edit.text = ""
-	
+
 	_build_gender_buttons()
 	prefill_upworld_races()
 	prefill_underworld_races()
@@ -636,3 +644,134 @@ func reset_selection():
 	_update_selection_summary()
 	print("[CharacterSelection] Selection reset — rebuilding UI.")
 	selection_reset.emit()
+
+
+# ===================================================================
+# Info popups (the "i" icon next to races and classes)
+# ===================================================================
+
+func _make_info_button() -> Button:
+	var btn := Button.new()
+	btn.text = "i"
+	btn.custom_minimum_size = Vector2(28, 28)
+	MT.apply_button_style(btn, "ghost")
+	return btn
+
+
+func _on_race_info_pressed(race_key: String) -> void:
+	var data: Dictionary = _load_race_data()
+	var info: Dictionary = {}
+	for category in ["upworld", "underworld"]:
+		if data.has(category) and (data[category] as Dictionary).has(race_key):
+			info = data[category][race_key]
+			break
+	if info.is_empty():
+		return
+	var title: String = "%s — %s" % [race_key.capitalize(), info.get("origin", "?")]
+	var lines: Array[String] = []
+	lines.append("[i]%s[/i]" % info.get("description", ""))
+	var base: Dictionary = info.get("base_stats", {}) as Dictionary
+	lines.append("\n[b]Base Stats[/b]")
+	lines.append("STR %d   DEX %d   CON %d" % [
+		base.get("str", 10), base.get("dex", 10), base.get("con", 10)])
+	lines.append("INT %d   WIS %d   CHA %d" % [
+		base.get("int", 10), base.get("wis", 10), base.get("cha", 10)])
+	if info.has("flavor") and str(info.get("flavor", "")) != "":
+		lines.append("\n[i][color=#%s]%s[/color][/i]" % [
+			MT.TEXT_SECONDARY.to_html(false), info.get("flavor", "")])
+	_show_info_window(title, "\n".join(lines))
+
+
+func _on_class_info_pressed(class_key: String) -> void:
+	var data: Array = _load_class_data()
+	var entry: Dictionary = {}
+	for e in data:
+		if e is Dictionary and str(e.get("name", "")) == class_key:
+			entry = e
+			break
+	if entry.is_empty():
+		return
+	var title: String = class_key.capitalize()
+	var lines: Array[String] = []
+	lines.append("[i]%s[/i]" % entry.get("description", ""))
+
+	var mods: Dictionary = entry.get("stat_mods", {}) as Dictionary
+	if not mods.is_empty():
+		lines.append("\n[b]Stat Mods[/b]")
+		var parts: Array[String] = []
+		for k: String in mods:
+			parts.append("%s %+d" % [k.to_upper(), int(mods[k])])
+		lines.append("   ".join(parts))
+
+	var combat: Dictionary = entry.get("combat", {}) as Dictionary
+	if not combat.is_empty():
+		lines.append("\n[b]Combat[/b]")
+		lines.append("Role: %s  |  MP: %d  |  Range: %d  |  Reaction: %s" % [
+			combat.get("role", "?"), int(combat.get("mp_max", 0)),
+			int(combat.get("weapon_range", 1)), combat.get("reaction", "?")])
+
+	var prog: Dictionary = entry.get("progression", {}) as Dictionary
+	if not prog.is_empty():
+		var abilities: Array = combat.get("abilities", []) as Array
+		lines.append("\n[b]Progression[/b]")
+		lines.append("Lv.1 → Lv.%d  |  %d unique abilities unlock over time" % [
+			int(prog.get("max_level", 256)), abilities.size()])
+
+	var skills: Array = entry.get("skills", []) as Array
+	if not skills.is_empty():
+		lines.append("\n[b]Skills[/b]")
+		lines.append(", ".join(skills))
+
+	_show_info_window(title, "\n".join(lines))
+
+
+func _show_info_window(title: String, body_bbcode: String) -> void:
+	if is_instance_valid(_info_popup):
+		_info_popup.hide()
+		_info_popup.queue_free()
+
+	_info_popup = Window.new()
+	_info_popup.title = title
+	_info_popup.size = Vector2i(480, 380)
+	_info_popup.transient = true
+	_info_popup.unresizable = true
+	_info_popup.exclusive = false
+	_info_popup.close_requested.connect(func() -> void:
+		if is_instance_valid(_info_popup):
+			_info_popup.hide()
+	)
+	add_child(_info_popup)
+	MT.apply_to(_info_popup)
+
+	var root := VBoxContainer.new()
+	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	root.add_theme_constant_override("separation", 10)
+	_info_popup.add_child(root)
+
+	var title_lbl := UIHelper.make_accent_label(title, MT.FS_H3)
+	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	root.add_child(title_lbl)
+	root.add_child(UIHelper.make_separator())
+
+	var body := RichTextLabel.new()
+	body.bbcode_enabled = true
+	body.fit_content = true
+	body.text = body_bbcode
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	body.custom_minimum_size = Vector2(0, 240)
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	body.add_theme_color_override("default_color", MT.TEXT_PRIMARY)
+	body.add_theme_font_size_override("normal_font_size", MT.FS_BODY)
+	root.add_child(body)
+
+	var btn_row := UIHelper.make_center_hbox()
+	var close := UIHelper.make_button("Close", "secondary", 120, 36)
+	close.pressed.connect(func() -> void:
+		if is_instance_valid(_info_popup):
+			_info_popup.hide()
+	)
+	btn_row.add_child(close)
+	root.add_child(btn_row)
+
+	_info_popup.popup_centered()

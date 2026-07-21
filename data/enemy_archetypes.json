@@ -4,25 +4,29 @@
       "display_role": "Beast",
       "rarity": "common",
       "aggression": 0.55,
-      "weight": 4
+      "weight": 4,
+      "wildlife_class": "beast"
     },
     "insectoid": {
       "display_role": "Scavenger",
       "rarity": "common",
       "aggression": 0.50,
-      "weight": 3
+      "weight": 3,
+      "wildlife_class": "beast"
     },
     "behemoth": {
       "display_role": "Brute",
       "rarity": "uncommon",
       "aggression": 0.65,
-      "weight": 1
+      "weight": 1,
+      "wildlife_class": "beast"
     },
     "aberrant": {
       "display_role": "Aberration",
       "rarity": "uncommon",
       "aggression": 0.60,
-      "weight": 2
+      "weight": 2,
+      "wildlife_class": "beast"
     },
     "raider": {
       "display_role": "Raider",
@@ -31,7 +35,8 @@
       "weight": 1,
       "is_tamable": true,
       "tamable_type": "companion",
-      "tame_difficulty": 0.4
+      "tame_difficulty": 0.4,
+      "wildlife_class": "humanoid"
     },
     "smuggler": {
       "display_role": "Smuggler",
@@ -40,13 +45,15 @@
       "weight": 1,
       "is_tamable": true,
       "tamable_type": "companion",
-      "tame_difficulty": 0.4
+      "tame_difficulty": 0.4,
+      "wildlife_class": "humanoid"
     },
     "spy": {
       "display_role": "Spy",
       "rarity": "rare",
       "aggression": 0.60,
-      "weight": 1
+      "weight": 1,
+      "wildlife_class": "humanoid"
     },
     "cultist": {
       "display_role": "Cultist",
@@ -55,7 +62,8 @@
       "weight": 1,
       "is_tamable": true,
       "tamable_type": "companion",
-      "tame_difficulty": 0.4
+      "tame_difficulty": 0.4,
+      "wildlife_class": "humanoid"
     },
     "tech_cultist": {
       "display_role": "Tech Cultist",
@@ -64,7 +72,8 @@
       "weight": 1,
       "is_tamable": true,
       "tamable_type": "companion",
-      "tame_difficulty": 0.4
+      "tame_difficulty": 0.4,
+      "wildlife_class": "humanoid"
     },
     "mercenary": {
       "display_role": "Mercenary",
@@ -73,7 +82,8 @@
       "weight": 1,
       "is_tamable": true,
       "tamable_type": "companion",
-      "tame_difficulty": 0.4
+      "tame_difficulty": 0.4,
+      "wildlife_class": "humanoid"
     }
   }
 }

@@ -101,8 +101,8 @@ func _test_loot_roller_drops_raw_meat() -> void:
 	for d in drops:
 		if str(d.get("item_id", "")) == "raw_meat":
 			found = true
-			if int(d.get("qty", 0)) != 3:
-				_fail("Mycelial Behemoth should drop 3 raw_meat, got %d" % int(d.get("qty", 0)))
+			if int(d.get("count", 0)) != 3:
+				_fail("Mycelial Behemoth should drop 3 raw_meat, got %d" % int(d.get("count", 0)))
 				return
 	if not found:
 		_fail("LootRoller should have rolled raw_meat for mycelial_behemoth (drops=%s)" % str(drops))
@@ -171,9 +171,9 @@ func _test_recipes_for_station_cooking_table() -> void:
 func _test_craft_cooked_meat_consumes_raw_meat() -> void:
 	print("[smoke-cooking] test: craft(cooked_meat) consumes raw_meat")
 	var cm: Node = root.get_node_or_null("CraftingManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if cm == null or inv == null:
-		_fail("CraftingManager or InventoryManager autoload not available")
+		_fail("CraftingManager or InventoryHandler autoload not available")
 		return
 	# Set up: 3 raw_meat, 0 cooked_meat
 	while inv.has_item("raw_meat", 1):
@@ -204,9 +204,9 @@ func _test_craft_cooked_meat_consumes_raw_meat() -> void:
 func _test_craft_cooked_meat_fails_when_no_raw_meat() -> void:
 	print("[smoke-cooking] test: craft(cooked_meat) fails when no raw_meat")
 	var cm: Node = root.get_node_or_null("CraftingManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if cm == null or inv == null:
-		_fail("CraftingManager or InventoryManager autoload not available")
+		_fail("CraftingManager or InventoryHandler autoload not available")
 		return
 	while inv.has_item("raw_meat", 1):
 		inv.remove_item("raw_meat", 1)
@@ -222,9 +222,9 @@ func _test_craft_cooked_meat_fails_when_no_raw_meat() -> void:
 func _test_craft_mana_potion_at_l5() -> void:
 	print("[smoke-cooking] test: craft(mana_potion) at L5")
 	var cm: Node = root.get_node_or_null("CraftingManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if cm == null or inv == null:
-		_fail("CraftingManager or InventoryManager autoload not available")
+		_fail("CraftingManager or InventoryHandler autoload not available")
 		return
 	# Clear and set up
 	for item in ["withered_branch", "teal_crystal", "mana_potion"]:
@@ -265,9 +265,9 @@ func _test_craft_mana_potion_at_l5() -> void:
 func _test_craft_antidote_at_l3() -> void:
 	print("[smoke-cooking] test: craft(antidote) at L3")
 	var cm: Node = root.get_node_or_null("CraftingManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if cm == null or inv == null:
-		_fail("CraftingManager or InventoryManager autoload not available")
+		_fail("CraftingManager or InventoryHandler autoload not available")
 		return
 	for item in ["kelp_fibre", "rusted_scrap", "antidote"]:
 		while inv.has_item(item, 1):
@@ -475,7 +475,7 @@ func _test_loot_roller_deterministic_with_seed() -> void:
 		if str(drops1[i].get("item_id", "")) != str(drops2[i].get("item_id", "")):
 			_fail("LootRoller roll not deterministic: item_id differs at index %d" % i)
 			return
-		if int(drops1[i].get("qty", 0)) != int(drops2[i].get("qty", 0)):
+		if int(drops1[i].get("count", 0)) != int(drops2[i].get("count", 0)):
 			_fail("LootRoller roll not deterministic: qty differs at index %d" % i)
 			return
 	_ok("LootRoller roll is deterministic with seeded RNG")
@@ -515,9 +515,9 @@ func _test_cooking_table_recipe_unlocks_at_l5() -> void:
 func _test_cooking_table_recipe_produces_cooking_table() -> void:
 	print("[smoke-cooking] test: craft(cooking_table) produces a cooking_table item")
 	var cm: Node = root.get_node_or_null("CraftingManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if cm == null or inv == null:
-		_fail("CraftingManager or InventoryManager autoload not available")
+		_fail("CraftingManager or InventoryHandler autoload not available")
 		return
 	# Clear and set up: ingredients for cooking_table
 	# Recipe: 4 withered_branch + 2 iron_ore + 1 teal_crystal → 1 cooking_table

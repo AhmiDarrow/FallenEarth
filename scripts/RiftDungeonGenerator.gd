@@ -103,8 +103,8 @@ static func _generate_maze(tiles: Dictionary, width: int, height: int) -> void:
 			if rng.randf() < 0.25:
 				var perp: Vector2i = Vector2i(abs(chosen.y - cur.y) / 2, abs(chosen.x - cur.x) / 2)
 				for offset in [-1, 1]:
-					var wpx := chosen.x + perp.x * offset
-					var wpy := chosen.y + perp.y * offset
+					var wpx: int = chosen.x + perp.x * offset
+					var wpy: int = chosen.y + perp.y * offset
 					if wpx > 0 and wpx < width - 1 and wpy > 0 and wpy < height - 1:
 						if str(tiles.get(_key(wpx, wpy), {}).get("type", TILE_WALL)) == TILE_WALL:
 							tiles[_key(wpx, wpy)] = {"type": TILE_FLOOR, "cleared": true}

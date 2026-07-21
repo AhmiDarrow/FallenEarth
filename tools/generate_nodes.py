@@ -23,7 +23,7 @@ NODES_JSON = ROOT / "data" / "resource_nodes.json"
 OUT_DIR = ROOT / "assets" / "sprites" / "resource_nodes"
 GDFILE = OUT_DIR / ".gdignore"
 
-CELL = 24
+CELL = 32
 
 # Per-category palette: {category: (fill_rgb, accent_rgb, outline_rgb)}
 CATEGORY_PALETTES = {

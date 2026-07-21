@@ -5,7 +5,7 @@
 class_name MobAIController
 extends Node
 
-enum State { IDLE, WANDER, AGGRO, ATTACK, FLEE, PATROL, RETURN_TO_SPAWN }
+enum State { IDLE, WANDER, AGGRO, ATTACK, FLEE, SKITTISH, PATROL, RETURN_TO_SPAWN }
 
 const GRID_OFFSETS: Array[Vector2i] = [Vector2i(0, -1), Vector2i(1, 0), Vector2i(0, 1), Vector2i(-1, 0)]
 const BFS_MAX_VISITED: int = 4096
@@ -18,6 +18,8 @@ var grid_y: int = 0
 var spawn_x: int = 0
 var spawn_y: int = 0
 var aggro_range: int = 3
+var skittish_range: int = 8
+var wildlife_class: String = ""
 var mob_type: String = "aggressive"
 var patrol_radius: int = 8
 
@@ -58,9 +60,15 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 		_spawn_grace -= delta
 		return
 
+	# Skittish check — vermin flee before aggro triggers
+	if current_state != State.SKITTISH and current_state != State.FLEE:
+		if dist_to_player <= skittish_range and wildlife_class == "vermin":
+			_set_state(State.SKITTISH)
+			_flee_from(player_x, player_y)
+
 	# Aggro check — sets state + path, then falls through so _tick_aggro
 	# populates _wander_target (avoids stale Vector2i.ZERO bug).
-	if current_state != State.AGGRO and current_state != State.ATTACK and current_state != State.FLEE:
+	if current_state != State.AGGRO and current_state != State.ATTACK and current_state != State.FLEE and current_state != State.SKITTISH:
 		if dist_to_player <= aggro_range and mob_type == "aggressive":
 			_set_state(State.AGGRO)
 			_repath(player_x, player_y)
@@ -78,6 +86,13 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 		_idle_timer = _rng.randf_range(0.5, 1.5)
 		return
 
+	# Hysteresis: drop skittish when player is comfortably far
+	if current_state == State.SKITTISH and dist_to_player > skittish_range + 4:
+		_set_state(State.IDLE)
+		_path.clear()
+		_idle_timer = _rng.randf_range(0.5, 1.5)
+		return
+
 	match current_state:
 		State.IDLE:
 			_tick_idle(delta)
@@ -89,6 +104,8 @@ func tick(delta: float, player_x: int, player_y: int) -> void:
 			_tick_return_to_spawn()
 		State.FLEE:
 			_tick_flee(player_x, player_y)
+		State.SKITTISH:
+			_tick_skittish(player_x, player_y)
 		State.ATTACK:
 			pass
 
@@ -178,7 +195,15 @@ func _tick_flee(player_x: int, player_y: int) -> void:
 		_set_state(State.IDLE)
 		_idle_timer = _rng.randf_range(1.0, 2.0)
 		return
-	var opposite_dir: Vector2i = Vector2i(grid_x - player_x, grid_y - player_y)
+	_flee_from(player_x, player_y)
+
+
+func _tick_skittish(player_x: int, player_y: int) -> void:
+	_flee_from(player_x, player_y)
+
+
+func _flee_from(from_x: int, from_y: int) -> void:
+	var opposite_dir: Vector2i = Vector2i(grid_x - from_x, grid_y - from_y)
 	var candidates: Array[Vector2i] = []
 	var flee_offsets: Array[Vector2i] = [
 		Vector2i(clamp(opposite_dir.x, -1, 1), clamp(opposite_dir.y, -1, 1)),

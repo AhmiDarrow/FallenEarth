@@ -755,6 +755,507 @@
       },
       "size_range": [0.9, 1.4],
       "notes": "Spore-throwing brute. 2 legs, long arms, mushroom cap on back."
+    },
+
+    "cinder_mite": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "round",
+        "body_ratio": 0.2,
+        "head_size": 0.08,
+        "leg_count": 8,
+        "leg_style": "spider",
+        "eye_count": 6,
+        "eye_size": 0.04,
+        "glow_intensity": 0.3,
+        "hump": true,
+        "tail": false
+      },
+      "color_range": {
+        "base": "ash",
+        "hue_shift": 0.02,
+        "sat_shift": 0.1,
+        "var_shift": 0.12
+      },
+      "size_range": [0.3, 0.5],
+      "notes": "Tiny irradiated tick. Glowing ash pustules, 8 legs, burrows."
+    },
+    "scrap_crawler": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "oblong",
+        "body_ratio": 0.25,
+        "head_size": 0.1,
+        "leg_count": 6,
+        "leg_style": "jointed",
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "hump": false,
+        "tail": false
+      },
+      "color_range": {
+        "base": "rust",
+        "hue_shift": 0.05,
+        "sat_shift": 0.15,
+        "var_shift": 0.1
+      },
+      "size_range": [0.35, 0.55],
+      "notes": "Rust beetle with magnetic mandibles. Jointed legs, metallic sheen."
+    },
+    "glow_leech": {
+      "archetype": "floater",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "elongated",
+        "body_ratio": 0.15,
+        "head_size": 0.08,
+        "leg_count": 0,
+        "tentacle_count": 3,
+        "tentacle_length": 0.25,
+        "eye_count": 1,
+        "eye_size": 0.05,
+        "glow_intensity": 0.7,
+        "pulse": true
+      },
+      "color_range": {
+        "base": "neon",
+        "hue_shift": 0.15,
+        "sat_shift": 0.2,
+        "var_shift": 0.08
+      },
+      "size_range": [0.3, 0.5],
+      "notes": "Bioluminescent segmented worm. Hovering, pulsing glow, trailing tentacles."
+    },
+    "heat_wisp": {
+      "archetype": "floater",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "sphere",
+        "body_ratio": 0.15,
+        "head_size": 0.0,
+        "leg_count": 0,
+        "tentacle_count": 0,
+        "eye_count": 0,
+        "glow_intensity": 0.8,
+        "pulse": true
+      },
+      "color_range": {
+        "base": "fire",
+        "hue_shift": 0.05,
+        "sat_shift": 0.1,
+        "var_shift": 0.2
+      },
+      "size_range": [0.2, 0.35],
+      "notes": "Translucent floating air-sac. Internal flame, wispy, semi-transparent."
+    },
+    "spike_roller": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "round",
+        "body_ratio": 0.3,
+        "head_size": 0.06,
+        "leg_count": 8,
+        "leg_style": "stubby",
+        "eye_count": 2,
+        "eye_size": 0.04,
+        "hump": true,
+        "tail": false,
+        "spike_count": 6
+      },
+      "color_range": {
+        "base": "leaf",
+        "hue_shift": 0.1,
+        "sat_shift": 0.12,
+        "var_shift": 0.15
+      },
+      "size_range": [0.35, 0.55],
+      "notes": "Armored isopod with vine-carapace. Curls into spiked ball, metallic green-brown."
+    },
+    "shard_hopper": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "angular",
+        "body_ratio": 0.2,
+        "head_size": 0.1,
+        "leg_count": 4,
+        "leg_style": "jointed",
+        "eye_count": 4,
+        "eye_size": 0.05,
+        "hump": false,
+        "tail": true,
+        "tail_length": 0.15
+      },
+      "color_range": {
+        "base": "crystal",
+        "hue_shift": 0.03,
+        "sat_shift": 0.08,
+        "var_shift": 0.2
+      },
+      "size_range": [0.25, 0.4],
+      "notes": "Glass-skinned cricket. Angular body, reflective facets, sharp leg edges."
+    },
+    "bone_mite": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "oblong",
+        "body_ratio": 0.15,
+        "head_size": 0.08,
+        "leg_count": 8,
+        "leg_style": "spider",
+        "eye_count": 8,
+        "eye_size": 0.03,
+        "hump": false,
+        "tail": false
+      },
+      "color_range": {
+        "base": "bone",
+        "hue_shift": 0.02,
+        "sat_shift": 0.05,
+        "var_shift": 0.1
+      },
+      "size_range": [0.25, 0.4],
+      "notes": "Pale white arachnid. Skull-like carapace, clicks mandibles, nests in cavities."
+    },
+    "arc_tick": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "round",
+        "body_ratio": 0.18,
+        "head_size": 0.06,
+        "leg_count": 6,
+        "leg_style": "jointed",
+        "eye_count": 2,
+        "eye_size": 0.07,
+        "glow_intensity": 0.5,
+        "hump": false,
+        "tail": false
+      },
+      "color_range": {
+        "base": "electric",
+        "hue_shift": 0.02,
+        "sat_shift": 0.15,
+        "var_shift": 0.15
+      },
+      "size_range": [0.3, 0.45],
+      "notes": "Static-charged blue tick. Crackling arcs between legs, glowing abdomen."
+    },
+    "blister_slug": {
+      "archetype": "floater",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "oblong",
+        "body_ratio": 0.25,
+        "head_size": 0.1,
+        "leg_count": 0,
+        "tentacle_count": 2,
+        "tentacle_length": 0.2,
+        "eye_count": 2,
+        "eye_size": 0.04,
+        "hump": true,
+        "tail": true,
+        "tail_length": 0.1
+      },
+      "color_range": {
+        "base": "toxic",
+        "hue_shift": 0.1,
+        "sat_shift": 0.2,
+        "var_shift": 0.15
+      },
+      "size_range": [0.35, 0.55],
+      "notes": "Toxic slug with weeping sores. Green-purple, slow, caustic slime trail."
+    },
+    "data_rat": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "elongated",
+        "body_ratio": 0.2,
+        "head_size": 0.12,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "tail": true,
+        "tail_length": 0.2,
+        "hump": false
+      },
+      "color_range": {
+        "base": "grey",
+        "hue_shift": 0.02,
+        "sat_shift": 0.08,
+        "var_shift": 0.15
+      },
+      "size_range": [0.25, 0.4],
+      "notes": "Cybernetic rat. Exposed neural cabling, flickering optical port, wire tail."
+    },
+    "ash_stalker": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "lean",
+        "body_ratio": 0.4,
+        "head_size": 0.15,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.08,
+        "tail": true,
+        "tail_length": 0.25,
+        "hump": false
+      },
+      "color_range": {
+        "base": "pale",
+        "hue_shift": 0.03,
+        "sat_shift": 0.05,
+        "var_shift": 0.15
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Emaciated pale predator. Needle-teeth, vibration-sensing whiskers, thin frame."
+    },
+    "rust_hound": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "stocky",
+        "body_ratio": 0.45,
+        "head_size": 0.18,
+        "leg_count": 4,
+        "leg_style": "muscular",
+        "eye_count": 2,
+        "eye_size": 0.07,
+        "tail": true,
+        "tail_length": 0.2,
+        "hump": false
+      },
+      "color_range": {
+        "base": "rust",
+        "hue_shift": 0.05,
+        "sat_shift": 0.15,
+        "var_shift": 0.1
+      },
+      "size_range": [0.7, 1.0],
+      "notes": "Cyber-augmented canine. Rusted metal spinal plating, hydraulic jaw, red eyes."
+    },
+    "phase_eel": {
+      "archetype": "floater",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "elongated",
+        "body_ratio": 0.12,
+        "head_size": 0.06,
+        "leg_count": 0,
+        "tentacle_count": 4,
+        "tentacle_length": 0.3,
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "glow_intensity": 0.6,
+        "pulse": true
+      },
+      "color_range": {
+        "base": "neon",
+        "hue_shift": 0.1,
+        "sat_shift": 0.25,
+        "var_shift": 0.1
+      },
+      "size_range": [0.8, 1.2],
+      "notes": "Translucent electric eel. Phases between water and air, neuro-shock tendrils."
+    },
+    "cinder_fox": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "lean",
+        "body_ratio": 0.4,
+        "head_size": 0.14,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.08,
+        "tail": true,
+        "tail_length": 0.35,
+        "tail_style": "triple"
+      },
+      "color_range": {
+        "base": "fire",
+        "hue_shift": 0.05,
+        "sat_shift": 0.15,
+        "var_shift": 0.15
+      },
+      "size_range": [0.7, 0.95],
+      "notes": "3-tailed canid. Smoldering ember fur, scorched paw prints, territorial."
+    },
+    "iron_serpent": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "elongated",
+        "body_ratio": 0.35,
+        "head_size": 0.1,
+        "leg_count": 0,
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "tail": true,
+        "tail_length": 0.4,
+        "segments": 6
+      },
+      "color_range": {
+        "base": "leaf",
+        "hue_shift": 0.05,
+        "sat_shift": 0.1,
+        "var_shift": 0.15
+      },
+      "size_range": [0.9, 1.3],
+      "notes": "Segmented ironwood snake. Bark scales, metallic fangs, constrictor."
+    },
+    "prism_viper": {
+      "archetype": "insectoid",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "angular",
+        "body_ratio": 0.3,
+        "head_size": 0.12,
+        "leg_count": 0,
+        "eye_count": 2,
+        "eye_size": 0.08,
+        "tail": true,
+        "tail_length": 0.35,
+        "segments": 5
+      },
+      "color_range": {
+        "base": "crystal",
+        "hue_shift": 0.08,
+        "sat_shift": 0.2,
+        "var_shift": 0.25
+      },
+      "size_range": [0.8, 1.15],
+      "notes": "Crystal-scaled viper. Refractive facets, triangular head, laser glare."
+    },
+    "marrow_hound": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "lean",
+        "body_ratio": 0.45,
+        "head_size": 0.16,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.09,
+        "tail": true,
+        "tail_length": 0.25,
+        "hump": false,
+        "exposed_ribs": true
+      },
+      "color_range": {
+        "base": "bone",
+        "hue_shift": 0.03,
+        "sat_shift": 0.05,
+        "var_shift": 0.1
+      },
+      "size_range": [0.8, 1.1],
+      "notes": "Emaciated hound with exposed ribcage. Bone-white, reanimating howl."
+    },
+    "storm_talon": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "lean",
+        "body_ratio": 0.4,
+        "head_size": 0.12,
+        "leg_count": 2,
+        "leg_style": "muscular",
+        "arm_count": 2,
+        "arm_style": "folded",
+        "eye_count": 2,
+        "eye_size": 0.08,
+        "tail": true,
+        "tail_length": 0.2,
+        "feathers": true
+      },
+      "color_range": {
+        "base": "electric",
+        "hue_shift": 0.04,
+        "sat_shift": 0.15,
+        "var_shift": 0.15
+      },
+      "size_range": [0.9, 1.25],
+      "notes": "2-legged winged predator. Conductive feathers, lightning caller, blue-white."
+    },
+    "fume_lurker": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "bulky",
+        "body_ratio": 0.5,
+        "head_size": 0.14,
+        "leg_count": 4,
+        "leg_style": "stubby",
+        "eye_count": 2,
+        "eye_size": 0.06,
+        "tail": true,
+        "tail_length": 0.15,
+        "hump": true,
+        "skin_sacs": true
+      },
+      "color_range": {
+        "base": "toxic",
+        "hue_shift": 0.1,
+        "sat_shift": 0.2,
+        "var_shift": 0.12
+      },
+      "size_range": [0.8, 1.15],
+      "notes": "Bloated 4-legged amphibian. Weeping sores, neurotoxin fog, green-purple."
+    },
+    "breach_specter": {
+      "archetype": "quadruped",
+      "spawn_context": "upworld",
+      "rift_type": null,
+      "draw_params": {
+        "body_shape": "lean",
+        "body_ratio": 0.4,
+        "head_size": 0.15,
+        "leg_count": 4,
+        "leg_style": "thin",
+        "eye_count": 2,
+        "eye_size": 0.1,
+        "tail": true,
+        "tail_length": 0.3,
+        "hump": false,
+        "translucent": true
+      },
+      "color_range": {
+        "base": "void",
+        "hue_shift": 0.05,
+        "sat_shift": 0.15,
+        "var_shift": 0.2
+      },
+      "size_range": [0.8, 1.1],
+      "notes": "Partially phased canid. Flickers between dimensions, black-purple translucent."
     }
   },
 

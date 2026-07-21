@@ -324,10 +324,13 @@ func mark_reachable_tiles(root: CombatTile3D, distance: float) -> void:
 func mark_attackable_tiles(root: CombatTile3D, distance: float) -> void:
 	for key in _tiles:
 		var t: CombatTile3D = _tiles[key]
-		var has_dist: bool = t.pf_distance > 0
-		var in_range: bool = t.pf_distance <= distance
+		# Use Chebyshev distance for attack range (matches UnitCombatService.in_range)
+		var dx: int = absi(t.grid_x - root.grid_x)
+		var dy: int = absi(t.grid_y - root.grid_y)
+		var cheb_dist: int = maxi(dx, dy)
+		var in_range: bool = cheb_dist > 0 and cheb_dist <= int(distance)
 		var is_root: bool = t == root
-		t.attackable = has_dist and in_range or is_root
+		t.attackable = in_range or is_root
 
 
 func process_surrounding_tiles(root_tile: CombatTile3D, max_distance: int, allies: Array = []) -> void:

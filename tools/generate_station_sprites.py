@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "assets" / "sprites" / "stations"
 GDFILE = OUT_DIR / ".gdignore"
 
-CELL = 24
+CELL = 32
 
 # Per-station visual config. (top_color, accent_color, label)
 STATION_STYLES = {

@@ -1,5 +1,5 @@
 {
-  "_comment": "Phase 6 base. 10 upgrade levels. Cost = material + EC + level. Per-tier sprite via sprite_base + tier_suffix. 50-tile buffer placement. Auto-placed when player first hits L10 (per user spec the player can pick placement, but the spec also says 'automatically only get to place the first hut' — we use an in-game placement UI that lets the player pick the cell on first placement).",
+  "_comment": "Phase 6 base. 10 upgrade levels. Cost = material + EC + level. Per-tier sprite via sprite_base + tier_suffix. 50-tile buffer placement. Auto-placed when player first hits L10 (per user spec the player can pick placement, but the spec also says 'automatically only get to place the first hut' \u00e2\u20ac\u201d we use an in-game placement UI that lets the player pick the cell on first placement).",
   "placement_buffer_tiles": 50,
   "spawn_level_required": 10,
   "spawn_warning": "Your first hut is ready. Choose a location at least 50 tiles from any map edge.",
@@ -7,17 +7,215 @@
   "capacity_per_upgrade": 5,
   "max_level": 10,
   "settlement_name_unlock_at_residents": 20,
-  "tier_sprite_suffixes": ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x"],
+  "tier_sprite_suffixes": [
+    "",
+    "_ii",
+    "_iii",
+    "_iv",
+    "_v",
+    "_vi",
+    "_vii",
+    "_viii",
+    "_ix",
+    "_x"
+  ],
   "upgrades": [
-    {"level": 1, "name": "Worn Hut",          "level_required": 10, "capacity": 5,  "cost_ec": 0,     "cost_items": [],                                                                              "size_tiles": [4, 4],   "sprite_base": "base_t1",   "description": "A small shelter. Capacity 5 residents."},
-    {"level": 2, "name": "Sturdy Cabin",      "level_required": 20, "capacity": 10, "cost_ec": 200,   "cost_items": [{"item": "withered_branch", "qty": 10}],                                            "size_tiles": [6, 6],   "sprite_base": "base_t2",   "description": "Wooden walls. Capacity 10 residents."},
-    {"level": 3, "name": "Outpost",           "level_required": 30, "capacity": 15, "cost_ec": 500,   "cost_items": [{"item": "iron_ore", "qty": 5}],                                                  "size_tiles": [8, 8],   "sprite_base": "base_t3",   "description": "Stone foundation. Capacity 15 residents."},
-    {"level": 4, "name": "Settlement",        "level_required": 45, "capacity": 20, "cost_ec": 1000,  "cost_items": [{"item": "iron_ore", "qty": 10}, {"item": "withered_branch", "qty": 20}],        "size_tiles": [10, 10], "sprite_base": "base_t4",   "description": "Walled compound. Capacity 20 residents."},
-    {"level": 5, "name": "Fortified Hold",    "level_required": 65, "capacity": 25, "cost_ec": 2500,  "cost_items": [{"item": "copper_ore", "qty": 8}],                                                "size_tiles": [12, 12], "sprite_base": "base_t5",   "description": "Reinforced walls. Capacity 25 residents."},
-    {"level": 6, "name": "Bastion",           "level_required": 90, "capacity": 30, "cost_ec": 5000,  "cost_items": [{"item": "copper_ore", "qty": 16}],                                               "size_tiles": [14, 14], "sprite_base": "base_t6",   "description": "Sturdy fort. Capacity 30 residents."},
-    {"level": 7, "name": "Stronghold",        "level_required": 120,"capacity": 35, "cost_ec": 10000, "cost_items": [{"item": "starmetal_ore", "qty": 4}],                                             "size_tiles": [16, 16], "sprite_base": "base_t7",   "description": "Starmetal-reinforced. Capacity 35 residents."},
-    {"level": 8, "name": "Citadel",           "level_required": 150,"capacity": 40, "cost_ec": 20000, "cost_items": [{"item": "starmetal_ore", "qty": 8}],                                             "size_tiles": [18, 18], "sprite_base": "base_t8",   "description": "Towering walls. Capacity 40 residents."},
-    {"level": 9, "name": "Fortress",          "level_required": 175,"capacity": 45, "cost_ec": 40000, "cost_items": [{"item": "starmetal_ore", "qty": 16}, {"item": "ember_crystal", "qty": 4}],     "size_tiles": [20, 20], "sprite_base": "base_t9",   "description": "Massive fortress. Capacity 45 residents."},
-    {"level": 10,"name": "Bastion Prime",     "level_required": 200,"capacity": 50, "cost_ec": 80000, "cost_items": [{"item": "starmetal_ore", "qty": 32}, {"item": "ember_crystal", "qty": 12}],   "size_tiles": [24, 24], "sprite_base": "base_t10",  "description": "Legendary stronghold. Capacity 50 residents."}
+    {
+      "level": 1,
+      "name": "Worn Hut",
+      "level_required": 10,
+      "capacity": 5,
+      "cost_ec": 0,
+      "cost_items": [],
+      "size_tiles": [
+        4,
+        4
+      ],
+      "sprite_base": "base_t1",
+      "description": "A small shelter. Capacity 5 residents."
+    },
+    {
+      "level": 2,
+      "name": "Sturdy Cabin",
+      "level_required": 20,
+      "capacity": 10,
+      "cost_ec": 200,
+      "cost_items": [
+        {
+          "item_id": "withered_branch",
+          "count": 10
+        }
+      ],
+      "size_tiles": [
+        6,
+        6
+      ],
+      "sprite_base": "base_t2",
+      "description": "Wooden walls. Capacity 10 residents."
+    },
+    {
+      "level": 3,
+      "name": "Outpost",
+      "level_required": 30,
+      "capacity": 15,
+      "cost_ec": 500,
+      "cost_items": [
+        {
+          "item_id": "iron_ore",
+          "count": 5
+        }
+      ],
+      "size_tiles": [
+        8,
+        8
+      ],
+      "sprite_base": "base_t3",
+      "description": "Stone foundation. Capacity 15 residents."
+    },
+    {
+      "level": 4,
+      "name": "Settlement",
+      "level_required": 45,
+      "capacity": 20,
+      "cost_ec": 1000,
+      "cost_items": [
+        {
+          "item_id": "iron_ore",
+          "count": 10
+        },
+        {
+          "item_id": "withered_branch",
+          "count": 20
+        }
+      ],
+      "size_tiles": [
+        10,
+        10
+      ],
+      "sprite_base": "base_t4",
+      "description": "Walled compound. Capacity 20 residents."
+    },
+    {
+      "level": 5,
+      "name": "Fortified Hold",
+      "level_required": 65,
+      "capacity": 25,
+      "cost_ec": 2500,
+      "cost_items": [
+        {
+          "item_id": "copper_ore",
+          "count": 8
+        }
+      ],
+      "size_tiles": [
+        12,
+        12
+      ],
+      "sprite_base": "base_t5",
+      "description": "Reinforced walls. Capacity 25 residents."
+    },
+    {
+      "level": 6,
+      "name": "Bastion",
+      "level_required": 90,
+      "capacity": 30,
+      "cost_ec": 5000,
+      "cost_items": [
+        {
+          "item_id": "copper_ore",
+          "count": 16
+        }
+      ],
+      "size_tiles": [
+        14,
+        14
+      ],
+      "sprite_base": "base_t6",
+      "description": "Sturdy fort. Capacity 30 residents."
+    },
+    {
+      "level": 7,
+      "name": "Stronghold",
+      "level_required": 120,
+      "capacity": 35,
+      "cost_ec": 10000,
+      "cost_items": [
+        {
+          "item_id": "starmetal_ore",
+          "count": 4
+        }
+      ],
+      "size_tiles": [
+        16,
+        16
+      ],
+      "sprite_base": "base_t7",
+      "description": "Starmetal-reinforced. Capacity 35 residents."
+    },
+    {
+      "level": 8,
+      "name": "Citadel",
+      "level_required": 150,
+      "capacity": 40,
+      "cost_ec": 20000,
+      "cost_items": [
+        {
+          "item_id": "starmetal_ore",
+          "count": 8
+        }
+      ],
+      "size_tiles": [
+        18,
+        18
+      ],
+      "sprite_base": "base_t8",
+      "description": "Towering walls. Capacity 40 residents."
+    },
+    {
+      "level": 9,
+      "name": "Fortress",
+      "level_required": 175,
+      "capacity": 45,
+      "cost_ec": 40000,
+      "cost_items": [
+        {
+          "item_id": "starmetal_ore",
+          "count": 16
+        },
+        {
+          "item_id": "ember_crystal",
+          "count": 4
+        }
+      ],
+      "size_tiles": [
+        20,
+        20
+      ],
+      "sprite_base": "base_t9",
+      "description": "Massive fortress. Capacity 45 residents."
+    },
+    {
+      "level": 10,
+      "name": "Bastion Prime",
+      "level_required": 200,
+      "capacity": 50,
+      "cost_ec": 80000,
+      "cost_items": [
+        {
+          "item_id": "starmetal_ore",
+          "count": 32
+        },
+        {
+          "item_id": "ember_crystal",
+          "count": 12
+        }
+      ],
+      "size_tiles": [
+        24,
+        24
+      ],
+      "sprite_base": "base_t10",
+      "description": "Legendary stronghold. Capacity 50 residents."
+    }
   ]
 }

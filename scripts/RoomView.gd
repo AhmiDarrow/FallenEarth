@@ -10,7 +10,7 @@ const WALL := "#"
 const FLOOR := "."
 const EXIT := "X"
 
-const CELL_SIZE := 24
+const CELL_SIZE := 32
 
 const COLOR_WALL    := Color(0.10, 0.10, 0.18)
 const COLOR_FLOOR   := Color(0.16, 0.16, 0.24)
@@ -50,45 +50,41 @@ const FACTION_WALL_ACCENTS := {
 # NPC race → sprite path mapping (male and female variants)
 const RACE_SPRITES := {
 	"human": {
-		"male":   "res://assets/characters/human_male/human_male_base.png",
-		"female": "res://assets/characters/human_female/human_female_base.png",
+		"male":   "res://assets/characters/human_male/human_male_S.png",
+		"female": "res://assets/characters/human_female/human_female_S.png",
 	},
 	"mutant": {
-		"male":   "res://assets/characters/mutant_male/mutant_male_base.png",
-		"female": "res://assets/characters/mutant_female/mutant_female_base.png",
+		"male":   "res://assets/characters/mutant_male/mutant_male_S.png",
+		"female": "res://assets/characters/mutant_female/mutant_female_S.png",
 	},
 	"ai": {
-		"male":   "res://assets/characters/sentientai_male/sentientai_male_base.png",
-		"female": "res://assets/characters/sentientai_female/sentientai_female_base.png",
+		"male":   "res://assets/characters/sentientai_male/sentientai_male_S.png",
+		"female": "res://assets/characters/sentientai_female/sentientai_female_S.png",
 	},
 	"cyborg": {
-		"male":   "res://assets/characters/cyborg_male/cyborg_male_base.png",
-		"female": "res://assets/characters/cyborg_female/cyborg_female_base.png",
+		"male":   "res://assets/characters/cyborg_male/cyborg_male_S.png",
+		"female": "res://assets/characters/cyborg_female/cyborg_female_S.png",
 	},
 	"chthon": {
-		"male":   "res://assets/characters/chthon_male/chthon_male_base.png",
-		"female": "res://assets/characters/chthon_female/chthon_female_base.png",
+		"male":   "res://assets/characters/chthon_male/chthon_male_S.png",
+		"female": "res://assets/characters/chthon_female/chthon_female_S.png",
 	},
 	"vesperid": {
-		"male":   "res://assets/characters/vesperid_male/vesperid_male_base.png",
-		"female": "res://assets/characters/vesperid_female/vesperid_female_base.png",
+		"male":   "res://assets/characters/vesperid_male/vesperid_male_S.png",
+		"female": "res://assets/characters/vesperid_female/vesperid_female_S.png",
 	},
 	"nullborn": {
-		"male":   "res://assets/characters/nullborn_male/nullborn_male_base.png",
-		"female": "res://assets/characters/nullborn_female/nullborn_female_base.png",
+		"male":   "res://assets/characters/nullborn_male/nullborn_male_S.png",
+		"female": "res://assets/characters/nullborn_female/nullborn_female_S.png",
 	},
 	"revenant": {
-		"male":   "res://assets/characters/revenant_male/revenant_male_base.png",
-		"female": "res://assets/characters/revenant_female/revenant_female_base.png",
+		"male":   "res://assets/characters/revenant_male/revenant_male_S.png",
+		"female": "res://assets/characters/revenant_female/revenant_female_S.png",
 	},
 }
 
-# Sprite sheet layout: 128x128, 8 directions in 2 rows of 4.
-# Each frame is 16x16. South = row 0, col 0.
-const SPRITE_FRAME_SIZE := 16
-const SPRITE_SHEET_SIZE := 128
-const SPRITE_DIR_ROW := 0  # south row
-const SPRITE_DIR_COL := 0  # south col
+# Character sprites: 180x180 south-facing PNG per race/gender.
+const SPRITE_CELL_SCALE: float = 0.177  # fit 180px sprite into 32px cell
 
 var room_id: String = ""
 var room_name: String = ""
@@ -230,22 +226,12 @@ func _create_npc_visual(npc: Dictionary) -> Node2D:
 	var has_sprite: bool = false
 
 	if not sprite_path.is_empty() and ResourceLoader.exists(sprite_path):
-		var sheet: Texture2D = load(sprite_path)
-		if sheet != null:
-			# Extract south-facing frame (row 0, col 0) from 128x128 sheet
-			var atlas := AtlasTexture.new()
-			atlas.atlas = sheet
-			atlas.region = Rect2(
-				SPRITE_DIR_COL * SPRITE_FRAME_SIZE,
-				SPRITE_DIR_ROW * SPRITE_FRAME_SIZE,
-				SPRITE_FRAME_SIZE,
-				SPRITE_FRAME_SIZE
-			)
+		var tex: Texture2D = load(sprite_path)
+		if tex != null:
 			var spr := Sprite2D.new()
 			spr.name = "Sprite"
-			spr.texture = atlas
-			# Scale 16px frame to fit nicely in 24px cell (~1.375x)
-			spr.scale = Vector2(1.4, 1.4)
+			spr.texture = tex
+			spr.scale = Vector2(SPRITE_CELL_SCALE, SPRITE_CELL_SCALE)
 			spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 			spr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			holder.add_child(spr)

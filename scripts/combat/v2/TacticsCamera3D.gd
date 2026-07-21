@@ -9,7 +9,7 @@ extends Camera3D
 @export var pan_speed: float = 5.0
 @export var rotate_speed: float = 2.0
 @export var zoom_speed: float = 2.0
-@export var zoom_min: float = 4.0
+@export var zoom_min: float = 1.5
 @export var zoom_max: float = 45.0
 @export var boundary_radius: float = 10.0
 

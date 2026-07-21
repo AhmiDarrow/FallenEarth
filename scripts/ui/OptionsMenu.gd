@@ -5,6 +5,7 @@ class_name OptionsMenu
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const SETTINGS_PATH := "user://options.cfg"
 
 var _music_slider: HSlider = null
@@ -58,15 +59,12 @@ func _on_parent_resized() -> void:
 
 
 func _build_ui() -> void:
-	var backdrop := ColorRect.new()
+	var backdrop := UH.make_backdrop()
 	backdrop.name = "Backdrop"
-	backdrop.color = Color(0, 0, 0, 0.8)
-	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
-	backdrop.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(backdrop)
 
 	# Panel (centered)
-	var panel := PanelContainer.new()
+	var panel := UH.make_panel(MT.BG_SURFACE, MT.BORDER_STRONG, MT.RADIUS_LG, 2)
 	panel.name = "Panel"
 	panel.offset_left = size.x * 0.5 - 150
 	panel.offset_right = size.x * 0.5 + 150
@@ -75,114 +73,79 @@ func _build_ui() -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(panel)
 
-	var margin := MarginContainer.new()
+	var margin := UH.make_margin(16)
 	margin.name = "Margin"
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(12)
 	vbox.name = "VBox"
-	vbox.add_theme_constant_override("separation", 12)
 	margin.add_child(vbox)
 
 	# Title
-	var title := Label.new()
+	var title := UH.make_accent_label("Settings", MT.FS_H3)
 	title.name = "Title"
-	title.text = "Settings"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 18)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
 	# Music volume
-	var music_row := HBoxContainer.new()
+	var music_row := UH.make_hbox(8)
 	music_row.name = "MusicRow"
-	music_row.add_theme_constant_override("separation", 8)
 	vbox.add_child(music_row)
 
-	var music_label := Label.new()
-	music_label.text = "Music"
-	music_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	music_label.add_theme_font_size_override("font_size", 12)
+	var music_label := UH.make_label("Music", MT.FS_SMALL, MT.TEXT_SECONDARY)
 	music_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	music_row.add_child(music_label)
 
-	_music_slider = HSlider.new()
+	_music_slider = UH.make_slider(0.0, 1.0, 0.05, 0.7, 120)
 	_music_slider.name = "MusicSlider"
-	_music_slider.min_value = 0.0
-	_music_slider.max_value = 1.0
-	_music_slider.step = 0.05
-	_music_slider.value = 0.7
-	_music_slider.custom_minimum_size = Vector2(120, 20)
 	_music_slider.value_changed.connect(_on_music_changed)
 	music_row.add_child(_music_slider)
 
 	# SFX volume
-	var sfx_row := HBoxContainer.new()
+	var sfx_row := UH.make_hbox(8)
 	sfx_row.name = "SFXRow"
-	sfx_row.add_theme_constant_override("separation", 8)
 	vbox.add_child(sfx_row)
 
-	var sfx_label := Label.new()
-	sfx_label.text = "SFX"
-	sfx_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	sfx_label.add_theme_font_size_override("font_size", 12)
+	var sfx_label := UH.make_label("SFX", MT.FS_SMALL, MT.TEXT_SECONDARY)
 	sfx_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	sfx_row.add_child(sfx_label)
 
-	_sfx_slider = HSlider.new()
+	_sfx_slider = UH.make_slider(0.0, 1.0, 0.05, 0.8, 120)
 	_sfx_slider.name = "SFXSlider"
-	_sfx_slider.min_value = 0.0
-	_sfx_slider.max_value = 1.0
-	_sfx_slider.step = 0.05
-	_sfx_slider.value = 0.8
-	_sfx_slider.custom_minimum_size = Vector2(120, 20)
 	_sfx_slider.value_changed.connect(_on_sfx_changed)
 	sfx_row.add_child(_sfx_slider)
 
 	# Fullscreen
-	_fullscreen_check = CheckBox.new()
+	_fullscreen_check = UH.make_checkbox("Fullscreen")
 	_fullscreen_check.name = "Fullscreen"
-	_fullscreen_check.text = "Fullscreen"
-	_fullscreen_check.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	_fullscreen_check.add_theme_font_size_override("font_size", 12)
 	_fullscreen_check.pressed.connect(_on_fullscreen_toggled)
 	vbox.add_child(_fullscreen_check)
 
 	# Resolution
-	var res_row := HBoxContainer.new()
+	var res_row := UH.make_hbox(8)
 	res_row.name = "ResolutionRow"
-	res_row.add_theme_constant_override("separation", 8)
 	vbox.add_child(res_row)
 
-	var res_label := Label.new()
-	res_label.text = "Resolution"
-	res_label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-	res_label.add_theme_font_size_override("font_size", 12)
+	var res_label := UH.make_label("Resolution", MT.FS_SMALL, MT.TEXT_SECONDARY)
 	res_row.add_child(res_label)
 
-	_resolution_option = OptionButton.new()
+	_resolution_option = UH.make_option_button([], 120, 24)
 	_resolution_option.name = "Resolution"
 	_resolution_option.add_item("1280x720", 0)
 	_resolution_option.add_item("1600x900", 1)
 	_resolution_option.add_item("1920x1080", 2)
 	_resolution_option.add_item("2560x1440", 3)
-	_resolution_option.custom_minimum_size = Vector2(120, 24)
 	_resolution_option.item_selected.connect(_on_resolution_changed)
 	res_row.add_child(_resolution_option)
 
 	# Close button
-	_close_button = Button.new()
+	_close_button = UH.make_button("Close", "primary", 100, 32)
 	_close_button.name = "CloseButton"
-	_close_button.text = "Close"
-	_close_button.custom_minimum_size = Vector2(100, 32)
 	_close_button.pressed.connect(_on_close_pressed)
 	vbox.add_child(_close_button)
 	# Add mod settings section
 	_build_mod_settings_section(vbox)
+	UH.make_scrollable(vbox)
 
 
 func _on_music_changed(value: float) -> void:
@@ -265,52 +228,37 @@ func _build_mod_settings_section(parent_vbox: VBoxContainer) -> void:
 	if all_settings.is_empty():
 		return
 	# Add separator
-	var separator := HSeparator.new()
+	var separator := UH.make_separator()
 	separator.name = "ModSeparator"
 	parent_vbox.add_child(separator)
 	# Add section title
-	var section_title := Label.new()
+	var section_title := UH.make_accent_label("Mod Settings", MT.FS_STAT)
 	section_title.name = "ModSectionTitle"
-	section_title.text = "Mod Settings"
-	section_title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	section_title.add_theme_font_size_override("font_size", 16)
 	parent_vbox.add_child(section_title)
 	# Add settings for each mod
 	for mod_id in all_settings:
-		var mod_label := Label.new()
-		mod_label.text = mod_id
-		mod_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
-		mod_label.add_theme_font_size_override("font_size", 12)
+		var mod_label := UH.make_label(mod_id, MT.FS_SMALL, MT.TEXT_LINK)
+		mod_label.name = "ModLabel_%s" % mod_id
 		parent_vbox.add_child(mod_label)
 		for key in all_settings[mod_id]:
 			var setting: Dictionary = all_settings[mod_id][key]
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 8)
+			var row := UH.make_hbox(8)
 			parent_vbox.add_child(row)
-			var label := Label.new()
-			label.text = setting.get("display_name", key)
-			label.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
-			label.add_theme_font_size_override("font_size", 12)
+			var label := UH.make_label(setting.get("display_name", key), MT.FS_SMALL, MT.TEXT_SECONDARY)
 			label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			row.add_child(label)
 			match setting.type:
 				"float":
-					var slider := HSlider.new()
-					slider.min_value = 0.0
-					slider.max_value = 10.0
-					slider.step = 0.1
-					slider.value = setting.value
-					slider.custom_minimum_size = Vector2(120, 20)
+					var slider := UH.make_slider(0.0, 10.0, 0.1, setting.value, 120)
 					slider.value_changed.connect(func(val): mod_api.set_setting(mod_id, key, val))
 					row.add_child(slider)
 				"bool":
-					var check := CheckBox.new()
+					var check := UH.make_checkbox("")
 					check.button_pressed = setting.value
 					check.pressed.connect(func(): mod_api.set_setting(mod_id, key, check.button_pressed))
 					row.add_child(check)
 				"String":
-					var line_edit := LineEdit.new()
+					var line_edit := UH.make_line_edit("", 120, 24)
 					line_edit.text = str(setting.value)
-					line_edit.custom_minimum_size = Vector2(120, 24)
 					line_edit.text_changed.connect(func(text): mod_api.set_setting(mod_id, key, text))
 					row.add_child(line_edit)

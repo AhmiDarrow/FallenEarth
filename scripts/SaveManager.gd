@@ -1,7 +1,7 @@
 ## SaveManager — Handles autosave, slot management, and corrupt save recovery.
 ##
 ## Phase 8: aggregate_snapshot / restore_all collect state from every
-## Phase 1-7 manager (InventoryManager, ProgressionManager,
+## Phase 1-7 manager (InventoryHandler, ProgressionManager,
 ## PartyNPCManager, EquipmentManager, BaseManager, BaseShopManager)
 ## via their get_snapshot / restore_from_snapshot methods. Each
 ## manager owns its own data shape; SaveManager just routes.
@@ -223,7 +223,7 @@ func aggregate_snapshot() -> Dictionary:
 	var out: Dictionary = {}
 	# Core managers (always present)
 	for entry in [
-		["inventory", "/root/InventoryManager"],
+		["inventory", "/root/InventoryHandler"],
 		["progression", "/root/ProgressionManager"],
 		["party", "/root/PartyNPCManager"],
 		["equipment", "/root/EquipmentManager"],
@@ -250,7 +250,7 @@ func aggregate_snapshot() -> Dictionary:
 func restore_all(snap: Dictionary) -> void:
 	# Core managers
 	for entry in [
-		["inventory", "/root/InventoryManager", "slots"],
+		["inventory", "/root/InventoryHandler", "grid"],
 		["progression", "/root/ProgressionManager", null],
 		["party", "/root/PartyNPCManager", null],
 		["equipment", "/root/EquipmentManager", null],
@@ -264,9 +264,11 @@ func restore_all(snap: Dictionary) -> void:
 		if mgr == null or not mgr.has_method("restore_from_snapshot"):
 			continue
 		var data: Variant = snap[entry[0]]
-		# Per-manager wrapper: InventoryManager wraps its slots in a dict
+		# Per-manager wrapper: InventoryHandler wraps its grid in a dict
 		if entry[2] != null and data is Dictionary and data.has(entry[2]):
 			data = data[entry[2]]
+		if data == null:
+			continue
 		mgr.restore_from_snapshot(data)
 	# Mod-registered managers
 	var mod_api := get_node_or_null("/root/ModAPI")
@@ -280,6 +282,8 @@ func restore_all(snap: Dictionary) -> void:
 			var data: Variant = snap[mod_entry.key]
 			if mod_entry.wrapper_key != "" and data is Dictionary and data.has(mod_entry.wrapper_key):
 				data = data[mod_entry.wrapper_key]
+			if data == null:
+				continue
 			mgr.restore_from_snapshot(data)
 
 

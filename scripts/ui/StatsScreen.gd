@@ -14,7 +14,8 @@ class_name StatsScreen
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
-const INVENTORY_PATH := "/root/InventoryManager"
+const UH = preload("res://scripts/ui/UIHelper.gd")
+const INVENTORY_PATH := "/root/InventoryHandler"
 const EQUIPMENT_PATH := "/root/EquipmentManager"
 const PARTY_PATH := "/root/PartyNPCManager"
 const PROG_PATH := "/root/ProgressionManager"
@@ -33,36 +34,27 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var hbox := HBoxContainer.new()
+	var hbox := UH.make_hbox(12, true)
 	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	hbox.add_theme_constant_override("separation", 12)
 	add_child(hbox)
 	# Left: member list
-	var left_panel := PanelContainer.new()
-	left_panel.custom_minimum_size = Vector2(200, 0)
+	var left_panel := UH.make_surface_panel(Vector2(200, 0))
 	hbox.add_child(left_panel)
-	var left_vbox := VBoxContainer.new()
+	var left_vbox := UH.make_vbox()
 	left_panel.add_child(left_vbox)
-	var title := Label.new()
-	title.text = "[ Stats — Select Member ]"
-	title.add_theme_color_override("font_color", MT.TEXT_ACCENT)
-	title.add_theme_font_size_override("font_size", MT.FS_H2)
+	var title := UH.make_accent_label("[ Stats — Select Member ]", MT.FS_H2)
 	left_vbox.add_child(title)
-	_list_vbox = VBoxContainer.new()
-	_list_vbox.add_theme_constant_override("separation", 4)
+	_list_vbox = UH.make_vbox(4)
 	left_vbox.add_child(_list_vbox)
 	# Right: stats panel
-	var right_panel := PanelContainer.new()
+	var right_panel := UH.make_surface_panel()
 	right_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(right_panel)
-	var right_vbox := VBoxContainer.new()
+	var right_vbox := UH.make_vbox()
 	right_panel.add_child(right_vbox)
-	_stats_label = Label.new()
-	_stats_label.text = ""
-	_stats_label.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
+	_stats_label = UH.make_label("", MT.FS_STAT, MT.TEXT_PRIMARY)
 	_stats_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	_stats_label.add_theme_constant_override("outline_size", 2)
-	_stats_label.add_theme_font_size_override("font_size", MT.FS_STAT)
 	_stats_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	right_vbox.add_child(_stats_label)
 
@@ -78,11 +70,8 @@ func _refresh_member_list() -> void:
 	for child in _list_vbox.get_children():
 		child.queue_free()
 	# "Player" row
-	var pm_btn := Button.new()
-	pm_btn.text = "Player"
-	pm_btn.toggle_mode = true
+	var pm_btn := UH.make_button("Player", "primary", 0, 36, true)
 	pm_btn.focus_mode = Control.FOCUS_ALL
-	pm_btn.add_theme_stylebox_override("focus", MT.focus_ring())
 	pm_btn.button_pressed = (_selected_id == PLAYER_ID)
 	pm_btn.pressed.connect(_on_member_pressed.bind(PLAYER_ID))
 	_list_vbox.add_child(pm_btn)
@@ -94,11 +83,8 @@ func _refresh_member_list() -> void:
 		var member_name: String = str(n.get("name", "?"))
 		var member_class: String = str(n.get("class", "?"))
 		var level: int = int(n.get("level", 1))
-		var row := Button.new()
-		row.text = "%s (%s · Lv.%d)" % [member_name, member_class, level]
-		row.toggle_mode = true
+		var row := UH.make_button("%s (%s · Lv.%d)" % [member_name, member_class, level], "primary", 0, 36, true)
 		row.focus_mode = Control.FOCUS_ALL
-		row.add_theme_stylebox_override("focus", MT.focus_ring())
 		row.button_pressed = (_selected_id == str(n.get("id", "")))
 		row.pressed.connect(_on_member_pressed.bind(str(n.get("id", ""))))
 		_list_vbox.add_child(row)
@@ -121,11 +107,9 @@ func _refresh_stats() -> void:
 	var defn: int = em.get_defense(_selected_id)
 	var eq: Dictionary = em.get_equipment(_selected_id)
 	var armor_total: int = 0
-	for slot in ["head", "chest", "legs", "boots"]:
-		var item_id: String = str(eq.get(slot, ""))
-		if item_id.is_empty():
-			continue
-		var entry: Dictionary = em._resolve_item(item_id)
+	var armor_id: String = str(eq.get("armor", ""))
+	if not armor_id.is_empty():
+		var entry: Dictionary = em._resolve_item(armor_id)
 		armor_total += int(entry.get("armor", 0))
 	# Level (from ProgressionManager for the player, from the NPC dict
 	# for party members).

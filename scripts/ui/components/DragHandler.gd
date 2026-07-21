@@ -1,93 +1,95 @@
-class_name DragHandler
+## DragHandler — Autoload singleton for item drag-and-drop.
+## Coordinates between InventoryGrid, EquipmentDoll, and ItemSlot nodes.
 extends Node
-## Singleton autoload for item drag-and-drop across the UI.
-## Add to project.godot autoloads as "DragHandler".
 
-signal drag_started(item_id: String, count: int)
+signal drag_started(item_id: String, count: int, source: Node)
 signal drag_ended(dropped_on: Node, item_id: String, count: int)
 signal drag_cancelled
 
-var _is_dragging: bool = false
-var _drag_item_id: String = ""
-var _drag_count: int = 0
-var _source_slot: ItemSlot = null
-var _drag_preview: Control = null
-var _drag_offset: Vector2 = Vector2.ZERO
+var is_dragging: bool = false
+var drag_item_id: String = ""
+var drag_count: int = 0
+var source_slot: Node = null
+var source_grid: Node = null
+var _preview: Control = null
+var _offset: Vector2 = Vector2.ZERO
 
 
-func begin_drag(slot: ItemSlot, id: String, qty: int) -> void:
-	if id == "" or _is_dragging:
+func begin_drag(slot_node: Node, grid_node: Node, item_id: String, qty: int) -> void:
+	if item_id == "" or is_dragging:
 		return
-	_is_dragging = true
-	_drag_item_id = id
-	_drag_count = qty
-	_source_slot = slot
+	is_dragging = true
+	drag_item_id = item_id
+	drag_count = qty
+	source_slot = slot_node
+	source_grid = grid_node
 
-	_drag_preview = Control.new()
-	_drag_preview.name = "DragPreview"
-	_drag_preview.z_index = 200
-	_drag_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon := ItemIcon.new(id, qty, 40)
+	_preview = Control.new()
+	_preview.name = "DragPreview"
+	_preview.z_index = 200
+	_preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var icon := ItemIcon.new(item_id, qty, 40)
 	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_drag_preview.add_child(icon)
-	_drag_preview.custom_minimum_size = Vector2(40, 40)
-	_drag_offset = Vector2(20, 20)
-	get_tree().root.add_child(_drag_preview)
-	_drag_preview.global_position = get_viewport().get_mouse_position() - _drag_offset
-
-	drag_started.emit(id, qty)
+	_preview.add_child(icon)
+	_preview.custom_minimum_size = Vector2(40, 40)
+	_offset = Vector2(20, 20)
+	get_tree().root.add_child(_preview)
+	_preview.global_position = get_viewport().get_mouse_position() - _offset
+	drag_started.emit(item_id, qty, source_grid)
 
 
 func _process(_delta: float) -> void:
-	if not _is_dragging or _drag_preview == null:
+	if not is_dragging or _preview == null:
 		return
-	_drag_preview.global_position = get_viewport().get_mouse_position() - _drag_offset
-
-	if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-		return
-	_drop_at_mouse()
+	_preview.global_position = get_viewport().get_mouse_position() - _offset
+	if not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		_drop_at_mouse()
 
 
 func _drop_at_mouse() -> void:
-	var mouse_pos := get_viewport().get_mouse_position()
-	var target := _find_drop_target(mouse_pos)
-	drag_ended.emit(target, _drag_item_id, _drag_count)
-	end_drag()
+	if not is_dragging:
+		return
+	var mouse_pos: Vector2 = get_viewport().get_mouse_position()
+	var dropped_on: Node = _find_drop_target(mouse_pos)
+	_preview.queue_free()
+	_preview = null
+	if dropped_on != null:
+		drag_ended.emit(dropped_on, drag_item_id, drag_count)
+	else:
+		drag_cancelled.emit()
+	is_dragging = false
+	drag_item_id = ""
+	drag_count = 0
+	source_slot = null
+	source_grid = null
 
 
-func _find_drop_target(pos: Vector2) -> Node:
-	for c in get_tree().get_nodes_in_group("drop_target"):
-		if c is Control and is_instance_valid(c) and c.get_global_rect().has_point(pos):
-			return c
+func _find_drop_target(mouse_pos: Vector2) -> Node:
+	var tree := get_tree()
+	if tree == null:
+		return null
+	var root := tree.root
+	if root == null:
+		return null
+	# Search all nodes under mouse for InventoryGrid or ItemSlot
+	var nodes := root.get_children(true)
+	for node in nodes:
+		var targets: Array = _find_drop_targets(node)
+		for target in targets:
+			if target.visible and target.get_global_rect().has_point(mouse_pos):
+				return target
 	return null
 
 
-func cancel_drag() -> void:
-	drag_cancelled.emit()
-	end_drag()
-
-
-func end_drag() -> void:
-	_is_dragging = false
-	_drag_item_id = ""
-	_drag_count = 0
-	_source_slot = null
-	if _drag_preview:
-		_drag_preview.queue_free()
-		_drag_preview = null
-
-
-func is_dragging() -> bool:
-	return _is_dragging
-
-
-func get_drag_item() -> String:
-	return _drag_item_id
-
-
-func get_drag_count() -> int:
-	return _drag_count
-
-
-func get_source_slot() -> ItemSlot:
-	return _source_slot
+func _find_drop_targets(node: Node) -> Array:
+	var result: Array = []
+	if node is InventoryGrid and node.visible:
+		result.append(node)
+	if node is ItemSlot and node.visible:
+		# Equipment slots (with slot_key) are always valid drop targets
+		# Inventory slots need to have an item (for swap)
+		if node.slot_key != "" or node.item_id != "":
+			result.append(node)
+	for child in node.get_children():
+		result.append_array(_find_drop_targets(child))
+	return result

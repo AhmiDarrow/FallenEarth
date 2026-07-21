@@ -1,117 +1,125 @@
 class_name ItemSlot
 extends Control
+## Slot that displays an item icon and handles click/drag interactions.
+## Can be used in both InventoryGrid (grid_x, grid_y) and
+## EquipmentDoll (slot_key = equip slot name).
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
+
+var grid_x: int = -1
+var grid_y: int = -1
+var slot_key: String = ""  # equip slot name for paperdoll
+var item_id: String = ""
+var count: int = 0
 
 var _icon: ItemIcon
-var _slot_label: Label
-var _button: Button
-var _bg_panel: PanelContainer
+var _label: Label
+var _selected: bool = false
 
-var slot_name: String = ""
-var item_id: String = "":
-	set(v):
-		item_id = v
-		if _icon:
-			_icon.refresh(v, count)
-var count: int = 0:
-	set(v):
-		count = v
-		if _icon:
-			_icon.refresh(item_id, v)
+var _click_enabled: bool = true
 
-var slot_size: int = 48:
-	set(v):
-		slot_size = v
-		custom_minimum_size = Vector2(v, v)
-		if _icon:
-			_icon.icon_size = v
-
-var selected: bool = false:
-	set(v):
-		selected = v
-		if _icon:
-			_icon.set_selected(v)
-		_refresh_border()
-
-signal clicked(slot_name: String, item_id: String)
-signal right_clicked(slot_name: String, item_id: String)
-signal dragged(slot_name: String, item_id: String)
+signal clicked(x: int, y: int, item_id: String, right_click: bool)
+signal right_clicked(slot: String, item_id: String)
+signal double_clicked(slot: String, item_id: String)
+signal hovered(slot: String)
+signal unhovered
 
 
 func _init(size: int = 48, label_text: String = "") -> void:
-	slot_size = size
-	slot_name = label_text
-
-
-func _ready() -> void:
-	size = Vector2(slot_size, slot_size)
-	custom_minimum_size = Vector2(slot_size, slot_size)
+	custom_minimum_size = Vector2(size, size)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 
-	_bg_panel = PanelContainer.new()
-	_bg_panel.name = "SlotBG"
-	_bg_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_bg_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_bg_panel)
-	_refresh_border()
+	var vbox := VBoxContainer.new()
+	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(vbox)
 
-	_icon = ItemIcon.new("", 0, slot_size)
-	_icon.name = "SlotIcon"
-	_icon.set_anchors_preset(Control.PRESET_FULL_RECT)
+	if label_text != "":
+		_label = UH.make_label(label_text, 8, MT.TEXT_SECONDARY)
+		_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(_label)
+
+	_icon = ItemIcon.new("", 0, maxi(size - 8, 16))
 	_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_icon)
-
-	if not slot_name.is_empty():
-		_slot_label = Label.new()
-		_slot_label.name = "SlotLabel"
-		_slot_label.text = slot_name
-		_slot_label.anchor_left = 0.5
-		_slot_label.anchor_top = 0.0
-		_slot_label.anchor_right = 0.5
-		_slot_label.offset_top = slot_size - 12
-		_slot_label.add_theme_color_override("font_color", MT.TEXT_MUTED)
-		_slot_label.add_theme_font_size_override("font_size", 9)
-		_slot_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		_slot_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(_slot_label)
-
-	_button = Button.new()
-	_button.name = "ClickArea"
-	_button.flat = true
-	_button.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_button.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
-	_button.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
-	_button.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
-	_button.add_theme_stylebox_override("focus", MT.focus_ring())
-	_button.mouse_filter = Control.MOUSE_FILTER_STOP
-	_button.pressed.connect(_on_clicked)
-	_button.gui_input.connect(_on_gui_input)
-	add_child(_button)
-
-	gui_input.connect(_on_gui_input)
+	_icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	vbox.add_child(_icon)
 
 
-func _refresh_border() -> void:
-	_bg_panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_DEEP, MT.SELECTED_TINT if selected else MT.BORDER_SUBTLE, MT.RADIUS_MD, 2 if selected else 1))
+func refresh(slot_data: Dictionary) -> void:
+	if slot_data.is_empty():
+		item_id = ""
+		count = 0
+	else:
+		item_id = slot_data.get("id", "")
+		count = slot_data.get("count", 0)
+
+	if _label != null and slot_key != "":
+		var em := get_node_or_null("/root/EquipmentManager") as EquipmentManager
+		if em != null:
+			var eq: Dictionary = em.get_equipment("player")
+			var equipped_id: String = str(eq.get(slot_key, ""))
+			if equipped_id != "":
+				_label.text = equipped_id.replace("_", " ").trim_prefix("weapon ").trim_prefix("armor ")
+			else:
+				_label.text = SLOT_LABELS.get(slot_key, slot_key)
+
+	if _icon != null:
+		_icon.refresh(item_id, count)
+	queue_redraw()
 
 
-func _on_clicked() -> void:
-	clicked.emit(slot_name, item_id)
+func set_selected(sel: bool) -> void:
+	_selected = sel
+	if _icon != null:
+		_icon.set_selected(sel)
 
 
-func _on_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
-			right_clicked.emit(slot_name, item_id)
-			get_viewport().set_input_as_handled()
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed and item_id != "":
-			var drag_handler := get_node_or_null("/root/DragHandler") as DragHandler
-			if drag_handler != null and drag_handler.has_method("begin_drag"):
-				drag_handler.begin_drag(self, item_id, count)
+# --- Paperdoll helpers ---
+const SLOT_LABELS := {
+	"armor": "Armor",
+	"mainhand": "Mainhand", "offhand": "Offhand", "tool": "Tool",
+	"acc1": "Acc 1", "acc2": "Acc 2",
+}
 
 
-func set_empty() -> void:
-	item_id = ""
-	count = 0
-	_icon.refresh("", 0)
+# ---------------------------------------------------------------------------
+# Input
+# ---------------------------------------------------------------------------
+
+func _gui_input(event: InputEvent) -> void:
+	if not _click_enabled:
+		return
+	if event is InputEventMouseButton and event.pressed:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if item_id == "":
+				return
+			if event.double_click:
+				double_clicked.emit(slot_key if slot_key != "" else "", item_id)
+				return
+			var dh := get_node_or_null("/root/DragHandler") as DragHandler
+			if dh != null:
+				dh.begin_drag(self, get_parent(), item_id, count)
+			clicked.emit(grid_x, grid_y, item_id, false)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			clicked.emit(grid_x, grid_y, item_id, true)
+			right_clicked.emit(slot_key, item_id)
+
+
+func _mouse_enter() -> void:
+	hovered.emit(slot_key if slot_key != "" else "%d,%d" % [grid_x, grid_y])
+
+
+func _mouse_exit() -> void:
+	unhovered.emit()
+
+
+# ---------------------------------------------------------------------------
+# Drawing
+# ---------------------------------------------------------------------------
+
+func _draw() -> void:
+	if _selected:
+		draw_rect(Rect2(Vector2.ZERO, size), MT.SELECTED_TINT, false, 2.0)

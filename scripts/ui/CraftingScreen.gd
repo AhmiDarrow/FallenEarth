@@ -15,7 +15,8 @@ class_name CraftingScreen
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
-const INVENTORY_PATH := "/root/InventoryManager"
+const UH = preload("res://scripts/ui/UIHelper.gd")
+const INVENTORY_PATH := "/root/InventoryHandler"
 const CRAFTING_PATH := "/root/CraftingManager"
 
 const CATEGORIES := ["all", "consumable", "tool", "weapon", "armor"]
@@ -32,38 +33,27 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(6)
 	vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 6)
 	add_child(vbox)
 	# Filter bar
-	var filters := HBoxContainer.new()
-	filters.add_theme_constant_override("separation", 4)
+	var filters := UH.make_hbox(4)
 	vbox.add_child(filters)
 	for cat in CATEGORIES:
-		var b := Button.new()
-		b.text = cat.capitalize()
-		b.toggle_mode = true
+		var b := UH.make_button(cat.capitalize(), "ghost", 0, 28, true)
 		b.focus_mode = Control.FOCUS_ALL
-		b.add_theme_stylebox_override("focus", MT.focus_ring())
-		MT.apply_ghost(b)
 		b.pressed.connect(_on_filter_pressed.bind(cat))
 		filters.add_child(b)
 		if cat == "all":
 			b.button_pressed = true
 	# List
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	vbox.add_child(scroll)
-	_list_vbox = VBoxContainer.new()
-	_list_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_list_vbox.add_theme_constant_override("separation", 2)
+	_list_vbox = UH.make_vbox(2, true, false)
 	scroll.add_child(_list_vbox)
 	# Status line
-	_status_label = Label.new()
-	_status_label.text = ""
-	_status_label.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
+	_status_label = UH.make_label("", MT.FS_BODY, MT.TEXT_SECONDARY)
 	vbox.add_child(_status_label)
 
 
@@ -80,16 +70,12 @@ func _refresh() -> void:
 		# CraftingManager is not yet registered as an autoload (it's
 		# in this phase's data files but not in autoload list yet). Show
 		# a "loading" message.
-		var ph := Label.new()
-		ph.text = "(CraftingManager loading...)"
-		ph.add_theme_color_override("font_color", MT.TEXT_MUTED)
+		var ph := UH.make_muted_label("(CraftingManager loading...)")
 		_list_vbox.add_child(ph)
 		return
 	var recipes: Array = cm.unlocked_recipes() if cm.has_method("unlocked_recipes") else []
 	if recipes.is_empty():
-		var ph := Label.new()
-		ph.text = "(no recipes unlocked — level up to see more)"
-		ph.add_theme_color_override("font_color", MT.TEXT_MUTED)
+		var ph := UH.make_muted_label("(no recipes unlocked — level up to see more)")
 		_list_vbox.add_child(ph)
 		return
 	for rid in recipes:
@@ -102,18 +88,14 @@ func _refresh() -> void:
 
 
 func _make_recipe_row(rid: String, recipe: Dictionary, cm: Node) -> Control:
-	var row := PanelContainer.new()
+	var row := UH.make_surface_panel()
 	row.custom_minimum_size = Vector2(0, 44)
-	row.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_SUBTLE, MT.RADIUS_SM, 1))
-	var hbox := HBoxContainer.new()
-	hbox.add_theme_constant_override("separation", 8)
+	var hbox := UH.make_hbox(8)
 	row.add_child(hbox)
-	var info := VBoxContainer.new()
+	var info := UH.make_vbox(0)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	hbox.add_child(info)
-	var name := Label.new()
-	name.text = "%s%s" % [recipe.get("name", rid), "" if str(recipe.get("station", "none")) == "none" else "  [station: %s]" % recipe.get("station", "?")]
-	name.add_theme_color_override("font_color", MT.TEXT_PRIMARY)
+	var name := UH.make_label("%s%s" % [recipe.get("name", rid), "" if str(recipe.get("station", "none")) == "none" else "  [station: %s]" % recipe.get("station", "?")])
 	info.add_child(name)
 	var ing_text: String = ""
 	for ing in recipe.get("ingredients", []):
@@ -121,22 +103,17 @@ func _make_recipe_row(rid: String, recipe: Dictionary, cm: Node) -> Control:
 			continue
 		if ing_text != "":
 			ing_text += ", "
-		ing_text += "%dx %s" % [int(ing.get("qty", 1)), ing.get("item", "?")]
-	var meta := Label.new()
-	meta.text = "Lv.%d · %s · %s" % [
+		ing_text += "%dx %s" % [int(ing.get("count", 1)), ing.get("item_id", "?")]
+	var meta := UH.make_small_label("Lv.%d · %s · %s" % [
 		int(recipe.get("level_required", 1)),
 		ing_text,
 		recipe.get("category", "?"),
-	]
-	meta.add_theme_color_override("font_color", MT.TEXT_SECONDARY)
-	meta.add_theme_font_size_override("font_size", MT.FS_SMALL)
+	])
 	info.add_child(meta)
-	var craft_btn := Button.new()
-	craft_btn.text = "Craft"
+	var craft_btn := UH.make_button("Craft", "primary", 0, 36, false)
 	craft_btn.disabled = not bool(cm.can_craft(rid) if cm.has_method("can_craft") else false)
 	craft_btn.pressed.connect(_on_craft_pressed.bind(rid, cm))
 	hbox.add_child(craft_btn)
-	MT.apply_primary(craft_btn)
 	return row
 
 

@@ -6,6 +6,7 @@ class_name QuestTrackerUI
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 var _panel: PanelContainer = null
 var _title_label: Label = null
@@ -27,10 +28,8 @@ func _ready() -> void:
 
 func _build_ui() -> void:
 	# Toggle button (top-right corner)
-	_toggle_button = Button.new()
+	_toggle_button = UH.make_button("QUESTS", "primary", 80, 24)
 	_toggle_button.name = "ToggleQuests"
-	_toggle_button.text = "QUESTS"
-	_toggle_button.custom_minimum_size = Vector2(80, 24)
 	_toggle_button.position = Vector2(-100, 10)
 	_toggle_button.anchors_preset = Control.PRESET_TOP_RIGHT
 	_toggle_button.offset_left = -100
@@ -41,7 +40,7 @@ func _build_ui() -> void:
 	add_child(_toggle_button)
 
 	# Panel (right side)
-	_panel = PanelContainer.new()
+	_panel = UH.make_surface_panel()
 	_panel.name = "Panel"
 	_panel.offset_left = -260
 	_panel.offset_right = -10
@@ -49,51 +48,34 @@ func _build_ui() -> void:
 	_panel.offset_bottom = -10
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
-	_panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_SUBTLE, MT.RADIUS_MD))
 
-	var margin := MarginContainer.new()
+	var margin := UH.make_margin(8)
 	margin.name = "Margin"
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
 	_panel.add_child(margin)
 
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	scroll.name = "Scroll"
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	margin.add_child(scroll)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(8, true)
 	vbox.name = "VBox"
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_theme_constant_override("separation", 8)
 	scroll.add_child(vbox)
 
 	# Title
-	_title_label = Label.new()
+	_title_label = UH.make_accent_label("Active Missions", 14)
 	_title_label.name = "Title"
-	_title_label.text = "Active Missions"
-	_title_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	_title_label.add_theme_font_size_override("font_size", 14)
 	_title_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	_title_label.add_theme_constant_override("outline_size", 2)
 	vbox.add_child(_title_label)
 
 	# Missions container
-	_missions_container = VBoxContainer.new()
+	_missions_container = UH.make_vbox(6, true)
 	_missions_container.name = "Missions"
-	_missions_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_missions_container.add_theme_constant_override("separation", 6)
 	vbox.add_child(_missions_container)
 
 	# Empty state label
-	var empty := Label.new()
+	var empty := UH.make_muted_label("No active missions.\nTalk to NPCs to find work.")
 	empty.name = "EmptyLabel"
-	empty.text = "No active missions.\nTalk to NPCs to find work."
-	empty.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
-	empty.add_theme_font_size_override("font_size", 11)
 	empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	vbox.add_child(empty)
@@ -138,27 +120,20 @@ func refresh(missions: Array[Dictionary]) -> void:
 
 
 func _create_mission_entry(mission: Dictionary) -> PanelContainer:
-	var panel := PanelContainer.new()
+	var panel := UH.make_surface_panel()
 	panel.name = "Mission_%s" % str(mission.get("mission_id", ""))
-	panel.custom_minimum_size = Vector2(0, 0)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 6)
-	margin.add_theme_constant_override("margin_right", 6)
+	var margin := UH.make_margin(6)
 	margin.add_theme_constant_override("margin_top", 4)
 	margin.add_theme_constant_override("margin_bottom", 4)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 2)
+	var vbox := UH.make_vbox(2)
 	margin.add_child(vbox)
 
 	# Mission title
-	var title := Label.new()
+	var title := UH.make_label(str(mission.get("title", "Unknown Mission")), 12, Color(1, 0.9, 0.6))
 	title.name = "Title"
-	title.text = str(mission.get("title", "Unknown Mission"))
-	title.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
-	title.add_theme_font_size_override("font_size", 12)
 	title.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	title.add_theme_constant_override("outline_size", 1)
 	vbox.add_child(title)
@@ -172,15 +147,12 @@ func _create_mission_entry(mission: Dictionary) -> PanelContainer:
 		var target: int = int(obj.get("target", 1))
 		var done: bool = current >= target
 
-		var obj_label := Label.new()
+		var obj_label := UH.make_label(
+			"  ✓ %s (Complete)" % obj_text if done else "  ○ %s (%d/%d)" % [obj_text, current, target],
+			10,
+			Color(0.5, 0.8, 0.5) if done else Color(0.8, 0.8, 0.8)
+		)
 		obj_label.name = "Objective%d" % i
-		if done:
-			obj_label.text = "  ✓ %s (Complete)" % obj_text
-			obj_label.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5))
-		else:
-			obj_label.text = "  ○ %s (%d/%d)" % [obj_text, current, target]
-			obj_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-		obj_label.add_theme_font_size_override("font_size", 10)
 		vbox.add_child(obj_label)
 
 	# Reward preview
@@ -191,11 +163,8 @@ func _create_mission_entry(mission: Dictionary) -> PanelContainer:
 	if rewards.has("ec"):
 		reward_text += "%d EC " % int(rewards["ec"])
 	if not reward_text.is_empty():
-		var reward_label := Label.new()
+		var reward_label := UH.make_label("  Reward: %s" % reward_text.strip_edges(), 9, Color(0.7, 0.85, 1.0))
 		reward_label.name = "Reward"
-		reward_label.text = "  Reward: %s" % reward_text.strip_edges()
-		reward_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
-		reward_label.add_theme_font_size_override("font_size", 9)
 		vbox.add_child(reward_label)
 
 	return panel

@@ -20,6 +20,7 @@ class_name Settlement
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const ENTRANCE_TILE := Vector2i(0, 0)
 const SETTLEMENT_PATH := "/root/SettlementManager"
 const PARTY_PATH := "/root/PartyNPCManager"
@@ -73,59 +74,43 @@ func setup(town: Dictionary, hub: Node) -> void:
 
 
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.05, 0.04, 0.06, 0.95)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var bg := UH.make_backdrop(Color(0.05, 0.04, 0.06, 0.95))
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	# Title
-	var title := Label.new()
+	var title := UH.make_label("[ Settlement ]", 28, Color(1, 0.95, 0.7))
 	title.name = "Title"
-	title.text = "[ Settlement ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 28)
 	title.position = Vector2(20, 16)
 	add_child(title)
 	# Faction
-	var faction := Label.new()
+	var faction := UH.make_label("", 14, Color(0.85, 0.85, 0.95))
 	faction.name = "Faction"
-	faction.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
-	faction.add_theme_font_size_override("font_size", 14)
 	faction.position = Vector2(20, 52)
 	add_child(faction)
 	# NPC list
-	var npc_label := Label.new()
+	var npc_label := UH.make_label("Residents (Phase 3 placeholder list):", 14, Color(0.75, 0.95, 0.75))
 	npc_label.name = "NpcLabel"
-	npc_label.text = "Residents (Phase 3 placeholder list):"
-	npc_label.add_theme_color_override("font_color", Color(0.75, 0.95, 0.75))
-	npc_label.add_theme_font_size_override("font_size", 14)
 	npc_label.position = Vector2(20, 96)
 	add_child(npc_label)
-	var npc_vbox := VBoxContainer.new()
+	var npc_vbox := UH.make_vbox()
 	npc_vbox.name = "NpcList"
 	npc_vbox.position = Vector2(20, 120)
 	add_child(npc_vbox)
 	# Services list
-	var svc_label := Label.new()
+	var svc_label := UH.make_label("Services available:", 14, Color(0.95, 0.95, 0.75))
 	svc_label.name = "ServicesLabel"
-	svc_label.text = "Services available:"
-	svc_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.75))
-	svc_label.add_theme_font_size_override("font_size", 14)
 	svc_label.position = Vector2(20, 280)
 	add_child(svc_label)
-	var svc_vbox := VBoxContainer.new()
+	var svc_vbox := UH.make_vbox()
 	svc_vbox.name = "ServicesList"
 	svc_vbox.position = Vector2(20, 304)
 	add_child(svc_vbox)
 	# Leave button
-	var leave_btn := Button.new()
+	var leave_btn := UH.make_button("Leave settlement", "danger", 180, 44)
 	leave_btn.name = "LeaveButton"
-	leave_btn.text = "Leave settlement"
 	leave_btn.position = Vector2(size.x - 220, size.y - 60)
-	leave_btn.custom_minimum_size = Vector2(180, 44)
 	leave_btn.pressed.connect(_on_leave_pressed)
 	add_child(leave_btn)
-	ButtonStyleHelper.apply_danger(leave_btn)
 
 
 func _populate() -> void:
@@ -196,15 +181,11 @@ func _populate_npc_list() -> void:
 		child.queue_free()
 	var pm: Node = get_node_or_null(PARTY_PATH)
 	if pm == null:
-		var ph := Label.new()
-		ph.text = "(PartyNPCManager not available)"
-		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		var ph := UH.make_muted_label("(PartyNPCManager not available)")
 		npc_vbox.add_child(ph)
 		return
 	if _resident_npc_ids.is_empty():
-		var ph := Label.new()
-		ph.text = "(no residents to recruit right now)"
-		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		var ph := UH.make_muted_label("(no residents to recruit right now)")
 		npc_vbox.add_child(ph)
 		return
 	# Render each resident as a row with Invite button
@@ -212,20 +193,17 @@ func _populate_npc_list() -> void:
 		var npc: Dictionary = pm.get_npc(rid)
 		if npc.is_empty():
 			continue
-		var row := HBoxContainer.new()
+		var row := UH.make_hbox(0)
 		row.custom_minimum_size = Vector2(0, 28)
 		npc_vbox.add_child(row)
-		var info := Label.new()
-		info.text = "%s (%s · Lv.%d)" % [
+		var info := UH.make_label("%s (%s · Lv.%d)" % [
 			npc.get("name", "?"), npc.get("class", "?"), int(npc.get("level", 1))
-		]
+		])
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(info)
-		var invite_btn := Button.new()
-		invite_btn.text = "Invite"
+		var invite_btn := UH.make_button("Invite", "primary")
 		invite_btn.pressed.connect(_on_invite_pressed.bind(rid))
 		row.add_child(invite_btn)
-		ButtonStyleHelper.apply_primary(invite_btn)
 
 
 func _on_invite_pressed(npc_id: String) -> void:
@@ -252,18 +230,15 @@ func _populate_services_list() -> void:
 	for b in buildings:
 		var building_name: String = str(b)
 		var npc_role: String = _building_to_role(building_name)
-		var row := HBoxContainer.new()
+		var row := UH.make_hbox(0)
 		row.custom_minimum_size = Vector2(0, 28)
 		svc_vbox.add_child(row)
-		var info := Label.new()
-		info.text = "• %s (%s)" % [building_name, npc_role]
+		var info := UH.make_label("• %s (%s)" % [building_name, npc_role])
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(info)
-		var talk_btn := Button.new()
-		talk_btn.text = "Talk"
+		var talk_btn := UH.make_button("Talk", "secondary")
 		talk_btn.pressed.connect(_on_service_talk.bind(building_name, npc_role, npc_index))
 		row.add_child(talk_btn)
-		ButtonStyleHelper.apply_secondary(talk_btn)
 		npc_index += 1
 
 

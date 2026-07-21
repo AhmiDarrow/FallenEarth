@@ -3,7 +3,7 @@ extends SceneTree
 
 const BaseShopMgrScript = preload("res://scripts/BaseShopManager.gd")
 const ProgMgrScript = preload("res://scripts/ProgressionManager.gd")
-const InvMgrScript = preload("res://scripts/InventoryManager.gd")
+const InvMgrScript = preload("res://scripts/InventoryHandler.gd")
 const PartyMgrScript = preload("res://scripts/PartyNPCManager.gd")
 const BaseShopUIScript = preload("res://scripts/ui/BaseShopUI.gd")
 const BaseShopScene = preload("res://scenes/BaseShopUI.tscn")
@@ -67,9 +67,9 @@ func _test_base_shop_manager_can_afford_offer() -> void:
 		return
 	prog.level = 10
 	prog.ec = 100
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if inv == null:
-		_fail("InventoryManager autoload not available")
+		_fail("InventoryHandler autoload not available")
 		return
 	# Clear withered_branch
 	while inv.has_item("withered_branch", 1):
@@ -108,7 +108,7 @@ func _test_base_shop_manager_can_afford_offer() -> void:
 func _test_base_shop_manager_open_shop() -> void:
 	print("[smoke-p7] test: BaseShopManager.open_shop_for_npc")
 	var prog: Node = root.get_node_or_null("ProgressionManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if prog == null or inv == null:
 		_fail("autoloads not available")
 		return

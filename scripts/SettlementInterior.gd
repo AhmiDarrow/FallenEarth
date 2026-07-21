@@ -7,9 +7,10 @@ class_name SettlementInterior
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const ROOMS_PATH := "res://data/settlement_rooms.json"
 const SETTLEMENT_PATH := "/root/SettlementManager"
-const CELL_SIZE := 24
+const CELL_SIZE := 32
 
 const MOVE_COOLDOWN := 0.12
 
@@ -91,10 +92,8 @@ func setup(town: Dictionary, hub: Node, focus_building: String = "") -> void:
 
 
 func _build_frame() -> void:
-	var bg := ColorRect.new()
+	var bg := UH.make_backdrop(Color(0.03, 0.02, 0.04, 0.98))
 	bg.name = "BG"
-	bg.color = Color(0.03, 0.02, 0.04, 0.98)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
@@ -111,7 +110,7 @@ func _build_frame() -> void:
 	container.add_child(_camera)
 
 	# Info bar
-	var info := HBoxContainer.new()
+	var info := UH.make_hbox(0, true)
 	info.name = "InfoBar"
 	info.anchors_preset = Control.PRESET_TOP_WIDE
 	info.offset_bottom = 28
@@ -120,21 +119,15 @@ func _build_frame() -> void:
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(info)
 
-	var room_label := Label.new()
+	var room_label := UH.make_label("Town Square", 14, Color(1, 0.95, 0.7))
 	room_label.name = "RoomLabel"
-	room_label.text = "Town Square"
-	room_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	room_label.add_theme_font_size_override("font_size", 14)
 	room_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	room_label.add_theme_constant_override("outline_size", 2)
 	room_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	info.add_child(room_label)
 
-	var hint := Label.new()
+	var hint := UH.make_label("WASD=move  F=interact  ESC=leave", 10, Color(0.6, 0.6, 0.7))
 	hint.name = "HintLabel"
-	hint.text = "WASD=move  F=interact  ESC=leave"
-	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
-	hint.add_theme_font_size_override("font_size", 10)
 	hint.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	hint.add_theme_constant_override("outline_size", 1)
 	hint.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -276,11 +269,8 @@ func _setup_player_visual() -> void:
 	_player_visual.add_child(body)
 
 	# Player label
-	var lbl := Label.new()
+	var lbl := UH.make_label("@", 12, Color(1, 1, 1))
 	lbl.name = "Label"
-	lbl.text = "@"
-	lbl.add_theme_color_override("font_color", Color(1, 1, 1))
-	lbl.add_theme_font_size_override("font_size", 12)
 	lbl.add_theme_color_override("font_outline_color", Color(0, 0, 0))
 	lbl.add_theme_constant_override("outline_size", 2)
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -497,7 +487,7 @@ func _show_greeting(npc_name: String, role: String, msg: String) -> void:
 	# Show a floating dialog label
 	if has_node("Dialog"):
 		get_node("Dialog").queue_free()
-	var panel := PanelContainer.new()
+	var panel := UH.make_surface_panel()
 	panel.name = "Dialog"
 	panel.offset_left = 60
 	panel.offset_right = 500
@@ -506,11 +496,9 @@ func _show_greeting(npc_name: String, role: String, msg: String) -> void:
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(panel)
 
-	var lbl := RichTextLabel.new()
-	lbl.bbcode_enabled = true
+	var lbl := UH.make_rich_section("[color=#ffe082][b]%s[/b][/color] (%s)\n[i]%s[/i]" % [npc_name, role, msg], 0, Color.WHITE)
 	lbl.fit_content = true
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	lbl.text = "[color=#ffe082][b]%s[/b][/color] (%s)\n[i]%s[/i]" % [npc_name, role, msg]
 	panel.add_child(lbl)
 
 	# Auto-remove after 3 seconds

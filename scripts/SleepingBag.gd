@@ -19,7 +19,7 @@ func _ready() -> void:
 			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 
-func get_cell(cell_size: int = 24) -> Vector2i:
+func get_cell(cell_size: int = 32) -> Vector2i:
 	return Vector2i(
 		int(floor(global_position.x / cell_size)),
 		int(floor(global_position.y / cell_size)),

@@ -7,7 +7,9 @@
 class_name CookingTableUI extends Control
 
 const CRAFTING_PATH := "/root/CraftingManager"
-const INVENTORY_PATH := "/root/InventoryManager"
+const INVENTORY_PATH := "/root/InventoryHandler"
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 var _recipe_list: VBoxContainer
 var _title: Label
@@ -18,7 +20,7 @@ var _on_close: Callable = Callable()
 func _ready() -> void:
 	var bg := get_node_or_null("Background") as ColorRect
 	if bg != null:
-		bg.color = Color(0.04, 0.04, 0.07, 0.85)
+		bg.color = MT.OVERLAY_DARK
 	_title = get_node_or_null("Margin/VBox/Title") as Label
 	_recipe_list = get_node_or_null("Margin/VBox/RecipeList") as VBoxContainer
 	_instructions = get_node_or_null("Margin/VBox/Instructions") as Label
@@ -44,8 +46,7 @@ func _populate_recipes() -> void:
 		return
 	var recipe_ids: Array = cm.recipes_for_station("cooking_table")
 	if recipe_ids.is_empty():
-		var empty := Label.new()
-		empty.text = "No recipes available."
+		var empty := UH.make_muted_label("No recipes available.")
 		_recipe_list.add_child(empty)
 		return
 	for rid in recipe_ids:
@@ -61,30 +62,27 @@ func _build_recipe_row(rid: String) -> Control:
 	var r: Dictionary = cm.get_recipe(rid)
 	if r.is_empty():
 		return null
-	var row := HBoxContainer.new()
+	var row := UH.make_hbox(0)
 	row.custom_minimum_size = Vector2(0, 32)
 	# Recipe name + ingredients label
-	var info := VBoxContainer.new()
+	var info := UH.make_vbox(0)
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var name_label := Label.new()
-	name_label.text = str(r.get("name", rid))
+	var name_label := UH.make_label(str(r.get("name", rid)))
 	info.add_child(name_label)
-	var ing_label := Label.new()
+	var ing_label := UH.make_label("")
 	var ing_parts: Array = []
 	for ing in r.get("ingredients", []):
 		if not (ing is Dictionary):
 			continue
-		ing_parts.append("%dx %s" % [int(ing.get("qty", 1)), str(ing.get("item", ""))])
+		ing_parts.append("%dx %s" % [int(ing.get("count", 1)), str(ing.get("item_id", ""))])
 	ing_label.text = "Needs: " + ", ".join(ing_parts)
-	ing_label.modulate = Color(0.7, 0.7, 0.7, 1.0)
+	ing_label.modulate = MT.TEXT_SECONDARY
 	info.add_child(ing_label)
 	row.add_child(info)
 	# Craft button
-	var craft_btn := Button.new()
-	craft_btn.text = "Craft"
+	var craft_btn := UH.make_button("Craft", "primary")
 	craft_btn.pressed.connect(_on_craft_pressed.bind(rid))
 	row.add_child(craft_btn)
-	ButtonStyleHelper.apply_primary(craft_btn)
 	return row
 
 

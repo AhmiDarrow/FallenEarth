@@ -2,7 +2,7 @@
 ##
 ## Holds the JSON entry from data/resource_nodes.json for a single node
 ## and exposes a try_gather() method that respects the player's equipped
-## tool tier. Yields are awarded to the inventory via InventoryManager.
+## tool tier. Yields are awarded to the inventory via InventoryHandler.
 ##
 ## v0.9.1c: The visual sprite is rendered by MultiMeshResourceVisual in
 ## LocalMapView, not by this node. Per-node Sprite2D + texture load
@@ -12,7 +12,7 @@
 ## CanvasItem children — pure data + logic.
 ##
 ## Each node has:
-##   - a yield (item + qty range) — only if gather_secs > 0
+##   - a yield (item_id + count range) — only if gather_secs > 0
 ##   - a respawn timer (real-time seconds) — node hides for respawn_secs
 ##     after depletion, then comes back
 ##
@@ -21,7 +21,7 @@
 class_name HarvestNode
 extends Node2D
 
-const INVENTORY_PATH := "/root/InventoryManager"
+const INVENTORY_PATH := "/root/InventoryHandler"
 
 @export var node_data: Dictionary = {}
 
@@ -87,8 +87,8 @@ func try_gather(tool_data: Dictionary) -> Dictionary:
 		return {"ok": false, "reason": "wrong_tool", "tool_ok": false}
 
 	var yield_dict: Dictionary = node_data.get("yield", {})
-	var yield_item: String = str(yield_dict.get("item", ""))
-	var qty_range: Array = yield_dict.get("qty", [1, 1])
+	var yield_item: String = str(yield_dict.get("item_id", ""))
+	var qty_range: Array = yield_dict.get("count", [1, 1])
 	var qty_lo: int = int(qty_range[0]) if qty_range.size() > 0 else 1
 	var qty_hi: int = int(qty_range[1]) if qty_range.size() > 1 else qty_lo
 	var qty: int = randi_range(qty_lo, qty_hi)
@@ -128,8 +128,8 @@ func _process(delta: float) -> void:
 
 
 ## Returns the cell (Vector2i) of this node, computed from its world position.
-## Assumes CELL_SIZE == 24 (matches TileSetService.CELL_SIZE).
-func get_cell(cell_size: int = 24) -> Vector2i:
+## Assumes CELL_SIZE == 32 (matches TileSetService.CELL_SIZE).
+func get_cell(cell_size: int = 32) -> Vector2i:
 	return Vector2i(
 		int(floor(global_position.x / cell_size)),
 		int(floor(global_position.y / cell_size)),

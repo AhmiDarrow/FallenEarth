@@ -2,7 +2,7 @@ extends SceneTree
 ## Smoke test for v0.4.0 Phase 8: save/load integration.
 
 const SaveMgrScript = preload("res://scripts/SaveManager.gd")
-const InvMgrScript = preload("res://scripts/InventoryManager.gd")
+const InvMgrScript = preload("res://scripts/InventoryHandler.gd")
 const ProgMgrScript = preload("res://scripts/ProgressionManager.gd")
 const EquipMgrScript = preload("res://scripts/EquipmentManager.gd")
 const PartyMgrScript = preload("res://scripts/PartyNPCManager.gd")
@@ -64,7 +64,7 @@ func _test_save_manager_restore_all() -> void:
 	root.add_child(save)
 	await process_frame
 	# Mutate a manager, save snapshot, restore
-	var inv: Node = root.get_node_or_null("/root/InventoryManager")
+	var inv: Node = root.get_node_or_null("/root/InventoryHandler")
 	inv.add_item("stick", 5)
 	var snap: Dictionary = inv.get_snapshot()
 	# Mutate again
@@ -82,10 +82,10 @@ func _test_save_manager_restore_all() -> void:
 
 func _test_save_manager_round_trip() -> void:
 	print("[smoke-p8] test: SaveManager round-trip (Inventory + Progression)")
-	var inv: Node = root.get_node_or_null("/root/InventoryManager")
+	var inv: Node = root.get_node_or_null("/root/InventoryHandler")
 	var prog: Node = root.get_node_or_null("/root/ProgressionManager")
 	if inv == null or prog == null:
-		_fail("InventoryManager or ProgressionManager autoload not available")
+		_fail("InventoryHandler or ProgressionManager autoload not available")
 		return
 	# Clear
 	while inv.has_item("stick", 1):
@@ -135,7 +135,7 @@ func _test_save_manager_round_trip() -> void:
 
 func _test_save_manager_populate_and_apply_payload() -> void:
 	print("[smoke-p8] test: SaveManager populate + apply payload")
-	var inv: Node = root.get_node_or_null("/root/InventoryManager")
+	var inv: Node = root.get_node_or_null("/root/InventoryHandler")
 	var prog: Node = root.get_node_or_null("/root/ProgressionManager")
 	# Clear and set
 	while inv.has_item("withered_branch", 1):

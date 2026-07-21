@@ -5,10 +5,12 @@ extends Node
 signal tamed_mob_added(mob: Dictionary)
 signal tamed_mob_removed(mob_id: String)
 signal mount_changed(mount_id: String)
+signal riding_changed(is_riding: bool)
 
 
 var _tamed_mobs: Array[Dictionary] = []
 var _active_mount_id: String = ""
+var _is_riding: bool = false
 
 const TameCalc = preload("res://scripts/TameCalculator.gd")
 
@@ -47,6 +49,9 @@ func release_tamed(mob_id: String) -> void:
 			_tamed_mobs.remove_at(i)
 			if _active_mount_id == mob_id:
 				_active_mount_id = ""
+				if _is_riding:
+					_is_riding = false
+					riding_changed.emit(false)
 				mount_changed.emit("")
 			tamed_mob_removed.emit(mob_id)
 			return
@@ -82,10 +87,16 @@ func get_companions() -> Array[Dictionary]:
 func set_active_mount(mob_id: String) -> bool:
 	if mob_id.is_empty():
 		_active_mount_id = ""
+		if _is_riding:
+			_is_riding = false
+			riding_changed.emit(false)
 		mount_changed.emit("")
 		return true
 	for mob in _tamed_mobs:
 		if mob.get("id", "") == mob_id and mob.get("tamable_type", "") == "mount":
+			if _active_mount_id != mob_id and _is_riding:
+				_is_riding = false
+				riding_changed.emit(false)
 			_active_mount_id = mob_id
 			mount_changed.emit(mob_id)
 			return true
@@ -99,6 +110,24 @@ func get_active_mount() -> Dictionary:
 		if mob.get("id", "") == _active_mount_id:
 			return mob.duplicate()
 	return {}
+
+
+func set_riding(riding: bool) -> void:
+	if _is_riding == riding:
+		return
+	_is_riding = riding
+	riding_changed.emit(riding)
+
+
+func is_riding() -> bool:
+	return _is_riding
+
+
+func get_active_mount_sprite_id() -> String:
+	var mount: Dictionary = get_active_mount()
+	if mount.is_empty():
+		return ""
+	return str(mount.get("sprite_id", ""))
 
 
 func get_mount_speed_mult() -> float:
@@ -125,16 +154,20 @@ func get_snapshot() -> Dictionary:
 	return {
 		"tamed_mobs": _tamed_mobs.duplicate(true),
 		"active_mount_id": _active_mount_id,
+		"is_riding": _is_riding,
 	}
 
 
 func restore_from_snapshot(snap: Dictionary) -> void:
 	_tamed_mobs = []
 	_active_mount_id = ""
+	_is_riding = false
 	if snap.has("tamed_mobs") and snap["tamed_mobs"] is Array:
 		_tamed_mobs = (snap["tamed_mobs"] as Array).duplicate(true)
 	if snap.has("active_mount_id"):
 		_active_mount_id = str(snap["active_mount_id"])
+	if snap.has("is_riding"):
+		_is_riding = bool(snap["is_riding"])
 
 
 func _next_id() -> String:

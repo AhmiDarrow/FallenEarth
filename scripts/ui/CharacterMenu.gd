@@ -28,6 +28,7 @@ class_name CharacterMenu
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 signal closed
 
@@ -100,35 +101,26 @@ func _ready() -> void:
 ## is instantiated without its scene). Idempotent.
 func _ensure_shell() -> void:
 	if _background == null:
-		_background = ColorRect.new()
+		_background = UH.make_backdrop()
 		_background.name = "Background"
-		_background.color = Color(0.02, 0.02, 0.04, 0.92)
-		_background.set_anchors_preset(Control.PRESET_FULL_RECT)
 		_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(_background)
 	if _title_label == null:
-		_title_label = Label.new()
+		_title_label = UH.make_label("[ Character ]", 28, Color.WHITE)
 		_title_label.name = "TitleLabel"
-		_title_label.text = "[ Character ]"
-		_title_label.add_theme_color_override("font_color", Color.WHITE)
-		_title_label.add_theme_font_size_override("font_size", 28)
 		_title_label.position = Vector2(20, 12)
 		add_child(_title_label)
 	if _close_btn == null:
-		_close_btn = Button.new()
+		_close_btn = UH.make_button("X", "ghost", 40, 40)
 		_close_btn.name = "CloseButton"
-		_close_btn.text = "X"
-		_close_btn.custom_minimum_size = Vector2(40, 40)
 		add_child(_close_btn)
-		ButtonStyleHelper.apply_ghost(_close_btn)
 	if _tab_bar == null:
-		_tab_bar = HBoxContainer.new()
+		_tab_bar = UH.make_hbox(4)
 		_tab_bar.name = "TabBar"
 		_tab_bar.position = Vector2(20, 56)
-		_tab_bar.add_theme_constant_override("separation", 4)
 		add_child(_tab_bar)
 	if _content == null:
-		_content = PanelContainer.new()
+		_content = UH.make_panel()
 		_content.name = "ContentPanel"
 		_content.mouse_filter = Control.MOUSE_FILTER_PASS
 		add_child(_content)
@@ -160,14 +152,10 @@ func _build_tab_bar() -> void:
 	if _tab_bar == null:
 		return
 	for tab in TABS:
-		var btn := Button.new()
+		var btn := UH.make_button("%s [%s]" % [tab.label, OS.get_keycode_string(tab.key).replace("KEY_", "")], "primary", 140, 28, true)
 		btn.name = "Tab_%s" % tab.id
-		btn.text = "%s [%s]" % [tab.label, OS.get_keycode_string(tab.key).replace("KEY_", "")]
-		btn.custom_minimum_size = Vector2(140, 28)
-		btn.toggle_mode = true
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.add_theme_stylebox_override("focus", MT.focus_ring())
 		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
 		_tab_bar.add_child(btn)
 		_tab_buttons[tab.id] = btn
@@ -218,10 +206,7 @@ func _lazy_load_tab(tab_id: String) -> void:
 	if path.is_empty() or not ResourceLoader.exists(path):
 		# Placeholder for tabs that don't have a screen yet (e.g. Equipment
 		# in Phase 3 ships as Phase 4; Stats ships in Phase 4).
-		var ph := Label.new()
-		ph.text = "(%s screen lands in Phase 4)" % tab_id.capitalize()
-		ph.add_theme_color_override("font_color", Color(0.7, 0.7, 0.75))
-		ph.add_theme_font_size_override("font_size", 18)
+		var ph := UH.make_label("(%s screen lands in Phase 4)" % tab_id.capitalize(), 18, MT.TEXT_SECONDARY)
 		ph.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		ph.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		ph.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -321,14 +306,10 @@ func _apply_mod_tabs() -> void:
 		TABS.append({"id": tab.id, "label": tab.label, "key": KEY_NONE})
 		SCREEN_PATHS[tab.id] = tab.scene_path
 		# Add button to tab bar
-		var btn := Button.new()
+		var btn := UH.make_button(tab.label, "primary", 140, 28, true)
 		btn.name = "Tab_%s" % tab.id
-		btn.text = tab.label
-		btn.custom_minimum_size = Vector2(140, 28)
-		btn.toggle_mode = true
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.add_theme_stylebox_override("focus", MT.focus_ring())
 		btn.pressed.connect(_on_tab_button_pressed.bind(tab.id))
 		_tab_bar.add_child(btn)
 		_tab_buttons[tab.id] = btn

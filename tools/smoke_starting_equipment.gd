@@ -48,7 +48,7 @@ func _get_em() -> Node:
 
 
 func _get_im() -> Node:
-	return root.get_node("/root/InventoryManager")
+	return root.get_node("/root/InventoryHandler")
 
 
 func _get_gs() -> Node:

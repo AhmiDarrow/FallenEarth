@@ -49,7 +49,7 @@ func add_item(item_id: String, qty: int) -> void:
 	if not is_trading():
 		return
 	# Validate we have the item
-	var im: Node = get_node_or_null("/root/InventoryManager")
+	var im: Node = get_node_or_null("/root/InventoryHandler")
 	if im == null or not im.has_method("has_item"):
 		return
 	if not im.has_item(item_id, qty):
@@ -161,7 +161,7 @@ func _trade_execute_rpc(trade_data: Dictionary) -> void:
 		return
 	var from_items: Array = trade_data.get("from_items", [])
 	var to_items: Array = trade_data.get("to_items", [])
-	var im: Node = get_node_or_null("/root/InventoryManager")
+	var im: Node = get_node_or_null("/root/InventoryHandler")
 	if im == null or not im.has_method("add_item") or not im.has_method("remove_item"):
 		return
 	# Validate caller actually has the items they're trading
@@ -189,7 +189,7 @@ func _trade_execute_rpc(trade_data: Dictionary) -> void:
 
 @rpc("authority", "call_local", "reliable")
 func _trade_receive_items_rpc(items: Array) -> void:
-	var im: Node = get_node_or_null("/root/InventoryManager")
+	var im: Node = get_node_or_null("/root/InventoryHandler")
 	if im == null or not im.has_method("add_item"):
 		return
 	for item in items:
@@ -198,7 +198,7 @@ func _trade_receive_items_rpc(items: Array) -> void:
 
 @rpc("authority", "reliable")
 func _trade_remove_items_rpc(items: Array) -> void:
-	var im: Node = get_node_or_null("/root/InventoryManager")
+	var im: Node = get_node_or_null("/root/InventoryHandler")
 	if im == null or not im.has_method("remove_item"):
 		return
 	for item in items:
@@ -237,7 +237,7 @@ func _check_both_ready() -> void:
 
 
 func _execute_trade() -> void:
-	var im: Node = get_node_or_null("/root/InventoryManager")
+	var im: Node = get_node_or_null("/root/InventoryHandler")
 	if im == null or not im.has_method("add_item") or not im.has_method("remove_item"):
 		return
 	# Validate we have all items before executing

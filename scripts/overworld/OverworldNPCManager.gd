@@ -1,5 +1,7 @@
 class_name OverworldNPCManager extends Node
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 
 var _hw: HubWorld
@@ -16,7 +18,7 @@ func _setup_npc_ui() -> void:
 	var panel: VBoxContainer = _hw.get_node_or_null("UI_Canvas/TileInfoPanel") as VBoxContainer
 	if not is_instance_valid(panel):
 		return
-	_npc_info_label = RichTextLabel.new()
+	_npc_info_label = UH.make_rich_header("")
 	_npc_info_label.visible = false
 	panel.add_child(_npc_info_label)
 
@@ -25,12 +27,10 @@ func _setup_mission_ui() -> void:
 	var panel: VBoxContainer = _hw.get_node_or_null("UI_Canvas/TileInfoPanel") as VBoxContainer
 	if not is_instance_valid(panel):
 		return
-	_mission_info_label = RichTextLabel.new()
+	_mission_info_label = UH.make_rich_header("")
 	_mission_info_label.name = "MissionInfoLabel"
-	_mission_info_label.bbcode_enabled = true
 	_mission_info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_mission_info_label.fit_content = true
-	_mission_info_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	panel.add_child(_mission_info_label)
 
 
@@ -115,7 +115,7 @@ func _open_npc_dialogue() -> void:
 		var check: Dictionary = _npc_manager.call("can_recruit", str(npc.get("id", "")), char_data) as Dictionary
 		can_recruit = bool(check.get("ok", false))
 
-	var panel := PanelContainer.new()
+	var panel := UH.make_surface_panel()
 	panel.name = "OverworldNpcDialogue"
 	panel.offset_left = 60
 	panel.offset_right = -60
@@ -125,26 +125,18 @@ func _open_npc_dialogue() -> void:
 	var ui_canvas := _hw.get_node_or_null("UI_Canvas") as CanvasLayer
 	(ui_canvas if ui_canvas else _hw).add_child(panel)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 8)
+	var vbox := UH.make_vbox(8)
 	panel.add_child(vbox)
 
-	var name_label := Label.new()
-	name_label.text = "%s (%s)" % [npc.get("name", "?"), npc.get("role", "?")]
-	name_label.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	name_label.add_theme_font_size_override("font_size", 16)
+	var name_label := UH.make_label("%s (%s)" % [npc.get("name", "?"), npc.get("role", "?")], 16, Color(1, 0.95, 0.7))
 	vbox.add_child(name_label)
 
-	var desc_label := Label.new()
-	desc_label.text = str(npc.get("personality_summary", "A traveler in the wastes."))
-	desc_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.9))
+	var desc_label := UH.make_label(str(npc.get("personality_summary", "A traveler in the wastes.")), MT.FS_BODY, Color(0.85, 0.85, 0.9))
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(desc_label)
 
 	if can_recruit:
-		var invite_btn := Button.new()
-		invite_btn.text = "Invite to Party"
-		invite_btn.custom_minimum_size = Vector2(200, 36)
+		var invite_btn := UH.make_button("Invite to Party", "primary", 200, 36)
 		var npc_id := str(npc.get("id", ""))
 		invite_btn.pressed.connect(func():
 			if is_instance_valid(_npc_manager) and _npc_manager.has_method("recruit_npc"):
@@ -158,11 +150,11 @@ func _open_npc_dialogue() -> void:
 		)
 		vbox.add_child(invite_btn)
 
-	var close_btn := Button.new()
-	close_btn.text = "Goodbye"
-	close_btn.custom_minimum_size = Vector2(200, 36)
+	var close_btn := UH.make_button("Goodbye", "ghost", 200, 36)
 	close_btn.pressed.connect(panel.queue_free)
 	vbox.add_child(close_btn)
+
+	UH.make_scrollable(vbox)
 
 
 func _on_recruit_pressed() -> void:

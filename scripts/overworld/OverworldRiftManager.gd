@@ -62,6 +62,14 @@ func spawn_initial_rift_if_needed() -> void:
 			str(tile.get("name", "Ash Wastes")),
 			600.0, "", null, lx2, ly2
 		)
+		# Place a second test rift right next to spawn for quick testing.
+		rift_runner.add_rift_entrance(
+			player_q, player_r,
+			str(tile.get("name", "Ash Wastes")),
+			600.0, "", null,
+			clampi(local_x + 2, 4, Constants.MAP_SIZE - 4),
+			clampi(local_y, 4, Constants.MAP_SIZE - 4)
+		)
 	local_view_needs_build.emit()
 	update_rift_ui()
 

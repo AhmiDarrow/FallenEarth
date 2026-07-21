@@ -4,7 +4,7 @@ class_name RemotePlayer extends Node2D
 
 var player_name: String = ""
 var peer_id: int = 0
-var cell_size: int = 24
+var cell_size: int = 32
 
 var _bg: ColorRect
 var _name_label: Label

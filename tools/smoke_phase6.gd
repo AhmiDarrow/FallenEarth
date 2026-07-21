@@ -3,7 +3,7 @@ extends SceneTree
 
 const BaseMgrScript = preload("res://scripts/BaseManager.gd")
 const ProgMgrScript = preload("res://scripts/ProgressionManager.gd")
-const InvMgrScript = preload("res://scripts/InventoryManager.gd")
+const InvMgrScript = preload("res://scripts/InventoryHandler.gd")
 const PartyMgrScript = preload("res://scripts/PartyNPCManager.gd")
 
 var failures: Array[String] = []
@@ -135,9 +135,9 @@ func _test_base_manager_place_and_capacity() -> void:
 func _test_base_manager_upgrade_flow() -> void:
 	print("[smoke-p6] test: BaseManager.upgrade")
 	var prog: Node = root.get_node_or_null("ProgressionManager")
-	var inv: Node = root.get_node_or_null("InventoryManager")
+	var inv: Node = root.get_node_or_null("InventoryHandler")
 	if prog == null or inv == null:
-		_fail("ProgressionManager or InventoryManager autoload not available")
+		_fail("ProgressionManager or InventoryHandler autoload not available")
 		return
 	prog.level = 10
 	prog.ec = 100000

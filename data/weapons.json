@@ -1,11 +1,21 @@
 {
-  "_comment": "Phase 4 weapons. Uses a template-based approach: 6 classes x 26 tiers = 156 entries are generated from the tier_curve + per-class metadata. EquipmentManager loads this and lazily expands to per-tier entries on demand. Per-class stat mods are applied to the base curve. Per-tier visual differentiation is a simple color shift (see tier_color_shift), not a unique sprite per tier — so the data file is small and sprite generation is procedural.",
+  "_comment": "Phase 4 weapons. 6 classes × 26 tiers = 156 entries from tier_curve + per-class metadata. Visual tier system: 3 base sprites per class (T1/T2/T3), with per-tier color shifts for sub-tier variety. Ranged weapons scale range by visual tier (2/4/6). Melee weapons fixed at range 1.",
   "tier_curve": {
     "_comment": "Tier index 0..25 corresponds to player levels [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 248, 250, 252, 254, 255, 256].",
     "levels": [1, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 248, 250, 252, 254, 255, 256],
     "damage_base":  [3, 5, 7, 9, 11, 14, 17, 20, 23, 26, 30, 35, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 200, 300],
-    "range_base":   [1, 1, 1, 1, 1,  1,  1,  1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2],
+    "range_base":   [1, 1, 1, 1, 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+    "_comment_range": "Melee weapons always 1. Ranged weapons: T1 (tiers 0-8)=2, T2 (9-17)=4, T3 (18-25)=6. Actual range resolved by EquipmentManager.get_weapon_range().",
     "name_suffix":  ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX", "XXI", "XXII", "XXIII", "XXIV", "XXV", "XXVI"]
+  },
+  "visual_tiers": {
+    "_comment": "Maps 26 data tiers to 3 visual sprite tiers. T1 sprite covers tiers 1-9, T2 covers 10-18, T3 covers 19-26. Runtime color shifts add sub-tier variety within each visual tier.",
+    "tier_1_sprite_suffix": "",
+    "tier_2_sprite_suffix": "_t2",
+    "tier_3_sprite_suffix": "_t3",
+    "tier_1_data_range": [1, 9],
+    "tier_2_data_range": [10, 18],
+    "tier_3_data_range": [19, 26]
   },
   "tier_color_shift": {
     "_comment": "Each weapon tier tints the base color by a hue + value offset. Phase 4 only stores the offsets; the EquipmentManager (or the player visual) applies them to the base color. Tier 0 = no shift. Higher tiers = darker / more saturated.",
@@ -58,8 +68,8 @@
     }
   },
   "sprite_tier_suffix": {
-    "_comment": "Per-tier sprite name = sprite_base + suffix[tier]. So tier 0 = 'weapon_scavenger', tier 25 = 'weapon_scavenger_xxvi'. Each tier has its own visual. Phase 4 ships procedural sprite generation (tools/generate_equipment_sprites.py) that produces these from a base shape with a tier color shift.",
-    "weapon_suffixes": ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x", "_xi", "_xii", "_xiii", "_xiv", "_xv", "_xvi", "_xvii", "_xviii", "_xix", "_xx", "_xxi", "_xxii", "_xxiii", "_xxiv", "_xxv", "_xxvi"],
+    "_comment": "3-tier visual system. Sprite name = sprite_base + suffix. T1 = no suffix, T2 = _t2, T3 = _t3. Per-tier color shifts in tier_color_shift add sub-tier variety at runtime.",
+    "weapon_suffixes": ["", "_t2", "_t3"],
     "armor_suffixes":  ["", "_ii", "_iii", "_iv", "_v", "_vi", "_vii", "_viii", "_ix", "_x", "_xi", "_xii", "_xiii"]
   }
 }

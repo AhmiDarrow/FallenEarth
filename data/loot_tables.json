@@ -1,75 +1,413 @@
 {
   "Ash Wastes": [
-    {"name": "Rusted Scrap", "type": "scrap", "rarity": "common", "drop_weight": 80, "stackable": true, "max_stack": 99},
-    {"name": "Irradiated Rations", "type": "consumable", "rarity": "common", "drop_weight": 60, "stackable": true, "max_stack": 20, "effect": {"hunger_restore": 15, "rads_gained": 5}},
-    {"name": "Geiger Counter Cell", "type": "component", "rarity": "uncommon", "drop_weight": 30, "stackable": true, "max_stack": 5},
-    {"name": "Mutant Hide Strip", "type": "material", "rarity": "uncommon", "drop_weight": 25, "stackable": true, "max_stack": 12},
-    {"name": "Pre-War Can opener", "type": "tool", "rarity": "rare", "drop_weight": 8, "stackable": true, "max_stack": 1},
-    {"name": "Rad-Spawn Mushroom Cap", "type": "consumable", "rarity": "common", "drop_weight": 45, "stackable": true, "max_stack": 30}
+    {
+      "name": "Rusted Scrap",
+      "type": "scrap",
+      "rarity": "common",
+      "drop_weight": 80,
+      "stackable": true,
+      "max_stack": 99
+    },
+    {
+      "name": "Irradiated Rations",
+      "type": "consumable",
+      "rarity": "common",
+      "drop_weight": 60,
+      "stackable": true,
+      "max_stack": 20,
+      "effect": {
+        "hunger_restore": 15,
+        "rads_gained": 5
+      }
+    },
+    {
+      "name": "Geiger Counter Cell",
+      "type": "component",
+      "rarity": "uncommon",
+      "drop_weight": 30,
+      "stackable": true,
+      "max_stack": 5
+    },
+    {
+      "name": "Mutant Hide Strip",
+      "type": "material",
+      "rarity": "uncommon",
+      "drop_weight": 25,
+      "stackable": true,
+      "max_stack": 12
+    },
+    {
+      "name": "Pre-War Can opener",
+      "type": "tool",
+      "rarity": "rare",
+      "drop_weight": 8,
+      "stackable": true,
+      "max_stack": 1
+    },
+    {
+      "name": "Rad-Spawn Mushroom Cap",
+      "type": "consumable",
+      "rarity": "common",
+      "drop_weight": 45,
+      "stackable": true,
+      "max_stack": 30
+    }
   ],
   "Neon Bogs": [
-    {"name": "Scrapped Circuitry", "type": "component", "rarity": "common", "drop_weight": 75, "stackable": true, "max_stack": 50},
-    {"name": "Fusion Cell (Empty)", "type": "component", "rarity": "uncommon", "drop_weight": 35, "stackable": true, "max_stack": 10},
-    {"name": "Neon-Infused Wire Spool", "type": "material", "rarity": "uncommon", "drop_weight": 30, "stackable": true, "max_stack": 20},
-    {"name": "Pre-Collapse Data Chip", "type": "quest_item", "rarity": "rare", "drop_weight": 10, "stackable": true, "max_stack": 1},
-    {"name": "AI Fragment Core", "type": "component", "rarity": "epic", "drop_weight": 5, "stackable": true, "max_stack": 1},
-    {"name": "Tactical Medkit Mk.II", "type": "consumable", "rarity": "rare", "drop_weight": 20, "stackable": true, "max_stack": 5}
+    {
+      "name": "Scrapped Circuitry",
+      "type": "component",
+      "rarity": "common",
+      "drop_weight": 75,
+      "stackable": true,
+      "max_stack": 50
+    },
+    {
+      "name": "Fusion Cell (Empty)",
+      "type": "component",
+      "rarity": "uncommon",
+      "drop_weight": 35,
+      "stackable": true,
+      "max_stack": 10
+    },
+    {
+      "name": "Neon-Infused Wire Spool",
+      "type": "material",
+      "rarity": "uncommon",
+      "drop_weight": 30,
+      "stackable": true,
+      "max_stack": 20
+    },
+    {
+      "name": "Pre-Collapse Data Chip",
+      "type": "quest_item",
+      "rarity": "rare",
+      "drop_weight": 10,
+      "stackable": true,
+      "max_stack": 1
+    },
+    {
+      "name": "AI Fragment Core",
+      "type": "component",
+      "rarity": "epic",
+      "drop_weight": 5,
+      "stackable": true,
+      "max_stack": 1
+    },
+    {
+      "name": "Tactical Medkit Mk.II",
+      "type": "consumable",
+      "rarity": "rare",
+      "drop_weight": 20,
+      "stackable": true,
+      "max_stack": 5
+    }
   ],
   "Toxin Marshes": [
-    {"name": "Thick Sludge Paste", "type": "material", "rarity": "common", "drop_weight": 70, "stackable": true, "max_stack": 30},
-    {"name": "Bone-Chitin Plating", "type": "material", "rarity": "uncommon", "drop_weight": 40, "stackable": true, "max_stack": 8},
-    {"name": "Mire-Touched Fungus Cluster", "type": "consumable", "rarity": "common", "drop_weight": 50, "stackable": true, "max_stack": 25},
-    {"name": "Parasyte Larva (Live)", "type": "quest_item", "rarity": "rare", "drop_weight": 7, "stackable": true, "max_stack": 3},
-    {"name": "Venom Sac Reservoir", "type": "component", "rarity": "uncommon", "drop_weight": 28, "stackable": true, "max_stack": 6},
-    {"name": "Ancient Seed (Unidentified)", "type": "quest_item", "rarity": "legendary", "drop_weight": 2, "stackable": true, "max_stack": 1}
+    {
+      "name": "Thick Sludge Paste",
+      "type": "material",
+      "rarity": "common",
+      "drop_weight": 70,
+      "stackable": true,
+      "max_stack": 30
+    },
+    {
+      "name": "Bone-Chitin Plating",
+      "type": "material",
+      "rarity": "uncommon",
+      "drop_weight": 40,
+      "stackable": true,
+      "max_stack": 8
+    },
+    {
+      "name": "Mire-Touched Fungus Cluster",
+      "type": "consumable",
+      "rarity": "common",
+      "drop_weight": 50,
+      "stackable": true,
+      "max_stack": 25
+    },
+    {
+      "name": "Parasyte Larva (Live)",
+      "type": "quest_item",
+      "rarity": "rare",
+      "drop_weight": 7,
+      "stackable": true,
+      "max_stack": 3
+    },
+    {
+      "name": "Venom Sac Reservoir",
+      "type": "component",
+      "rarity": "uncommon",
+      "drop_weight": 28,
+      "stackable": true,
+      "max_stack": 6
+    },
+    {
+      "name": "Ancient Seed (Unidentified)",
+      "type": "quest_item",
+      "rarity": "legendary",
+      "drop_weight": 2,
+      "stackable": true,
+      "max_stack": 1
+    }
   ],
   "Rust Canyons": [
-    {"name": "Rusted Wreckage Plate", "type": "scrap", "rarity": "common", "drop_weight": 85, "stackable": true, "max_stack": 50},
-    {"name": "Corroded Pre-War Component", "type": "component", "rarity": "uncommon", "drop_weight": 45, "stackable": true, "max_stack": 10},
-    {"name": "Old Corporate Badge", "type": "quest_item", "rarity": "rare", "drop_weight": 12, "stackable": true, "max_stack": 5},
-    {"name": "Ferro Scrap Bundle", "type": "material", "rarity": "common", "drop_weight": 70, "stackable": true, "max_stack": 30}
+    {
+      "name": "Rusted Wreckage Plate",
+      "type": "scrap",
+      "rarity": "common",
+      "drop_weight": 85,
+      "stackable": true,
+      "max_stack": 50
+    },
+    {
+      "name": "Corroded Pre-War Component",
+      "type": "component",
+      "rarity": "uncommon",
+      "drop_weight": 45,
+      "stackable": true,
+      "max_stack": 10
+    },
+    {
+      "name": "Old Corporate Badge",
+      "type": "quest_item",
+      "rarity": "rare",
+      "drop_weight": 12,
+      "stackable": true,
+      "max_stack": 5
+    },
+    {
+      "name": "Ferro Scrap Bundle",
+      "type": "material",
+      "rarity": "common",
+      "drop_weight": 70,
+      "stackable": true,
+      "max_stack": 30
+    }
   ],
   "Scorched Plains": [
-    {"name": "Heat-Fused Glass Shard", "type": "material", "rarity": "common", "drop_weight": 90, "stackable": true, "max_stack": 99},
-    {"name": "Dried Survival Ration", "type": "consumable", "rarity": "common", "drop_weight": 55, "stackable": true, "max_stack": 15},
-    {"name": "Baked Mineral Core", "type": "component", "rarity": "uncommon", "drop_weight": 25, "stackable": true, "max_stack": 8}
+    {
+      "name": "Heat-Fused Glass Shard",
+      "type": "material",
+      "rarity": "common",
+      "drop_weight": 90,
+      "stackable": true,
+      "max_stack": 99
+    },
+    {
+      "name": "Dried Survival Ration",
+      "type": "consumable",
+      "rarity": "common",
+      "drop_weight": 55,
+      "stackable": true,
+      "max_stack": 15
+    },
+    {
+      "name": "Baked Mineral Core",
+      "type": "component",
+      "rarity": "uncommon",
+      "drop_weight": 25,
+      "stackable": true,
+      "max_stack": 8
+    }
   ],
   "Ironwood Thicket": [
-    {"name": "Metallic Vine Segment", "type": "material", "rarity": "uncommon", "drop_weight": 65, "stackable": true, "max_stack": 20},
-    {"name": "Ironwood Bark Slab", "type": "scrap", "rarity": "common", "drop_weight": 75, "stackable": true, "max_stack": 40},
-    {"name": "Living Metal Sample", "type": "component", "rarity": "rare", "drop_weight": 15, "stackable": true, "max_stack": 5}
+    {
+      "name": "Metallic Vine Segment",
+      "type": "material",
+      "rarity": "uncommon",
+      "drop_weight": 65,
+      "stackable": true,
+      "max_stack": 20
+    },
+    {
+      "name": "Ironwood Bark Slab",
+      "type": "scrap",
+      "rarity": "common",
+      "drop_weight": 75,
+      "stackable": true,
+      "max_stack": 40
+    },
+    {
+      "name": "Living Metal Sample",
+      "type": "component",
+      "rarity": "rare",
+      "drop_weight": 15,
+      "stackable": true,
+      "max_stack": 5
+    }
   ],
   "Glass Dunes": [
-    {"name": "Prismatic Glass Shard", "type": "material", "rarity": "common", "drop_weight": 80, "stackable": true, "max_stack": 60},
-    {"name": "Melted Alloy Nugget", "type": "scrap", "rarity": "uncommon", "drop_weight": 50, "stackable": true, "max_stack": 25},
-    {"name": "Buried Tech Relic", "type": "quest_item", "rarity": "epic", "drop_weight": 8, "stackable": true, "max_stack": 3}
+    {
+      "name": "Prismatic Glass Shard",
+      "type": "material",
+      "rarity": "common",
+      "drop_weight": 80,
+      "stackable": true,
+      "max_stack": 60
+    },
+    {
+      "name": "Melted Alloy Nugget",
+      "type": "scrap",
+      "rarity": "uncommon",
+      "drop_weight": 50,
+      "stackable": true,
+      "max_stack": 25
+    },
+    {
+      "name": "Buried Tech Relic",
+      "type": "quest_item",
+      "rarity": "epic",
+      "drop_weight": 8,
+      "stackable": true,
+      "max_stack": 3
+    }
   ],
   "Corpse Fields": [
-    {"name": "Ancient Bone Fragment", "type": "material", "rarity": "common", "drop_weight": 70, "stackable": true, "max_stack": 40},
-    {"name": "War Relic Dog Tag", "type": "quest_item", "rarity": "uncommon", "drop_weight": 30, "stackable": true, "max_stack": 10},
-    {"name": "Undisturbed Cache Key", "type": "tool", "rarity": "rare", "drop_weight": 10, "stackable": true, "max_stack": 2}
+    {
+      "name": "Ancient Bone Fragment",
+      "type": "material",
+      "rarity": "common",
+      "drop_weight": 70,
+      "stackable": true,
+      "max_stack": 40
+    },
+    {
+      "name": "War Relic Dog Tag",
+      "type": "quest_item",
+      "rarity": "uncommon",
+      "drop_weight": 30,
+      "stackable": true,
+      "max_stack": 10
+    },
+    {
+      "name": "Undisturbed Cache Key",
+      "type": "tool",
+      "rarity": "rare",
+      "drop_weight": 10,
+      "stackable": true,
+      "max_stack": 2
+    }
   ],
   "Stormspire Highlands": [
-    {"name": "Storm-Charged Cell", "type": "component", "rarity": "uncommon", "drop_weight": 55, "stackable": true, "max_stack": 12},
-    {"name": "Lightning Glass", "type": "material", "rarity": "rare", "drop_weight": 25, "stackable": true, "max_stack": 8},
-    {"name": "Tower Resonance Fragment", "type": "quest_item", "rarity": "epic", "drop_weight": 5, "stackable": true, "max_stack": 1}
+    {
+      "name": "Storm-Charged Cell",
+      "type": "component",
+      "rarity": "uncommon",
+      "drop_weight": 55,
+      "stackable": true,
+      "max_stack": 12
+    },
+    {
+      "name": "Lightning Glass",
+      "type": "material",
+      "rarity": "rare",
+      "drop_weight": 25,
+      "stackable": true,
+      "max_stack": 8
+    },
+    {
+      "name": "Tower Resonance Fragment",
+      "type": "quest_item",
+      "rarity": "epic",
+      "drop_weight": 5,
+      "stackable": true,
+      "max_stack": 1
+    }
   ],
   "Dead City Outskirts": [
-    {"name": "Pre-Collapse High-Tech Core", "type": "component", "rarity": "rare", "drop_weight": 20, "stackable": true, "max_stack": 5},
-    {"name": "Corporate Vault Scrap", "type": "scrap", "rarity": "uncommon", "drop_weight": 40, "stackable": true, "max_stack": 15},
-    {"name": "Black Market Cache", "type": "container", "rarity": "epic", "drop_weight": 8, "stackable": false, "contains": ["component", "material", "tool"]}
+    {
+      "name": "Pre-Collapse High-Tech Core",
+      "type": "component",
+      "rarity": "rare",
+      "drop_weight": 20,
+      "stackable": true,
+      "max_stack": 5
+    },
+    {
+      "name": "Corporate Vault Scrap",
+      "type": "scrap",
+      "rarity": "uncommon",
+      "drop_weight": 40,
+      "stackable": true,
+      "max_stack": 15
+    },
+    {
+      "name": "Black Market Cache",
+      "type": "container",
+      "rarity": "epic",
+      "drop_weight": 8,
+      "stackable": false,
+      "contains": [
+        "component",
+        "material",
+        "tool"
+      ]
+    }
   ],
   "upworld_rift_standard": [
-    {"name": "Scavenger's Bounty Pouch", "type": "container", "rarity": "common", "drop_weight": 100, "stackable": false, "contains": ["scrap", "consumable"]},
-    {"name": "Tech Requisition Cache", "type": "container", "rarity": "uncommon", "drop_weight": 50, "stackable": false, "contains": ["component", "material"]},
-    {"name": "Survivor's Care Package", "type": "container", "rarity": "rare", "drop_weight": 25, "stackable": false, "contains": ["consumable", "tool"]}
+    {
+      "name": "Scavenger's Bounty Pouch",
+      "type": "container",
+      "rarity": "common",
+      "drop_weight": 100,
+      "stackable": false,
+      "contains": [
+        "scrap",
+        "consumable"
+      ]
+    },
+    {
+      "name": "Tech Requisition Cache",
+      "type": "container",
+      "rarity": "uncommon",
+      "drop_weight": 50,
+      "stackable": false,
+      "contains": [
+        "component",
+        "material"
+      ]
+    },
+    {
+      "name": "Survivor's Care Package",
+      "type": "container",
+      "rarity": "rare",
+      "drop_weight": 25,
+      "stackable": false,
+      "contains": [
+        "consumable",
+        "tool"
+      ]
+    }
   ],
   "class_modifiers": {
-    "Scavenger": {"scrap_drop_bonus_pct": 20, "consumable_drop_bonus_pct": 15},
-    "Technician": {"component_drop_bonus_pct": 25, "rarity_escalation_chance_pct": 10},
-    "Survivor": {"all_rarity_bump_one_level_chance_pct": 12, "health_restore_bonus_pct": 20},
-    "Striker": {"weapon_drop_bonus_pct": 20, "critical_hit_loot_chance_pct": 10},
-    "Riftbinder": {"rift_material_drop_bonus_pct": 25, "rare_crystal_chance_pct": 15},
-    "Warden": {"armor_drop_bonus_pct": 20, "defensive_component_bonus_pct": 10}
-  }
+    "Scavenger": {
+      "scrap_drop_bonus_pct": 20,
+      "consumable_drop_bonus_pct": 15
+    },
+    "Technician": {
+      "component_drop_bonus_pct": 25,
+      "rarity_escalation_chance_pct": 10
+    },
+    "Survivor": {
+      "all_rarity_bump_one_level_chance_pct": 12,
+      "health_restore_bonus_pct": 20
+    },
+    "Striker": {
+      "weapon_drop_bonus_pct": 20,
+      "critical_hit_loot_chance_pct": 10
+    },
+    "Riftbinder": {
+      "rift_material_drop_bonus_pct": 25,
+      "rare_crystal_chance_pct": 15
+    },
+    "Warden": {
+      "armor_drop_bonus_pct": 20,
+      "defensive_component_bonus_pct": 10
+    }
+  },
+  "_version": "4.7",
+  "_comment": "Per-biome loot tables (4.7 conventions). Each entry is a self-contained loot descriptor (name + type + rarity + drop_weight + stackable + max_stack) and is NOT a reference into items.json. Inline definitions keep loot balancing easy without schema drift."
 }

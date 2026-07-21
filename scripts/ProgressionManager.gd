@@ -8,7 +8,7 @@
 ## EarthCoin (EC) is the in-game currency. spend_ec() returns false if
 ## the player can't afford.
 ##
-## Persistence: like InventoryManager, this is non-persistent in
+## Persistence: like InventoryHandler, this is non-persistent in
 ## Phase 2 — GameState.SaveManager will be extended in Phase 8 to
 ## read/write xp/level/ec. For now they reset on game close.
 extends Node

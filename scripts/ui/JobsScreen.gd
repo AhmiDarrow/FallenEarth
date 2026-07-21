@@ -5,6 +5,8 @@ class_name JobsScreen
 extends Control
 
 const MISSION_PATH := "/root/MissionManager"
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 var _missions_container: VBoxContainer
 var _empty_label: Label
@@ -17,43 +19,29 @@ func _ready() -> void:
 
 
 func _build_ui() -> void:
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 8)
-	margin.add_theme_constant_override("margin_bottom", 8)
+	var margin := UH.make_margin(8)
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(margin)
 
-	var vbox := VBoxContainer.new()
-	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	vbox.add_theme_constant_override("separation", 8)
+	var vbox := UH.make_vbox(8, true, false)
 	margin.add_child(vbox)
 
-	var title := Label.new()
-	title.text = "Jobs & Quests"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 18)
+	var title := UH.make_accent_label("Jobs & Quests", 18)
 	vbox.add_child(title)
 
-	var scroll := ScrollContainer.new()
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var scroll := UH.make_scroll_container()
 	vbox.add_child(scroll)
 
-	_missions_container = VBoxContainer.new()
-	_missions_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_missions_container.add_theme_constant_override("separation", 6)
+	_missions_container = UH.make_vbox(6, true, false)
 	scroll.add_child(_missions_container)
 
-	_empty_label = Label.new()
-	_empty_label.text = "No active jobs or quests.\nVisit NPCs in settlements to find work."
-	_empty_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
-	_empty_label.add_theme_font_size_override("font_size", 12)
+	_empty_label = UH.make_muted_label("No active jobs or quests.\nVisit NPCs in settlements to find work.")
 	_empty_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_empty_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_empty_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_missions_container.add_child(_empty_label)
+
+	UH.make_scrollable(vbox)
 
 
 func _refresh() -> void:
@@ -76,24 +64,16 @@ func _refresh() -> void:
 
 
 func _create_mission_entry(mission: Dictionary) -> PanelContainer:
-	var panel := PanelContainer.new()
+	var panel := UH.make_surface_panel()
 	panel.custom_minimum_size = Vector2(0, 0)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 8)
-	margin.add_theme_constant_override("margin_right", 8)
-	margin.add_theme_constant_override("margin_top", 6)
-	margin.add_theme_constant_override("margin_bottom", 6)
+	var margin := UH.make_margin(8)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 4)
+	var vbox := UH.make_vbox(4)
 	margin.add_child(vbox)
 
-	var title := Label.new()
-	title.text = str(mission.get("title", "Unknown Mission"))
-	title.add_theme_color_override("font_color", Color(1, 0.9, 0.6))
-	title.add_theme_font_size_override("font_size", 14)
+	var title := UH.make_label(str(mission.get("title", "Unknown Mission")), 14, MT.ACCENT_PRIMARY)
 	vbox.add_child(title)
 
 	var objectives: Array = mission.get("objectives", [])
@@ -104,14 +84,11 @@ func _create_mission_entry(mission: Dictionary) -> PanelContainer:
 		var target: int = int(obj.get("target", 1))
 		var done: bool = current >= target
 
-		var obj_label := Label.new()
+		var obj_label: Label
 		if done:
-			obj_label.text = "  ✓ %s (Complete)" % obj_text
-			obj_label.add_theme_color_override("font_color", Color(0.5, 0.8, 0.5))
+			obj_label = UH.make_success_label("  ✓ %s (Complete)" % obj_text, 11)
 		else:
-			obj_label.text = "  ○ %s (%d/%d)" % [obj_text, current, target]
-			obj_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
-		obj_label.add_theme_font_size_override("font_size", 11)
+			obj_label = UH.make_label("  ○ %s (%d/%d)" % [obj_text, current, target], 11, MT.TEXT_SECONDARY)
 		vbox.add_child(obj_label)
 
 	var rewards: Dictionary = mission.get("rewards", {})
@@ -121,10 +98,7 @@ func _create_mission_entry(mission: Dictionary) -> PanelContainer:
 	if rewards.has("ec"):
 		reward_text += "%d EC " % int(rewards["ec"])
 	if not reward_text.is_empty():
-		var reward_label := Label.new()
-		reward_label.text = "  Reward: %s" % reward_text.strip_edges()
-		reward_label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
-		reward_label.add_theme_font_size_override("font_size", 10)
+		var reward_label := UH.make_label("  Reward: %s" % reward_text.strip_edges(), 10, MT.TEXT_LINK)
 		vbox.add_child(reward_label)
 
 	return panel

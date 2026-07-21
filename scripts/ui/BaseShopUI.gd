@@ -8,8 +8,9 @@ class_name BaseShopUI
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const BASE_SHOP_PATH := "/root/BaseShopManager"
-const INVENTORY_PATH := "/root/InventoryManager"
+const INVENTORY_PATH := "/root/InventoryHandler"
 const PROGRESSION_PATH := "/root/ProgressionManager"
 
 signal closed
@@ -31,61 +32,44 @@ func setup(shop_type: String, npc_id: String) -> void:
 
 
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.04, 0.04, 0.06, 0.95)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var bg := UH.make_backdrop()
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 
-	var root_vbox := VBoxContainer.new()
+	var root_vbox := UH.make_vbox(8)
 	root_vbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	root_vbox.add_theme_constant_override("separation", 8)
 	add_child(root_vbox)
 
 	# Title
-	var title := Label.new()
+	var title := UH.make_accent_label("[ Base Shop ]", 22)
 	title.name = "Title"
-	title.text = "[ Base Shop ]"
-	title.add_theme_color_override("font_color", Color(1, 0.95, 0.7))
-	title.add_theme_font_size_override("font_size", 22)
 	root_vbox.add_child(title)
 
 	# Stock label
-	var stock_label := Label.new()
+	var stock_label := UH.make_label("Stock for sale:", 14, MT.TEXT_LINK)
 	stock_label.name = "StockLabel"
-	stock_label.text = "Stock for sale:"
-	stock_label.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
-	stock_label.add_theme_font_size_override("font_size", 14)
 	root_vbox.add_child(stock_label)
 
 	# Scrollable stock list
-	var scroll := ScrollContainer.new()
+	var scroll := UH.make_scroll_container()
 	scroll.name = "StockScroll"
-	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root_vbox.add_child(scroll)
-	var list := VBoxContainer.new()
+	var list := UH.make_vbox(0, true, false)
 	list.name = "StockList"
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(list)
 
 	# Bottom bar: status + close
-	var bottom := HBoxContainer.new()
+	var bottom := UH.make_hbox(0)
 	bottom.custom_minimum_size = Vector2(0, 32)
 	root_vbox.add_child(bottom)
-	var status := Label.new()
+	var status := UH.make_label("", 13, MT.TEXT_SUCCESS)
 	status.name = "StatusLabel"
-	status.add_theme_color_override("font_color", Color(0.7, 0.95, 0.7))
-	status.add_theme_font_size_override("font_size", 13)
 	status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(status)
-	var close := Button.new()
-	close.text = "Close"
-	close.custom_minimum_size = Vector2(80, 32)
+	var close := UH.make_button("Close", "secondary", 80, 32)
 	close.pressed.connect(_on_close_pressed)
 	bottom.add_child(close)
-	ButtonStyleHelper.apply_secondary(close)
 
 
 func _refresh() -> void:
@@ -102,27 +86,22 @@ func _refresh() -> void:
 		return
 	var stock: Array = bsm.get_shop_stock(_shop_type)
 	if stock.is_empty():
-		var ph := Label.new()
-		ph.text = "(no stock for this shop)"
-		ph.add_theme_color_override("font_color", Color(0.55, 0.55, 0.6))
+		var ph := UH.make_muted_label("(no stock for this shop)")
 		list.add_child(ph)
 		return
 	for entry in stock:
-		var item_id: String = str(entry.get("item", "?"))
-		var qty: int = int(entry.get("qty", 1))
+		var item_id: String = str(entry.get("item_id", "?"))
+		var qty: int = int(entry.get("count", 1))
 		var price: int = int(entry.get("buy_price", 1))
-		var row := HBoxContainer.new()
+		var row := UH.make_hbox(0)
 		row.custom_minimum_size = Vector2(0, 32)
 		list.add_child(row)
-		var info := Label.new()
-		info.text = "%s x%d   %d EC each" % [item_id, qty, price]
+		var info := UH.make_label("%s x%d   %d EC each" % [item_id, qty, price])
 		info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(info)
-		var buy_btn := Button.new()
-		buy_btn.text = "Buy 1"
+		var buy_btn := UH.make_button("Buy 1", "primary")
 		buy_btn.pressed.connect(_on_buy_pressed.bind(item_id, price))
 		row.add_child(buy_btn)
-		ButtonStyleHelper.apply_primary(buy_btn)
 
 
 func _on_buy_pressed(item_id: String, price: int) -> void:

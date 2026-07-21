@@ -1,19 +1,23 @@
+class_name MinimapOverhaul
+extends Control
+
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
+
 ## MinimapOverhaul — Icon-based minimap showing NPCs, buildings, rifts.
 ##
 ## Replaces basic minimap with colored dot icons for entities.
 ## Auto-scales to player position.
-class_name MinimapOverhaul
-extends Control
 
 const SIZE := 160.0
 const ICON_SIZE := 3.0
-const BG_COLOR := Color(0.04, 0.04, 0.06, 0.85)
-const PLAYER_COLOR := Color(0.4, 0.85, 1.0)
-const NPC_COLOR := Color(0.3, 0.6, 1.0)
-const BUILDING_COLOR := Color(0.6, 0.45, 0.3)
-const RIFT_COLOR := Color(1.0, 0.3, 0.3)
-const RESOURCE_COLOR := Color(0.3, 0.8, 0.3)
-const GRID_COLOR := Color(0.15, 0.15, 0.18, 0.4)
+var BG_COLOR := MT.OVERLAY_DARK
+var PLAYER_COLOR := MT.MM_PLAYER
+var NPC_COLOR := MT.ACCENT_SECONDARY
+var BUILDING_COLOR := MT.BORDER_STRONG
+var RIFT_COLOR := MT.MM_MOB_HOSTILE
+var RESOURCE_COLOR := MT.ACCENT_SUCCESS
+var GRID_COLOR := MT.MM_GRID_LINE
 
 var _player_pos: Vector2 = Vector2.ZERO
 var _npcs: Array[Dictionary] = []

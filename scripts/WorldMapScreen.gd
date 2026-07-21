@@ -6,6 +6,7 @@ signal return_to_local_requested()
 signal travel_to_hex_requested(q: int, r: int)
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
 
 
@@ -91,14 +92,10 @@ func _build_world_view() -> void:
 		var q := int(parts[0])
 		var r := int(parts[1])
 		var tile: Dictionary = _tile_map[key]
-		var btn := Button.new()
-		btn.custom_minimum_size = Vector2(50, 44)
+		var btn := UH.make_button("", "ghost", 50, 44)
 		btn.focus_mode = Control.FOCUS_ALL
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		btn.add_theme_stylebox_override("focus", MT.focus_ring())
-		btn.add_theme_stylebox_override("normal", MT.button_stylebox("ghost", "normal"))
-		btn.add_theme_stylebox_override("hover", MT.button_stylebox("ghost", "hover"))
-		btn.add_theme_stylebox_override("pressed", MT.button_stylebox("ghost", "pressed"))
 		btn.text = _hex_marker(q, r, tile, gs)
 		btn.tooltip_text = _tile_tooltip(tile, gs, q, r)
 		btn.modulate = _biome_color(str(tile.get("name", "")))

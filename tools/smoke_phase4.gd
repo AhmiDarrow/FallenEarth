@@ -2,7 +2,7 @@ extends SceneTree
 ## Smoke test for v0.4.0 Phase 4: equipment + weapons + armor + accessories.
 
 const EquipMgrScript = preload("res://scripts/EquipmentManager.gd")
-const InvMgrScript = preload("res://scripts/InventoryManager.gd")
+const InvMgrScript = preload("res://scripts/InventoryHandler.gd")
 const ProgMgrScript = preload("res://scripts/ProgressionManager.gd")
 const PartyMgrScript = preload("res://scripts/PartyNPCManager.gd")
 const EquipmentScreenScript = preload("res://scripts/ui/EquipmentScreen.gd")

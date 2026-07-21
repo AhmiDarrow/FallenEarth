@@ -1,6 +1,8 @@
 ## ChatUI — Chat overlay, shown as a collapsible bottom-left panel
 extends Control
 
+const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 const MAX_MESSAGES := 50
 
 var _chat_manager: Node = null
@@ -21,49 +23,42 @@ func _init() -> void:
 
 
 func _build_ui() -> void:
-	var panel := PanelContainer.new()
+	var panel := UH.make_surface_panel()
 	panel.size = Vector2(400, 200)
 	panel.position = Vector2.ZERO
 	panel.mouse_filter = MOUSE_FILTER_STOP
 	add_child(panel)
 
-	var vbox := VBoxContainer.new()
+	var vbox := UH.make_vbox(2)
 	vbox.size = Vector2(380, 180)
 	vbox.position = Vector2(10, 10)
-	vbox.add_theme_constant_override("separation", 2)
 	panel.add_child(vbox)
 
-	var header := HBoxContainer.new()
+	var header := UH.make_hbox(0)
 	vbox.add_child(header)
 
-	_toggle_btn = Button.new()
-	_toggle_btn.text = "Chat [_]"
-	_toggle_btn.custom_minimum_size = Vector2(80, 20)
+	_toggle_btn = UH.make_button("Chat [_]", "primary", 80, 20)
 	_toggle_btn.pressed.connect(_toggle)
 	header.add_child(_toggle_btn)
 
-	var chan_btn := Button.new()
-	chan_btn.text = "/say"
-	chan_btn.custom_minimum_size = Vector2(50, 20)
+	var chan_btn := UH.make_button("/say", "ghost", 50, 20)
 	chan_btn.pressed.connect(_cycle_channel)
 	header.add_child(chan_btn)
 	chan_btn.name = "ChanBtn"
 
-	_scroll = ScrollContainer.new()
+	_scroll = UH.make_scroll_container()
 	_scroll.custom_minimum_size = Vector2(360, 120)
-	_scroll.size_flags_vertical = SIZE_EXPAND_FILL
 	vbox.add_child(_scroll)
 
-	_msg_container = VBoxContainer.new()
+	_msg_container = UH.make_vbox(1)
 	_msg_container.size_flags_horizontal = SIZE_EXPAND_FILL
-	_msg_container.add_theme_constant_override("separation", 1)
 	_scroll.add_child(_msg_container)
 
-	_input_field = LineEdit.new()
-	_input_field.placeholder_text = "Type here and press Enter..."
-	_input_field.custom_minimum_size = Vector2(360, 24)
+	_input_field = UH.make_line_edit("Type here and press Enter...", 360, 24)
 	_input_field.text_submitted.connect(_on_text_submitted)
 	vbox.add_child(_input_field)
+
+	UH.make_scrollable(vbox)
 
 
 func _on_text_submitted(text: String) -> void:
@@ -125,13 +120,11 @@ func _cycle_channel() -> void:
 
 
 func add_message(sender_name: String, channel: String, text: String) -> void:
-	var msg := RichTextLabel.new()
-	msg.bbcode_enabled = true
+	var color := _channel_color(channel)
+	var msg := UH.make_rich_section("[color=%s][%s][/color] [b]%s:[/b] %s" % [color, channel.to_upper(), sender_name, text], 0, Color.WHITE)
 	msg.fit_content = true
 	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	msg.custom_minimum_size = Vector2(340, 0)
-	var color := _channel_color(channel)
-	msg.text = "[color=%s][%s][/color] [b]%s:[/b] %s" % [color, channel.to_upper(), sender_name, text]
 	_msg_container.add_child(msg)
 	# Trim old messages
 	while _msg_container.get_child_count() > MAX_MESSAGES:

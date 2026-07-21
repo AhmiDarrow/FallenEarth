@@ -2,6 +2,7 @@ class_name TameResultPopup
 extends Control
 
 const MT = preload("res://assets/ui/MasterTheme.gd")
+const UH = preload("res://scripts/ui/UIHelper.gd")
 
 var _on_dismiss: Callable = Callable()
 
@@ -19,14 +20,11 @@ func _build_ui(result: Dictionary) -> void:
 	anchors_preset = Control.PRESET_FULL_RECT
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
-	var bg_panel := PanelContainer.new()
+	var bg_panel := UH.make_panel(MT.OVERLAY_DARK, Color.TRANSPARENT, 0, 0)
 	bg_panel.position = Vector2.ZERO
 	bg_panel.size = vp_size
 	bg_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(bg_panel)
-	var bg_sb := StyleBoxFlat.new()
-	bg_sb.bg_color = Color(0.0, 0.0, 0.0, 0.6)
-	bg_panel.add_theme_stylebox_override("panel", bg_sb)
 
 	var success: bool = bool(result.get("success", false))
 	var mob_name: String = str(result.get("mob_name", "Mob"))
@@ -38,59 +36,35 @@ func _build_ui(result: Dictionary) -> void:
 	var panel_x: float = (vp_size.x - panel_w) * 0.5
 	var panel_y: float = (vp_size.y - panel_h) * 0.5
 
-	var panel := PanelContainer.new()
+	var border_color: Color = Color(0.439, 0.608, 0.478) if success else Color(0.769, 0.251, 0.251)
+	var panel := UH.make_panel(Color(0.04, 0.04, 0.08, 0.94), border_color, 8, 3)
 	panel.position = Vector2(panel_x, panel_y)
 	panel.size = Vector2(panel_w, panel_h)
+	panel.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	add_child(panel)
 
-	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.04, 0.08, 0.94)
-	var border_color: Color = Color(0.439, 0.608, 0.478) if success else Color(0.769, 0.251, 0.251)
-	sb.border_width_left = 3
-	sb.border_width_top = 3
-	sb.border_width_right = 3
-	sb.border_width_bottom = 3
-	sb.border_color = border_color
-	sb.corner_radius_top_left = 8
-	sb.corner_radius_top_right = 8
-	sb.corner_radius_bottom_left = 8
-	sb.corner_radius_bottom_right = 8
-	panel.add_theme_stylebox_override("panel", sb)
-
-	var margin := MarginContainer.new()
+	var margin := UH.make_margin(24)
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
-	margin.add_theme_constant_override("margin_left", 24)
-	margin.add_theme_constant_override("margin_right", 24)
-	margin.add_theme_constant_override("margin_top", 20)
-	margin.add_theme_constant_override("margin_bottom", 20)
 	panel.add_child(margin)
 
-	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 12)
+	var vbox := UH.make_vbox(12)
 	margin.add_child(vbox)
 
-	var title := Label.new()
+	var title := UH.make_label("Tame Successful!" if success else "Tame Failed", 24, Color(1.0, 0.95, 0.80))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(1.0, 0.95, 0.80))
 	title.add_theme_color_override("font_outline_color", Color.BLACK)
 	title.add_theme_constant_override("outline_size", 4)
-	title.text = "Tame Successful!" if success else "Tame Failed"
 	vbox.add_child(title)
 
-	var mob_label := Label.new()
+	var mob_label := UH.make_label(mob_name, 16, Color(0.85, 0.85, 0.95))
 	mob_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	mob_label.add_theme_font_size_override("font_size", 16)
-	mob_label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
 	mob_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	mob_label.add_theme_constant_override("outline_size", 2)
-	mob_label.text = mob_name
 	vbox.add_child(mob_label)
 
-	var info_label := Label.new()
+	var info_label := UH.make_label("", 13, Color(0.65, 0.62, 0.58))
 	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_font_size_override("font_size", 13)
-	info_label.add_theme_color_override("font_color", Color(0.65, 0.62, 0.58))
 	info_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	info_label.add_theme_constant_override("outline_size", 1)
 	if success:
@@ -104,16 +78,14 @@ func _build_ui(result: Dictionary) -> void:
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(spacer)
 
-	var btn_container := HBoxContainer.new()
-	btn_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	var btn_container := UH.make_center_hbox()
 	vbox.add_child(btn_container)
 
-	var btn := Button.new()
-	btn.text = "OK"
-	btn.custom_minimum_size = Vector2(120, 36)
+	var btn := UH.make_button("OK", "primary", 120, 36)
 	btn.pressed.connect(_on_dismiss_pressed)
 	btn_container.add_child(btn)
-	MT.apply_primary(btn)
+
+	UH.make_scrollable(vbox)
 
 
 func _on_dismiss_pressed() -> void:
