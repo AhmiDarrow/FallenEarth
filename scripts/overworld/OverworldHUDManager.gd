@@ -41,15 +41,34 @@ func _setup_hud() -> void:
 		ui_layer.add_child(_hud)
 	else:
 		_hw.add_child(_hud)
+	# v0.4.0 polish: hide the OLD scene-tree UI panels that came along
+	# with HubWorld.tscn — the new HUD provides equivalent controls.
 	var old_bar := _hw.get_node_or_null("UI_Canvas/CharInfoBar") as CanvasItem
 	if old_bar == null:
 		old_bar = _hw.get_node_or_null("CharInfoBar") as CanvasItem
 	if old_bar != null:
 		old_bar.visible = false
 
-	var info_panel := _hw.get_node_or_null("UI_Canvas/TileInfoPanel") as VBoxContainer
-	if is_instance_valid(info_panel):
-		UH.make_scrollable(info_panel)
+	# OLD MinimapPanel in HubWorld.tscn used a SubViewport with manual
+	# update mode and no script — it never re-rendered, so the player
+	# saw a stale black square. Hide it; v0.4.0's HUD draws its own.
+	var old_minimap := _hw.get_node_or_null("UI_Canvas/MinimapPanel") as CanvasItem
+	if old_minimap != null:
+		old_minimap.visible = false
+
+	# OLD BottomBar HBoxContainer from HubWorld.tscn is empty for now
+	# — the new HUD shows the hotbar as a separate child, so the OLD
+	# BottomBar is dead weight.
+	var old_bottom := _hw.get_node_or_null("UI_Canvas/BottomBar") as CanvasItem
+	if old_bottom != null:
+		old_bottom.visible = false
+
+	# TileInfoPanel: OLD scene panel still drives region / mob info.
+	# Hide it — the new HUD's status block shows the same data with
+	# the modern typography.
+	var info_panel := _hw.get_node_or_null("UI_Canvas/TileInfoPanel") as CanvasItem
+	if info_panel != null:
+		info_panel.visible = false
 
 
 func _open_character_menu() -> void:
@@ -191,6 +210,11 @@ func _load_mob_name_cache() -> void:
 
 
 func _update_tile_info() -> void:
+	# v0.4.0 polish: tile info now lives in HUD.status_block's region
+	# label (the OLD TileInfoPanel was removed from HubWorld.tscn).
+	# Push the same data into the HUD for visibility.
+	if not is_instance_valid(_hud):
+		return
 	var tile: Dictionary = _hw._tile_map.get("%d,%d" % [_hw._player_q, _hw._player_r], {})
 	var biome: String = str(tile.get("name", _hw._local_map.get("biome", "?")))
 	var terrain: int = LocalMapGen.get_terrain(_hw._local_map, _hw._local_x, _hw._local_y)
@@ -216,43 +240,40 @@ func _update_tile_info() -> void:
 	if mob_count > 0:
 		var dist_str: String = str(nearest_mob_dist) + " cells away" if nearest_mob_dist > 0 else "ADJACENT — walk into one"
 		mob_line = "\n[color=#ff8a65][b]%d mob(s)[/b][/color] in this region. Nearest: %s." % [mob_count, dist_str]
-	_hw.tile_info_label.text = (
-		"[b]Region (%d,%d)[/b] — [color=#c8e6c9]%s[/color]\n" % [_hw._player_q, _hw._player_r, biome] +
-		"Local pos: (%d, %d) | Terrain: %s | Explored: %.0f%%%s\n" % [
-			_hw._local_x, _hw._local_y, LocalMapGen.terrain_label(terrain), explored, mob_line,
-		] +
-		"[i]WASD to walk. Step onto a mob to fight. ⚡ = rift — press F to enter. [b]M[/b] = World Map.[/i]"
-	)
+	if _hud.has_method("set_region_info"):
+		_hud.call("set_region_info", (
+			"[b]Region (%d,%d)[/b] — [color=#c8e6c9]%s[/color]\n" % [_hw._player_q, _hw._player_r, biome] +
+			"Local pos: (%d, %d) | Terrain: %s | Explored: %.0f%%%s" %
+			[_hw._local_x, _hw._local_y, LocalMapGen.terrain_label(terrain), explored, mob_line]
+		))
 
 
 func _update_char_info(data: Dictionary) -> void:
-	if _hud != null and is_instance_valid(_hud):
-		return
-	var char_name: String = str(data.get("name", data.get("id", "???")))
-	var race: String = str(data.get("race", "???"))
-	var cls: String = str(data.get("class", "???"))
-	var lvl: int = int(data.get("level", 1))
-	var xp: int = int(data.get("xp", 0))
-	_hw.char_label.text = "[b]%s[/b] — %s / %s  [color=#fff59d]Lv.%d[/color] (%d XP)  [color=#90caf9]Local Map[/color]" % [
-		char_name, race, cls, lvl, xp,
-	]
+	# v0.4.0 polish: char info now lives in HUD.top_bar. The new HUD
+	# binds the top-bar fields off _hud._refresh_from_gamestate(); we
+	# trigger that here so subsequent code changes don't need to know
+	# about HUD internal layout.
+	if is_instance_valid(_hud) and _hud.has_method("refresh_from_gamestate"):
+		_hud.call("refresh_from_gamestate")
 
 
 func _append_start_info(start: Dictionary) -> void:
+	# v0.4.0 polish: the OLD CharInfoBar was removed. Append a
+	# transient toast notification instead so the homestead hint still
+	# reaches the player.
 	var biome: String = str(start.get("name", "Unknown"))
-	var extra := UH.make_rich_section("[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?")])
-	extra.name = "StartInfoLabel"
-	extra.fit_content = true
-	var char_bar := _hw.get_node_or_null("UI_Canvas/CharInfoBar") as HBoxContainer
-	if char_bar != null:
-		char_bar.add_child(extra)
+	_show_notification("[i]Homestead region: %s (%s) — 512×512 local playfield[/i]" % [biome, start.get("key", "?"))])
 
 
 func _setup_ui_scaling() -> void:
+	# v0.4.0 polish: HUD._ready already snaps size to the viewport rect
+	# and re-syncs on viewport size_changed. We only re-affirm the
+	# FULL_RECT anchor here — DON'T clobber size back to ZERO, that
+	# collapses the rect and breaks child anchor math under
+	# CanvasLayer parents.
 	if is_instance_valid(_hud):
 		_hud.set_anchors_preset(Control.PRESET_FULL_RECT)
-		_hud.size = Vector2.ZERO
-		_hud.call_deferred("_sync_size_to_parent")
+		_hud.call_deferred("_sync_to_viewport")
 
 
 func _is_ui_overlay_open() -> bool:

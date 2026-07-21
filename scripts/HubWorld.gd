@@ -33,9 +33,6 @@ const MountFollowerScript = preload("res://scripts/mount/MountFollower.gd")
 const RIFT_CHECK_INTERVAL := 30.0
 const GATHER_RANGE_CELLS := 1  # adjacent cells; player can gather from 1 tile away
 
-@onready var char_label: RichTextLabel = get_node_or_null("UI_Canvas/CharInfoBar/CharLabel") as RichTextLabel
-@onready var tile_info_label: RichTextLabel = get_node_or_null("UI_Canvas/TileInfoPanel/TileInfoLabel") as RichTextLabel
-@onready var rift_info_label: RichTextLabel = get_node_or_null("UI_Canvas/TileInfoPanel/RiftInfoLabel") as RichTextLabel
 @onready var world_grid: Node2D = $World as Node2D
 @onready var camera: Camera2D = $World/Camera2D as Camera2D
 
@@ -153,7 +150,6 @@ func _ready() -> void:
 	_rift_manager = OverworldRiftManager.new()
 	_rift_manager.name = "RiftManager"
 	_rift_manager.rift_runner = _rift_runner
-	_rift_manager.rift_info_label = rift_info_label
 	_rift_manager.gm = _gm
 	_rift_manager.gs = _gs
 	_rift_manager.transition_screen = _transition_screen if _transition_screen else null

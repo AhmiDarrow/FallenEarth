@@ -8,6 +8,23 @@ extends RefCounted
 const MT = preload("res://assets/ui/MasterTheme.gd")
 
 # ---------------------------------------------------------------------------
+# Sizing helpers used by the HUD shell.
+# ---------------------------------------------------------------------------
+
+## Top-bar stand-alone height in pixels (matches MT.FS_H2/FS_H3 line
+## height plus padding).
+static func compute_top_bar_height() -> int:
+	return 56
+
+
+## Status block (HP/MP/XP + region) stand-alone height in pixels.
+static func compute_status_block_height() -> int:
+	# RegionInfoLabel (4 lines * 14 px = 56) + 3 bars * 18 px = 110 px
+	# plus padding.
+	return 130
+
+
+# ---------------------------------------------------------------------------
 # Buttons
 # ---------------------------------------------------------------------------
 

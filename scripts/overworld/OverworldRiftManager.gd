@@ -81,25 +81,22 @@ func get_rift_at_player() -> Dictionary:
 
 
 func update_rift_ui() -> void:
-	if not is_instance_valid(rift_info_label):
-		return
+	# v0.4.0 polish: rift info no longer writes to a dedicated
+	# TileInfoPanel label (the OLD scene tree was removed). The hub
+	# HUD's HoverTooltip + tile info region already show nearby-rift
+	# counts via _update_tile_info; this method now just exposes the
+	# state for callers that need it without dead UI writes.
 	var rift: Dictionary = get_rift_at_player()
 	var on_rift := not rift.is_empty()
-
 	if on_rift:
 		var remaining: float = float(rift.get("duration", 0.0)) - (game_time - float(rift.get("spawn_time", 0.0)))
-		rift_info_label.text = (
-			"[color=#e1bee7][b]RIFT TUNNEL ACTIVE[/b][/color] — %s\n" % rift.get("rift_id", "?") +
-			"Local (%d,%d) | ~%d min left\n[color=#90caf9][Press F to enter][/color]" % [
-				int(rift.get("local_x", 0)), int(rift.get("local_y", 0)),
-				maxi(0, int(remaining / 60.0)),
-			]
-		)
-	else:
-		var count := 0
-		if is_instance_valid(rift_runner) and rift_runner.has_method("get_rifts_in_hex"):
-			count = (rift_runner.get_rifts_in_hex(player_q, player_r, game_time) as Array).size()
-		rift_info_label.text = "[i]%d rift(s) in this region. Walk onto ⚡ and press F to enter.[/i]" % count
+		# Emit a transient toast through the hub's HUD notification
+		# helper if it's available. Otherwise, no-op.
+		var manager: Node = _find_overworld_hud_manager()
+		if manager != null and manager.has_method("_show_notification"):
+			manager.call("_show_notification",
+				"⚡ Rift tunnel ACTIVE — ~%d min left. Press F to enter." %
+				maxi(0, int(remaining / 60.0)))
 
 
 func open_rift_entry_ui() -> void:
@@ -147,3 +144,12 @@ func open_world_map() -> void:
 		if is_instance_valid(transition_screen):
 			await transition_screen.fade_out(0.4)
 		gm.go_to_world_map()
+
+
+## Locate OverworldHUDManager in the tree (set by HubWorld when this
+## manager is constructed). Returns null when not present.
+func _find_overworld_hud_manager() -> Node:
+	if ui_parent == null:
+		return null
+	var node := ui_parent.find_child("HUDManager", true, false)
+	return node
