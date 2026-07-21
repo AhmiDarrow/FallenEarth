@@ -1,4 +1,4 @@
-## TileSetService — Builds native Godot 4.3 TileSet resources for local map rendering.
+## TileSetService — Builds native Godot TileSet resources for local map rendering.
 ##
 ## One TileSet per biome. Each TileSet has a TileSetAtlasSource whose atlas is a
 ## grid of 5 terrain types × 5 tiles each (center + N/S/W/E edge variants) = 25 tiles,

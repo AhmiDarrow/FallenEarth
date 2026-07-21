@@ -131,13 +131,19 @@ visible = false
 [node name="Camera2D" type="Camera2D" parent="VBox/ContentHBox/HexMargin/HexGrid"]
 enabled = false
 
-[node name="GlobeContainer" type="SubViewportContainer" parent="VBox/ContentHBox/HexMargin"]
+[node name="GlobeFrame" type="PanelContainer" parent="VBox/ContentHBox/HexMargin"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="GlobeContainer" type="SubViewportContainer" parent="VBox/ContentHBox/HexMargin/GlobeFrame"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 stretch = true
 
-[node name="SubViewport" type="SubViewport" parent="VBox/ContentHBox/HexMargin/GlobeContainer"]
+[node name="SubViewport" type="SubViewport" parent="VBox/ContentHBox/HexMargin/GlobeFrame/GlobeContainer"]
+transparent_bg = true
 size = Vector2i(600, 600)
 render_target_update_mode = 4
 

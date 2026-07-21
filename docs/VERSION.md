@@ -8,8 +8,8 @@ Single source of truth for release version, save format, and development phase a
 |-------|-------|
 | **Game version** | `0.11.0` |
 | **Save format version** | `0.2.0` |
-| **Godot** | 4.3 |
-| **Last updated** | 2026-07-07 |
+| **Godot** | 4.7.1 |
+| **Last updated** | 2026-07-20 |
 | **Development phase** | UI Design System COMPLETE |
 
 ## Version History (summary)
@@ -59,5 +59,5 @@ world_npcs, faction_rep, recruited_npc_ids, missions
 ## Validation Command
 
 ```powershell
-& "C:\Program Files\godot\Godot_v4.3-stable_win64_console.exe" --headless --path "C:\Users\Administrator\FallenEarth" -s tools/validate_scripts.gd
+& "C:\Users\Administrator\godot\Godot_v4.7.1-stable_win64_console.exe" --headless --path "C:\Users\Administrator\FallenEarth" -s tools/validate_scripts.gd
 ```

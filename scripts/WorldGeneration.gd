@@ -11,8 +11,8 @@ extends Control
 @onready var continue_btn: Button = $VBox/ContentHBox/SideVBox/ContinueBtn
 @onready var hex_grid: Node2D = $VBox/ContentHBox/HexMargin/HexGrid
 @onready var hex_margin: MarginContainer = $VBox/ContentHBox/HexMargin
-@onready var globe_container: SubViewportContainer = $VBox/ContentHBox/HexMargin/GlobeContainer
-@onready var sub_viewport: SubViewport = $VBox/ContentHBox/HexMargin/GlobeContainer/SubViewport
+@onready var globe_container: SubViewportContainer = $VBox/ContentHBox/HexMargin/GlobeFrame/GlobeContainer
+@onready var sub_viewport: SubViewport = $VBox/ContentHBox/HexMargin/GlobeFrame/GlobeContainer/SubViewport
 @onready var world_info_label: RichTextLabel = $VBox/ContentHBox/SideVBox/WorldInfoPanel/WorldInfoLabel
 @onready var selected_info_label: RichTextLabel = $VBox/ContentHBox/SideVBox/SelectedInfoPanel/SelectedInfoLabel
 
@@ -42,7 +42,7 @@ var _last_drag_pos: Vector2 = Vector2.ZERO
 var _drag_moved: bool = false
 
 const DEFAULT_SEED := "FallenEarth"
-const SIZE_RADII := {"small": 8, "medium": 15, "large": 23}
+const SIZE_RADII := {"small": 8, "medium": 12, "large": 18}
 const BIOME_COLORS := {
 	"Ash Wastes": Color(0.75, 0.65, 0.5),
 	"Rust Canyons": Color(0.85, 0.45, 0.35),
@@ -69,9 +69,6 @@ func _ready() -> void:
 	ButtonStyleHelper.apply_primary(generate_btn)
 	ButtonStyleHelper.apply_primary(continue_btn)
 	ButtonStyleHelper.apply_ghost(random_btn)
-	ButtonStyleHelper.apply_ghost(small_btn)
-	ButtonStyleHelper.apply_primary(medium_btn)
-	ButtonStyleHelper.apply_ghost(large_btn)
 
 	back_btn.pressed.connect(_on_back_pressed)
 	random_btn.pressed.connect(_on_random_seed_pressed)
@@ -80,10 +77,12 @@ func _ready() -> void:
 	small_btn.toggled.connect(_on_size_toggled.bind("small"))
 	medium_btn.toggled.connect(_on_size_toggled.bind("medium"))
 	large_btn.toggled.connect(_on_size_toggled.bind("large"))
+	_sync_size_buttons("medium")
 
 	hex_margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_instance_valid(globe_container):
 		globe_container.mouse_filter = Control.MOUSE_FILTER_STOP
+	_style_globe_frame()
 
 	if is_instance_valid(seed_edit):
 		seed_edit.text = DEFAULT_SEED
@@ -113,12 +112,47 @@ func _on_random_seed_pressed() -> void:
 func _on_size_toggled(pressed: bool, size_name: String) -> void:
 	if not pressed or _updating_size:
 		return
+	_sync_size_buttons(size_name)
+
+
+func _sync_size_buttons(size_name: String) -> void:
+	if not SIZE_RADII.has(size_name):
+		return
 	_updating_size = true
-	_world_size = SIZE_RADII[size_name]
-	small_btn.button_pressed = (size_name == "small")
-	medium_btn.button_pressed = (size_name == "medium")
-	large_btn.button_pressed = (size_name == "large")
+	_world_size = int(SIZE_RADII[size_name])
+	var pairs: Array = [
+		[small_btn, "small"],
+		[medium_btn, "medium"],
+		[large_btn, "large"],
+	]
+	for pair in pairs:
+		var btn: Button = pair[0]
+		var name: String = pair[1]
+		if not is_instance_valid(btn):
+			continue
+		var on: bool = (name == size_name)
+		btn.button_pressed = on
+		if on:
+			ButtonStyleHelper.apply_primary(btn)
+		else:
+			ButtonStyleHelper.apply_ghost(btn)
 	_updating_size = false
+
+
+func _style_globe_frame() -> void:
+	var frame: PanelContainer = get_node_or_null("VBox/ContentHBox/HexMargin/GlobeFrame") as PanelContainer
+	if not is_instance_valid(frame):
+		return
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.06, 0.09, 0.92)
+	sb.border_color = Color(0.55, 0.48, 0.38, 0.95)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(10)
+	sb.content_margin_left = 10
+	sb.content_margin_top = 10
+	sb.content_margin_right = 10
+	sb.content_margin_bottom = 10
+	frame.add_theme_stylebox_override("panel", sb)
 
 
 func _on_generate_pressed() -> void:
@@ -165,7 +199,7 @@ func _render_3d_globe() -> void:
 	if not is_instance_valid(vp) and is_instance_valid(globe_container):
 		vp = globe_container.get_node_or_null("SubViewport") as SubViewport
 	if not is_instance_valid(vp):
-		vp = get_node_or_null("VBox/ContentHBox/HexMargin/GlobeContainer/SubViewport") as SubViewport
+		vp = get_node_or_null("VBox/ContentHBox/HexMargin/GlobeFrame/GlobeContainer/SubViewport") as SubViewport
 	if not is_instance_valid(vp):
 		return
 
@@ -217,58 +251,42 @@ func _render_3d_globe() -> void:
 	_camera_3d.transform.basis = Basis.looking_at(-_camera_3d.position.normalized(), Vector3.UP)
 	_pitch_pivot.add_child(_camera_3d)
 
-	# Place exactly N hexes via Fibonacci lattice (full-sphere even coverage)
+	# Place hexes from axial q,r so neighbors stay adjacent on the sphere
 	var sphere_r: float = 4.0
-	var n: int = generated_world.size()
-	var sphere_points: Array[Vector3] = WorldGenerator.make_uniform_sphere_points(n, sphere_r)
+	var hex_radius: int = _world_size
+	if world_generator != null:
+		hex_radius = world_generator.get_hex_radius()
 
-	var keys: Array = generated_world.keys()
-	var pos_by_key: Dictionary = {}
-	for i in range(mini(n, sphere_points.size())):
-		pos_by_key[keys[i]] = sphere_points[i]
+	# Chord length between axial neighbors (~1 ring unit at 9° angular step)
+	var angular_step: float = deg_to_rad(9.0)
+	var avg_nn: float = 2.0 * sphere_r * sin(angular_step * 0.5)
+	var hex_3d_size: float = (avg_nn / sqrt(3.0)) * 1.06
+	var hex_h: float = 0.18
+	var hex_mesh: ArrayMesh = WorldGenerator.create_hex_prism_mesh(hex_3d_size, hex_h)
 
-	# Measure nearest-neighbor distances to size hexes so they connect
-	var sample_dists: Array[float] = []
-	var sample_keys: Array = pos_by_key.keys()
-	var sample_n: int = mini(30, sample_keys.size())
-	for si in range(sample_n):
-		var sk: String = sample_keys[si]
-		var sp: Vector3 = pos_by_key[sk]
-		var best: float = 1e9
-		for ok in pos_by_key:
-			if ok == sk:
-				continue
-			var d: float = sp.distance_to(pos_by_key[ok])
-			if d < best:
-				best = d
-		if best < 1e8:
-			sample_dists.append(best)
-
-	var avg_nn: float = 0.55
-	if sample_dists.size() > 0:
-		var sum: float = 0.0
-		for d in sample_dists:
-			sum += d
-		avg_nn = sum / float(sample_dists.size())
-
-	var hex_3d_size: float = (avg_nn / sqrt(3.0)) * 1.04
-	var hex_mesh: ArrayMesh = WorldGenerator.create_hex_prism_mesh(hex_3d_size, 0.22)
-
-	for key in pos_by_key:
+	for key in generated_world:
 		var tile: Dictionary = generated_world[key]
-		var pos: Vector3 = pos_by_key[key]
+		var q: int = int(tile.get("q", 0))
+		var r: int = int(tile.get("r", 0))
+		var pos: Vector3 = WorldGenerator.get_hex_spherical_pos(q, r, hex_radius, sphere_r)
 		var radial: Vector3 = pos.normalized()
+
+		# Tangent from +q neighbor keeps flat edges aligned with the grid
+		var pos_q: Vector3 = WorldGenerator.get_hex_spherical_pos(q + 1, r, hex_radius, sphere_r)
+		var tangent: Vector3 = (pos_q - pos)
+		if tangent.length_squared() < 1e-10:
+			tangent = radial.cross(Vector3.UP)
+			if tangent.length_squared() < 1e-10:
+				tangent = radial.cross(Vector3.RIGHT)
+		tangent = tangent.normalized()
+		var bitangent: Vector3 = radial.cross(tangent).normalized()
+		tangent = bitangent.cross(radial).normalized()
+		# Mesh lies in XY with +Z as prism top → map Z to outward radial
+		var basis := Basis(tangent, bitangent, radial)
 
 		var mi := MeshInstance3D.new()
 		mi.mesh = hex_mesh
-		mi.position = pos
-		# Orient hex so its top face points outward
-		var up_axis := Vector3.UP
-		if absf(radial.dot(up_axis)) > 0.95:
-			up_axis = Vector3.RIGHT
-		mi.transform.basis = Basis.looking_at(radial, up_axis)
-		# looking_at points -Z at target; rotate so +Y (prism top) faces outward
-		mi.transform.basis = mi.transform.basis * Basis(Vector3.RIGHT, -PI * 0.5)
+		mi.transform = Transform3D(basis, pos + radial * (hex_h * 0.35))
 
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = _biome_color(str(tile.get("name", "")))
@@ -290,7 +308,7 @@ func _render_3d_globe() -> void:
 			ms.radius = 0.09
 			ms.height = 0.18
 			marker.mesh = ms
-			marker.position = pos + radial * 0.22
+			marker.position = pos + radial * 0.28
 			var mm := StandardMaterial3D.new()
 			mm.albedo_color = RIFT_COLOR if tile.get("is_riftspire", false) else SETTLEMENT_COLOR
 			mm.emission_enabled = true

@@ -1,5 +1,5 @@
 extends SceneTree
-## Smoke test for the v0.3.0 Godot 4.3 tile system.
+## Smoke test for the v0.3.0 tile system.
 ## Loads HubWorld, configures a tiny synthetic map, instantiates a mob via
 ## MobVisual, then verifies the TileSet, cell count, and a child mob sprite.
 

@@ -1,9 +1,9 @@
-## LocalMapView — Renders a 512x512 local playfield via a Godot 4.3 TileMapLayer.
+## LocalMapView — Renders a 512x512 local playfield via a Godot 4.7 TileMapLayer.
 ##
 ## One scene per HubWorld. configure(map_data) paints all cells of a generated
 ## local map into the TileMapLayer using a biome-specific TileSet built by
 ## TileSetService. Marker/mob/node/floor-pickup layers sit on top of the terrain.
-## No sprite batching, no procedural drawing — Godot 4.3 TileMap handles
+## No sprite batching, no procedural drawing — Godot TileMap handles
 ## 512x512 (~262k cells) at 60 fps without chunking.
 ##
 ## v0.9.1c: cell → node Dictionary indexes for O(1) lookups. Without these,

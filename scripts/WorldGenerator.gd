@@ -649,5 +649,5 @@ func get_riftspire_hex_key() -> String:
 
 
 ## get_visual_tile / get_tile_visual removed in v0.3.0 — tile rendering is now
-## handled by TileSetService + LocalMapView (Godot 4.3 TileMapLayer). WorldGenerator
+## handled by TileSetService + LocalMapView (Godot TileMapLayer). WorldGenerator
 ## only owns sphere-gen + biome classification, not visuals.

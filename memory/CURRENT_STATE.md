@@ -406,7 +406,7 @@ F5 boot log is now clean: 0 parse errors. The remaining `tileset.py` 2-line stub
 - `_visual_tile_cache` / `get_visual_tile` / `get_tile_visual` in `WorldGenerator.gd`
 - `_make_circle_texture` procedural draw in `HubWorld.gd`
 
-**Added** (Godot 4.3 native):
+**Added** (Godot native TileMap):
 - `scripts/TileSetService.gd` — `create_for_biome(name)` returns a `TileSet` with one
   `TileSetAtlasSource` (5 vertical-strip tiles, 24×120 px atlas), BLOCKED tile has a
   full-cell collision polygon on physics layer 0.
@@ -433,15 +433,15 @@ F5 boot log is now clean: 0 parse errors. The remaining `tileset.py` 2-line stub
 
 ```powershell
 # Compile check
-& "C:\Users\Administrator\godot\Godot_v4.3-stable_win64.exe" --headless `
-   --path "C:\Users\Administrator\FallenEarth" -s validate_scripts.gd
+& "C:\Users\Administrator\godot\Godot_v4.7.1-stable_win64_console.exe" --headless `
+   --path "C:\Users\Administrator\FallenEarth" -s tools/validate_scripts.gd
 
 # Tile system smoke test (10 biomes + view + mob + hub)
-& "C:\Users\Administrator\godot\Godot_v4.3-stable_win64.exe" --headless `
+& "C:\Users\Administrator\godot\Godot_v4.7.1-stable_win64_console.exe" --headless `
    --path "C:\Users\Administrator\FallenEarth" -s tools/smoke_tile_system.gd
 
 # MainMenu boot probe (60 frames, no input)
-& "C:\Users\Administrator\godot\Godot_v4.3-stable_win64.exe" --headless `
+& "C:\Users\Administrator\godot\Godot_v4.7.1-stable_win64_console.exe" --headless `
    --path "C:\Users\Administrator\FallenEarth" -s tools/boot_probe.gd
 ```
 
