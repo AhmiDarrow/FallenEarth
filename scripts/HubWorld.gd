@@ -364,12 +364,11 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Mouse double-click on world objects: block when UI overlay or paused.
-	if event is InputEventMouseButton and event.double_click and event.button_index == MOUSE_BUTTON_LEFT:
-		if _interaction_manager._is_ui_overlay_open() or get_tree().paused:
-			return
-		if _interaction_manager._on_double_click(get_local_mouse_position(), event.position):
-			return
+	# Left-click world objects → context box (harvest tip / actions).
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		if not (_interaction_manager._is_ui_overlay_open() or get_tree().paused):
+			if _interaction_manager._on_world_click(get_global_mouse_position(), event.position):
+				return
 	# Keyboard-only input below this line.
 	if not (event is InputEventKey and event.pressed):
 		return	# Note: we do NOT early-return on `get_tree().paused` here. The
@@ -779,9 +778,10 @@ func _build_beast_enemy(rng: RandomNumberGenerator, template: Dictionary, diffic
 	var max_level := int(difficulty.get("max_level", 6))
 	var level := clampi(min_level + rng.randi_range(0, max_level - min_level), min_level, max_level)
 
-	var base_hp := int(template.get("hp", level * 10))
-	var base_damage := int(template.get("attack_damage", level * 2))
-	var base_armor := int(template.get("armor", 0))
+	var base_stats: Dictionary = template.get("base_stats", {}) if template.get("base_stats") is Dictionary else {}
+	var base_hp := int(template.get("hp", base_stats.get("health", level * 10)))
+	var base_damage := int(template.get("attack_damage", template.get("dps", level * 2)))
+	var base_armor := int(template.get("armor", base_stats.get("armor", 0)))
 
 	var threat_mult := float(tile.get("wildlife_modifiers", {}).get("threat_multiplier", 1.0))
 	if threat_mult != 1.0:
@@ -818,7 +818,8 @@ func _try_spawn_beast_at(gs: Node, rng: RandomNumberGenerator, nlx: int, nly: in
 	var key: String = gs.mob_key(_player_q, _player_r, nlx, nly)
 	if not gs.get_overworld_mob(key).is_empty():
 		return false
-	var mob_template: Dictionary = MobSpawnerScript.pick_mob_template("upworld", biome, "beast,mount")
+	# Include predators + vermin (PixelLab wildlife) alongside classic beasts/mounts.
+	var mob_template: Dictionary = MobSpawnerScript.pick_mob_template("upworld", biome, "beast,mount,predator,vermin")
 	if mob_template.is_empty():
 		return false
 	var enemy: Dictionary = _build_beast_enemy(rng, mob_template, diff, tile, world_seed, tile_key)

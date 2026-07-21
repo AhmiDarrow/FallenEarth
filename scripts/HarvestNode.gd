@@ -18,6 +18,12 @@
 ##
 ## A node with gather_secs == 0 is a "decoration" (e.g. toxic pool) — it
 ## has no yield, no respawn, and the player just walks past it.
+##
+## Tool matching (tools.json harvests entries):
+##   - exact id: "iron_outcrop"
+##   - prefix: "withered_oak" matches "withered_oak_ash"
+##   - category tag: "#trees", "#ore", "#rocks", "#formations", "#crystals"
+##   - wildcard: "*"
 class_name HarvestNode
 extends Node2D
 
@@ -25,24 +31,19 @@ const INVENTORY_PATH := "/root/InventoryHandler"
 
 @export var node_data: Dictionary = {}
 
-# v0.9.1c: removed _sprite. Visual comes from MultiMeshResourceVisual.
 var _depleted: bool = false
 var _respawn_remaining: float = 0.0
 
 
 func _ready() -> void:
-	# v0.9.1c: no per-node Sprite2D — visuals are batched in a
-	# MultiMesh by LocalMapView. Saves ~5714 × load(path) + add_child.
 	pass
 
 
 func setup(data: Dictionary) -> void:
 	node_data = data
-	# v0.9.1c: no per-node sprite setup; visual is in MultiMesh.
 
 
 func _refresh_sprite() -> void:
-	# v0.9.1c: no-op. The MultiMeshResourceVisual owns the sprite.
 	pass
 
 
@@ -66,11 +67,49 @@ func get_node_id() -> String:
 	return str(node_data.get("id", ""))
 
 
+func get_category() -> String:
+	return str(node_data.get("category", ""))
+
+
+## Whether tool_data.harvests can gather this node id/category.
+static func tool_can_harvest(tool_data: Dictionary, node_id: String, category: String = "") -> bool:
+	if tool_data.is_empty():
+		return false
+	var harvests: Array = tool_data.get("harvests", [])
+	if harvests.is_empty():
+		return false
+	if harvests.has("*") or harvests.has(node_id):
+		return true
+	if not category.is_empty() and harvests.has("#" + category):
+		return true
+	for h in harvests:
+		var hs := str(h)
+		if hs.is_empty() or hs.begins_with("#"):
+			continue
+		if node_id == hs or node_id.begins_with(hs + "_"):
+			return true
+	return false
+
+
+## Human-readable tool requirement for UI tips.
+static func required_tool_type(category: String, node_id: String = "") -> String:
+	match category:
+		"trees":
+			return "Axe"
+		"ore", "rocks", "formations", "crystals":
+			return "Pickaxe"
+		_:
+			if node_id.find("outcrop") >= 0 or node_id.find("rock") >= 0 \
+					or node_id.find("ore") >= 0 or node_id.find("shard") >= 0 \
+					or node_id.find("geode") >= 0 or node_id.find("pipe") >= 0 \
+					or node_id.find("rubble") >= 0 or node_id.find("container") >= 0:
+				return "Pickaxe"
+			return "Axe"
+
+
 ## Tool check + yield result.
 ## Returns a Dictionary describing the result:
 ##   {ok: bool, reason: String, yield_item: String, yield_qty: int, tool_ok: bool, secs: float}
-## The caller (HubWorld) is responsible for the gather timer + awarding
-## the yield; this just reports what WOULD happen.
 func try_gather(tool_data: Dictionary) -> Dictionary:
 	if is_decoration():
 		return {"ok": false, "reason": "decoration", "tool_ok": false}
@@ -80,14 +119,17 @@ func try_gather(tool_data: Dictionary) -> Dictionary:
 	if tool_data.is_empty():
 		return {"ok": false, "reason": "no_tool", "tool_ok": false}
 
-	var harvests: Array = tool_data.get("harvests", [])
-	# Wildcard "*" in harvests means "can gather anything" — used for
-	# bare-hands gather in Phase 1 before EquipmentManager lands.
-	if not harvests.has(get_node_id()) and not harvests.has("*"):
+	var node_id := get_node_id()
+	var category := get_category()
+	if not tool_can_harvest(tool_data, node_id, category):
 		return {"ok": false, "reason": "wrong_tool", "tool_ok": false}
 
 	var yield_dict: Dictionary = node_data.get("yield", {})
+	if yield_dict.is_empty() or yield_dict == null:
+		return {"ok": false, "reason": "decoration", "tool_ok": false}
 	var yield_item: String = str(yield_dict.get("item_id", ""))
+	if yield_item.is_empty():
+		return {"ok": false, "reason": "decoration", "tool_ok": false}
 	var qty_range: Array = yield_dict.get("count", [1, 1])
 	var qty_lo: int = int(qty_range[0]) if qty_range.size() > 0 else 1
 	var qty_hi: int = int(qty_range[1]) if qty_range.size() > 1 else qty_lo
@@ -107,15 +149,11 @@ func try_gather(tool_data: Dictionary) -> Dictionary:
 	}
 
 
-## Mark the node depleted after a successful gather.
 func deplete() -> void:
 	_depleted = true
 	_respawn_remaining = get_respawn_secs()
-	# v0.9.1c: no _sprite.modulate. HubWorld (caller) updates the
-	# MultiMesh visual via LocalMapView.dim_resource_node(cell, true).
 
 
-## Respawn tick (real-time). Returns true if respawn completed this frame.
 func _process(delta: float) -> void:
 	if not _depleted:
 		return
@@ -123,12 +161,8 @@ func _process(delta: float) -> void:
 	if _respawn_remaining <= 0.0:
 		_depleted = false
 		_respawn_remaining = 0.0
-		# v0.9.1c: no _sprite.modulate. HubWorld (caller) updates the
-		# MultiMesh visual via LocalMapView.dim_resource_node(cell, false).
 
 
-## Returns the cell (Vector2i) of this node, computed from its world position.
-## Assumes CELL_SIZE == 32 (matches TileSetService.CELL_SIZE).
 func get_cell(cell_size: int = 32) -> Vector2i:
 	return Vector2i(
 		int(floor(global_position.x / cell_size)),

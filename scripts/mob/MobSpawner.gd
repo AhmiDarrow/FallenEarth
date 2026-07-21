@@ -207,9 +207,10 @@ static func _generate_enemy(
 	var max_level := int(difficulty.get("max_level", 6))
 	var level := clampi(min_level + rng.randi_range(0, max_level - min_level), min_level, max_level)
 
-	var base_hp := int(chosen.get("hp", level * 10))
-	var base_damage := int(chosen.get("attack_damage", level * 2))
-	var base_armor := int(chosen.get("armor", 0))
+	var base_stats: Dictionary = chosen.get("base_stats", {}) if chosen.get("base_stats") is Dictionary else {}
+	var base_hp := int(chosen.get("hp", base_stats.get("health", level * 10)))
+	var base_damage := int(chosen.get("attack_damage", chosen.get("dps", level * 2)))
+	var base_armor := int(chosen.get("armor", base_stats.get("armor", 0)))
 
 	var tile: Dictionary = tile_map.get(start_tile_key, {})
 	var threat_mult := float(tile.get("wildlife_modifiers", {}).get("threat_multiplier", 1.0))
@@ -231,6 +232,7 @@ static func _generate_enemy(
 		"aggro_range": int(chosen.get("threat_range", 5)),
 		"threat_mult": threat_mult,
 		"spawn_context": spawn_context,
+		"wildlife_class": str(chosen.get("wildlife_class", "beast")),
 	}
 	for key in ["drain_rate", "is_boss", "rift_type", "drops"]:
 		if chosen.has(key):

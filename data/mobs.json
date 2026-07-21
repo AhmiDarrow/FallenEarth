@@ -27,7 +27,10 @@
                     "armor": 2,
                     "dex": 6
                 },
-                "dps": 3
+                "dps": 3,
+                "wildlife_class": "beast",
+                "hp": 60,
+                "attack_damage": 3
             },
             {
                 "id": "lumen_drifter",
@@ -48,7 +51,10 @@
                     "armor": 0,
                     "dex": 4
                 },
-                "dps": 2
+                "dps": 2,
+                "wildlife_class": "beast",
+                "hp": 40,
+                "attack_damage": 2
             },
             {
                 "id": "rustcarapace_scuttler",
@@ -69,7 +75,10 @@
                     "armor": 8,
                     "dex": 10
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "beast",
+                "hp": 80,
+                "attack_damage": 6
             },
             {
                 "id": "silkroot_tapper",
@@ -97,7 +106,10 @@
                     "armor": 3,
                     "dex": 5
                 },
-                "dps": 3
+                "dps": 3,
+                "wildlife_class": "beast",
+                "hp": 50,
+                "attack_damage": 3
             },
             {
                 "id": "echo_chorister",
@@ -125,7 +137,10 @@
                     "armor": 4,
                     "dex": 8
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "beast",
+                "hp": 70,
+                "attack_damage": 4
             },
             {
                 "id": "iron_buck",
@@ -162,7 +177,10 @@
                     "armor": 6,
                     "dex": 10
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "beast",
+                "hp": 75,
+                "attack_damage": 6
             },
             {
                 "id": "blight_toad",
@@ -187,7 +205,10 @@
                     "armor": 3,
                     "dex": 8
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "beast",
+                "hp": 55,
+                "attack_damage": 4
             },
             {
                 "id": "dust_devil",
@@ -215,7 +236,10 @@
                     "armor": 0,
                     "dex": 5
                 },
-                "dps": 3
+                "dps": 3,
+                "wildlife_class": "beast",
+                "hp": 20,
+                "attack_damage": 3
             },
             {
                 "id": "ember_strider",
@@ -245,7 +269,10 @@
                     "armor": 1,
                     "dex": 5
                 },
-                "dps": 3
+                "dps": 3,
+                "wildlife_class": "mount",
+                "hp": 45,
+                "attack_damage": 3
             },
             {
                 "id": "cinder_hound",
@@ -275,7 +302,10 @@
                     "armor": 2,
                     "dex": 6
                 },
-                "dps": 3
+                "dps": 3,
+                "wildlife_class": "mount",
+                "hp": 50,
+                "attack_damage": 3
             },
             {
                 "id": "glowfin_stalker",
@@ -305,7 +335,10 @@
                     "armor": 2,
                     "dex": 7
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "mount",
+                "hp": 55,
+                "attack_damage": 4
             },
             {
                 "id": "ironjaw_stag",
@@ -335,7 +368,10 @@
                     "armor": 4,
                     "dex": 8
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "mount",
+                "hp": 65,
+                "attack_damage": 4
             },
             {
                 "id": "rustfang_wolf",
@@ -365,7 +401,10 @@
                     "armor": 3,
                     "dex": 9
                 },
-                "dps": 5
+                "dps": 5,
+                "wildlife_class": "mount",
+                "hp": 60,
+                "attack_damage": 5
             },
             {
                 "id": "sandglass_rattler",
@@ -395,7 +434,10 @@
                     "armor": 2,
                     "dex": 8
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "mount",
+                "hp": 55,
+                "attack_damage": 4
             },
             {
                 "id": "bonegrinder",
@@ -425,7 +467,10 @@
                     "armor": 6,
                     "dex": 10
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "mount",
+                "hp": 75,
+                "attack_damage": 6
             },
             {
                 "id": "toxic_salamander",
@@ -455,7 +500,10 @@
                     "armor": 3,
                     "dex": 7
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "mount",
+                "hp": 55,
+                "attack_damage": 4
             },
             {
                 "id": "stormmane_elk",
@@ -485,7 +533,10 @@
                     "armor": 4,
                     "dex": 12
                 },
-                "dps": 7
+                "dps": 7,
+                "wildlife_class": "mount",
+                "hp": 80,
+                "attack_damage": 7
             },
             {
                 "id": "city_crawler",
@@ -515,7 +566,374 @@
                     "armor": 5,
                     "dex": 10
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "mount",
+                "hp": 70,
+                "attack_damage": 6
+            },
+            {
+                "id": "cinder_mite",
+                "name": "Cinder Mite",
+                "type": "vermin",
+                "description": "Tiny ash-dwelling mite that swarms warm scrap piles.",
+                "armor": 0,
+                "threat_range": 3,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
+                "sprite_id": "cinder_mite",
+                "preferred_biomes": [
+                    "Ash Wastes",
+                    "Scorched Plains"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 16,
+                "attack_damage": 3,
+                "base_stats": {
+                    "health": 16,
+                    "armor": 0,
+                    "dex": 8
+                },
+                "dps": 3,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 2,
+                "swarm_count_max": 5
+            },
+            {
+                "id": "scrap_crawler",
+                "name": "Scrap Crawler",
+                "type": "vermin",
+                "description": "Thumb-sized scrap beetle that chews rusted metal.",
+                "armor": 1,
+                "threat_range": 2,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Rust Canyons"
+                },
+                "sprite_id": "scrap_crawler",
+                "preferred_biomes": [
+                    "Rust Canyons",
+                    "Dead City Outskirts"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 18,
+                "attack_damage": 3,
+                "base_stats": {
+                    "health": 18,
+                    "armor": 1,
+                    "dex": 7
+                },
+                "dps": 3,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 2,
+                "swarm_count_max": 4
+            },
+            {
+                "id": "glow_leech",
+                "name": "Glow Leech",
+                "type": "vermin",
+                "description": "Bioluminescent leech that latches onto warm-blooded prey.",
+                "armor": 0,
+                "threat_range": 3,
+                "visual_preset": "beast_floater",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Neon Bogs"
+                },
+                "sprite_id": "glow_leech",
+                "preferred_biomes": [
+                    "Neon Bogs"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 14,
+                "attack_damage": 4,
+                "base_stats": {
+                    "health": 14,
+                    "armor": 0,
+                    "dex": 6
+                },
+                "dps": 4,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 2,
+                "swarm_count_max": 6
+            },
+            {
+                "id": "heat_wisp",
+                "name": "Heat Wisp",
+                "type": "vermin",
+                "description": "Flickering heat-mirage vermin that darts across scorched ground.",
+                "armor": 0,
+                "threat_range": 4,
+                "visual_preset": "beast_floater",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Scorched Plains"
+                },
+                "sprite_id": "heat_wisp",
+                "preferred_biomes": [
+                    "Scorched Plains",
+                    "Glass Dunes"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 12,
+                "attack_damage": 2,
+                "base_stats": {
+                    "health": 12,
+                    "armor": 0,
+                    "dex": 10
+                },
+                "dps": 2,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 1,
+                "swarm_count_max": 3
+            },
+            {
+                "id": "spike_roller",
+                "name": "Spike Roller",
+                "type": "vermin",
+                "description": "Armored ball of spines that rolls into ankles.",
+                "armor": 2,
+                "threat_range": 3,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Glass Dunes"
+                },
+                "sprite_id": "spike_roller",
+                "preferred_biomes": [
+                    "Glass Dunes"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 22,
+                "attack_damage": 4,
+                "base_stats": {
+                    "health": 22,
+                    "armor": 2,
+                    "dex": 6
+                },
+                "dps": 4,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 1,
+                "swarm_count_max": 3
+            },
+            {
+                "id": "shard_hopper",
+                "name": "Shard Hopper",
+                "type": "vermin",
+                "description": "Glass-legged hopper that skitters between crystal shards.",
+                "armor": 1,
+                "threat_range": 3,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Glass Dunes"
+                },
+                "sprite_id": "shard_hopper",
+                "preferred_biomes": [
+                    "Glass Dunes",
+                    "Stormspire Highlands"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 15,
+                "attack_damage": 3,
+                "base_stats": {
+                    "health": 15,
+                    "armor": 1,
+                    "dex": 12
+                },
+                "dps": 3,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 2,
+                "swarm_count_max": 5
+            },
+            {
+                "id": "bone_mite",
+                "name": "Bone Mite",
+                "type": "vermin",
+                "description": "Pale mite nesting inside sun-bleached bone piles.",
+                "armor": 0,
+                "threat_range": 2,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Corpse Fields"
+                },
+                "sprite_id": "bone_mite",
+                "preferred_biomes": [
+                    "Corpse Fields"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 13,
+                "attack_damage": 3,
+                "base_stats": {
+                    "health": 13,
+                    "armor": 0,
+                    "dex": 7
+                },
+                "dps": 3,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 3,
+                "swarm_count_max": 7
+            },
+            {
+                "id": "arc_tick",
+                "name": "Arc Tick",
+                "type": "vermin",
+                "description": "Static-charged tick that nests in storm-struck rock.",
+                "armor": 1,
+                "threat_range": 3,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Stormspire Highlands"
+                },
+                "sprite_id": "arc_tick",
+                "preferred_biomes": [
+                    "Stormspire Highlands"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 17,
+                "attack_damage": 4,
+                "base_stats": {
+                    "health": 17,
+                    "armor": 1,
+                    "dex": 9
+                },
+                "dps": 4,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 2,
+                "swarm_count_max": 4
+            },
+            {
+                "id": "blister_slug",
+                "name": "Blister Slug",
+                "type": "vermin",
+                "description": "Acid-skinned slug that leaves smoking trails through the marshes.",
+                "armor": 1,
+                "threat_range": 2,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Toxin Marshes"
+                },
+                "sprite_id": "blister_slug",
+                "preferred_biomes": [
+                    "Toxin Marshes"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 20,
+                "attack_damage": 3,
+                "base_stats": {
+                    "health": 20,
+                    "armor": 1,
+                    "dex": 4
+                },
+                "dps": 3,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 1,
+                "swarm_count_max": 3
+            },
+            {
+                "id": "data_rat",
+                "name": "Data Rat",
+                "type": "vermin",
+                "description": "Cybernetic rat with flickering optical ports and a wire tail.",
+                "armor": 0,
+                "threat_range": 3,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Dead City Outskirts"
+                },
+                "sprite_id": "data_rat",
+                "preferred_biomes": [
+                    "Dead City Outskirts"
+                ],
+                "ai_archetype": "defensive",
+                "wildlife_class": "vermin",
+                "hp": 18,
+                "attack_damage": 3,
+                "base_stats": {
+                    "health": 18,
+                    "armor": 0,
+                    "dex": 11
+                },
+                "dps": 3,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 1
+                    }
+                ],
+                "swarm_count_min": 2,
+                "swarm_count_max": 5
             }
         ],
         "aggressive": [
@@ -545,7 +963,10 @@
                     "armor": 5,
                     "dex": 15
                 },
-                "dps": 8
+                "dps": 8,
+                "wildlife_class": "beast",
+                "hp": 90,
+                "attack_damage": 8
             },
             {
                 "id": "voidspine_leech",
@@ -568,7 +989,10 @@
                     "armor": 3,
                     "dex": 12
                 },
-                "dps": 7
+                "dps": 7,
+                "wildlife_class": "beast",
+                "hp": 70,
+                "attack_damage": 7
             },
             {
                 "id": "mycelial_behemoth",
@@ -596,7 +1020,10 @@
                     "armor": 12,
                     "dex": 25
                 },
-                "dps": 14
+                "dps": 14,
+                "wildlife_class": "beast",
+                "hp": 200,
+                "attack_damage": 14
             },
             {
                 "id": "glimmer_swarm",
@@ -619,7 +1046,10 @@
                     "armor": 1,
                     "dex": 8
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "beast",
+                "hp": 30,
+                "attack_damage": 4
             },
             {
                 "id": "ferroclaw_reaver",
@@ -641,7 +1071,10 @@
                     "armor": 15,
                     "dex": 30
                 },
-                "dps": 16
+                "dps": 16,
+                "wildlife_class": "beast",
+                "hp": 150,
+                "attack_damage": 16
             },
             {
                 "id": "ash_crawler",
@@ -662,7 +1095,10 @@
                     "armor": 6,
                     "dex": 10
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "beast",
+                "hp": 65,
+                "attack_damage": 6
             },
             {
                 "id": "rift_elk",
@@ -690,7 +1126,10 @@
                     "armor": 4,
                     "dex": 12
                 },
-                "dps": 7
+                "dps": 7,
+                "wildlife_class": "beast",
+                "hp": 85,
+                "attack_damage": 7
             },
             {
                 "id": "fungal_hurler",
@@ -711,7 +1150,10 @@
                     "armor": 8,
                     "dex": 18
                 },
-                "dps": 10
+                "dps": 10,
+                "wildlife_class": "beast",
+                "hp": 130,
+                "attack_damage": 10
             },
             {
                 "id": "glass_serpent",
@@ -736,7 +1178,10 @@
                     "armor": 5,
                     "dex": 14
                 },
-                "dps": 8
+                "dps": 8,
+                "wildlife_class": "beast",
+                "hp": 75,
+                "attack_damage": 8
             },
             {
                 "id": "bone_crawler",
@@ -761,7 +1206,10 @@
                     "armor": 7,
                     "dex": 11
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "beast",
+                "hp": 60,
+                "attack_damage": 6
             },
             {
                 "id": "storm_raptor",
@@ -793,7 +1241,10 @@
                     "armor": 3,
                     "dex": 16
                 },
-                "dps": 9
+                "dps": 9,
+                "wildlife_class": "beast",
+                "hp": 80,
+                "attack_damage": 9
             },
             {
                 "id": "flameback_charger",
@@ -823,7 +1274,10 @@
                     "armor": 2,
                     "dex": 8
                 },
-                "dps": 4
+                "dps": 4,
+                "wildlife_class": "mount",
+                "hp": 55,
+                "attack_damage": 4
             },
             {
                 "id": "dust_lurker",
@@ -853,7 +1307,10 @@
                     "armor": 4,
                     "dex": 10
                 },
-                "dps": 6
+                "dps": 6,
+                "wildlife_class": "mount",
+                "hp": 65,
+                "attack_damage": 6
             },
             {
                 "id": "bogmire_crawler",
@@ -883,7 +1340,10 @@
                     "armor": 5,
                     "dex": 12
                 },
-                "dps": 7
+                "dps": 7,
+                "wildlife_class": "mount",
+                "hp": 75,
+                "attack_damage": 7
             },
             {
                 "id": "brambleback_beast",
@@ -913,7 +1373,10 @@
                     "armor": 7,
                     "dex": 14
                 },
-                "dps": 8
+                "dps": 8,
+                "wildlife_class": "mount",
+                "hp": 85,
+                "attack_damage": 8
             },
             {
                 "id": "canyon_grinder",
@@ -943,7 +1406,10 @@
                     "armor": 6,
                     "dex": 16
                 },
-                "dps": 9
+                "dps": 9,
+                "wildlife_class": "mount",
+                "hp": 90,
+                "attack_damage": 9
             },
             {
                 "id": "dune_prowler",
@@ -973,7 +1439,10 @@
                     "armor": 4,
                     "dex": 15
                 },
-                "dps": 8
+                "dps": 8,
+                "wildlife_class": "mount",
+                "hp": 80,
+                "attack_damage": 8
             },
             {
                 "id": "carrion_stalker",
@@ -1003,7 +1472,10 @@
                     "armor": 5,
                     "dex": 14
                 },
-                "dps": 8
+                "dps": 8,
+                "wildlife_class": "mount",
+                "hp": 85,
+                "attack_damage": 8
             },
             {
                 "id": "miasma_toad",
@@ -1033,7 +1505,10 @@
                     "armor": 4,
                     "dex": 12
                 },
-                "dps": 7
+                "dps": 7,
+                "wildlife_class": "mount",
+                "hp": 70,
+                "attack_damage": 7
             },
             {
                 "id": "thunderclaw_raptor",
@@ -1063,7 +1538,10 @@
                     "armor": 5,
                     "dex": 20
                 },
-                "dps": 11
+                "dps": 11,
+                "wildlife_class": "mount",
+                "hp": 100,
+                "attack_damage": 11
             },
             {
                 "id": "ruin_hound",
@@ -1093,7 +1571,357 @@
                     "armor": 7,
                     "dex": 18
                 },
-                "dps": 10
+                "dps": 10,
+                "wildlife_class": "mount",
+                "hp": 95,
+                "attack_damage": 10
+            },
+            {
+                "id": "ash_stalker",
+                "name": "Ash Stalker",
+                "type": "pack_predator",
+                "description": "Emaciated pale predator. Needle-teeth, vibration-sensing whiskers.",
+                "armor": 3,
+                "threat_range": 8,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ash Wastes"
+                },
+                "sprite_id": "ash_stalker",
+                "preferred_biomes": [
+                    "Ash Wastes",
+                    "Scorched Plains"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 52,
+                "attack_damage": 9,
+                "base_stats": {
+                    "health": 52,
+                    "armor": 3,
+                    "dex": 16
+                },
+                "dps": 9,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "rust_hound",
+                "name": "Rust Hound",
+                "type": "pack_predator",
+                "description": "Cyber-augmented canine with rusted spinal plating and hydraulic jaws.",
+                "armor": 6,
+                "threat_range": 7,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Rust Canyons"
+                },
+                "sprite_id": "rust_hound",
+                "preferred_biomes": [
+                    "Rust Canyons",
+                    "Dead City Outskirts"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 58,
+                "attack_damage": 10,
+                "base_stats": {
+                    "health": 58,
+                    "armor": 6,
+                    "dex": 14
+                },
+                "dps": 10,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "phase_eel",
+                "name": "Phase Eel",
+                "type": "phase_amphibian",
+                "description": "Translucent electric eel that phases between water and air.",
+                "armor": 2,
+                "threat_range": 6,
+                "visual_preset": "beast_floater",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Neon Bogs"
+                },
+                "sprite_id": "phase_eel",
+                "preferred_biomes": [
+                    "Neon Bogs",
+                    "Toxin Marshes"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 48,
+                "attack_damage": 11,
+                "base_stats": {
+                    "health": 48,
+                    "armor": 2,
+                    "dex": 15
+                },
+                "dps": 11,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "cinder_fox",
+                "name": "Cinder Fox",
+                "type": "pack_predator",
+                "description": "Three-tailed canid with smoldering ember fur. Territorial and fast.",
+                "armor": 3,
+                "threat_range": 7,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Scorched Plains"
+                },
+                "sprite_id": "cinder_fox",
+                "preferred_biomes": [
+                    "Scorched Plains",
+                    "Ash Wastes",
+                    "Glass Dunes"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 50,
+                "attack_damage": 9,
+                "base_stats": {
+                    "health": 50,
+                    "armor": 3,
+                    "dex": 17
+                },
+                "dps": 9,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "iron_serpent",
+                "name": "Iron Serpent",
+                "type": "constrictor",
+                "description": "Segmented ironwood snake with bark scales and metallic fangs.",
+                "armor": 5,
+                "threat_range": 6,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Ironwood Thicket"
+                },
+                "sprite_id": "iron_serpent",
+                "preferred_biomes": [
+                    "Ironwood Thicket"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 60,
+                "attack_damage": 10,
+                "base_stats": {
+                    "health": 60,
+                    "armor": 5,
+                    "dex": 13
+                },
+                "dps": 10,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "prism_viper",
+                "name": "Prism Viper",
+                "type": "crystal_reptile",
+                "description": "Crystal-scaled viper with refractive facets and a laser glare.",
+                "armor": 4,
+                "threat_range": 7,
+                "visual_preset": "beast_insectoid",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Glass Dunes"
+                },
+                "sprite_id": "prism_viper",
+                "preferred_biomes": [
+                    "Glass Dunes"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 54,
+                "attack_damage": 11,
+                "base_stats": {
+                    "health": 54,
+                    "armor": 4,
+                    "dex": 16
+                },
+                "dps": 11,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "marrow_hound",
+                "name": "Marrow Hound",
+                "type": "pack_predator",
+                "description": "Emaciated bone-white hound with exposed ribs. Pack hunter of the corpse fields.",
+                "armor": 4,
+                "threat_range": 8,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Corpse Fields"
+                },
+                "sprite_id": "marrow_hound",
+                "preferred_biomes": [
+                    "Corpse Fields"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 56,
+                "attack_damage": 10,
+                "base_stats": {
+                    "health": 56,
+                    "armor": 4,
+                    "dex": 15
+                },
+                "dps": 10,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "storm_talon",
+                "name": "Storm Talon",
+                "type": "avian_predator",
+                "description": "Winged bipedal predator with conductive feathers. Calls lightning.",
+                "armor": 4,
+                "threat_range": 9,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Stormspire Highlands"
+                },
+                "sprite_id": "storm_talon",
+                "preferred_biomes": [
+                    "Stormspire Highlands"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 62,
+                "attack_damage": 12,
+                "base_stats": {
+                    "health": 62,
+                    "armor": 4,
+                    "dex": 18
+                },
+                "dps": 12,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "fume_lurker",
+                "name": "Fume Lurker",
+                "type": "toxic_amphibian",
+                "description": "Bloated amphibian that weeps neurotoxin fog from skin sacs.",
+                "armor": 5,
+                "threat_range": 6,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Toxin Marshes"
+                },
+                "sprite_id": "fume_lurker",
+                "preferred_biomes": [
+                    "Toxin Marshes",
+                    "Neon Bogs"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 64,
+                "attack_damage": 9,
+                "base_stats": {
+                    "health": 64,
+                    "armor": 5,
+                    "dex": 11
+                },
+                "dps": 9,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
+            },
+            {
+                "id": "breach_specter",
+                "name": "Breach Specter",
+                "type": "phase_predator",
+                "description": "Partially phased canid that flickers between dimensions.",
+                "armor": 3,
+                "threat_range": 8,
+                "visual_preset": "beast_quadruped",
+                "spawn_context": {
+                    "zone": "upworld",
+                    "biome": "Dead City Outskirts"
+                },
+                "sprite_id": "breach_specter",
+                "preferred_biomes": [
+                    "Dead City Outskirts",
+                    "Ash Wastes"
+                ],
+                "ai_archetype": "aggressive",
+                "wildlife_class": "predator",
+                "hp": 58,
+                "attack_damage": 11,
+                "base_stats": {
+                    "health": 58,
+                    "armor": 3,
+                    "dex": 17
+                },
+                "dps": 11,
+                "drops": [
+                    {
+                        "item_id": "raw_meat",
+                        "chance": 0.55,
+                        "count": 2
+                    }
+                ]
             }
         ]
     },

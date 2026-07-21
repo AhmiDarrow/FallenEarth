@@ -782,6 +782,7 @@ func _serialize_hex_states_for_save() -> Dictionary:
 	for key in _hex_states:
 		var state: Dictionary = (_hex_states[key] as Dictionary).duplicate(true)
 		state.erase("terrain")
+		state.erase("entity_blocked")
 		out[key] = state
 	return out
 
@@ -801,8 +802,15 @@ func _deserialize_hex_states_from_save(src: Variant) -> Dictionary:
 				var seed_str: String = str(get_world_data().get("seed", "fallback"))
 				var regen: Dictionary = LocalMapGen.generate(seed_str, q, r, tile)
 				state["terrain"] = regen.get("terrain", PackedByteArray())
+				if not state.has("entity_blocked"):
+					state["entity_blocked"] = regen.get("entity_blocked", PackedByteArray())
 				if not state.has("spawn"):
 					state["spawn"] = regen.get("spawn", Vector2i(int(LocalMapGen.MAP_SIZE / 2.0), int(LocalMapGen.MAP_SIZE / 2.0)))
+		if not state.has("entity_blocked") and state.has("resource_nodes"):
+			state["entity_blocked"] = LocalMapGen._build_entity_blocked(
+				state.get("resource_nodes", []),
+				state.get("decor", []),
+			)
 		out[key] = state
 	return out
 

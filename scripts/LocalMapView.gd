@@ -127,11 +127,14 @@ func configure(map_data: Dictionary) -> void:
 	_populate_floor_pickups(map_data.get("floor_pickups", []))
 	# Spawn visual decor (rocks, ruins, flora)
 	_populate_decor(map_data.get("decor", []))
-	# v0.10.0: batched MultiMesh visuals for all resource nodes + pickups + decor.
+	# Shared-texture Sprite2D batch (MultiMesh transforms were unreliable on 4.7).
 	if _visual_manager != null and is_instance_valid(_visual_manager):
 		_visual_manager.queue_free()
 	_visual_manager = ResourceVisualManagerScript.new()
 	_visual_manager.name = "ResourceVisualManager"
+	# Above ground tiles; y-sort so taller props occlude correctly.
+	_visual_manager.z_index = 5
+	_visual_manager.y_sort_enabled = true
 	add_child(_visual_manager)
 	_visual_manager.setup(node_layer, pickup_layer, decor_layer)
 	# Spawn cooking tables (Phase 3 follow-up: cooking station)

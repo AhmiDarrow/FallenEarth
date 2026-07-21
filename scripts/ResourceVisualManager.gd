@@ -1,13 +1,9 @@
-## ResourceVisualManager — Efficient batched rendering for resource nodes,
-## floor pickups, and visual decor using MultiMeshInstance2D.
+## ResourceVisualManager — Batched visuals for resource nodes, pickups, decor.
 ##
-## v0.9.1c removed per-node Sprite2D for performance (5714 nodes each
-## loading a PNG = ~1.8s). This replaces them with MultiMesh batching:
-## one MultiMeshInstance2D per sprite type, all instances in one draw call.
-##
-## Usage: call setup() after LocalMapView.configure() with the node_layer
-## and pickup_layer children. The manager reads each node's node_data or
-## item_id to determine the sprite, then builds MultiMesh instances.
+## Shares one Texture2D per sprite_id across many Sprite2D children (load once).
+## MultiMeshInstance2D was abandoned: instance transforms/colors were not
+## applied reliably in Godot 4.7 here, so minimap showed nodes while the
+## world stayed empty.
 class_name ResourceVisualManager
 extends Node2D
 
@@ -16,31 +12,22 @@ const SPRITE_FOLDER := "res://assets/sprites/resource_nodes/"
 const PICKUP_FOLDER := "res://assets/sprites/items/"
 const DECOR_FOLDER := "res://assets/sprites/decor/"
 
-## Quad-mesh size for entities. Larger than CELL_SIZE so the 64x64 PixelLab
-## textures render at their native resolution (no downsample to 32px), and so
-## trees, ore and decor are visually prominent on the 512x512 local map.
-const QUAD_SIZE := 64
-
 var _node_layer: Node2D = null
 var _pickup_layer: Node2D = null
 var _decor_layer: Node2D = null
 
-# sprite_id -> MultiMeshInstance2D for resource nodes
-var _node_meshes: Dictionary = {}
-# cell Vector2i -> (sprite_id, instance_index) for O(1) dim/hide
-var _node_index: Dictionary = {}
-# cell Vector2i -> (item_id, instance_index) for floor pickups
-var _pickup_index: Dictionary = {}
-# item_id -> MultiMeshInstance2D for floor pickups
-var _pickup_meshes: Dictionary = {}
-# sprite_id -> MultiMeshInstance2D for decor
-var _decor_meshes: Dictionary = {}
-# cell Vector2i -> (sprite_id, instance_index) for decor
-var _decor_index: Dictionary = {}
+# cell -> Sprite2D
+var _node_sprites: Dictionary = {}
+var _pickup_sprites: Dictionary = {}
+var _decor_sprites: Dictionary = {}
+
+# sprite_id / item_id -> Texture2D (shared)
+var _tex_cache: Dictionary = {}
 
 
 func setup(node_layer: Node2D, pickup_layer: Node2D, decor_layer: Node2D = null) -> void:
 	randomize()
+	_clear_visuals()
 	_node_layer = node_layer
 	_pickup_layer = pickup_layer
 	_decor_layer = decor_layer
@@ -48,17 +35,25 @@ func setup(node_layer: Node2D, pickup_layer: Node2D, decor_layer: Node2D = null)
 	_build_pickup_visuals()
 	if _decor_layer != null:
 		_build_decor_visuals()
+	push_warning("[RVM] sprites nodes=%d pickups=%d decor=%d tex_cache=%d" % [
+		_node_sprites.size(), _pickup_sprites.size(), _decor_sprites.size(), _tex_cache.size()
+	])
+
+
+func _clear_visuals() -> void:
+	for c in get_children():
+		c.queue_free()
+	_node_sprites.clear()
+	_pickup_sprites.clear()
+	_decor_sprites.clear()
 
 
 func _build_node_visuals() -> void:
 	if not is_instance_valid(_node_layer):
 		push_warning("[RVM] node_layer invalid")
 		return
-	# Phase 1: collect all nodes grouped by sprite_id.
-	var groups: Dictionary = {}  # sprite_id -> Array[{cell, node_data}]
-	var child_count: int = 0
+	var built := 0
 	for child in _node_layer.get_children():
-		child_count += 1
 		if not child.has_method("get_node_id"):
 			continue
 		var nd: Dictionary = child.get("node_data") if "node_data" in child else {}
@@ -67,59 +62,25 @@ func _build_node_visuals() -> void:
 		var sprite_id: String = str(nd.get("sprite", ""))
 		if sprite_id.is_empty():
 			continue
-		var cell: Vector2i = Vector2(
-			int(floor(child.position.x / CELL_SIZE)),
-			int(floor(child.position.y / CELL_SIZE)),
+		var cell := Vector2i(
+			int(floor(child.position.x / float(CELL_SIZE))),
+			int(floor(child.position.y / float(CELL_SIZE))),
 		)
-		if not groups.has(sprite_id):
-			groups[sprite_id] = []
-		groups[sprite_id].append({"cell": cell, "node_data": nd, "node": child})
-	push_warning("[RVM] _build_node_visuals: %d children, %d sprite groups" % [child_count, groups.size()])
-	# Phase 2: create a MultiMeshInstance2D per sprite_id.
-	for sprite_id in groups:
-		var entries: Array = groups[sprite_id]
-		var tex: Texture2D = _load_node_texture(sprite_id)
-		var mm := MultiMesh.new()
-		mm.mesh = QuadMesh.new()
-		mm.mesh.size = Vector2(QUAD_SIZE, QUAD_SIZE)
-		mm.use_colors = true
-		mm.transform_format = MultiMesh.TRANSFORM_2D
-		mm.instance_count = entries.size()
-		var mesh_inst := MultiMeshInstance2D.new()
-		mesh_inst.multimesh = mm
-		mesh_inst.texture = tex
-		mesh_inst.name = "Nodes_%s" % sprite_id
-		add_child(mesh_inst)
-		_node_meshes[sprite_id] = mesh_inst
-		# Phase 3: populate each instance's transform.
-		for i in range(entries.size()):
-			var entry: Dictionary = entries[i]
-			var cell: Vector2i = entry["cell"]
-			var nd: Dictionary = entry["node_data"]
-			var world_pos: Vector2 = Vector2(
-				cell.x * CELL_SIZE + CELL_SIZE * 0.5,
-				cell.y * CELL_SIZE + CELL_SIZE * 0.5,
-			)
-			var scale_val: float = _node_scale(nd)
-			var xf := Transform2D(0, world_pos)
-			# Y basis is NEGATED — Godot QuadMesh maps UV (1,1) to the
-			# mesh vertex at (+size/2, +size/2) which renders at the BOTTOM
-			# of screen; without negation a sprite whose natural "up" is the
-			# top of the PNG appears with canopy at the bottom (upside-down).
-			xf.x = Vector2(scale_val, 0)
-			xf.y = Vector2(0, -scale_val)
-			mm.set_instance_transform_2d(i, xf)
-			# Tint decorations (pool/toxic) slightly differently.
-			if bool(nd.get("passable", false)):
-				mm.set_instance_color(i, Color(0.85, 0.85, 0.85, 0.9))
-			_node_index[cell] = {"sprite_id": sprite_id, "index": i}
+		var spr := _make_sprite(
+			_load_node_texture(sprite_id),
+			child.position,
+			_node_scale(nd),
+			Color.WHITE if not bool(nd.get("passable", false)) else Color(0.92, 0.92, 0.92, 0.95),
+			"N_%s_%d_%d" % [sprite_id, cell.x, cell.y]
+		)
+		_node_sprites[cell] = spr
+		built += 1
+	push_warning("[RVM] _build_node_visuals: %d sprites" % built)
 
 
 func _build_pickup_visuals() -> void:
 	if not is_instance_valid(_pickup_layer):
 		return
-	# Collect floor pickups grouped by item_id.
-	var groups: Dictionary = {}
 	for child in _pickup_layer.get_children():
 		if not child.has_method("get_item_id"):
 			continue
@@ -127,123 +88,192 @@ func _build_pickup_visuals() -> void:
 		var item_id: String = str(raw_id) if raw_id != null else ""
 		if item_id.is_empty():
 			continue
-		var cell: Vector2i = Vector2(
-			int(floor(child.position.x / CELL_SIZE)),
-			int(floor(child.position.y / CELL_SIZE)),
+		var cell := Vector2i(
+			int(floor(child.position.x / float(CELL_SIZE))),
+			int(floor(child.position.y / float(CELL_SIZE))),
 		)
-		if not groups.has(item_id):
-			groups[item_id] = []
-		groups[item_id].append({"cell": cell, "node": child})
-	for item_id in groups:
-		var entries: Array = groups[item_id]
-		var tex: Texture2D = _load_pickup_texture(item_id)
-		var mm := MultiMesh.new()
-		mm.mesh = QuadMesh.new()
-		mm.mesh.size = Vector2(QUAD_SIZE, QUAD_SIZE)
-		mm.use_colors = true
-		mm.transform_format = MultiMesh.TRANSFORM_2D
-		mm.instance_count = entries.size()
-		var mesh_inst := MultiMeshInstance2D.new()
-		mesh_inst.multimesh = mm
-		mesh_inst.texture = tex
-		mesh_inst.name = "Pickups_%s" % item_id
-		add_child(mesh_inst)
-		_pickup_meshes[item_id] = mesh_inst
-		for i in range(entries.size()):
-			var entry: Dictionary = entries[i]
-			var cell: Vector2i = entry["cell"]
-			var world_pos: Vector2 = Vector2(
-				cell.x * CELL_SIZE + CELL_SIZE * 0.5,
-				cell.y * CELL_SIZE + CELL_SIZE * 0.5,
-			)
-			var xf := Transform2D(0, world_pos)
-			mm.set_instance_transform_2d(i, xf)
-			_pickup_index[cell] = {"item_id": item_id, "index": i}
+		var spr := _make_sprite(
+			_load_pickup_texture(item_id),
+			child.position,
+			0.7,
+			Color.WHITE,
+			"P_%s_%d_%d" % [item_id, cell.x, cell.y]
+		)
+		_pickup_sprites[cell] = spr
 
 
-## Dim or restore a resource node at the given cell.
+func _build_decor_visuals() -> void:
+	if not is_instance_valid(_decor_layer):
+		push_warning("[RVM] _decor_layer invalid, skipping decor visuals")
+		return
+	var built := 0
+	for child in _decor_layer.get_children():
+		var dd: Dictionary = {}
+		if child.has_meta("decor_data"):
+			dd = child.get_meta("decor_data")
+		if dd.is_empty():
+			continue
+		var sprite_id: String = str(dd.get("sprite", ""))
+		if sprite_id.is_empty():
+			continue
+		var cell := Vector2i(
+			int(floor(child.position.x / float(CELL_SIZE))),
+			int(floor(child.position.y / float(CELL_SIZE))),
+		)
+		var spr := _make_sprite(
+			_load_decor_texture(sprite_id),
+			child.position,
+			_decor_scale(dd),
+			Color(0.95, 0.95, 0.95, 0.9) if bool(dd.get("passable", false)) else Color.WHITE,
+			"D_%s_%d_%d" % [sprite_id, cell.x, cell.y]
+		)
+		_decor_sprites[cell] = spr
+		built += 1
+	push_warning("[RVM] _build_decor_visuals: %d sprites" % built)
+
+
+func _make_sprite(tex: Texture2D, world_pos: Vector2, scale_val: float, modulate: Color, name_str: String) -> Sprite2D:
+	var spr := Sprite2D.new()
+	spr.name = name_str
+	spr.texture = tex
+	spr.centered = true
+	spr.position = world_pos
+	spr.scale = Vector2(scale_val, scale_val)
+	spr.modulate = modulate
+	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	# Bottom of sprite sits near cell; taller props read as grounded.
+	if tex != null:
+		var h: float = float(tex.get_height()) * scale_val
+		if h > float(CELL_SIZE):
+			spr.offset = Vector2(0, -h * 0.15)
+	add_child(spr)
+	return spr
+
+
 func dim_node(cell: Vector2i, dimmed: bool) -> void:
-	var entry: Dictionary = _node_index.get(cell, {})
-	if entry.is_empty():
+	var spr: Sprite2D = _node_sprites.get(cell) as Sprite2D
+	if spr == null or not is_instance_valid(spr):
 		return
-	var sprite_id: String = str(entry.get("sprite_id", ""))
-	var idx: int = int(entry.get("index", -1))
-	var mesh_inst: MultiMeshInstance2D = _node_meshes.get(sprite_id, null)
-	if mesh_inst == null or mesh_inst.multimesh == null:
-		return
-	if idx < 0 or idx >= mesh_inst.multimesh.instance_count:
-		return
-	if dimmed:
-		mesh_inst.multimesh.set_instance_color(idx, Color(0.4, 0.4, 0.4, 0.5))
-	else:
-		mesh_inst.multimesh.set_instance_color(idx, Color.WHITE)
+	spr.modulate = Color(0.4, 0.4, 0.4, 0.5) if dimmed else Color.WHITE
+	spr.visible = not dimmed or spr.modulate.a > 0.01
 
 
-## Hide a floor pickup at the given cell (after collection).
 func hide_pickup(cell: Vector2i) -> void:
-	var entry: Dictionary = _pickup_index.get(cell, {})
-	if entry.is_empty():
+	var spr: Sprite2D = _pickup_sprites.get(cell) as Sprite2D
+	if spr == null or not is_instance_valid(spr):
 		return
-	var item_id: String = str(entry.get("item_id", ""))
-	var idx: int = int(entry.get("index", -1))
-	var mesh_inst: MultiMeshInstance2D = _pickup_meshes.get(item_id, null)
-	if mesh_inst == null or mesh_inst.multimesh == null:
+	spr.visible = false
+	_pickup_sprites.erase(cell)
+
+
+func hide_decor(cell: Vector2i) -> void:
+	var spr: Sprite2D = _decor_sprites.get(cell) as Sprite2D
+	if spr == null or not is_instance_valid(spr):
 		return
-	if idx < 0 or idx >= mesh_inst.multimesh.instance_count:
-		return
-	# Move off-screen to hide.
-	var offscreen := Transform2D(0, Vector2(-9999, -9999))
-	mesh_inst.multimesh.set_instance_transform_2d(idx, offscreen)
-	_pickup_index.erase(cell)
+	spr.visible = false
+	_decor_sprites.erase(cell)
 
 
 func _node_scale(nd: Dictionary) -> float:
 	var sprite_id: String = str(nd.get("sprite", ""))
+	# Textures are 64px; cell is 32px — scale 1.0 = 2 cells tall.
 	if sprite_id.begins_with("tree_"):
-		return 1.0
+		return 1.35
 	if sprite_id.begins_with("ore_"):
-		return 0.75
+		return 0.95
 	if sprite_id.begins_with("crystal_"):
-		return 0.75
+		return 0.95
 	if sprite_id.begins_with("formation_"):
-		return 0.9
+		return 1.15
+	if sprite_id.begins_with("decor_rock"):
+		return 1.0
+	if sprite_id.begins_with("decor_"):
+		return 0.95
+	return 1.1
+
+
+func _decor_scale(dd: Dictionary) -> float:
+	var sprite_id: String = str(dd.get("sprite", ""))
+	if sprite_id.find("crater") >= 0 or sprite_id.find("wall") >= 0 or sprite_id.find("ruin") >= 0:
+		return 1.2
+	if sprite_id.find("mushroom") >= 0 or sprite_id.find("flower") >= 0 or sprite_id.find("grass") >= 0:
+		return 0.8
+	if sprite_id.find("bone") >= 0 or sprite_id.find("skull") >= 0:
+		return 0.95
+	if sprite_id.find("tower") >= 0 or sprite_id.find("vent") >= 0:
+		return 1.1
 	return 1.0
 
 
+func _cached_or_load(path: String) -> Texture2D:
+	if _tex_cache.has(path):
+		return _tex_cache[path] as Texture2D
+	if not ResourceLoader.exists(path):
+		return null
+	var res: Resource = load(path)
+	if res is Texture2D:
+		_tex_cache[path] = res
+		return res as Texture2D
+	return null
+
+
+func _load_variant_texture(folders: Array, sprite_id: String) -> Texture2D:
+	var paths: Array[String] = []
+	for folder in folders:
+		for i in range(16):
+			var vpath: String = str(folder) + "%s_%02d.png" % [sprite_id, i]
+			if ResourceLoader.exists(vpath):
+				paths.append(vpath)
+		if paths.size() > 0:
+			break
+	if paths.is_empty():
+		return null
+	return _cached_or_load(paths[randi() % paths.size()])
+
+
 func _load_node_texture(sprite_id: String) -> Texture2D:
-	var variants: Array[Texture2D] = []
-	for i in range(16):
-		var vpath: String = SPRITE_FOLDER + "%s_%02d.png" % [sprite_id, i]
-		if not ResourceLoader.exists(vpath):
-			continue
-		var res: Resource = load(vpath)
-		if res != null and res is Texture2D:
-			variants.append(res as Texture2D)
-	if variants.size() > 0:
-		return variants[randi() % variants.size()]
+	var folders: Array = [SPRITE_FOLDER]
+	if sprite_id.begins_with("decor_"):
+		folders = [DECOR_FOLDER, SPRITE_FOLDER]
+	var tex: Texture2D = _load_variant_texture(folders, sprite_id)
+	if tex != null:
+		return tex
 	push_warning("[RVM] No texture for '%s', using placeholder" % sprite_id)
+	return _make_placeholder(sprite_id)
+
+
+func _load_decor_texture(sprite_id: String) -> Texture2D:
+	var tex: Texture2D = _load_variant_texture([DECOR_FOLDER], sprite_id)
+	if tex != null:
+		return tex
+	push_warning("[RVM] No decor texture for '%s', using placeholder" % sprite_id)
 	return _make_placeholder(sprite_id)
 
 
 func _load_pickup_texture(item_id: String) -> Texture2D:
 	var path: String = PICKUP_FOLDER + item_id + ".png"
-	if ResourceLoader.exists(path):
-		return load(path) as Texture2D
+	var tex: Texture2D = _cached_or_load(path)
+	if tex != null:
+		return tex
 	return _make_placeholder(item_id)
 
 
 func _make_placeholder(id: String) -> Texture2D:
+	var cache_key := "placeholder:%s" % id
+	if _tex_cache.has(cache_key):
+		return _tex_cache[cache_key] as Texture2D
 	var img := Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
 	var col: Color = _placeholder_color(id)
 	img.fill(col)
-	# Dark border
 	for x in CELL_SIZE:
 		img.set_pixel(x, 0, col.darkened(0.4))
 		img.set_pixel(x, CELL_SIZE - 1, col.darkened(0.4))
 	for y in CELL_SIZE:
 		img.set_pixel(0, y, col.darkened(0.4))
 		img.set_pixel(CELL_SIZE - 1, y, col.darkened(0.4))
-	return ImageTexture.create_from_image(img)
+	var tex := ImageTexture.create_from_image(img)
+	_tex_cache[cache_key] = tex
+	return tex
 
 
 func _placeholder_color(id: String) -> Color:
@@ -262,108 +292,3 @@ func _placeholder_color(id: String) -> Color:
 	if id == "stone":
 		return Color(0.55, 0.55, 0.50)
 	return Color(0.5, 0.5, 0.5)
-
-
-func _build_decor_visuals() -> void:
-	if not is_instance_valid(_decor_layer):
-		push_warning("[RVM] _decor_layer invalid, skipping decor visuals")
-		return
-	var groups: Dictionary = {}
-	var child_count: int = 0
-	for child in _decor_layer.get_children():
-		child_count += 1
-		var dd: Dictionary = {}
-		if child.has_meta("decor_data"):
-			dd = child.get_meta("decor_data")
-		if dd.is_empty():
-			continue
-		var sprite_id: String = str(dd.get("sprite", ""))
-		if sprite_id.is_empty():
-			continue
-		var cell: Vector2i = Vector2(
-			int(floor(child.position.x / CELL_SIZE)),
-			int(floor(child.position.y / CELL_SIZE)),
-		)
-		if not groups.has(sprite_id):
-			groups[sprite_id] = []
-		groups[sprite_id].append({"cell": cell, "decor_data": dd, "node": child})
-	push_warning("[RVM] _build_decor_visuals: %d children, %d sprite groups" % [child_count, groups.size()])
-	for sprite_id in groups:
-		var entries: Array = groups[sprite_id]
-		var tex: Texture2D = _load_decor_texture(sprite_id)
-		var mm := MultiMesh.new()
-		mm.mesh = QuadMesh.new()
-		mm.mesh.size = Vector2(QUAD_SIZE, QUAD_SIZE)
-		mm.use_colors = true
-		mm.transform_format = MultiMesh.TRANSFORM_2D
-		mm.instance_count = entries.size()
-		var mesh_inst := MultiMeshInstance2D.new()
-		mesh_inst.multimesh = mm
-		mesh_inst.texture = tex
-		mesh_inst.name = "Decor_%s" % sprite_id
-		add_child(mesh_inst)
-		_decor_meshes[sprite_id] = mesh_inst
-		for i in range(entries.size()):
-			var entry: Dictionary = entries[i]
-			var cell: Vector2i = entry["cell"]
-			var dd: Dictionary = entry["decor_data"]
-			var world_pos: Vector2 = Vector2(
-				cell.x * CELL_SIZE + CELL_SIZE * 0.5,
-				cell.y * CELL_SIZE + CELL_SIZE * 0.5,
-			)
-			var scale_val: float = _decor_scale(dd)
-			var xf := Transform2D(0, world_pos)
-			# Y basis is NEGATED to match the resource-node flip fix
-			# — see _build_node_visuals for the rationale.
-			xf.x = Vector2(scale_val, 0)
-			xf.y = Vector2(0, -scale_val)
-			mm.set_instance_transform_2d(i, xf)
-			# Walkable decor is slightly transparent
-			if bool(dd.get("passable", false)):
-				mm.set_instance_color(i, Color(0.9, 0.9, 0.9, 0.85))
-			_decor_index[cell] = {"sprite_id": sprite_id, "index": i}
-
-
-func _decor_scale(dd: Dictionary) -> float:
-	var sprite_id: String = str(dd.get("sprite", ""))
-	if sprite_id.find("crater") >= 0 or sprite_id.find("wall") >= 0 or sprite_id.find("ruin") >= 0:
-		return 1.0
-	if sprite_id.find("mushroom") >= 0 or sprite_id.find("flower") >= 0 or sprite_id.find("grass") >= 0:
-		return 0.7
-	if sprite_id.find("bone") >= 0 or sprite_id.find("skull") >= 0:
-		return 0.85
-	if sprite_id.find("tower") >= 0 or sprite_id.find("vent") >= 0:
-		return 0.95
-	return 0.9
-
-
-func _load_decor_texture(sprite_id: String) -> Texture2D:
-	var variants: Array[Texture2D] = []
-	for i in range(16):
-		var vpath: String = DECOR_FOLDER + "%s_%02d.png" % [sprite_id, i]
-		if not ResourceLoader.exists(vpath):
-			continue
-		var res: Resource = load(vpath)
-		if res != null and res is Texture2D:
-			variants.append(res as Texture2D)
-	if variants.size() > 0:
-		return variants[randi() % variants.size()]
-	push_warning("[RVM] No decor texture for '%s', using placeholder" % sprite_id)
-	return _make_placeholder(sprite_id)
-
-
-## Hide a decor item at the given cell.
-func hide_decor(cell: Vector2i) -> void:
-	var entry: Dictionary = _decor_index.get(cell, {})
-	if entry.is_empty():
-		return
-	var sprite_id: String = str(entry.get("sprite_id", ""))
-	var idx: int = int(entry.get("index", -1))
-	var mesh_inst: MultiMeshInstance2D = _decor_meshes.get(sprite_id, null)
-	if mesh_inst == null or mesh_inst.multimesh == null:
-		return
-	if idx < 0 or idx >= mesh_inst.multimesh.instance_count:
-		return
-	var offscreen := Transform2D(0, Vector2(-9999, -9999))
-	mesh_inst.multimesh.set_instance_transform_2d(idx, offscreen)
-	_decor_index.erase(cell)

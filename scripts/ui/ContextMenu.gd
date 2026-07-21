@@ -8,7 +8,7 @@ const MT = preload("res://assets/ui/MasterTheme.gd")
 var _panel: Panel
 var _target_cell: Vector2i
 
-func show_at(screen_pos: Vector2, title: String, options: Array, target_cell: Vector2i) -> void:
+func show_at(screen_pos: Vector2, title: String, options: Array, target_cell: Vector2i, info_lines: Array = []) -> void:
 	_target_cell = target_cell
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -23,14 +23,23 @@ func show_at(screen_pos: Vector2, title: String, options: Array, target_cell: Ve
 	_panel.add_theme_stylebox_override("panel", MT.panel(MT.BG_SURFACE, MT.BORDER_STRONG, MT.RADIUS_MD, 1))
 	add_child(_panel)
 
-	var vbox := UIHelper.make_vbox(2, true, true)
+	var vbox := UIHelper.make_vbox(4, true, true)
 	_panel.add_child(vbox)
 
-	var title_lbl := UIHelper.make_accent_label(title, 13)
+	var title_lbl := UIHelper.make_accent_label(title, 14)
 	title_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title_lbl.custom_minimum_size = Vector2(130, 0)
+	title_lbl.custom_minimum_size = Vector2(168, 0)
 	title_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(title_lbl)
+
+	for line in info_lines:
+		var info := UIHelper.make_label(str(line), 11)
+		info.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		info.modulate = MT.TEXT_SECONDARY
+		info.custom_minimum_size = Vector2(168, 0)
+		info.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(info)
 
 	var sep := ColorRect.new()
 	sep.color = MT.BORDER_SUBTLE
@@ -38,11 +47,29 @@ func show_at(screen_pos: Vector2, title: String, options: Array, target_cell: Ve
 	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(sep)
 
+	var has_action := false
 	for opt in options:
-		var btn := UIHelper.make_button(str(opt.get("label", "")), "ghost", 130, 28)
 		var action: String = str(opt.get("action", ""))
+		var label: String = str(opt.get("label", ""))
+		if action.is_empty():
+			var tip := UIHelper.make_label(label, 11)
+			tip.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			tip.modulate = Color(0.95, 0.7, 0.35)
+			tip.custom_minimum_size = Vector2(168, 0)
+			tip.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			tip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			vbox.add_child(tip)
+			continue
+		has_action = true
+		var btn := UIHelper.make_button(label, "ghost", 168, 30)
 		btn.pressed.connect(_on_action.bind(action))
 		vbox.add_child(btn)
+
+	if not has_action and options.is_empty():
+		var none := UIHelper.make_label("No actions", 11)
+		none.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		none.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(none)
 
 	_panel.position = screen_pos
 	_panel.size = Vector2.ZERO

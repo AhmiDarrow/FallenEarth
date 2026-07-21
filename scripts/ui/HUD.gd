@@ -194,12 +194,12 @@ func _build_minimap() -> void:
 	_minimap = MinimapScript.new()
 	_minimap.name = "Minimap"
 	_minimap.visible = true
-	_minimap._manual_vertical_offset = 172
 	_minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-	_minimap.offset_left = -260
-	_minimap.offset_top = 172
+	# 196×140 panel under the player status card.
+	_minimap.offset_left = -208
+	_minimap.offset_top = 168
 	_minimap.offset_right = -12
-	_minimap.offset_bottom = 332
+	_minimap.offset_bottom = 308
 	add_child(_minimap)
 
 

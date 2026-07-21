@@ -5,6 +5,8 @@ class_name OverworldInteractionManager extends Node
 
 const GATHER_RANGE_CELLS := 1
 
+const LocalMapGen = preload("res://scripts/LocalMapGenerator.gd")
+const HarvestNodeScript = preload("res://scripts/HarvestNode.gd")
 const LootPopupScript = preload("res://scripts/ui/LootPopup.gd")
 const LootPopupScene = preload("res://scenes/ui/LootPopup.tscn")
 const BaseNodeScene = preload("res://scenes/BaseNode.tscn")
@@ -61,17 +63,10 @@ func _try_start_gather() -> void:
 
 	var result: Dictionary = node.try_gather(tool)
 	if not bool(result.get("ok", false)):
-		# Reason codes: "no_tool" / "wrong_tool" / "depleted" / "decoration"
-		var reason: String = str(result.get("reason", ""))
+		_notify_gather_failure(node, result)
 		return
 
-	_hw._gathering_node = node
-	_hw._gather_total = float(result.get("secs", 1.0))
-	_hw._gather_timer = _hw._gather_total
-	_hw._gather_yield_preview = {
-		"yield_item": str(result.get("yield_item", "")),
-		"yield_qty": int(result.get("yield_qty", 0)),
-	}
+	_begin_gather(node, result)
 
 
 func _tick_gather(delta: float) -> void:
@@ -100,6 +95,9 @@ func _tick_gather(delta: float) -> void:
 	if is_instance_valid(_hw._map_view):
 		var cell: Vector2i = node.get_cell(_hw._map_view.get_cell_size())
 		_hw._map_view.dim_resource_node(cell, true)
+		# Allow walking through depleted nodes until they respawn.
+		LocalMapGen.set_entity_blocked(_hw._local_map, cell.x, cell.y, false)
+	_show_gather_toast("+%d %s" % [qty, item_id])
 	# v0.9.1c: track this node for active respawn ticking.
 	# The deferred_remove trick below handles the case where the node
 	# was queue_freed during the same frame (e.g. the player reloads).
@@ -130,10 +128,13 @@ func _tick_active_respawn_nodes(delta: float) -> void:
 		# (We access _depleted via a duck-typed check because HarvestNode
 		# has it as a private var; Godot allows it via get()).
 		if bool(node.get("_depleted")) == false:
-			# v0.10.0: restore the MultiMesh visual.
+			# v0.10.0: restore the MultiMesh visual + collision.
 			if is_instance_valid(_hw._map_view) and is_instance_valid(node):
 				var cell: Vector2i = node.get_cell(_hw._map_view.get_cell_size())
 				_hw._map_view.dim_resource_node(cell, false)
+				var nd: Dictionary = node.node_data if "node_data" in node else {}
+				if not bool(nd.get("passable", false)):
+					LocalMapGen.set_entity_blocked(_hw._local_map, cell.x, cell.y, true)
 			_hw._active_respawn_nodes.remove_at(i)
 
 
@@ -598,8 +599,13 @@ func _place_sleeping_bag() -> bool:
 
 const ContextMenuScript = preload("res://scripts/ui/ContextMenu.gd")
 
-## Entry point for mouse double-click on the world. Converts world position
-## to cell, builds relevant options, and shows a context menu.
+## Entry point for left-click on the world. Opens context box for
+## harvestables and other interactables under the cursor.
+func _on_world_click(world_pos: Vector2, screen_pos: Vector2) -> bool:
+	return _on_double_click(world_pos, screen_pos)
+
+
+## Back-compat alias (double-click used to be the only entry).
 func _on_double_click(world_pos: Vector2, screen_pos: Vector2) -> bool:
 	if not is_instance_valid(_hw._map_view):
 		return false
@@ -609,39 +615,61 @@ func _on_double_click(world_pos: Vector2, screen_pos: Vector2) -> bool:
 		int(floor(world_pos.x / cell_size)),
 		int(floor(world_pos.y / cell_size)),
 	)
-	var options: Array = _build_context_options(cell)
-	if options.is_empty():
+	var built: Dictionary = _build_context_box(cell)
+	var options: Array = built.get("options", [])
+	var info_lines: Array = built.get("info", [])
+	if options.is_empty() and info_lines.is_empty():
 		return false
-	_show_context_menu(screen_pos, options, cell)
+	_show_context_menu(screen_pos, options, cell, info_lines)
 	return true
 
 
-## Build an array of {label, action} dicts for interactables at a cell.
-func _build_context_options(cell: Vector2i) -> Array:
+## Build options + info tip lines for the context box at a cell.
+func _build_context_box(cell: Vector2i) -> Dictionary:
 	var options: Array = []
+	var info: Array = []
 	var px: int = _hw._local_x
 	var py: int = _hw._local_y
 	var dist: int = max(abs(cell.x - px), abs(cell.y - py))
 
-	# 1. Resource node at this cell (within gather range)
 	var node_info: Dictionary = _get_resource_node_at(cell)
-	if not node_info.is_empty() and dist <= GATHER_RANGE_CELLS:
+	if not node_info.is_empty():
 		var node: Node2D = node_info.get("node")
 		if is_instance_valid(node):
-			var node_name: String = str(node_info.get("name", "Resource"))
-			var tool: Dictionary = _resolve_hotbar_tool()
-			if tool.is_empty():
-				tool = {"speed_mult": 1.0, "harvests": [], "name": "(bare hands)"}
-			var result: Dictionary = node.try_gather(tool)
-			if bool(result.get("ok", false)):
-				options.append({"label": "Mine " + node_name, "action": "gather"})
-			elif str(result.get("reason", "")) == "wrong_tool":
-				var hint: String = _nearest_tool_hint(node)
-				options.append({"label": hint, "action": ""})
-			elif str(result.get("reason", "")) == "depleted":
-				options.append({"label": "Depleted", "action": ""})
+			var nd: Dictionary = node.node_data if "node_data" in node else {}
+			var cat: String = str(nd.get("category", ""))
+			var tool_type: String = HarvestNodeScript.required_tool_type(cat, str(nd.get("id", "")))
+			info.append("Requires: %s" % tool_type)
+			if dist > GATHER_RANGE_CELLS:
+				info.append("Move closer to harvest")
+			else:
+				var tool: Dictionary = _resolve_hotbar_tool()
+				if tool.is_empty():
+					tool = {"speed_mult": 1.0, "harvests": [], "name": "(bare hands)"}
+				var result: Dictionary = node.try_gather(tool)
+				if bool(result.get("ok", false)):
+					var yitem: String = str(result.get("yield_item", ""))
+					var yqty: int = int(result.get("yield_qty", 1))
+					var secs: float = float(result.get("secs", 1.0))
+					info.append("Yield ~%s ×%d  (%.1fs)" % [yitem, yqty, secs])
+					var verb := "Chop" if tool_type == "Axe" else "Mine"
+					options.append({
+						"label": "%s %s" % [verb, str(node_info.get("name", "Resource"))],
+						"action": "gather",
+					})
+				else:
+					match str(result.get("reason", "")):
+						"wrong_tool", "no_tool":
+							info.append(_nearest_tool_hint(node))
+							options.append({"label": _nearest_tool_hint(node), "action": ""})
+						"depleted":
+							info.append("Depleted — regenerating")
+							options.append({"label": "Depleted", "action": ""})
+						"decoration":
+							info.append("Not harvestable")
+						_:
+							info.append("Cannot harvest")
 
-	# 2. Building at this cell (within interact range)
 	if dist <= GATHER_RANGE_CELLS:
 		var bld: Node2D = _hw._map_view.get_building_at(cell)
 		if is_instance_valid(bld):
@@ -654,27 +682,25 @@ func _build_context_options(cell: Vector2i) -> Array:
 				_:
 					options.append({"label": "Enter", "action": "enter_building"})
 
-	# 3. Rift at player's current cell
 	if dist == 0:
 		if not _hw._rift_manager.get_rift_at_player().is_empty():
 			options.append({"label": "Enter Rift", "action": "enter_rift"})
 
-	# 4. Sleeping bag at this cell
 	if dist <= GATHER_RANGE_CELLS:
 		var bag: Node2D = _hw._map_view.get_sleeping_bag_at(cell)
 		if is_instance_valid(bag):
 			options.append({"label": "Set Respawn Point", "action": "set_respawn"})
-
-	# 5. Cooking table at this cell
-	if dist <= GATHER_RANGE_CELLS:
 		var ct: Node2D = _hw._map_view.get_cooking_table_at(cell)
 		if is_instance_valid(ct):
 			options.append({"label": "Cook", "action": "cook"})
 
-	return options
+	return {"options": options, "info": info}
 
 
-## Get info about a resource node at the exact cell (radius=0).
+func _build_context_options(cell: Vector2i) -> Array:
+	return _build_context_box(cell).get("options", [])
+
+
 func _get_resource_node_at(cell: Vector2i) -> Dictionary:
 	if not is_instance_valid(_hw._map_view):
 		return {}
@@ -690,11 +716,11 @@ func _get_resource_node_at(cell: Vector2i) -> Dictionary:
 		"node": node,
 		"name": str(nd.get("name", nd.get("id", "Resource"))),
 		"id": str(nd.get("id", "")),
+		"category": str(nd.get("category", "")),
 	}
 
 
-## Show the context menu popup at the given screen position.
-func _show_context_menu(screen_pos: Vector2, options: Array, cell: Vector2i) -> void:
+func _show_context_menu(screen_pos: Vector2, options: Array, cell: Vector2i, info_lines: Array = []) -> void:
 	_dismiss_context_menu()
 	if ContextMenuScript == null:
 		return
@@ -708,16 +734,14 @@ func _show_context_menu(screen_pos: Vector2, options: Array, cell: Vector2i) -> 
 	else:
 		_hw.add_child(menu)
 	menu.tree_exited.connect(_on_context_menu_closed)
-	menu.show_at(screen_pos, title, options, cell)
+	menu.show_at(screen_pos, title, options, cell, info_lines)
 	_hw._context_menu = menu
 
 
-## Called when the context menu node exits the scene tree (dismissed).
 func _on_context_menu_closed() -> void:
 	_hw._context_menu = null
 
 
-## Title for the context menu based on what's at the target cell.
 func _context_menu_title(cell: Vector2i) -> String:
 	var node_info: Dictionary = _get_resource_node_at(cell)
 	if not node_info.is_empty():
@@ -734,7 +758,6 @@ func _context_menu_title(cell: Vector2i) -> String:
 	return "Interact"
 
 
-## Handle a selected action from the context menu.
 func _on_context_action(action: String, target_cell: Vector2i) -> void:
 	_hw._context_menu = null
 	match action:
@@ -757,7 +780,6 @@ func _on_context_action(action: String, target_cell: Vector2i) -> void:
 				_open_cooking_table_ui()
 
 
-## Start gathering at a specific cell (used by context menu gather action).
 func _start_gather_at_cell(cell: Vector2i) -> void:
 	if is_instance_valid(_hw._gathering_node):
 		return
@@ -773,7 +795,12 @@ func _start_gather_at_cell(cell: Vector2i) -> void:
 		tool = {"speed_mult": 1.0, "harvests": [], "name": "(bare hands)"}
 	var result: Dictionary = node.try_gather(tool)
 	if not bool(result.get("ok", false)):
+		_notify_gather_failure(node, result)
 		return
+	_begin_gather(node, result)
+
+
+func _begin_gather(node: Node2D, result: Dictionary) -> void:
 	_hw._gathering_node = node
 	_hw._gather_total = float(result.get("secs", 1.0))
 	_hw._gather_timer = _hw._gather_total
@@ -783,7 +810,28 @@ func _start_gather_at_cell(cell: Vector2i) -> void:
 	}
 
 
-## Dismiss the active context menu if any.
+func _notify_gather_failure(node: Node2D, result: Dictionary) -> void:
+	var reason: String = str(result.get("reason", ""))
+	var msg := ""
+	match reason:
+		"no_tool", "wrong_tool":
+			msg = _nearest_tool_hint(node)
+		"depleted":
+			msg = "Resource depleted"
+		"decoration":
+			msg = "Cannot harvest this"
+		_:
+			msg = "Cannot harvest"
+	_show_gather_toast(msg)
+
+
+func _show_gather_toast(msg: String) -> void:
+	if msg.is_empty():
+		return
+	if is_instance_valid(_hw._hud_manager) and _hw._hud_manager.has_method("_show_notification"):
+		_hw._hud_manager.call("_show_notification", msg)
+
+
 func _dismiss_context_menu() -> void:
 	if _hw._context_menu != null and is_instance_valid(_hw._context_menu):
 		_hw._context_menu.queue_free()
@@ -794,25 +842,24 @@ func _dismiss_context_menu() -> void:
 func _nearest_tool_hint(node: Node2D) -> String:
 	var nd: Dictionary = node.node_data if "node_data" in node else {}
 	var node_id: String = str(nd.get("id", ""))
-	if node_id.is_empty():
-		return "Wrong tool"
+	var category: String = str(nd.get("category", ""))
+	var tool_type: String = HarvestNodeScript.required_tool_type(category, node_id)
 	var path := "res://data/tools.json"
 	if not ResourceLoader.exists(path):
-		return "Needs: tool with harvests=" + node_id
+		return "Requires: %s" % tool_type
 	var raw = load(path)
 	if raw == null:
-		return "Needs: tool with harvests=" + node_id
+		return "Requires: %s" % tool_type
 	var data = raw.data if "data" in raw else raw
 	if not (data is Dictionary):
-		return "Needs: tool with harvests=" + node_id
+		return "Requires: %s" % tool_type
 	var names: Array = []
 	for t in data.get("tools", []):
-		var harvests: Array = t.get("harvests", [])
-		if harvests.has(node_id) or harvests.has("*"):
+		if HarvestNodeScript.tool_can_harvest(t, node_id, category):
 			names.append(str(t.get("name", t.get("id", "?"))))
 	if names.is_empty():
-		return "Needs: tool for " + node_id
-	return "Use: " + names[0]
+		return "Requires: %s" % tool_type
+	return "Requires: %s (%s)" % [tool_type, names[0]]
 
 
 # ---------------------------------------------------------------------------

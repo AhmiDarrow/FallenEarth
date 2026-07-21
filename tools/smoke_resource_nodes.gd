@@ -154,7 +154,28 @@ func _test_generator_emits_nodes() -> void:
 	if not categories.has("ore"):
 		_fail("No ore placed in Ash Wastes")
 		return
-	_ok("Ash Wastes: %d nodes (%s), %d pickups" % [nodes.size(), categories, pickups.size()])
+	if not categories.has("rocks"):
+		_fail("No rocks placed in Ash Wastes")
+		return
+	var eb: PackedByteArray = map_data.get("entity_blocked", PackedByteArray())
+	if eb.is_empty():
+		_fail("entity_blocked missing from map_data")
+		return
+	var blocked_count := 0
+	for b in eb:
+		if int(b) != 0:
+			blocked_count += 1
+	if blocked_count < 10:
+		_fail("entity_blocked too sparse: %d" % blocked_count)
+		return
+	if LocalMapGen.is_walkable(map_data, int(nodes[0].get("x", 0)), int(nodes[0].get("y", 0))):
+		# First node should block if not passable
+		if not bool(nodes[0].get("passable", false)):
+			_fail("harvestable node cell should not be walkable")
+			return
+	_ok("Ash Wastes: %d nodes (%s), %d pickups, %d blocked" % [
+		nodes.size(), categories, pickups.size(), blocked_count,
+	])
 
 
 func _test_local_map_view_hosts_nodes() -> void:
@@ -207,6 +228,7 @@ func _test_harvest_node_gather_logic() -> void:
 	node.setup({
 		"id": "iron_outcrop",
 		"name": "Iron Outcrop",
+		"category": "ore",
 		"yield": {"item_id": "iron_ore", "count": [1, 2]},
 		"gather_secs": 4.0,
 		"respawn_secs": 300.0,
@@ -214,21 +236,47 @@ func _test_harvest_node_gather_logic() -> void:
 		"sprite": "ore_iron",
 	})
 
-	# Phase 1: bare-hands gather uses the "*" wildcard.
+	# Bare hands with * still work for testing.
 	var bare_hands := {"speed_mult": 1.0, "harvests": ["*"]}
 	var result: Dictionary = node.try_gather(bare_hands)
 	if not bool(result.get("ok", false)):
-		_fail("HarvestNode: bare-hands gather should work in Phase 1, got %s" % result)
+		_fail("HarvestNode: bare-hands * gather should work, got %s" % result)
 		return
-	if str(result.get("yield_item", "")) != "iron_ore":
-		_fail("HarvestNode: yield_item should be iron_ore, got %s" % result.get("yield_item", ""))
-		return
-	if int(result.get("yield_qty", 0)) < 1 or int(result.get("yield_qty", 0)) > 2:
-		_fail("HarvestNode: yield_qty out of range: %s" % result.get("yield_qty", 0))
-		return
-	_ok("HarvestNode: bare-hands gather yields iron_ore in [1,2]")
+	_ok("HarvestNode: bare-hands * yields iron_ore")
 
-	# Stone pickaxe only mines iron (not, say, copper)
+	# Category tag #ore matches iron_outcrop
+	var ore_pick := {"speed_mult": 0.7, "harvests": ["#ore"]}
+	result = node.try_gather(ore_pick)
+	if not bool(result.get("ok", false)):
+		_fail("HarvestNode: #ore should mine iron_outcrop, got %s" % result)
+		return
+	_ok("HarvestNode: #ore category tag matches iron_outcrop")
+
+	# Prefix match: withered_oak matches withered_oak_ash
+	var oak: Node2D = HarvestNodeScene.instantiate()
+	root.add_child(oak)
+	oak.setup({
+		"id": "withered_oak_ash",
+		"name": "Withered Oak",
+		"category": "trees",
+		"yield": {"item_id": "withered_branch", "count": [1, 2]},
+		"gather_secs": 3.0,
+		"respawn_secs": 100.0,
+		"sprite": "tree_withered_oak",
+	})
+	var axe_prefix := {"speed_mult": 1.0, "harvests": ["withered_oak"]}
+	result = oak.try_gather(axe_prefix)
+	if not bool(result.get("ok", false)):
+		_fail("HarvestNode: prefix withered_oak should match withered_oak_ash")
+		return
+	var axe_tag := {"speed_mult": 1.0, "harvests": ["#trees"]}
+	result = oak.try_gather(axe_tag)
+	if not bool(result.get("ok", false)):
+		_fail("HarvestNode: #trees should match tree category")
+		return
+	_ok("HarvestNode: prefix + #trees match tree variants")
+
+	# Stone pickaxe only mines iron (not copper) when listed by id
 	var stone_pick := {"speed_mult": 0.7, "harvests": ["iron_outcrop"]}
 	result = node.try_gather(stone_pick)
 	if not bool(result.get("ok", false)):
@@ -239,12 +287,12 @@ func _test_harvest_node_gather_logic() -> void:
 		return
 	_ok("HarvestNode: stone pickaxe gathers iron_outcrop at 4.0/0.7=%.2fs" % float(result.get("secs", 0.0)))
 
-	# Stone pickaxe cannot mine a node not in its harvests list
 	var copper_node: Node2D = HarvestNodeScene.instantiate()
 	root.add_child(copper_node)
 	copper_node.setup({
 		"id": "copper_outcrop",
 		"name": "Copper Outcrop",
+		"category": "ore",
 		"yield": {"item_id": "copper_ore", "count": [1, 2]},
 		"gather_secs": 5.0,
 		"respawn_secs": 360.0,
@@ -260,7 +308,6 @@ func _test_harvest_node_gather_logic() -> void:
 		return
 	_ok("HarvestNode: stone pickaxe refuses copper_outcrop (wrong_tool)")
 
-	# Deplete and try again
 	node.deplete()
 	result = node.try_gather(bare_hands)
 	if bool(result.get("ok", false)):

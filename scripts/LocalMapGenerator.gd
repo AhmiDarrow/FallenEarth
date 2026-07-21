@@ -181,12 +181,15 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 	var floor_pickups: Array = _emit_floor_pickups(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
 	# Phase 2: emit visual decor (rocks, ruins, flora) — no yields, just atmosphere
 	var decor: Array = _emit_decor(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
+	# Entity collision overlay: trees/rocks/ore/blocking decor block walk.
+	var entity_blocked := _build_entity_blocked(resource_nodes, decor)
 
 	return {
 		"size": MAP_SIZE,
 		"hex_key": hex_key(q, r),
 		"q": q,
 		"r": r,
+		"entity_blocked": entity_blocked,
 		"biome": biome_name,
 		"local_seed": local_seed,
 		"terrain": terrain,
@@ -219,9 +222,8 @@ static func _emit_resource_nodes(
 	if biome_data.is_empty():
 		return []
 	var out: Array = []
-	# Categories in placement order; ore/crystals are usually rarer so
-	# place them first to reserve walkable cells.
-	var categories := ["crystals", "ore", "formations", "trees", "fauna"]
+	# Categories in placement order; ore/crystals/rocks rarer first.
+	var categories := ["crystals", "ore", "rocks", "formations", "trees", "fauna"]
 	for category in categories:
 		var entries: Array = biome_data.get(category, [])
 		for entry in entries:
@@ -239,8 +241,51 @@ static func _emit_resource_nodes(
 				placed["x"] = pos.x
 				placed["y"] = pos.y
 				placed["category"] = category
+				# Harvestables block movement unless explicitly passable.
+				if not placed.has("passable"):
+					placed["passable"] = false
 				out.append(placed)
 	return out
+
+
+## Build a MAP_SIZE² packed mask of cells blocked by solid entities.
+static func _build_entity_blocked(resource_nodes: Array, decor: Array) -> PackedByteArray:
+	var blocked := PackedByteArray()
+	blocked.resize(MAP_SIZE * MAP_SIZE)
+	for entry in resource_nodes:
+		if entry == null or not (entry is Dictionary):
+			continue
+		if bool((entry as Dictionary).get("passable", false)):
+			continue
+		var x: int = int((entry as Dictionary).get("x", -1))
+		var y: int = int((entry as Dictionary).get("y", -1))
+		if x < 0 or y < 0 or x >= MAP_SIZE or y >= MAP_SIZE:
+			continue
+		blocked[y * MAP_SIZE + x] = 1
+	for entry in decor:
+		if entry == null or not (entry is Dictionary):
+			continue
+		# Decor defaults to blocking when passable is omitted.
+		if bool((entry as Dictionary).get("passable", false)):
+			continue
+		var x2: int = int((entry as Dictionary).get("x", -1))
+		var y2: int = int((entry as Dictionary).get("y", -1))
+		if x2 < 0 or y2 < 0 or x2 >= MAP_SIZE or y2 >= MAP_SIZE:
+			continue
+		blocked[y2 * MAP_SIZE + x2] = 1
+	return blocked
+
+
+static func set_entity_blocked(map_data: Dictionary, x: int, y: int, is_blocked: bool) -> void:
+	var size: int = int(map_data.get("size", MAP_SIZE))
+	if x < 0 or y < 0 or x >= size or y >= size:
+		return
+	var eb: PackedByteArray = map_data.get("entity_blocked", PackedByteArray())
+	if eb.is_empty():
+		eb.resize(size * size)
+		map_data["entity_blocked"] = eb
+	eb[y * size + x] = 1 if is_blocked else 0
+	map_data["entity_blocked"] = eb
 
 
 # Place sticks and stones on walkable cells outside the spawn pocket.
@@ -357,13 +402,16 @@ static func _pick_walkable_cell(
 		terrain: PackedByteArray,
 		occupied: PackedByteArray,
 		spawn: Vector2i,
-		spawn_buffer: int = 12
+		spawn_buffer: int = 6
 	) -> Vector2i:
-	var max_attempts := 32
+	# Chebyshev pocket only (NOT axis-OR). Old `abs(x)<buf OR abs(y)<buf`
+	# wiped an entire cross the full width/height of the map — left the
+	# playfield looking empty while the minimap still showed distant dots.
+	var max_attempts := 48
 	for _i in max_attempts:
 		var x: int = rng.randi_range(0, MAP_SIZE - 1)
 		var y: int = rng.randi_range(0, MAP_SIZE - 1)
-		if abs(x - spawn.x) < spawn_buffer or abs(y - spawn.y) < spawn_buffer:
+		if maxi(abs(x - spawn.x), abs(y - spawn.y)) < spawn_buffer:
 			continue
 		var idx := y * MAP_SIZE + x
 		# Resource nodes, decor, and floor pickups only spawn on solid ground.
@@ -799,7 +847,17 @@ static func get_terrain(map_data: Dictionary, x: int, y: int) -> int:
 
 
 static func is_walkable(map_data: Dictionary, x: int, y: int) -> bool:
-	return get_movement_cost(map_data, x, y) >= 0
+	if get_movement_cost(map_data, x, y) < 0:
+		return false
+	var size: int = int(map_data.get("size", MAP_SIZE))
+	if x < 0 or y < 0 or x >= size or y >= size:
+		return false
+	var eb: PackedByteArray = map_data.get("entity_blocked", PackedByteArray())
+	if not eb.is_empty():
+		var idx := y * size + x
+		if idx < eb.size() and int(eb[idx]) != 0:
+			return false
+	return true
 
 
 static func get_movement_cost(map_data: Dictionary, x: int, y: int) -> int:

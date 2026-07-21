@@ -127,8 +127,18 @@ func _hit_test_at_world(world_pos: Vector2) -> String:
 	for entry in _hw._map_view.get_resource_nodes_near(cell, 0):
 		var n: Node = entry.get("node")
 		if n != null and is_instance_valid(n):
-			var d: Dictionary = n.node_data
-			return str(d.get("name", d.get("id", "Resource")))
+			var d: Dictionary = n.node_data if "node_data" in n else {}
+			var rname: String = str(d.get("name", d.get("id", "Resource")))
+			if n.get("_depleted") == true:
+				return "%s (depleted)" % rname
+			var cat: String = str(d.get("category", ""))
+			var tip := "Tool"
+			match cat:
+				"trees":
+					tip = "Axe"
+				"rocks", "ore", "formations", "crystals":
+					tip = "Pickaxe"
+			return "%s  ·  Needs %s" % [rname, tip]
 
 	var pickup: Node2D = _hw._map_view.get_floor_pickup_at(cell)
 	if pickup != null and is_instance_valid(pickup):
@@ -245,11 +255,16 @@ func _update_tile_info() -> void:
 		var dist_str: String = str(nearest_mob_dist) + " cells" if nearest_mob_dist > 0 else "adjacent"
 		mob_line = "  [color=#ff8a65]%d mob(s)[/color] @ %s" % [mob_count, dist_str]
 	var minimap: Control = _hud.get_node_or_null("Minimap") as Control
-	if is_instance_valid(minimap) and minimap.has_method("set_region_text"):
-		minimap.call("set_region_text", (
-			"[b]Region (%d,%d)[/b]  %s  (%d, %d)  %.0f%%%s" %
-			[_hw._player_q, _hw._player_r, biome, _hw._local_x, _hw._local_y, explored, mob_line]
-		))
+	if is_instance_valid(minimap):
+		# Two short lines — avoids footer overflow onto the world view.
+		var title: String = "%s  (%d,%d)" % [biome, _hw._player_q, _hw._player_r]
+		var sub: String = "(%d,%d)  %.0f%%" % [_hw._local_x, _hw._local_y, explored]
+		if mob_count > 0:
+			sub += "  %dm" % mob_count
+		if minimap.has_method("set_region_lines"):
+			minimap.call("set_region_lines", title, sub)
+		elif minimap.has_method("set_region_text"):
+			minimap.call("set_region_text", title + "  " + sub)
 
 
 func _update_char_info(data: Dictionary) -> void:

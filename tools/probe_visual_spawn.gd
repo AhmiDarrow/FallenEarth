@@ -55,20 +55,24 @@ func _initialize() -> void:
 
 	# ResourceVisualManager is a child of the LocalMapView.
 	var rvm_count: int = 0
-	var mm_total: int = 0
+	var spr_total: int = 0
+	var spr_with_tex: int = 0
+	var sample_pos: Array = []
 	for child in view.get_children():
 		if child.name == "ResourceVisualManager":
 			rvm_count += 1
-			print("  ResourceVisualManager present, children = %d" % child.get_child_count())
+			print("  ResourceVisualManager present, children = %d z=%d" % [child.get_child_count(), child.z_index])
 			for sub in child.get_children():
-				if sub is MultiMeshInstance2D:
-					mm_total += 1
-					var tex_name: String = "<none>"
-					if sub.texture != null:
-						tex_name = sub.texture.resource_path
-					var inst_count: int = sub.multimesh.instance_count if sub.multimesh != null else -1
-					print("    MultiMeshInstance2D '%s' / tex %s / instances %d" % [sub.name, tex_name, inst_count])
-	print("[probe-rv] MultiMeshInstance2D total = %d" % mm_total)
+				if sub is Sprite2D:
+					spr_total += 1
+					var s: Sprite2D = sub as Sprite2D
+					if s.texture != null:
+						spr_with_tex += 1
+					if sample_pos.size() < 5:
+						sample_pos.append("%s @ %s sc=%s" % [s.name, str(s.position), str(s.scale)])
+	print("[probe-rv] Sprite2D total = %d with_tex = %d" % [spr_total, spr_with_tex])
+	for s in sample_pos:
+		print("    sample %s" % s)
 
 	# Verify the texture folder coverage
 	print("[probe-rv] ResourceNodes sprite coverage from generated map_data:")
