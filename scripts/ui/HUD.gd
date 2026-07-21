@@ -5,13 +5,12 @@
 ## from `UIHelper` or `MasterTheme` so a single token change rolls out
 ## the new look site-wide. Components:
 ##
-##   - Top bar       : player name, race, class, level, EC (top-left)
-##   - Status block  : HP / MP / XP bars grouped beneath the top bar
-##   - Minimap       : top-right (local overworld: terrain tints,
-##                     category dots, player-direction arrow)
-##   - Hotbar        : bottom-centre (InventoryHandler row 0 +
+##   - Player panel  : top-right — name, race, class, level, EC, HP/MP/XP bars
+##   - Minimap       : top-right, below player panel (local overworld:
+##                     terrain tints, category dots, player-direction arrow,
+##                     region/coordinates footer strip)
+##   - Hotbar        : bottom-centre (icon-based slots, InventoryHandler row 0 +
 ##                     EquipmentManager mainhand overlay)
-##   - Help line     : bottom-left, persistent — primary keys
 ##
 ## Character menu is opened via keyboard hotkeys (I/E/C/P/S/J).
 ## Pause menu via Escape. World map via M.
@@ -31,23 +30,18 @@ const HotbarScript = preload("res://scripts/ui/Hotbar.gd")
 signal character_menu_closed
 
 # Component refs (created in _ready; typed for safety in consumer scripts)
-var _top_bar_panel: PanelContainer = null
+var _player_panel: PanelContainer = null
 var _name_label: Label = null
 var _class_label: Label = null
 var _level_label: Label = null
 var _ec_label: Label = null
 
-var _status_panel: PanelContainer = null
-var _region_info_label: RichTextLabel = null
 var _hp_bar: ProgressBar = null
 var _mp_bar: ProgressBar = null
 var _xp_bar: ProgressBar = null
 
 var _minimap: Minimap = null
 var _hotbar: Hotbar = null
-
-var _help_line_panel: PanelContainer = null
-var _help_line: RichTextLabel = null
 
 var _character_menu: Control = null
 
@@ -75,10 +69,8 @@ func _ready() -> void:
 		# Fallback if viewport hasn't sized yet — re-sync next frame.
 		call_deferred("_sync_to_viewport")
 
-	_build_top_bar()
-	_build_status_block()
+	_build_player_panel()
 	_build_minimap()
-	_build_help_line()
 	_build_hotbar()
 
 	# Keep updating layout when the viewport resizes (window resize,
@@ -100,137 +92,98 @@ func _sync_to_viewport() -> void:
 # Top bar panel — name / race / class / level / EC
 # ---------------------------------------------------------------------------
 
-func _build_top_bar() -> void:
-	_top_bar_panel = UH.make_surface_panel()
-	_top_bar_panel.name = "TopBarPanel"
-	_top_bar_panel.anchor_left = 0.0
-	_top_bar_panel.anchor_top = 0.0
-	_top_bar_panel.anchor_right = 0.0
-	_top_bar_panel.anchor_bottom = 0.0
-	_top_bar_panel.offset_left = 12
-	_top_bar_panel.offset_top = 12
-	_top_bar_panel.offset_right = 480
-	_top_bar_panel.offset_bottom = 12 + UIHelper.compute_top_bar_height()
-	_top_bar_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_top_bar_panel)
+func _build_player_panel() -> void:
+	_player_panel = UH.make_surface_panel()
+	_player_panel.name = "PlayerPanel"
+	_player_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	_player_panel.offset_left = -284
+	_player_panel.offset_top = 12
+	_player_panel.offset_right = -12
+	_player_panel.offset_bottom = 12 + 150
+	_player_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_player_panel)
 
-	var bar := UH.make_hbox(18, true)
-	bar.name = "TopBar"
-	_top_bar_panel.add_child(bar)
-	bar.set_anchors_preset(Control.PRESET_FULL_RECT)
-	bar.offset_left = 12
-	bar.offset_top = 8
-	bar.offset_right = -12
-	bar.offset_bottom = -8
-	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var inner := UH.make_vbox(3)
+	inner.set_anchors_preset(Control.PRESET_FULL_RECT)
+	inner.offset_left = 10
+	inner.offset_top = 6
+	inner.offset_right = -10
+	inner.offset_bottom = -6
+	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_player_panel.add_child(inner)
 
-	# Name cell (icon accent + value)
-	var name_cell := _make_stat_cell("Recruit", MT.FS_H3, MT.TEXT_ACCENT)
-	bar.add_child(name_cell)
-	_name_label = name_cell.find_child("Value", true, false) as Label
+	var char_row := UH.make_hbox(6, true)
+	char_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(char_row)
 
-	# Race / Class cell
-	var class_cell := _make_stat_cell("?", MT.FS_SMALL, MT.TEXT_SECONDARY)
-	bar.add_child(class_cell)
-	_class_label = class_cell.find_child("Value", true, false) as Label
+	_name_label = UH.make_label("Recruit", MT.FS_STAT, MT.TEXT_ACCENT)
+	_name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	char_row.add_child(_name_label)
 
-	# Level cell
-	var level_cell := _make_stat_cell("Lv. 1", MT.FS_H2, Color(1, 0.92, 0.55))
-	bar.add_child(level_cell)
-	_level_label = level_cell.find_child("Value", true, false) as Label
+	_class_label = UH.make_small_label("? . ?")
+	_class_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	char_row.add_child(_class_label)
 
-	# EC cell
-	var ec_cell := _make_stat_cell("0 EC", MT.FS_H2, MT.ACCENT_PRIMARY)
-	bar.add_child(ec_cell)
-	_ec_label = ec_cell.find_child("Value", true, false) as Label
+	var spacer_1 := Control.new()
+	spacer_1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spacer_1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	char_row.add_child(spacer_1)
 
+	_level_label = UH.make_label("Lv. 1", MT.FS_STAT, Color(1, 0.92, 0.55))
+	_level_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	char_row.add_child(_level_label)
 
-## Stat-cell helper: VBox of an icon-dot accent + a value label.
-## The inner "Value" label can be retrieved by name from `_refresh_*` callers.
-func _make_stat_cell(value: String, _value_size: int, value_color: Color) -> VBoxContainer:
-	var box := UH.make_vbox(-2, false, false)
-	box.name = "StatCell"
-	box.custom_minimum_size = Vector2(0, UIHelper.compute_top_bar_height() - 16)
-	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var icon_dot := ColorRect.new()
-	icon_dot.color = MT.ACCENT_PRIMARY
-	icon_dot.custom_minimum_size = Vector2(8, 2)
-	box.add_child(icon_dot)
-	var value_label := Label.new()
-	value_label.name = "Value"
-	value_label.text = value
-	value_label.add_theme_color_override("font_color", value_color)
-	value_label.add_theme_font_size_override("font_size", _value_size)
-	value_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	value_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	box.add_child(value_label)
-	return box
+	_ec_label = UH.make_label("0 EC", MT.FS_STAT, MT.ACCENT_PRIMARY)
+	_ec_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	char_row.add_child(_ec_label)
 
+	inner.add_child(UH.make_separator())
 
-# ---------------------------------------------------------------------------
-# Status block — HP / MP / XP bars + region info
-# ---------------------------------------------------------------------------
-
-func _build_status_block() -> void:
-	_status_panel = UH.make_panel(MT.OVERLAY_DARK, MT.BORDER_SUBTLE, MT.RADIUS_MD, 1)
-	_status_panel.name = "StatusPanel"
-	_status_panel.anchor_left = 0.0
-	_status_panel.anchor_top = 0.0
-	_status_panel.anchor_right = 0.0
-	_status_panel.anchor_bottom = 0.0
-	_status_panel.offset_left = 12
-	_status_panel.offset_top = 12 + UIHelper.compute_top_bar_height() + 8
-	_status_panel.offset_right = 12 + 320
-	_status_panel.offset_bottom = 12 + UIHelper.compute_top_bar_height() + 8 + UIHelper.compute_status_block_height()
-	_status_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_status_panel)
-
-	# Region info label
-	_region_info_label = RichTextLabel.new()
-	_region_info_label.name = "RegionInfoLabel"
-	_region_info_label.bbcode_enabled = true
-	_region_info_label.fit_content = true
-	_region_info_label.scroll_active = false
-	_region_info_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_region_info_label.add_theme_color_override("default_color", MT.TEXT_SECONDARY)
-	_region_info_label.add_theme_font_size_override("normal_font_size", 11)
-	_region_info_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_region_info_label.offset_top = 4
-	_region_info_label.offset_left = 8
-	_region_info_label.offset_right = -8
-	_status_panel.add_child(_region_info_label)
-
-	# Bar strip
-	var strip := UH.make_vbox(2, true, false)
-	strip.name = "BarStrip"
-	strip.set_anchors_preset(Control.PRESET_FULL_RECT)
-	strip.offset_left = 6
-	strip.offset_top = 30
-	strip.offset_right = -6
-	strip.offset_bottom = -6
-	strip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_status_panel.add_child(strip)
-
-	_hp_bar = UH.make_progress_bar(0, 16, MT.HP_FILL)
+	# HP bar row
+	var hp_row := UH.make_hbox(6, true)
+	hp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(hp_row)
+	var hp_lbl := UH.make_label("HP", MT.FS_TINY, MT.HP_FILL)
+	hp_lbl.custom_minimum_size = Vector2(22, 0)
+	hp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_row.add_child(hp_lbl)
+	_hp_bar = UH.make_progress_bar(0, MT.BAR_HEIGHT_SM, MT.HP_FILL, MT.HP_BG)
 	_hp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_hp_bar.custom_minimum_size = Vector2(0, 16)
-	strip.add_child(_hp_bar)
+	_hp_bar.show_percentage = true
 	_hp_bar.value = 0
 	_hp_bar.max_value = 1
+	hp_row.add_child(_hp_bar)
 
-	_mp_bar = UH.make_progress_bar(0, 16, MT.MP_FILL)
+	# MP bar row
+	var mp_row := UH.make_hbox(6, true)
+	mp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(mp_row)
+	var mp_lbl := UH.make_label("MP", MT.FS_TINY, MT.MP_FILL)
+	mp_lbl.custom_minimum_size = Vector2(22, 0)
+	mp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mp_row.add_child(mp_lbl)
+	_mp_bar = UH.make_progress_bar(0, MT.BAR_HEIGHT_SM, MT.MP_FILL, MT.MP_BG)
 	_mp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_mp_bar.custom_minimum_size = Vector2(0, 16)
-	strip.add_child(_mp_bar)
+	_mp_bar.show_percentage = true
 	_mp_bar.value = 0
 	_mp_bar.max_value = 1
+	mp_row.add_child(_mp_bar)
 
-	_xp_bar = UH.make_progress_bar(0, 16, MT.XP_FILL)
+	# XP bar row
+	var xp_row := UH.make_hbox(6, true)
+	xp_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	inner.add_child(xp_row)
+	var xp_lbl := UH.make_label("XP", MT.FS_TINY, MT.XP_FILL)
+	xp_lbl.custom_minimum_size = Vector2(22, 0)
+	xp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	xp_row.add_child(xp_lbl)
+	_xp_bar = UH.make_progress_bar(0, MT.BAR_HEIGHT_SM, MT.XP_FILL, MT.XP_BG)
 	_xp_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_xp_bar.custom_minimum_size = Vector2(0, 16)
-	strip.add_child(_xp_bar)
+	_xp_bar.show_percentage = true
 	_xp_bar.value = 0
 	_xp_bar.max_value = 1
+	xp_row.add_child(_xp_bar)
 
 
 # ---------------------------------------------------------------------------
@@ -241,11 +194,12 @@ func _build_minimap() -> void:
 	_minimap = MinimapScript.new()
 	_minimap.name = "Minimap"
 	_minimap.visible = true
+	_minimap._manual_vertical_offset = 172
 	_minimap.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	_minimap.offset_left = -260
-	_minimap.offset_top = 12
+	_minimap.offset_top = 172
 	_minimap.offset_right = -12
-	_minimap.offset_bottom = 12 + 160
+	_minimap.offset_bottom = 332
 	add_child(_minimap)
 
 
@@ -260,44 +214,6 @@ func _build_hotbar() -> void:
 	add_child(_hotbar)
 	# Apply mod-registered HUD overlays
 	_apply_mod_overlays()
-
-
-# ---------------------------------------------------------------------------
-# Help line — bottom-left
-# ---------------------------------------------------------------------------
-
-func _build_help_line() -> void:
-	_help_line_panel = UH.make_panel(MT.OVERLAY_DARK, Color.TRANSPARENT, MT.RADIUS_MD, 0)
-	_help_line_panel.name = "HelpLinePanel"
-	_help_line_panel.anchor_left = 0.0
-	_help_line_panel.anchor_top = 1.0
-	_help_line_panel.anchor_right = 0.0
-	_help_line_panel.anchor_bottom = 1.0
-	_help_line_panel.offset_left = 12
-	_help_line_panel.offset_top = -52
-	_help_line_panel.offset_right = 12 + 560
-	_help_line_panel.offset_bottom = -12
-	_help_line_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_help_line_panel)
-
-	_help_line = RichTextLabel.new()
-	_help_line.name = "HelpLine"
-	_help_line.bbcode_enabled = true
-	_help_line.fit_content = true
-	_help_line.scroll_active = false
-	_help_line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_help_line.add_theme_color_override("default_color", MT.TEXT_SECONDARY)
-	_help_line.add_theme_font_size_override("normal_font_size", 11)
-	_help_line.text = (
-		"[b]WASD[/b] move  ·  [b]F[/b] gather/interact  ·  [b]1-0[/b] hotbar  ·  "
-		+ "[b]I/E/C/P/S/J[/b] menus  ·  [b]M[/b] map  ·  [b]Esc[/b] pause"
-	)
-	_help_line.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_help_line.offset_left = 14
-	_help_line.offset_top = 6
-	_help_line.offset_right = -14
-	_help_line.offset_bottom = -6
-	_help_line_panel.add_child(_help_line)
 
 
 # ---------------------------------------------------------------------------
@@ -329,7 +245,12 @@ func _refresh_from_gamestate() -> void:
 		_display_race = str(char_data.get("race", "?"))
 		_display_class = str(char_data.get("class", "?"))
 		_name_label.text = _display_name
-		_class_label.text = "%s · %s" % [_display_race, _display_class]
+		_class_label.text = "%s . %s" % [_display_race, _display_class]
+		var hp: int = int(char_data.get("hp", char_data.get("current_hp", 100)))
+		var max_hp: int = int(char_data.get("max_hp", 100))
+		var mp: int = int(char_data.get("mp", char_data.get("current_mp", 0)))
+		var max_mp: int = int(char_data.get("max_mp", char_data.get("mp_max", 100)))
+		_refresh_hp_mp(hp, max_hp, mp, max_mp)
 	var prog: Node = get_node_or_null("/root/ProgressionManager")
 	if prog != null:
 		_refresh_level(prog.level, prog.xp, prog.xp_to_next(prog.level))
@@ -354,6 +275,29 @@ func _refresh_level(lvl: int, current_xp: int, xp_to_next: int) -> void:
 func _refresh_minimap() -> void:
 	if is_instance_valid(_minimap):
 		_minimap.refresh()
+
+
+func _refresh_hp_mp(hp_val: int, hp_max: int, mp_val: int, mp_max: int) -> void:
+	if is_instance_valid(_hp_bar):
+		_hp_bar.max_value = float(hp_max) if hp_max > 0 else 1.0
+		_hp_bar.value = float(hp_val)
+	if is_instance_valid(_mp_bar):
+		_mp_bar.max_value = float(mp_max) if mp_max > 0 else 1.0
+		_mp_bar.value = float(mp_val)
+
+
+func refresh_hp_mp_from_gamestate() -> void:
+	var gs: GameState = get_node_or_null("/root/GameState") as GameState
+	if gs == null:
+		return
+	var char_data: Dictionary = gs.get_party_character_data()
+	if char_data.is_empty():
+		return
+	var hp: int = int(char_data.get("hp", char_data.get("current_hp", 100)))
+	var max_hp: int = int(char_data.get("max_hp", 100))
+	var mp: int = int(char_data.get("mp", char_data.get("current_mp", 0)))
+	var max_mp: int = int(char_data.get("max_mp", char_data.get("mp_max", 100)))
+	_refresh_hp_mp(hp, max_hp, mp, max_mp)
 
 
 # ---------------------------------------------------------------------------
@@ -423,11 +367,6 @@ func _on_character_menu_closed() -> void:
 
 func notify_cell_changed() -> void:
 	_refresh_minimap()
-
-
-func set_region_info(text: String) -> void:
-	if is_instance_valid(_region_info_label):
-		_region_info_label.text = text
 
 
 func get_hotbar() -> Hotbar:

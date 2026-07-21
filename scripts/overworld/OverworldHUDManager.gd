@@ -10,6 +10,7 @@ var _hw: HubWorld
 
 var _hud: Control = null
 var _hud_minimap_tick: float = 0.0
+var _hud_hp_tick: float = 0.0
 var _hover_tooltip: Control = null
 var _character_menu: Control = null
 var _pause_menu: PauseMenu = null
@@ -31,6 +32,12 @@ func process_hud(delta: float) -> void:
 		_hud_minimap_tick = 0.0
 		if _hud.has_method("notify_cell_changed"):
 			_hud.notify_cell_changed()
+
+	_hud_hp_tick += delta
+	if _hud_hp_tick >= 0.5 and is_instance_valid(_hud):
+		_hud_hp_tick = 0.0
+		if _hud.has_method("refresh_hp_mp_from_gamestate"):
+			_hud.refresh_hp_mp_from_gamestate()
 
 
 func _setup_hud() -> void:
@@ -210,9 +217,6 @@ func _load_mob_name_cache() -> void:
 
 
 func _update_tile_info() -> void:
-	# v0.4.0 polish: tile info now lives in HUD.status_block's region
-	# label (the OLD TileInfoPanel was removed from HubWorld.tscn).
-	# Push the same data into the HUD for visibility.
 	if not is_instance_valid(_hud):
 		return
 	var tile: Dictionary = _hw._tile_map.get("%d,%d" % [_hw._player_q, _hw._player_r], {})
@@ -238,13 +242,13 @@ func _update_tile_info() -> void:
 				nearest_mob_dist = d
 	var mob_line: String = ""
 	if mob_count > 0:
-		var dist_str: String = str(nearest_mob_dist) + " cells away" if nearest_mob_dist > 0 else "ADJACENT — walk into one"
-		mob_line = "\n[color=#ff8a65][b]%d mob(s)[/b][/color] in this region. Nearest: %s." % [mob_count, dist_str]
-	if _hud.has_method("set_region_info"):
-		_hud.call("set_region_info", (
-			"[b]Region (%d,%d)[/b] — [color=#c8e6c9]%s[/color]\n" % [_hw._player_q, _hw._player_r, biome] +
-			"Local pos: (%d, %d) | Terrain: %s | Explored: %.0f%%%s" %
-			[_hw._local_x, _hw._local_y, LocalMapGen.terrain_label(terrain), explored, mob_line]
+		var dist_str: String = str(nearest_mob_dist) + " cells" if nearest_mob_dist > 0 else "adjacent"
+		mob_line = "  [color=#ff8a65]%d mob(s)[/color] @ %s" % [mob_count, dist_str]
+	var minimap: Control = _hud.get_node_or_null("Minimap") as Control
+	if is_instance_valid(minimap) and minimap.has_method("set_region_text"):
+		minimap.call("set_region_text", (
+			"[b]Region (%d,%d)[/b]  %s  (%d, %d)  %.0f%%%s" %
+			[_hw._player_q, _hw._player_r, biome, _hw._local_x, _hw._local_y, explored, mob_line]
 		))
 
 

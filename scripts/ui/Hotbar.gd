@@ -28,6 +28,9 @@ const INVENTORY_PATH := "/root/InventoryHandler"
 
 var _selected_index: int = 0
 var _slot_buttons: Array[Button] = []
+var _slot_frames: Array[ColorRect] = []
+var _slot_icons: Array[ItemIcon] = []
+var _slot_num_labels: Array[Label] = []
 
 var equipped_item_id: String = ""
 signal slot_selected(index: int, item_id: String)
@@ -64,13 +67,52 @@ func _build_buttons() -> void:
 	add_child(bg)
 
 	for i in SLOT_COUNT:
-		var btn := UH.make_button("", "primary", SLOT_SIZE, SLOT_SIZE)
-		btn.name = "Slot_%d" % (i + 1)
-		btn.position = Vector2(i * (SLOT_SIZE + 4), 4)
+		var x: float = i * (SLOT_SIZE + 4)
+
+		# Slot background frame
+		var slot_frame := ColorRect.new()
+		slot_frame.name = "SlotFrame_%d" % i
+		slot_frame.color = MT.BG_SURFACE
+		slot_frame.position = Vector2(x, 4)
+		slot_frame.size = Vector2(SLOT_SIZE, SLOT_SIZE)
+		slot_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(slot_frame)
+		_slot_frames.append(slot_frame)
+
+		# Item icon
+		var icon := ItemIcon.new("", 0, SLOT_SIZE - 8)
+		icon.name = "Icon_%d" % i
+		icon.position = Vector2(x + 4, 8)
+		icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(icon)
+		_slot_icons.append(icon)
+
+		# Slot number (bottom-right)
+		var num_lbl := Label.new()
+		num_lbl.name = "SlotNum_%d" % i
+		num_lbl.text = str((i + 1) % 10)
+		num_lbl.add_theme_font_size_override("font_size", 9)
+		num_lbl.add_theme_color_override("font_color", MT.TEXT_MUTED)
+		num_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		num_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		num_lbl.position = Vector2(x + SLOT_SIZE - 15, 4 + SLOT_SIZE - 13)
+		num_lbl.size = Vector2(13, 11)
+		add_child(num_lbl)
+		_slot_num_labels.append(num_lbl)
+
+		# Invisible button for clicks
+		var btn := Button.new()
+		btn.name = "SlotBtn_%d" % i
+		btn.flat = true
+		btn.position = Vector2(x, 4)
+		btn.size = Vector2(SLOT_SIZE, SLOT_SIZE)
 		btn.focus_mode = Control.FOCUS_ALL
-		btn.mouse_filter = Control.MOUSE_FILTER_STOP
+		btn.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+		btn.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+		btn.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 		btn.add_theme_stylebox_override("focus", MT.focus_ring())
 		btn.pressed.connect(_on_slot_pressed.bind(i))
+		btn.mouse_filter = Control.MOUSE_FILTER_STOP
 		add_child(btn)
 		_slot_buttons.append(btn)
 
@@ -79,28 +121,22 @@ func refresh() -> void:
 	var inv: Node = get_node_or_null(INVENTORY_PATH)
 	var mainhand_id := _read_mainhand_item_id()
 	for i in SLOT_COUNT:
-		var label := ""
 		var item_id := ""
-		# All 10 slots read from InventoryHandler.main_grid row 0.
+		var count := 1
 		if inv != null and inv.has_method("get_hotbar_item"):
 			var item: Dictionary = inv.get_hotbar_item(i)
 			if not item.is_empty():
 				item_id = str(item.get("id", ""))
-				label = "%d\n%s" % [((i + 1) % 10), _short_label(item_id)]
-		# Slot 0: overlay an "equipped" badge suffix when the slot's item
-		# matches the currently-equipped MainHand. Visually anchors the
-		# tool to its physical-character-equip state.
-		if i == 0 and not mainhand_id.is_empty() and mainhand_id == item_id:
-			label += " ▶"
-		var btn := _slot_buttons[i]
-		btn.text = label
-		btn.modulate = Color.WHITE if i == _selected_index else Color.WHITE
-		# Slot 0: use a slightly bolder background when its item is the
-		# main-hand equipped tool, so the player sees the active weapon.
-		if i == 0 and not mainhand_id.is_empty() and mainhand_id == item_id:
-			if btn.has_theme_stylebox_override("normal"):
-				btn.add_theme_stylebox_override("normal", btn.get_theme_stylebox("normal").duplicate())
-			btn.modulate = Color(1.0, 1.0, 1.6, 1.0)
+				count = int(item.get("count", 1))
+		if i < _slot_icons.size():
+			_slot_icons[i].refresh(item_id, count)
+		if i < _slot_frames.size():
+			if i == 0 and not mainhand_id.is_empty() and mainhand_id == item_id:
+				_slot_frames[i].color = MT.BG_ELEVATED
+			else:
+				_slot_frames[i].color = MT.BG_SURFACE
+		if i < _slot_buttons.size():
+			_slot_buttons[i].modulate = Color.WHITE
 
 
 func _short_label(item_id: String) -> String:
@@ -160,10 +196,10 @@ func _read_mainhand_item_id() -> String:
 
 
 func _refresh_button(i: int) -> void:
-	if i < 0 or i >= _slot_buttons.size():
+	if i < 0 or i >= _slot_frames.size():
 		return
-	var btn := _slot_buttons[i]
-	btn.modulate = Color.WHITE if i == _selected_index else Color.WHITE
+	var frame := _slot_frames[i]
+	frame.color = MT.SELECTED_BG if i == _selected_index else MT.BG_SURFACE
 
 
 func set_slot(i: int, item_id: String) -> void:

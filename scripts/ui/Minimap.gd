@@ -66,16 +66,35 @@ var _terrain_summary: String = ""
 
 var _last_cell_change_msec: int = 0  # throttle heavy draw ops
 
+var _manual_vertical_offset: float = -1.0
+var _region_label: RichTextLabel = null
+
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(WIDTH_PX, HEIGHT_PX)
 	set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	offset_left = -WIDTH_PX - 12
-	offset_top = 12
+	if _manual_vertical_offset >= 0:
+		offset_top = _manual_vertical_offset
+	else:
+		offset_top = 12
 	offset_right = -12
-	offset_bottom = HEIGHT_PX + 12
+	offset_bottom = offset_top + HEIGHT_PX
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = Vector2(WIDTH_PX, HEIGHT_PX)
+
+	_region_label = RichTextLabel.new()
+	_region_label.name = "RegionLabel"
+	_region_label.bbcode_enabled = true
+	_region_label.fit_content = true
+	_region_label.scroll_active = false
+	_region_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_region_label.add_theme_color_override("default_color", Color(0.92, 0.94, 0.96, 0.95))
+	_region_label.add_theme_font_size_override("normal_font_size", 10)
+	_region_label.position = Vector2(8, HEIGHT_PX - 15)
+	_region_label.size = Vector2(WIDTH_PX - 20, 13)
+	add_child(_region_label)
+
 	# Theme colours resolved at runtime so the constants don't need to
 	# be initialised early.
 	if MT != null:
@@ -159,6 +178,12 @@ func refresh() -> void:
 	queue_redraw()
 
 
+## Update the region info displayed at the bottom of the minimap.
+func set_region_text(text: String) -> void:
+	if is_instance_valid(_region_label):
+		_region_label.text = text
+
+
 ## v0.4.0 polish: full visual overhaul. Terrain-tinted cells, category
 ## entity dots, and a forward-facing arrow on the player marker.
 func _draw() -> void:
@@ -180,8 +205,9 @@ func _draw() -> void:
 	var center := Vector2(WIDTH_PX * 0.5, HEIGHT_PX * 0.5)
 	_draw_player(center)
 
-	# Title strip at top
-	_draw_title()
+	# Footer strip background (text provided by region_label child)
+	draw_rect(Rect2(Vector2(0, HEIGHT_PX - 15), Vector2(WIDTH_PX, 15)),
+		Color(0.02, 0.02, 0.03, 0.78), true)
 
 
 ## Layer 2: paint each visible cell with its TERRAIN_* tint.
