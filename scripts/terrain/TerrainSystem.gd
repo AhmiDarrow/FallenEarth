@@ -142,38 +142,67 @@ static func paint_terrain(layer: TileMapLayer, terrain: PackedByteArray, size: i
 			layer.set_cell(Vector2i(x, y), 0, resolve_tile(cell_t, nw, ne, sw, se))
 
 
-## Resolve the atlas coordinates for one cell given its terrain type and 4 corner terrains.
-## Strategy:
-##   1. Exact match in the tile map
-##   2. Project to the cell's dominant binary pair
-##   3. Fall back to base tile for the cell's terrain
+## Resolve the atlas coordinates for one cell.
+##
+## Strategy (3 tiers):
+##   1. Exact match — all 4 corners map directly to a known tile
+##   2. Binary pair projection — reduce corners to exactly 2 terrain types
+##      using the cell's most relevant PixelLab Wang pair, then exact match
+##   3. Solid base tile — all corners same as cell_t
+##
+## The binary pair for projection is chosen by cell_t:
+##   WATER    → water↔ground   (water stays water, rest → ground)
+##   DEBRIS   → debris↔ground  (debris stays debris, rest → ground)
+##   VEG      → debris↔veg     (veg stays veg, rest → debris)
+##   BLOCKED  → blocked↔ground (blocked stays blocked, rest → ground)
+##   GROUND   → determined by most common non-ground corner type
+##
+## This produces valid 2-terrain keys matching PixelLab pair definitions.
+## No 3+ terrain keys are ever created.
 static func resolve_tile(cell_t: int, nw: int, ne: int, sw: int, se: int) -> Vector2i:
 	var key := "%d,%d,%d,%d" % [nw, ne, sw, se]
 	if _tile_map.has(key):
 		return _tile_map[key] as Vector2i
 
-	# Project to binary pair: cell_t vs whatever else is in the corners.
-	# Count corner terrains and find the most common non-cell_t terrain.
-	var counts := {}
-	for c in [nw, ne, sw, se]:
-		counts[c] = counts.get(c, 0) + 1
+	# Determine which binary pair to project onto.
+	var lo: int
+	var hi: int
 
-	var other := -1
-	var other_n := 0
-	for tid in counts:
-		if int(tid) != cell_t and int(counts[tid]) > other_n:
-			other_n = int(counts[tid])
-			other = int(tid)
+	match cell_t:
+		TERRAIN_WATER:
+			lo = TERRAIN_WATER; hi = TERRAIN_GROUND
+		TERRAIN_DEBRIS:
+			lo = TERRAIN_DEBRIS; hi = TERRAIN_GROUND
+		TERRAIN_VEGETATION:
+			lo = TERRAIN_DEBRIS; hi = TERRAIN_VEGETATION
+		TERRAIN_BLOCKED:
+			lo = TERRAIN_BLOCKED; hi = TERRAIN_GROUND
+		_:  # TERRAIN_GROUND — pick pair by most common non-ground corner
+			var counts := {}
+			for c in [nw, ne, sw, se]:
+				counts[c] = counts.get(c, 0) + 1
+			var dominant := TERRAIN_GROUND
+			var dominant_n := 0
+			for tid in counts:
+				var t := int(tid)
+				if t != TERRAIN_GROUND and int(counts[tid]) > dominant_n:
+					dominant_n = int(counts[tid])
+					dominant = t
+			match dominant:
+				TERRAIN_WATER:    lo = TERRAIN_WATER;   hi = TERRAIN_GROUND
+				TERRAIN_DEBRIS:   lo = TERRAIN_DEBRIS;  hi = TERRAIN_GROUND
+				TERRAIN_VEGETATION: lo = TERRAIN_DEBRIS; hi = TERRAIN_VEGETATION
+				TERRAIN_BLOCKED:  lo = TERRAIN_BLOCKED; hi = TERRAIN_GROUND
+				_:               lo = TERRAIN_GROUND;  hi = TERRAIN_GROUND
 
-	if other >= 0:
-		# Project: corners matching cell_t → cell_t, all others → other
-		var pnw := cell_t if int(nw) == cell_t else other
-		var pne := cell_t if int(ne) == cell_t else other
-		var psw := cell_t if int(sw) == cell_t else other
-		var pse := cell_t if int(se) == cell_t else other
-		var pkey := "%d,%d,%d,%d" % [pnw, pne, psw, pse]
-		if _tile_map.has(pkey):
-			return _tile_map[pkey] as Vector2i
+	# Project: corners matching lo → lo, everything else → hi
+	var pnw := lo if int(nw) == lo else hi
+	var pne := lo if int(ne) == lo else hi
+	var psw := lo if int(sw) == lo else hi
+	var pse := lo if int(se) == lo else hi
+	var pkey := "%d,%d,%d,%d" % [pnw, pne, psw, pse]
+	if _tile_map.has(pkey):
+		return _tile_map[pkey] as Vector2i
 
 	# Final fallback: solid base tile
 	if _base_tiles.has(cell_t):
