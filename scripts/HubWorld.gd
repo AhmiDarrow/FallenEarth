@@ -364,10 +364,15 @@ func _process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	# Left-click world objects → context box (harvest tip / actions).
+	# Left-click world objects → themed harvest / interact popup.
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		if not (_interaction_manager._is_ui_overlay_open() or get_tree().paused):
-			if _interaction_manager._on_world_click(get_global_mouse_position(), event.position):
+			# Map-local world coords (camera-aware). Screen pos for popup placement.
+			var world_pos: Vector2 = get_global_mouse_position()
+			if is_instance_valid(_map_view):
+				world_pos = _map_view.get_global_mouse_position()
+			if _interaction_manager._on_world_click(world_pos, event.position):
+				get_viewport().set_input_as_handled()
 				return
 	# Keyboard-only input below this line.
 	if not (event is InputEventKey and event.pressed):

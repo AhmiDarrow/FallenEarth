@@ -140,6 +140,26 @@ func _test_generator_emits_nodes() -> void:
 	if pickups.size() < 100:
 		_fail("Ash Wastes: expected at least 100 floor pickups, got %d" % pickups.size())
 		return
+	var terrain: PackedByteArray = map_data.get("terrain", PackedByteArray())
+	var veg_n := 0
+	for i in terrain.size():
+		if int(terrain[i]) == LocalMapGen.TERRAIN_VEGETATION:
+			veg_n += 1
+	if veg_n < 1000:
+		_fail("Ash Wastes: expected vegetation paint, got %d veg cells" % veg_n)
+		return
+	_ok("Ash Wastes vegetation cells=%d" % veg_n)
+	# Starter tier: no ore / high crystals
+	var starter: Dictionary = LocalMapGen.generate("test_seed", 1, 1, {
+		"name": "Scorched Plains", "elevation": 0.4, "rainfall": 0.25, "rift_chance": 0.1,
+	})
+	for n in starter.get("resource_nodes", []):
+		var y = n.get("yield", {})
+		var yid := str(y.get("item_id", "")) if y is Dictionary else ""
+		if yid in ["iron_ore", "copper_ore", "starmetal_ore", "void_shard", "teal_crystal"]:
+			_fail("Scorched Plains leaked high-tier yield: %s" % yid)
+			return
+	_ok("Scorched Plains tier gate (no ore/crystals)")
 	# Verify each node has a category, x, y
 	var categories := {}
 	for n in nodes:

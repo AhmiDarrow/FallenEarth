@@ -7,7 +7,7 @@
 class_name ResourceVisualManager
 extends Node2D
 
-const CELL_SIZE := 32
+const CELL_SIZE := 64
 const SPRITE_FOLDER := "res://assets/sprites/resource_nodes/"
 const PICKUP_FOLDER := "res://assets/sprites/items/"
 const DECOR_FOLDER := "res://assets/sprites/decor/"
@@ -62,16 +62,15 @@ func _build_node_visuals() -> void:
 		var sprite_id: String = str(nd.get("sprite", ""))
 		if sprite_id.is_empty():
 			continue
-		var cell := Vector2i(
-			int(floor(child.position.x / float(CELL_SIZE))),
-			int(floor(child.position.y / float(CELL_SIZE))),
-		)
+		var cell := _cell_key_for_child(child, nd)
+		# child.position already includes sub-cell jitter (set by LocalMapView).
 		var spr := _make_sprite(
 			_load_node_texture(sprite_id),
 			child.position,
 			_node_scale(nd),
 			Color.WHITE if not bool(nd.get("passable", false)) else Color(0.92, 0.92, 0.92, 0.95),
-			"N_%s_%d_%d" % [sprite_id, cell.x, cell.y]
+			"N_%s_%d_%d" % [sprite_id, cell.x, cell.y],
+			_node_foot_pad(sprite_id)
 		)
 		_node_sprites[cell] = spr
 		built += 1
@@ -88,16 +87,14 @@ func _build_pickup_visuals() -> void:
 		var item_id: String = str(raw_id) if raw_id != null else ""
 		if item_id.is_empty():
 			continue
-		var cell := Vector2i(
-			int(floor(child.position.x / float(CELL_SIZE))),
-			int(floor(child.position.y / float(CELL_SIZE))),
-		)
+		var cell := _cell_key_for_child(child, {})
 		var spr := _make_sprite(
 			_load_pickup_texture(item_id),
 			child.position,
 			0.7,
 			Color.WHITE,
-			"P_%s_%d_%d" % [item_id, cell.x, cell.y]
+			"P_%s_%d_%d" % [item_id, cell.x, cell.y],
+			2.0
 		)
 		_pickup_sprites[cell] = spr
 
@@ -116,36 +113,52 @@ func _build_decor_visuals() -> void:
 		var sprite_id: String = str(dd.get("sprite", ""))
 		if sprite_id.is_empty():
 			continue
-		var cell := Vector2i(
-			int(floor(child.position.x / float(CELL_SIZE))),
-			int(floor(child.position.y / float(CELL_SIZE))),
-		)
+		var cell := _cell_key_for_child(child, dd)
+		# child.position already includes sub-cell jitter (set by LocalMapView).
 		var spr := _make_sprite(
 			_load_decor_texture(sprite_id),
 			child.position,
 			_decor_scale(dd),
 			Color(0.95, 0.95, 0.95, 0.9) if bool(dd.get("passable", false)) else Color.WHITE,
-			"D_%s_%d_%d" % [sprite_id, cell.x, cell.y]
+			"D_%s_%d_%d" % [sprite_id, cell.x, cell.y],
+			_decor_foot_pad(sprite_id)
 		)
 		_decor_sprites[cell] = spr
 		built += 1
 	push_warning("[RVM] _build_decor_visuals: %d sprites" % built)
 
 
-func _make_sprite(tex: Texture2D, world_pos: Vector2, scale_val: float, modulate: Color, name_str: String) -> Sprite2D:
+## Prefer stored grid coords. height_band shifts world Y so floor(pos/cell) is unsafe.
+func _cell_key_for_child(child: Node, data: Dictionary) -> Vector2i:
+	if data.has("x") and data.has("y"):
+		return Vector2i(int(data.x), int(data.y))
+	if child.has_meta("cell"):
+		return child.get_meta("cell") as Vector2i
+	if child.has_method("get_cell"):
+		var c = child.get_cell(CELL_SIZE)
+		if c is Vector2i:
+			return c
+	# Last resort: nearest cell center (ignores height_band — avoid when possible)
+	return Vector2i(
+		int(floor(child.position.x / float(CELL_SIZE))),
+		int(floor(child.position.y / float(CELL_SIZE)))
+	)
+
+
+func _make_sprite(tex: Texture2D, world_pos: Vector2, scale_val: float, modulate: Color, name_str: String, foot_pad: float = 0.0) -> Sprite2D:
 	var spr := Sprite2D.new()
 	spr.name = name_str
 	spr.texture = tex
 	spr.centered = true
+	# Origin matches entity node (already jittered). Foot offset plants the sprite.
 	spr.position = world_pos
 	spr.scale = Vector2(scale_val, scale_val)
 	spr.modulate = modulate
 	spr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	# Bottom of sprite sits near cell; taller props read as grounded.
+	# Bottom-align: sprite feet sit at entity origin (+ foot_pad).
 	if tex != null:
 		var h: float = float(tex.get_height()) * scale_val
-		if h > float(CELL_SIZE):
-			spr.offset = Vector2(0, -h * 0.15)
+		spr.offset = Vector2(0, -h * 0.5 + foot_pad)
 	add_child(spr)
 	return spr
 
@@ -174,22 +187,58 @@ func hide_decor(cell: Vector2i) -> void:
 	_decor_sprites.erase(cell)
 
 
+## Deterministic sub-cell jitter so props don't sit on exact grid centers.
+## Returns ±8px in each axis (±0.25 * CELL_SIZE).
+static func _cell_jitter(cell: Vector2i) -> Vector2:
+	var h := hash(cell) % 4096
+	var jx := float(h % 17 - 8) / 17.0 * 8.0
+	var jy := float((h / 17) % 17 - 8) / 17.0 * 8.0
+	return Vector2(jx, jy)
+
+
+func _node_foot_pad(sprite_id: String) -> float:
+	# Positive = more planted (sprite shifts down relative to cell center).
+	if sprite_id.begins_with("tree_"):
+		return 4.0
+	if sprite_id.begins_with("formation_"):
+		return 3.0
+	if sprite_id.begins_with("ore_"):
+		return 2.0
+	if sprite_id.begins_with("crystal_"):
+		return 2.0
+	if sprite_id.begins_with("decor_rock"):
+		return 2.0
+	return 1.0
+
+
+func _decor_foot_pad(sprite_id: String) -> float:
+	if sprite_id.find("mushroom") >= 0 or sprite_id.find("flower") >= 0 or sprite_id.find("grass") >= 0:
+		return 1.0
+	if sprite_id.find("bone") >= 0 or sprite_id.find("skull") >= 0:
+		return 2.0
+	if sprite_id.find("tower") >= 0 or sprite_id.find("vent") >= 0:
+		return 3.0
+	if sprite_id.find("crater") >= 0 or sprite_id.find("wall") >= 0 or sprite_id.find("ruin") >= 0:
+		return 0.0
+	return 1.0
+
+
 func _node_scale(nd: Dictionary) -> float:
 	var sprite_id: String = str(nd.get("sprite", ""))
-	# Textures are 64px; cell is 32px — scale 1.0 = 2 cells tall.
+	# Native 64px art on 64px cells — scale 1.0 = one cell.
 	if sprite_id.begins_with("tree_"):
-		return 1.35
+		return 1.5
 	if sprite_id.begins_with("ore_"):
-		return 0.95
+		return 0.9
 	if sprite_id.begins_with("crystal_"):
-		return 0.95
+		return 0.9
 	if sprite_id.begins_with("formation_"):
-		return 1.15
+		return 1.25
 	if sprite_id.begins_with("decor_rock"):
 		return 1.0
 	if sprite_id.begins_with("decor_"):
 		return 0.95
-	return 1.1
+	return 1.0
 
 
 func _decor_scale(dd: Dictionary) -> float:

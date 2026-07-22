@@ -17,6 +17,7 @@ const INVENTORY_PATH := "/root/InventoryHandler"
 
 # v0.9.1c: removed _sprite. Visual comes from MultiMeshResourceVisual.
 var _collected: bool = false
+var _cell: Vector2i = Vector2i(-1, -1)
 
 
 func _ready() -> void:
@@ -24,10 +25,12 @@ func _ready() -> void:
 	pass
 
 
-func setup(p_item_id: String, p_qty: int) -> void:
+func setup(p_item_id: String, p_qty: int, cell: Vector2i = Vector2i(-1, -1)) -> void:
 	item_id = p_item_id
 	item_qty = p_qty
-	# v0.9.1c: no sprite setup.
+	if cell.x >= 0 and cell.y >= 0:
+		_cell = cell
+		set_meta("cell", cell)
 
 
 func _refresh_sprite() -> void:
@@ -60,7 +63,12 @@ func collect() -> int:
 
 
 func get_cell(cell_size: int = 64) -> Vector2i:
+	if _cell.x >= 0 and _cell.y >= 0:
+		return _cell
+	if has_meta("cell"):
+		return get_meta("cell") as Vector2i
+	var _cs := cell_size
 	return Vector2i(
-		int(floor(global_position.x / cell_size)),
-		int(floor(global_position.y / cell_size))
+		int(floor(global_position.x / float(_cs))),
+		int(floor(global_position.y / float(_cs)))
 	)

@@ -128,6 +128,7 @@ func _populate_settlements(towns: Array) -> void:
 			var cell := Vector2i(int(parts[0]), int(parts[1]))
 			node.position = cell_to_world(cell)
 			node.set_meta("hex", hex_str)
+			node.set_meta("cell", cell)
 			_settlement_by_cell[cell] = node
 
 
@@ -171,9 +172,11 @@ func _populate_cooking_tables(tables: Array) -> void:
 	for entry in tables:
 		if not (entry is Dictionary):
 			continue
+		var cell := Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		var node: Node2D = CookingTableScene.instantiate()
 		station_layer.add_child(node)
-		node.position = cell_to_world(Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0))))
+		node.set_meta("cell", cell)
+		node.position = cell_to_world(cell)
 
 
 func get_cooking_table_at(cell: Vector2i) -> Node2D:
@@ -182,8 +185,9 @@ func get_cooking_table_at(cell: Vector2i) -> Node2D:
 	for child in station_layer.get_children():
 		if not (child is Node2D) or not child.has_method("get_station_id"):
 			continue
-		var p: Vector2 = child.global_position
-		if int(floor(p.x / CELL_SIZE)) == cell.x and int(floor(p.y / CELL_SIZE)) == cell.y:
+		if child.has_method("get_cell") and child.get_cell(CELL_SIZE) == cell:
+			return child
+		if child.has_meta("cell") and (child.get_meta("cell") as Vector2i) == cell:
 			return child
 	return null
 
@@ -194,8 +198,9 @@ func get_sleeping_bag_at(cell: Vector2i) -> Node2D:
 	for child in station_layer.get_children():
 		if not (child is SleepingBag):
 			continue
-		var p: Vector2 = child.global_position
-		if int(floor(p.x / CELL_SIZE)) == cell.x and int(floor(p.y / CELL_SIZE)) == cell.y:
+		if child.has_method("get_cell") and child.get_cell(CELL_SIZE) == cell:
+			return child
+		if child.has_meta("cell") and (child.get_meta("cell") as Vector2i) == cell:
 			return child
 	return null
 
@@ -204,6 +209,7 @@ func add_sleeping_bag(cell: Vector2i, bag: Node2D) -> void:
 	if not is_instance_valid(station_layer) or not is_instance_valid(bag):
 		return
 	station_layer.add_child(bag)
+	bag.set_meta("cell", cell)
 	bag.position = cell_to_world(cell)
 
 
@@ -224,7 +230,9 @@ func _populate_resource_nodes(nodes: Array) -> void:
 		var node: Node2D = HarvestNodeScene.instantiate()
 		node_layer.add_child(node)
 		node.setup((entry as Dictionary).duplicate(true))
-		node.position = cell_to_world(cell)
+		node.set_meta("cell", cell)
+		# Jitter on the entity so collision + sprite share one origin.
+		node.position = cell_to_world(cell) + ResourceVisualManagerScript._cell_jitter(cell)
 		_node_by_cell[cell] = node
 
 
@@ -238,8 +246,9 @@ func _populate_floor_pickups(pickups: Array) -> void:
 		var cell: Vector2i = Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		var pickup: Node2D = FloorPickupScene.instantiate()
 		pickup_layer.add_child(pickup)
-		pickup.setup(str(entry.get("id", "")), int(entry.get("qty", 1)))
-		pickup.position = cell_to_world(cell)
+		pickup.setup(str(entry.get("id", "")), int(entry.get("qty", 1)), cell)
+		pickup.set_meta("cell", cell)
+		pickup.position = cell_to_world(cell) + ResourceVisualManagerScript._cell_jitter(cell)
 		_pickup_by_cell[cell] = pickup
 
 
@@ -252,9 +261,45 @@ func _populate_decor(decor: Array) -> void:
 		var cell: Vector2i = Vector2i(int(entry.get("x", 0)), int(entry.get("y", 0)))
 		var node := Node2D.new()
 		node.name = "Decor_%s_%d_%d" % [str(entry.get("id", "")), cell.x, cell.y]
-		node.position = cell_to_world(cell)
+		node.set_meta("cell", cell)
 		node.set_meta("decor_data", (entry as Dictionary).duplicate(true))
+		node.position = cell_to_world(cell) + ResourceVisualManagerScript._cell_jitter(cell)
+		_attach_decor_collision(node, entry as Dictionary)
 		decor_layer.add_child(node)
+
+
+## Blocking decor gets a base collider aligned to the sprite foot (debug + future queries).
+func _attach_decor_collision(node: Node2D, entry: Dictionary) -> void:
+	if bool(entry.get("passable", false)):
+		return
+	var sprite_id: String = str(entry.get("sprite", ""))
+	var radius := 18.0
+	var foot_y := 1.0
+	if sprite_id.find("crater") >= 0 or sprite_id.find("wall") >= 0 or sprite_id.find("ruin") >= 0:
+		radius = 26.0
+		foot_y = 0.0
+	elif sprite_id.find("tower") >= 0 or sprite_id.find("vent") >= 0:
+		radius = 22.0
+		foot_y = 3.0
+	elif sprite_id.find("rock") >= 0 or sprite_id.find("boulder") >= 0:
+		radius = 20.0
+		foot_y = 2.0
+	elif sprite_id.find("bone") >= 0 or sprite_id.find("skull") >= 0:
+		radius = 14.0
+		foot_y = 2.0
+	var area := Area2D.new()
+	area.name = "Area2D"
+	area.collision_layer = 4
+	area.collision_mask = 0
+	area.monitoring = false
+	var shape_node := CollisionShape2D.new()
+	shape_node.name = "CollisionShape2D"
+	var circle := CircleShape2D.new()
+	circle.radius = radius
+	shape_node.shape = circle
+	shape_node.position = Vector2(0.0, foot_y)
+	area.add_child(shape_node)
+	node.add_child(area)
 
 
 # ── Lookup helpers ───────────────────────────────────────────────────────
@@ -397,6 +442,52 @@ func world_to_cell(world: Vector2) -> Vector2i:
 		if d < best_d:
 			best_d = d; best = c
 	return best
+
+
+## Click hit-test: prefer a resource node whose visual covers world_pos
+## (tall trees/formations extend above their foot cell).
+func hit_test_resource_cell(world: Vector2) -> Vector2i:
+	var base := world_to_cell(world)
+	var best_cell := Vector2i(-9999, -9999)
+	var best_d := INF
+	for dy in range(-3, 2):
+		for dx in range(-2, 3):
+			var c := base + Vector2i(dx, dy)
+			var n: Node = _node_by_cell.get(c)
+			if not is_instance_valid(n):
+				continue
+			var foot: Vector2 = (n as Node2D).position
+			var nd: Dictionary = n.get("node_data") if "node_data" in n else {}
+			var sprite_id: String = str(nd.get("sprite", ""))
+			var scale_val := 1.0
+			var foot_pad := 1.0
+			if sprite_id.begins_with("tree_"):
+				scale_val = 1.5
+				foot_pad = 4.0
+			elif sprite_id.begins_with("formation_"):
+				scale_val = 1.25
+				foot_pad = 3.0
+			elif sprite_id.begins_with("ore_") or sprite_id.begins_with("crystal_"):
+				scale_val = 0.9
+				foot_pad = 2.0
+			var h: float = float(CELL_SIZE) * scale_val
+			var w: float = float(CELL_SIZE) * scale_val * 0.85
+			# Bottom-aligned sprite: feet near foot + foot_pad, body extends up.
+			var rect := Rect2(
+				foot.x - w * 0.5,
+				foot.y - h + foot_pad,
+				w,
+				h + 8.0
+			)
+			if not rect.has_point(world):
+				continue
+			var d: float = foot.distance_squared_to(world)
+			if d < best_d:
+				best_d = d
+				best_cell = c
+	if best_cell.x > -9000:
+		return best_cell
+	return base
 
 
 # ── Markers ──────────────────────────────────────────────────────────────

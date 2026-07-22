@@ -24,15 +24,16 @@
     ],
     "resources": {
       "common": [
+        "withered_branch",
+        "stone",
+        "iron_ore",
+        "copper_ore",
         "rusted_scrap"
       ],
       "uncommon": [
         "irradiated_rations"
       ],
-      "rare": [
-        "fungal_mats",
-        "rad_mushrooms"
-      ]
+      "rare": []
     },
     "features": [
       "toxic_dust",
@@ -42,21 +43,24 @@
     "terrain_profile": {
       "blocked_base": 0.1,
       "blocked_elev_factor": 0.06,
-      "vegetation_base": 0.22,
-      "vegetation_rain_factor": 0.12,
+      "vegetation_base": 0.18,
+      "vegetation_rain_factor": 0.1,
       "debris_threshold": 0.42,
       "noise_freq": 0.01,
       "noise_octaves": 3,
       "detail_freq": 0.04,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.0065,
+      "forest_threshold": 0.56
     },
     "decor_profile": {
       "cluster_noise_freq": 0.02,
       "cluster_threshold": 0.65,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.003,
-      "small_density": 0.014
+      "large_density_mult": 1.0,
+      "small_density_mult": 1.0,
+      "meadow_threshold": 0.44
     }
   },
   {
@@ -84,14 +88,18 @@
     ],
     "resources": {
       "common": [
-        "rusted_wreckage"
+        "withered_branch",
+        "stone",
+        "iron_ore",
+        "copper_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
         "pre_war_parts"
       ],
       "rare": [
-        "scrap_metal",
-        "corroded_electronics"
+        "starmetal_ore",
+        "void_shard"
       ]
     },
     "features": [
@@ -103,21 +111,24 @@
     "terrain_profile": {
       "blocked_base": 0.1,
       "blocked_elev_factor": 0.08,
-      "vegetation_base": 0.2,
-      "vegetation_rain_factor": 0.1,
+      "vegetation_base": 0.1,
+      "vegetation_rain_factor": 0.06,
       "debris_threshold": 0.38,
       "noise_freq": 0.012,
       "noise_octaves": 4,
       "detail_freq": 0.04,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.008,
+      "forest_threshold": 0.66
     },
     "decor_profile": {
       "cluster_noise_freq": 0.018,
-      "cluster_threshold": 0.6,
+      "cluster_threshold": 0.55,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.0045,
-      "small_density": 0.012
+      "large_density_mult": 1.2,
+      "small_density_mult": 0.95,
+      "meadow_threshold": 0.5
     }
   },
   {
@@ -145,15 +156,17 @@
     ],
     "resources": {
       "common": [
-        "neon_flora"
+        "withered_branch",
+        "stone",
+        "copper_ore",
+        "iron_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
-        "glowing_resin"
+        "kelp_fibre",
+        "teal_crystal"
       ],
-      "rare": [
-        "circuit_scrap",
-        "bioluminescent_ooze"
-      ]
+      "rare": []
     },
     "features": [
       "glowing_wetlands",
@@ -164,21 +177,24 @@
     "terrain_profile": {
       "blocked_base": 0.15,
       "blocked_elev_factor": 0.04,
-      "vegetation_base": 0.3,
+      "vegetation_base": 0.32,
       "vegetation_rain_factor": 0.18,
       "debris_threshold": 0.48,
       "noise_freq": 0.007,
       "noise_octaves": 3,
       "detail_freq": 0.03,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.0055,
+      "forest_threshold": 0.44
     },
     "decor_profile": {
       "cluster_noise_freq": 0.015,
       "cluster_threshold": 0.58,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.005,
-      "small_density": 0.017
+      "large_density_mult": 0.9,
+      "small_density_mult": 1.25,
+      "meadow_threshold": 0.38
     }
   },
   {
@@ -206,15 +222,14 @@
     ],
     "resources": {
       "common": [
-        "heat_resistant_minerals"
+        "withered_branch",
+        "stone",
+        "rusted_scrap"
       ],
       "uncommon": [
         "dried_fungi"
       ],
-      "rare": [
-        "charred_wreckage",
-        "glass_shards"
-      ]
+      "rare": []
     },
     "features": [
       "cracked_earth",
@@ -225,21 +240,31 @@
     "terrain_profile": {
       "blocked_base": 0.06,
       "blocked_elev_factor": 0.04,
-      "vegetation_base": 0.18,
-      "vegetation_rain_factor": 0.1,
-      "debris_threshold": 0.35,
-      "noise_freq": 0.006,
+      "vegetation_base": 0.12,
+      "vegetation_rain_factor": 0.08,
+      "path_threshold": 0.55,
+      "path_half_width": 0.085,
+      "wash_threshold": 0.46,
+      "path_noise_freq": 0.009,
+      "forest_noise_freq": 0.007,
+      "forest_threshold": 0.64,
+      "noise_freq": 0.007,
       "noise_octaves": 2,
-      "detail_freq": 0.025,
-      "detail_octaves": 1
+      "detail_freq": 0.02,
+      "detail_octaves": 1,
+      "height_noise_freq": 0.0018,
+      "height_t0": 0.22,
+      "height_t1": 0.4,
+      "height_t2": 0.58
     },
     "decor_profile": {
       "cluster_noise_freq": 0.012,
-      "cluster_threshold": 0.7,
-      "small_cluster_noise_freq": 0.025,
-      "small_cluster_threshold": 0.35,
-      "large_density": 0.003,
-      "small_density": 0.013
+      "cluster_threshold": 0.78,
+      "small_cluster_noise_freq": 0.022,
+      "small_cluster_threshold": 0.48,
+      "large_density_mult": 0.85,
+      "small_density_mult": 1.1,
+      "meadow_threshold": 0.4
     }
   },
   {
@@ -267,15 +292,16 @@
     ],
     "resources": {
       "common": [
-        "ironwood_bark"
+        "withered_branch",
+        "stone",
+        "iron_ore"
       ],
       "uncommon": [
-        "metallic_vines"
+        "ironwood_bark",
+        "living_metal_sample",
+        "teal_crystal"
       ],
-      "rare": [
-        "ferro_resin",
-        "living_metal_samples"
-      ]
+      "rare": []
     },
     "features": [
       "dense_metallic_forest",
@@ -287,20 +313,23 @@
       "blocked_base": 0.1,
       "blocked_elev_factor": 0.05,
       "vegetation_base": 0.38,
-      "vegetation_rain_factor": 0.15,
+      "vegetation_rain_factor": 0.16,
       "debris_threshold": 0.5,
       "noise_freq": 0.009,
       "noise_octaves": 3,
       "detail_freq": 0.035,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.0045,
+      "forest_threshold": 0.4
     },
     "decor_profile": {
       "cluster_noise_freq": 0.02,
       "cluster_threshold": 0.55,
-      "small_cluster_noise_freq": 0.025,
+      "small_cluster_noise_freq": 0.02,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.005,
-      "small_density": 0.013
+      "large_density_mult": 0.7,
+      "small_density_mult": 1.2,
+      "meadow_threshold": 0.48
     }
   },
   {
@@ -329,14 +358,17 @@
     ],
     "resources": {
       "common": [
-        "glass_shards"
+        "withered_branch",
+        "stone",
+        "iron_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
-        "melted_alloys"
+        "teal_crystal"
       ],
       "rare": [
-        "prismatic_crystals",
-        "buried_tech"
+        "starmetal_ore",
+        "void_shard"
       ]
     },
     "features": [
@@ -348,21 +380,24 @@
     "terrain_profile": {
       "blocked_base": 0.08,
       "blocked_elev_factor": 0.05,
-      "vegetation_base": 0.15,
-      "vegetation_rain_factor": 0.08,
+      "vegetation_base": 0.08,
+      "vegetation_rain_factor": 0.05,
       "debris_threshold": 0.36,
       "noise_freq": 0.008,
       "noise_octaves": 3,
       "detail_freq": 0.03,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.009,
+      "forest_threshold": 0.68
     },
     "decor_profile": {
       "cluster_noise_freq": 0.016,
       "cluster_threshold": 0.62,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.003,
-      "small_density": 0.014
+      "large_density_mult": 0.9,
+      "small_density_mult": 0.9,
+      "meadow_threshold": 0.46
     }
   },
   {
@@ -391,14 +426,16 @@
     ],
     "resources": {
       "common": [
-        "ancient_bones"
+        "withered_branch",
+        "stone",
+        "iron_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
         "war_scrap"
       ],
       "rare": [
-        "dog_tags",
-        "undisturbed_caches"
+        "void_shard"
       ]
     },
     "features": [
@@ -408,23 +445,31 @@
       "crater_lakes"
     ],
     "terrain_profile": {
-      "blocked_base": 0.12,
-      "blocked_elev_factor": 0.05,
-      "vegetation_base": 0.18,
-      "vegetation_rain_factor": 0.1,
-      "debris_threshold": 0.38,
-      "noise_freq": 0.007,
-      "noise_octaves": 3,
-      "detail_freq": 0.03,
-      "detail_octaves": 2
+      "blocked_base": 0.06,
+      "blocked_elev_factor": 0.04,
+      "vegetation_base": 0.16,
+      "vegetation_rain_factor": 0.08,
+      "debris_threshold": 0.48,
+      "path_threshold": 0.68,
+      "path_noise_freq": 0.01,
+      "noise_freq": 0.006,
+      "noise_octaves": 2,
+      "detail_freq": 0.025,
+      "detail_octaves": 1,
+      "height_noise_freq": 0.0028,
+      "height_low_threshold": 0.3,
+      "height_high_threshold": 0.55,
+      "forest_noise_freq": 0.007,
+      "forest_threshold": 0.58
     },
     "decor_profile": {
       "cluster_noise_freq": 0.014,
       "cluster_threshold": 0.58,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.005,
-      "small_density": 0.015
+      "large_density_mult": 1.1,
+      "small_density_mult": 1.15,
+      "meadow_threshold": 0.4
     }
   },
   {
@@ -453,14 +498,16 @@
     ],
     "resources": {
       "common": [
-        "storm_charged_cells"
+        "stone",
+        "iron_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
-        "lightning_glass"
+        "ironwood_bark"
       ],
       "rare": [
-        "tower_components",
-        "volatile_energy"
+        "starmetal_ore",
+        "void_shard"
       ]
     },
     "features": [
@@ -478,15 +525,18 @@
       "noise_freq": 0.014,
       "noise_octaves": 4,
       "detail_freq": 0.05,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.006,
+      "forest_threshold": 0.52
     },
     "decor_profile": {
       "cluster_noise_freq": 0.022,
       "cluster_threshold": 0.6,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.004,
-      "small_density": 0.012
+      "large_density_mult": 1.0,
+      "small_density_mult": 1.0,
+      "meadow_threshold": 0.45
     }
   },
   {
@@ -515,14 +565,17 @@
     ],
     "resources": {
       "common": [
-        "toxic_sludge_paste"
+        "withered_branch",
+        "stone",
+        "copper_ore",
+        "iron_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
         "venom_glands"
       ],
       "rare": [
-        "mutated_fungi",
-        "chemical_residues"
+        "void_shard"
       ]
     },
     "features": [
@@ -535,20 +588,23 @@
       "blocked_base": 0.18,
       "blocked_elev_factor": 0.04,
       "vegetation_base": 0.28,
-      "vegetation_rain_factor": 0.16,
+      "vegetation_rain_factor": 0.14,
       "debris_threshold": 0.45,
       "noise_freq": 0.007,
       "noise_octaves": 3,
       "detail_freq": 0.03,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.006,
+      "forest_threshold": 0.48
     },
     "decor_profile": {
       "cluster_noise_freq": 0.013,
       "cluster_threshold": 0.56,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.005,
-      "small_density": 0.015
+      "large_density_mult": 0.95,
+      "small_density_mult": 1.2,
+      "meadow_threshold": 0.38
     }
   },
   {
@@ -578,15 +634,16 @@
     ],
     "resources": {
       "common": [
-        "pre-collapse_tech"
+        "withered_branch",
+        "stone",
+        "iron_ore",
+        "copper_ore",
+        "rusted_scrap"
       ],
       "uncommon": [
         "black_market_caches"
       ],
-      "rare": [
-        "corporate_vaults",
-        "high_grade_scrap"
-      ]
+      "rare": []
     },
     "features": [
       "ruined_skyscrapers",
@@ -597,21 +654,24 @@
     "terrain_profile": {
       "blocked_base": 0.15,
       "blocked_elev_factor": 0.06,
-      "vegetation_base": 0.2,
-      "vegetation_rain_factor": 0.1,
+      "vegetation_base": 0.1,
+      "vegetation_rain_factor": 0.06,
       "debris_threshold": 0.4,
       "noise_freq": 0.011,
       "noise_octaves": 4,
       "detail_freq": 0.04,
-      "detail_octaves": 2
+      "detail_octaves": 2,
+      "forest_noise_freq": 0.008,
+      "forest_threshold": 0.64
     },
     "decor_profile": {
       "cluster_noise_freq": 0.019,
-"cluster_threshold": 0.57,
+      "cluster_threshold": 0.52,
       "small_cluster_noise_freq": 0.025,
       "small_cluster_threshold": 0.35,
-      "large_density": 0.003,
-      "small_density": 0.014
+      "large_density_mult": 1.35,
+      "small_density_mult": 0.9,
+      "meadow_threshold": 0.5
     }
   }
 ]

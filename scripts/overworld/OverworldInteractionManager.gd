@@ -152,31 +152,56 @@ func get_equipped_tool() -> Dictionary:
 	return _resolve_hotbar_tool()
 
 
-## Read the hotbar's currently selected item_id, look it up in
-## data/tools.json, and return the tool's data dict. Returns empty
-## dict if no item is selected or the item isn't a known tool.
+## Active gather tool: selected hotbar if tool → mainhand → any hotbar tool.
 func _resolve_hotbar_tool() -> Dictionary:
-	if not is_instance_valid(_hw._hud):
+	var ids: Array[String] = []
+	var sel := ""
+	if is_instance_valid(_hw._hud) and _hw._hud.has_method("get_hotbar"):
+		var hb: Hotbar = _hw._hud.get_hotbar()
+		if is_instance_valid(hb):
+			sel = str(hb.get_slot(hb.get_selected_index()))
+			if not sel.is_empty():
+				ids.append(sel)
+	var em: Node = get_node_or_null("/root/EquipmentManager")
+	if em != null and em.has_method("get_main_hand_item"):
+		var mh_id: String = str(em.call("get_main_hand_item", "player"))
+		if not mh_id.is_empty() and mh_id != sel:
+			ids.append(mh_id)
+	if is_instance_valid(_hw._hud) and _hw._hud.has_method("get_hotbar"):
+		var hb2: Hotbar = _hw._hud.get_hotbar()
+		if is_instance_valid(hb2):
+			for i in 10:
+				var sid: String = str(hb2.get_slot(i))
+				if not sid.is_empty() and not ids.has(sid):
+					ids.append(sid)
+	for item_id in ids:
+		var tool := _lookup_tool_data(item_id)
+		if not tool.is_empty():
+			return tool
+	if not _hw._equipped_tool.is_empty():
 		return _hw._equipped_tool
-	var hb: Hotbar = _hw._hud.get_hotbar() if _hw._hud.has_method("get_hotbar") else null
-	if hb == null or not is_instance_valid(hb):
-		return _hw._equipped_tool
-	var item_id: String = str(hb.get_slot(hb.get_selected_index()))
+	return {}
+
+
+func _lookup_tool_data(item_id: String) -> Dictionary:
 	if item_id.is_empty():
 		return {}
-	# Look up the tool definition in data/tools.json
-	var path := "res://data/tools.json"
-	if not ResourceLoader.exists(path):
-		return {}
-	var raw = load(path)
-	if raw == null:
-		return {}
-	var data = raw.data if "data" in raw else raw
-	if not (data is Dictionary):
-		return {}
-	for t in data.get("tools", []):
-		if str(t.get("id", "")) == item_id:
-			return t
+	# InventoryHandler synthesizes tools with harvests[] from tools.json.
+	var inv: Node = get_node_or_null("/root/InventoryHandler")
+	if inv != null and inv.has_method("get_item_data"):
+		var item: Dictionary = inv.get_item_data(item_id)
+		if not item.is_empty() and item.has("harvests"):
+			var harvests: Array = item.get("harvests", [])
+			if not harvests.is_empty():
+				return item
+	# DataRegistry tools table
+	var dr: Node = get_node_or_null("/root/DataRegistry")
+	if dr != null and dr.has_method("get_data"):
+		var raw: Variant = dr.get_data("tools")
+		if raw is Dictionary:
+			for t in raw.get("tools", []):
+				if t is Dictionary and str(t.get("id", "")) == item_id:
+					return t
 	return {}
 
 
@@ -610,11 +635,15 @@ func _on_double_click(world_pos: Vector2, screen_pos: Vector2) -> bool:
 	if not is_instance_valid(_hw._map_view):
 		return false
 	_dismiss_context_menu()
-	var cell_size: int = _hw._map_view.get_cell_size()
-	var cell := Vector2i(
-		int(floor(world_pos.x / cell_size)),
-		int(floor(world_pos.y / cell_size)),
-	)
+	# Height-band + tall sprite aware (not raw floor(pos/64)).
+	var cell: Vector2i
+	if _hw._map_view.has_method("hit_test_resource_cell"):
+		cell = _hw._map_view.hit_test_resource_cell(world_pos)
+	elif _hw._map_view.has_method("world_to_cell"):
+		cell = _hw._map_view.world_to_cell(world_pos)
+	else:
+		var cs: int = _hw._map_view.get_cell_size()
+		cell = Vector2i(int(floor(world_pos.x / cs)), int(floor(world_pos.y / cs)))
 	var built: Dictionary = _build_context_box(cell)
 	var options: Array = built.get("options", [])
 	var info_lines: Array = built.get("info", [])
@@ -630,7 +659,7 @@ func _build_context_box(cell: Vector2i) -> Dictionary:
 	var info: Array = []
 	var px: int = _hw._local_x
 	var py: int = _hw._local_y
-	var dist: int = max(abs(cell.x - px), abs(cell.y - py))
+	var dist: int = maxi(abs(cell.x - px), abs(cell.y - py))
 
 	var node_info: Dictionary = _get_resource_node_at(cell)
 	if not node_info.is_empty():
@@ -639,9 +668,17 @@ func _build_context_box(cell: Vector2i) -> Dictionary:
 			var nd: Dictionary = node.node_data if "node_data" in node else {}
 			var cat: String = str(nd.get("category", ""))
 			var tool_type: String = HarvestNodeScript.required_tool_type(cat, str(nd.get("id", "")))
+			var display_name: String = str(node_info.get("name", "Resource"))
 			info.append("Requires: %s" % tool_type)
 			if dist > GATHER_RANGE_CELLS:
 				info.append("Move closer to harvest")
+				# Still show disabled action so the popup feels responsive.
+				var verb_far := "Chop" if tool_type == "Axe" else "Mine"
+				options.append({
+					"label": "%s %s" % [verb_far, display_name],
+					"action": "",
+					"disabled": true,
+				})
 			else:
 				var tool: Dictionary = _resolve_hotbar_tool()
 				if tool.is_empty():
@@ -652,23 +689,30 @@ func _build_context_box(cell: Vector2i) -> Dictionary:
 					var yqty: int = int(result.get("yield_qty", 1))
 					var secs: float = float(result.get("secs", 1.0))
 					info.append("Yield ~%s ×%d  (%.1fs)" % [yitem, yqty, secs])
+					var tool_name: String = str(tool.get("name", ""))
+					if not tool_name.is_empty():
+						info.append("Tool: %s" % tool_name)
 					var verb := "Chop" if tool_type == "Axe" else "Mine"
 					options.append({
-						"label": "%s %s" % [verb, str(node_info.get("name", "Resource"))],
+						"label": "%s %s" % [verb, display_name],
 						"action": "gather",
 					})
 				else:
 					match str(result.get("reason", "")):
 						"wrong_tool", "no_tool":
 							info.append(_nearest_tool_hint(node))
-							options.append({"label": _nearest_tool_hint(node), "action": ""})
 						"depleted":
 							info.append("Depleted — regenerating")
-							options.append({"label": "Depleted", "action": ""})
 						"decoration":
 							info.append("Not harvestable")
 						_:
 							info.append("Cannot harvest")
+					var verb_bad := "Chop" if tool_type == "Axe" else "Mine"
+					options.append({
+						"label": "%s %s" % [verb_bad, display_name],
+						"action": "",
+						"disabled": true,
+					})
 
 	if dist <= GATHER_RANGE_CELLS:
 		var bld: Node2D = _hw._map_view.get_building_at(cell)
@@ -783,6 +827,10 @@ func _on_context_action(action: String, target_cell: Vector2i) -> void:
 func _start_gather_at_cell(cell: Vector2i) -> void:
 	if is_instance_valid(_hw._gathering_node):
 		return
+	var dist: int = maxi(abs(cell.x - _hw._local_x), abs(cell.y - _hw._local_y))
+	if dist > GATHER_RANGE_CELLS:
+		_show_gather_toast("Move closer to harvest")
+		return
 	var candidates: Array = _hw._map_view.get_resource_nodes_near(cell, 0)
 	if candidates.is_empty():
 		return
@@ -808,6 +856,14 @@ func _begin_gather(node: Node2D, result: Dictionary) -> void:
 		"yield_item": str(result.get("yield_item", "")),
 		"yield_qty": int(result.get("yield_qty", 0)),
 	}
+	var verb := "Chopping" if str(result.get("yield_item", "")).find("branch") >= 0 or str(result.get("yield_item", "")).find("wood") >= 0 else "Gathering"
+	var nd: Dictionary = node.node_data if "node_data" in node else {}
+	var cat: String = str(nd.get("category", ""))
+	if cat == "trees":
+		verb = "Chopping"
+	elif cat in ["ore", "rocks", "formations", "crystals"]:
+		verb = "Mining"
+	_show_gather_toast("%s… (%.1fs)" % [verb, _hw._gather_total])
 
 
 func _notify_gather_failure(node: Node2D, result: Dictionary) -> void:
@@ -844,18 +900,15 @@ func _nearest_tool_hint(node: Node2D) -> String:
 	var node_id: String = str(nd.get("id", ""))
 	var category: String = str(nd.get("category", ""))
 	var tool_type: String = HarvestNodeScript.required_tool_type(category, node_id)
-	var path := "res://data/tools.json"
-	if not ResourceLoader.exists(path):
-		return "Requires: %s" % tool_type
-	var raw = load(path)
-	if raw == null:
-		return "Requires: %s" % tool_type
-	var data = raw.data if "data" in raw else raw
-	if not (data is Dictionary):
-		return "Requires: %s" % tool_type
 	var names: Array = []
-	for t in data.get("tools", []):
-		if HarvestNodeScript.tool_can_harvest(t, node_id, category):
+	var dr: Node = get_node_or_null("/root/DataRegistry")
+	var tools_list: Array = []
+	if dr != null and dr.has_method("get_data"):
+		var raw: Variant = dr.get_data("tools")
+		if raw is Dictionary:
+			tools_list = raw.get("tools", [])
+	for t in tools_list:
+		if t is Dictionary and HarvestNodeScript.tool_can_harvest(t, node_id, category):
 			names.append(str(t.get("name", t.get("id", "?"))))
 	if names.is_empty():
 		return "Requires: %s" % tool_type

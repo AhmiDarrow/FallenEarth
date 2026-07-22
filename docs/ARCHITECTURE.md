@@ -372,6 +372,7 @@ scripts/
 
 - **Planet layer** (`WorldGenerator` + `WorldGeneration` 3D preview + `WorldMapScreen`): full-sphere hexasphere, biome/climate metadata, travel, factions, quests
 - **Local layer** (`LocalMapGenerator` + `HubWorld`): one 512x512 procedural map per hex (`hex_states` in GameState), edge-connected to neighbors
+- **Clutter placement (v0.12.1)**: paint `TERRAIN_VEGETATION` from forest noise; place harvestables via `forest_patch` / `vein` / `field` / `pocket` / `scatter` modes in `data/resource_nodes.json`; gate yields with `min_biome_tier` vs biome `difficulty_tier`. Decor uses meadow/understory/ruin masks. Bump `TERRAIN_VERSION` when placement changes so cached hex maps regenerate.
 
 **Loop**: Local exploration → Enter rift → Dungeon → Close rift → Return to local map → World Map for strategic travel
 

@@ -22,7 +22,12 @@ var _escape_was_pressed: bool = false
 func process_hud(delta: float) -> void:
 	var esc_pressed: bool = Input.is_key_pressed(KEY_ESCAPE)
 	if esc_pressed and not _escape_was_pressed and not _is_ui_overlay_open():
-		_toggle_pause_menu()
+		# Prefer closing the world context/harvest popup over opening pause.
+		if is_instance_valid(_hw) and is_instance_valid(_hw._context_menu):
+			if _hw._interaction_manager != null:
+				_hw._interaction_manager._dismiss_context_menu()
+		else:
+			_toggle_pause_menu()
 	_escape_was_pressed = esc_pressed
 
 	_tick_hover_tooltip()
@@ -43,6 +48,7 @@ func process_hud(delta: float) -> void:
 func _setup_hud() -> void:
 	_hud = HUDScript.new()
 	_hud.name = "HUD"
+	_hw._hud = _hud
 	var ui_layer := _hw.get_node_or_null("UI_Canvas") as CanvasLayer
 	if ui_layer != null:
 		ui_layer.add_child(_hud)

@@ -1,7 +1,7 @@
 class_name MountFollower
 extends Node2D
 
-const CELL_SIZE := 32
+const CELL_SIZE := 64
 const FOLLOW_DISTANCE := 1
 const MOVE_DURATION := 0.6
 

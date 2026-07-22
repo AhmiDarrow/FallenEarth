@@ -15,11 +15,14 @@ func _update_camera() -> void:
 	# Fallback: snap camera if FollowCamera has no target yet
 	if follow == null or follow.target == null:
 		if is_instance_valid(_hw.camera) and is_instance_valid(_hw._map_view):
-			var cell_size: int = _hw._map_view.get_cell_size()
-			_hw.camera.position = Vector2(
-				_hw._local_x * cell_size + cell_size * 0.5,
-				_hw._local_y * cell_size + cell_size * 0.5,
-			)
+			if _hw._map_view.has_method("cell_to_world"):
+				_hw.camera.position = _hw._map_view.cell_to_world(Vector2i(_hw._local_x, _hw._local_y))
+			else:
+				var cell_size: int = _hw._map_view.get_cell_size()
+				_hw.camera.position = Vector2(
+					_hw._local_x * cell_size + cell_size * 0.5,
+					_hw._local_y * cell_size + cell_size * 0.5,
+				)
 
 
 func _process(delta: float) -> void:

@@ -1,5 +1,26 @@
 ---
 
+## [v0.12.1] — 2026-07-21 — Living Clutter & Tiered Resources
+
+Ecological placement rewrite for local maps (forest patches, ore veins, tier gates).
+
+### Placement
+- Paint `TERRAIN_VEGETATION` from forest noise + rainfall (Wang veg tiles finally used)
+- Modes: `forest_patch`, `vein`, `field`, `pocket`, `scatter` (+ decor meadow/understory/ruin)
+- Huge forests (Ironwood ~50% veg, 6k+ trees); open starter plains (~4% veg)
+- Ore as elongated veins on rocky/high bands; crystals as rare pockets
+
+### Tiering
+- `min_biome_tier` on nodes; generator skips illegal entries
+- Scorched Plains (T1): wood/stone/scrap only — no iron/copper/crystals
+- Void/starmetal gated to T4+; Neon Bogs no longer drops void shards
+- `terrain_version` → 2 (cached maps regenerate)
+
+### Tools
+- `tools/diag_clutter_distribution.gd` — per-biome counts, veg %, tier violations
+
+---
+
 ## [v0.12.0] — 2026-07-21 — Living Local Map
 
 Harvestable overworld, visible props, wildlife spawn, minimap polish.

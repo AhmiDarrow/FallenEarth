@@ -21,7 +21,7 @@
       "level_required": 1,
       "name": "Stone Pickaxe",
       "sprite": "tool_pickaxe_stone",
-      "harvests": ["#rocks", "iron_outcrop", "#formations"],
+      "harvests": ["#rocks", "#ore", "iron_outcrop", "#formations"],
       "speed_mult": 0.7,
       "stackable": false,
       "sell_value_ec": 4,

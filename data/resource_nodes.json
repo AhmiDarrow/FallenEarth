@@ -1,19 +1,67 @@
 {
-  "_comment": "Per-biome harvestables + decor. Categories: trees (axe #trees), rocks (pickaxe #rocks), ore, formations, crystals. passable=false blocks walk (default for harvestables). Decor large=blocking; small flowers/bones may be passable. Sprites: resource_nodes/ + decor/ with 00-15 variants.",
+  "_comment": "Per-biome harvestables + decor. placement_mode: forest_patch|vein|field|pocket|scatter. min_biome_tier gates high loot. Categories: trees/rocks/ore/formations/crystals.",
   "biomes": {
     "Ash Wastes": {
       "placement_noise": {
-        "forest": {"frequency": 0.01, "threshold": 0.5},
-        "rocky": {"frequency": 0.012, "threshold": 0.45},
-        "formations": {"frequency": 0.01, "threshold": 0.5},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.55}
+        "forest": {
+          "frequency": 0.0065,
+          "threshold": 0.52
+        },
+        "rocky": {
+          "frequency": 0.011,
+          "threshold": 0.48
+        },
+        "formations": {
+          "frequency": 0.01,
+          "threshold": 0.5
+        },
+        "ore_rich": {
+          "frequency": 0.012,
+          "threshold": 0.55
+        },
+        "crystalline": {
+          "frequency": 0.018,
+          "threshold": 0.75
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 5,
+          "patch_radius_min": 14,
+          "patch_radius_max": 28,
+          "core_fill": 0.32,
+          "edge_fill": 0.1,
+          "outlier_density": 0.0012,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 6,
+          "cluster_count": 8,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 5,
+          "cluster_count": 5,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 8,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 3,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -28,8 +76,9 @@
           },
           "gather_secs": 2.5,
           "respawn_secs": 180,
-          "density": 0.009,
-          "sprite": "tree_withered_oak"
+          "density": 0.0099,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         },
         {
           "id": "withered_oak_ash",
@@ -43,8 +92,9 @@
           },
           "gather_secs": 4.0,
           "respawn_secs": 240,
-          "density": 0.00375,
-          "sprite": "tree_withered_oak"
+          "density": 0.004125,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         },
         {
           "id": "lightning_pine_ash",
@@ -58,8 +108,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 220,
-          "density": 0.00225,
-          "sprite": "tree_pine"
+          "density": 0.002475,
+          "sprite": "tree_pine",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -76,7 +127,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 160,
           "density": 0.00725,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -93,7 +145,8 @@
           "gather_secs": 3.0,
           "respawn_secs": 240,
           "density": 0.00455,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -109,8 +162,9 @@
           },
           "gather_secs": 4.0,
           "respawn_secs": 300,
-          "density": 0.0042,
-          "sprite": "ore_iron"
+          "density": 0.00378,
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         },
         {
           "id": "copper_outcrop",
@@ -124,26 +178,75 @@
           },
           "gather_secs": 5.0,
           "respawn_secs": 360,
-          "density": 0.0018,
-          "sprite": "ore_copper"
+          "density": 0.0012599999999999998,
+          "sprite": "ore_copper",
+          "min_biome_tier": 2
         }
       ],
-      "crystals": []
+      "crystals": [],
+      "fauna": []
     },
     "Rust Canyons": {
       "placement_noise": {
-        "forest": {"frequency": 0.008, "threshold": 0.45},
-        "rocky": {"frequency": 0.01, "threshold": 0.35},
-        "formations": {"frequency": 0.008, "threshold": 0.35},
-        "ore_rich": {"frequency": 0.012, "threshold": 0.45},
-        "crystalline": {"frequency": 0.02, "threshold": 0.55}
+        "forest": {
+          "frequency": 0.008,
+          "threshold": 0.6
+        },
+        "rocky": {
+          "frequency": 0.01,
+          "threshold": 0.4
+        },
+        "formations": {
+          "frequency": 0.009,
+          "threshold": 0.42
+        },
+        "ore_rich": {
+          "frequency": 0.011,
+          "threshold": 0.48
+        },
+        "crystalline": {
+          "frequency": 0.015,
+          "threshold": 0.58
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 3,
+          "patch_radius_min": 10,
+          "patch_radius_max": 20,
+          "core_fill": 0.26,
+          "edge_fill": 0.08,
+          "outlier_density": 0.0006,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 7,
+          "cluster_count": 10,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 6,
+          "cluster_count": 7,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 10,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 4,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -158,8 +261,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 240,
-          "density": 0.00375,
-          "sprite": "tree_withered_oak"
+          "density": 0.003375,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         },
         {
           "id": "lightning_pine_rust",
@@ -173,8 +277,9 @@
           },
           "gather_secs": 3.5,
           "respawn_secs": 280,
-          "density": 0.003,
-          "sprite": "tree_pine"
+          "density": 0.0027,
+          "sprite": "tree_pine",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -191,7 +296,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 160,
           "density": 0.00797,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -208,7 +314,8 @@
           "gather_secs": 3.5,
           "respawn_secs": 300,
           "density": 0.0052,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         },
         {
           "id": "collapsed_walkway",
@@ -223,7 +330,8 @@
           "gather_secs": 6.0,
           "respawn_secs": 420,
           "density": 0.0013,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -240,7 +348,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0048,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         },
         {
           "id": "copper_outcrop",
@@ -254,8 +363,9 @@
           },
           "gather_secs": 5.0,
           "respawn_secs": 360,
-          "density": 0.0024,
-          "sprite": "ore_copper"
+          "density": 0.0020399999999999997,
+          "sprite": "ore_copper",
+          "min_biome_tier": 2
         },
         {
           "id": "starmetal_outcrop",
@@ -269,8 +379,9 @@
           },
           "gather_secs": 6.0,
           "respawn_secs": 480,
-          "density": 0.00072,
-          "sprite": "ore_starmetal"
+          "density": 0.000252,
+          "sprite": "ore_starmetal",
+          "min_biome_tier": 4
         }
       ],
       "crystals": [
@@ -286,25 +397,74 @@
           },
           "gather_secs": 5.0,
           "respawn_secs": 360,
-          "density": 0.00115,
-          "sprite": "crystal_void"
+          "density": 0.000575,
+          "sprite": "crystal_void",
+          "min_biome_tier": 4
         }
-      ]
+      ],
+      "fauna": []
     },
     "Neon Bogs": {
       "placement_noise": {
-        "forest": {"frequency": 0.005, "threshold": 0.2},
-        "rocky": {"frequency": 0.015, "threshold": 0.5},
-        "formations": {"frequency": 0.012, "threshold": 0.45},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
-        "crystalline": {"frequency": 0.018, "threshold": 0.45}
+        "forest": {
+          "frequency": 0.0055,
+          "threshold": 0.42
+        },
+        "rocky": {
+          "frequency": 0.015,
+          "threshold": 0.55
+        },
+        "formations": {
+          "frequency": 0.012,
+          "threshold": 0.52
+        },
+        "ore_rich": {
+          "frequency": 0.014,
+          "threshold": 0.6
+        },
+        "crystalline": {
+          "frequency": 0.014,
+          "threshold": 0.52
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 5,
+          "patch_radius_min": 16,
+          "patch_radius_max": 34,
+          "core_fill": 0.4,
+          "edge_fill": 0.12,
+          "outlier_density": 0.0008,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 4,
+          "cluster_count": 5,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 4,
+          "cluster_count": 4,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 6,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 5,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -319,8 +479,9 @@
           },
           "gather_secs": 2.5,
           "respawn_secs": 180,
-          "density": 0.0105,
-          "sprite": "tree_glass_cactus"
+          "density": 0.013125000000000001,
+          "sprite": "tree_glass_cactus",
+          "min_biome_tier": 3
         },
         {
           "id": "glass_cactus_bog",
@@ -334,8 +495,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 220,
-          "density": 0.00375,
-          "sprite": "tree_glass_cactus"
+          "density": 0.0046875,
+          "sprite": "tree_glass_cactus",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -352,7 +514,8 @@
           "gather_secs": 2.2,
           "respawn_secs": 180,
           "density": 0.00507,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -369,7 +532,8 @@
           "gather_secs": 3.0,
           "respawn_secs": 280,
           "density": 0.00325,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -385,8 +549,9 @@
           },
           "gather_secs": 5.0,
           "respawn_secs": 360,
-          "density": 0.0018,
-          "sprite": "ore_copper"
+          "density": 0.00153,
+          "sprite": "ore_copper",
+          "min_biome_tier": 2
         },
         {
           "id": "iron_outcrop",
@@ -401,7 +566,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0012,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         }
       ],
       "crystals": [
@@ -418,43 +584,110 @@
           "gather_secs": 5.0,
           "respawn_secs": 360,
           "density": 0.0023,
-          "sprite": "crystal_teal"
-        },
-        {
-          "id": "void_shard_bog",
-          "name": "Void Shard",
-          "yield": {
-            "item_id": "void_shard",
-            "count": [
-              1,
-              1
-            ]
-          },
-          "gather_secs": 5.0,
-          "respawn_secs": 360,
-          "density": 0.00092,
-          "sprite": "crystal_void"
+          "sprite": "crystal_teal",
+          "min_biome_tier": 3
         }
-      ]
+      ],
+      "fauna": []
     },
     "Scorched Plains": {
       "placement_noise": {
-        "forest": {"frequency": 0.012, "threshold": 0.55},
-        "rocky": {"frequency": 0.01, "threshold": 0.4},
-        "formations": {"frequency": 0.012, "threshold": 0.5},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.55}
+        "forest": {
+          "frequency": 0.007,
+          "threshold": 0.58
+        },
+        "rocky": {
+          "frequency": 0.012,
+          "threshold": 0.52
+        },
+        "formations": {
+          "frequency": 0.012,
+          "threshold": 0.55
+        },
+        "ore_rich": {
+          "frequency": 0.01,
+          "threshold": 0.72
+        },
+        "crystalline": {
+          "frequency": 0.02,
+          "threshold": 0.8
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 3,
+          "patch_radius_min": 10,
+          "patch_radius_max": 22,
+          "core_fill": 0.28,
+          "edge_fill": 0.08,
+          "outlier_density": 0.0008,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 5,
+          "cluster_count": 6,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 4,
+          "cluster_count": 4,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 5,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 3,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
-          "id": "scorched_shrub",
-          "name": "Scorched Shrub",
+          "id": "scorched_pine",
+          "name": "Scorched Pine",
+          "yield": {
+            "item_id": "withered_branch",
+            "count": [
+              1,
+              3
+            ]
+          },
+          "gather_secs": 2.5,
+          "respawn_secs": 200,
+          "density": 0.0038249999999999994,
+          "sprite": "tree_pine",
+          "min_biome_tier": 1
+        },
+        {
+          "id": "dead_tree_plains",
+          "name": "Burnt Oak",
+          "yield": {
+            "item_id": "withered_branch",
+            "count": [
+              2,
+              4
+            ]
+          },
+          "gather_secs": 3.0,
+          "respawn_secs": 240,
+          "density": 0.0029749999999999998,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
+        },
+        {
+          "id": "ironwood_outlier",
+          "name": "Hardened Scrub Tree",
           "yield": {
             "item_id": "withered_branch",
             "count": [
@@ -462,25 +695,11 @@
               2
             ]
           },
-          "gather_secs": 2.0,
-          "respawn_secs": 180,
-          "density": 0.00675,
-          "sprite": "tree_pine"
-        },
-        {
-          "id": "dead_tree_plains",
-          "name": "Burnt Tree",
-          "yield": {
-            "item_id": "withered_branch",
-            "count": [
-              2,
-              3
-            ]
-          },
-          "gather_secs": 3.0,
-          "respawn_secs": 240,
-          "density": 0.0045,
-          "sprite": "tree_withered_oak"
+          "gather_secs": 3.5,
+          "respawn_secs": 280,
+          "density": 0.00153,
+          "sprite": "tree_ironwood",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -496,8 +715,9 @@
           },
           "gather_secs": 2.0,
           "respawn_secs": 160,
-          "density": 0.00797,
-          "sprite": "decor_rock_charged"
+          "density": 0.0035,
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -513,58 +733,92 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 300,
-          "density": 0.00325,
-          "sprite": "formation_rust_pipe"
-        }
-      ],
-      "ore": [
+          "density": 0.0009,
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
+        },
         {
-          "id": "iron_outcrop",
-          "name": "Iron Outcrop",
+          "id": "plains_ruin_cluster",
+          "name": "Burned Ruin",
           "yield": {
-            "item_id": "iron_ore",
+            "item_id": "rusted_scrap",
             "count": [
               1,
               3
             ]
           },
           "gather_secs": 4.0,
-          "respawn_secs": 300,
-          "density": 0.0036,
-          "sprite": "ore_iron"
-        },
-        {
-          "id": "copper_outcrop",
-          "name": "Copper Outcrop",
-          "yield": {
-            "item_id": "copper_ore",
-            "count": [
-              1,
-              2
-            ]
-          },
-          "gather_secs": 5.0,
-          "respawn_secs": 360,
-          "density": 0.00144,
-          "sprite": "ore_copper"
+          "respawn_secs": 400,
+          "density": 0.0005,
+          "sprite": "decor_wall_ruin",
+          "min_biome_tier": 1
         }
       ],
-      "crystals": []
+      "ore": [],
+      "crystals": [],
+      "fauna": []
     },
     "Ironwood Thicket": {
       "placement_noise": {
-        "forest": {"frequency": 0.004, "threshold": 0.15},
-        "rocky": {"frequency": 0.015, "threshold": 0.5},
-        "formations": {"frequency": 0.012, "threshold": 0.45},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
-        "crystalline": {"frequency": 0.02, "threshold": 0.55}
+        "forest": {
+          "frequency": 0.0045,
+          "threshold": 0.38
+        },
+        "rocky": {
+          "frequency": 0.014,
+          "threshold": 0.55
+        },
+        "formations": {
+          "frequency": 0.012,
+          "threshold": 0.55
+        },
+        "ore_rich": {
+          "frequency": 0.014,
+          "threshold": 0.58
+        },
+        "crystalline": {
+          "frequency": 0.016,
+          "threshold": 0.6
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 6,
+          "patch_radius_min": 22,
+          "patch_radius_max": 48,
+          "core_fill": 0.48,
+          "edge_fill": 0.16,
+          "outlier_density": 0.0005,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 5,
+          "cluster_count": 6,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 4,
+          "cluster_count": 4,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 7,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 4,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -579,8 +833,9 @@
           },
           "gather_secs": 4.0,
           "respawn_secs": 300,
-          "density": 0.00825,
-          "sprite": "tree_ironwood"
+          "density": 0.0127875,
+          "sprite": "tree_ironwood",
+          "min_biome_tier": 3
         },
         {
           "id": "ironwood_cluster",
@@ -594,8 +849,9 @@
           },
           "gather_secs": 5.5,
           "respawn_secs": 360,
-          "density": 0.003,
-          "sprite": "tree_ironwood"
+          "density": 0.0046500000000000005,
+          "sprite": "tree_ironwood",
+          "min_biome_tier": 3
         },
         {
           "id": "lightning_pine_thicket",
@@ -609,8 +865,9 @@
           },
           "gather_secs": 4.0,
           "respawn_secs": 300,
-          "density": 0.00375,
-          "sprite": "tree_pine"
+          "density": 0.0058125,
+          "sprite": "tree_pine",
+          "min_biome_tier": 3
         },
         {
           "id": "glass_cactus_thicket",
@@ -624,8 +881,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 240,
-          "density": 0.00225,
-          "sprite": "tree_glass_cactus"
+          "density": 0.0034874999999999997,
+          "sprite": "tree_glass_cactus",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -642,7 +900,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 180,
           "density": 0.0058,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -659,7 +918,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 360,
           "density": 0.0026,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 3
         }
       ],
       "ore": [
@@ -676,7 +936,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0036,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         }
       ],
       "crystals": [
@@ -693,24 +954,73 @@
           "gather_secs": 5.0,
           "respawn_secs": 360,
           "density": 0.00092,
-          "sprite": "crystal_teal"
+          "sprite": "crystal_teal",
+          "min_biome_tier": 3
         }
-      ]
+      ],
+      "fauna": []
     },
     "Glass Dunes": {
       "placement_noise": {
-        "forest": {"frequency": 0.012, "threshold": 0.55},
-        "rocky": {"frequency": 0.008, "threshold": 0.35},
-        "formations": {"frequency": 0.012, "threshold": 0.45},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.5},
-        "crystalline": {"frequency": 0.015, "threshold": 0.4}
+        "forest": {
+          "frequency": 0.009,
+          "threshold": 0.62
+        },
+        "rocky": {
+          "frequency": 0.011,
+          "threshold": 0.48
+        },
+        "formations": {
+          "frequency": 0.012,
+          "threshold": 0.5
+        },
+        "ore_rich": {
+          "frequency": 0.012,
+          "threshold": 0.55
+        },
+        "crystalline": {
+          "frequency": 0.012,
+          "threshold": 0.5
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 4,
+          "patch_radius_min": 8,
+          "patch_radius_max": 18,
+          "core_fill": 0.3,
+          "edge_fill": 0.08,
+          "outlier_density": 0.0005,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 6,
+          "cluster_count": 7,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 5,
+          "cluster_count": 5,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 8,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 5,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -725,8 +1035,9 @@
           },
           "gather_secs": 2.5,
           "respawn_secs": 240,
-          "density": 0.006,
-          "sprite": "tree_glass_cactus"
+          "density": 0.0054,
+          "sprite": "tree_glass_cactus",
+          "min_biome_tier": 1
         },
         {
           "id": "withered_oak_dunes",
@@ -740,8 +1051,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 240,
-          "density": 0.003,
-          "sprite": "tree_withered_oak"
+          "density": 0.0027,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -758,7 +1070,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 160,
           "density": 0.00652,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -775,7 +1088,8 @@
           "gather_secs": 3.0,
           "respawn_secs": 300,
           "density": 0.0039,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -792,7 +1106,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.003,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         },
         {
           "id": "starmetal_outcrop",
@@ -806,8 +1121,9 @@
           },
           "gather_secs": 6.0,
           "respawn_secs": 480,
-          "density": 0.00096,
-          "sprite": "ore_starmetal"
+          "density": 0.000336,
+          "sprite": "ore_starmetal",
+          "min_biome_tier": 4
         }
       ],
       "crystals": [
@@ -823,8 +1139,9 @@
           },
           "gather_secs": 5.5,
           "respawn_secs": 420,
-          "density": 0.00115,
-          "sprite": "crystal_void"
+          "density": 0.000575,
+          "sprite": "crystal_void",
+          "min_biome_tier": 4
         },
         {
           "id": "teal_geode_dunes",
@@ -839,24 +1156,73 @@
           "gather_secs": 5.0,
           "respawn_secs": 360,
           "density": 0.00138,
-          "sprite": "crystal_teal"
+          "sprite": "crystal_teal",
+          "min_biome_tier": 3
         }
-      ]
+      ],
+      "fauna": []
     },
     "Corpse Fields": {
       "placement_noise": {
-        "forest": {"frequency": 0.008, "threshold": 0.4},
-        "rocky": {"frequency": 0.012, "threshold": 0.45},
-        "formations": {"frequency": 0.008, "threshold": 0.35},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
-        "crystalline": {"frequency": 0.018, "threshold": 0.45}
+        "forest": {
+          "frequency": 0.007,
+          "threshold": 0.55
+        },
+        "rocky": {
+          "frequency": 0.012,
+          "threshold": 0.5
+        },
+        "formations": {
+          "frequency": 0.01,
+          "threshold": 0.48
+        },
+        "ore_rich": {
+          "frequency": 0.013,
+          "threshold": 0.58
+        },
+        "crystalline": {
+          "frequency": 0.014,
+          "threshold": 0.55
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 4,
+          "patch_radius_min": 12,
+          "patch_radius_max": 26,
+          "core_fill": 0.3,
+          "edge_fill": 0.09,
+          "outlier_density": 0.001,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 5,
+          "cluster_count": 6,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 5,
+          "cluster_count": 6,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 7,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 4,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -872,7 +1238,8 @@
           "gather_secs": 3.0,
           "respawn_secs": 240,
           "density": 0.00525,
-          "sprite": "tree_withered_oak"
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         },
         {
           "id": "withered_oak_corpse",
@@ -887,7 +1254,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 280,
           "density": 0.003,
-          "sprite": "tree_withered_oak"
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         },
         {
           "id": "lightning_pine_corpse",
@@ -902,7 +1270,8 @@
           "gather_secs": 2.5,
           "respawn_secs": 220,
           "density": 0.003,
-          "sprite": "tree_pine"
+          "sprite": "tree_pine",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -919,7 +1288,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 160,
           "density": 0.0058,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -936,7 +1306,8 @@
           "gather_secs": 3.0,
           "respawn_secs": 300,
           "density": 0.0039,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -953,7 +1324,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0024,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         }
       ],
       "crystals": [
@@ -969,25 +1341,74 @@
           },
           "gather_secs": 5.5,
           "respawn_secs": 420,
-          "density": 0.00172,
-          "sprite": "crystal_void"
+          "density": 0.00086,
+          "sprite": "crystal_void",
+          "min_biome_tier": 4
         }
-      ]
+      ],
+      "fauna": []
     },
     "Stormspire Highlands": {
       "placement_noise": {
-        "forest": {"frequency": 0.008, "threshold": 0.35},
-        "rocky": {"frequency": 0.008, "threshold": 0.35},
-        "formations": {"frequency": 0.012, "threshold": 0.4},
-        "ore_rich": {"frequency": 0.012, "threshold": 0.4},
-        "crystalline": {"frequency": 0.015, "threshold": 0.35}
+        "forest": {
+          "frequency": 0.006,
+          "threshold": 0.5
+        },
+        "rocky": {
+          "frequency": 0.01,
+          "threshold": 0.42
+        },
+        "formations": {
+          "frequency": 0.011,
+          "threshold": 0.5
+        },
+        "ore_rich": {
+          "frequency": 0.01,
+          "threshold": 0.45
+        },
+        "crystalline": {
+          "frequency": 0.012,
+          "threshold": 0.5
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 4,
+          "patch_radius_min": 14,
+          "patch_radius_max": 30,
+          "core_fill": 0.34,
+          "edge_fill": 0.1,
+          "outlier_density": 0.0006,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 7,
+          "cluster_count": 9,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 5,
+          "cluster_count": 5,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 11,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 5,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -1002,8 +1423,9 @@
           },
           "gather_secs": 3.5,
           "respawn_secs": 300,
-          "density": 0.00525,
-          "sprite": "tree_pine"
+          "density": 0.005512500000000001,
+          "sprite": "tree_pine",
+          "min_biome_tier": 3
         },
         {
           "id": "ironwood_spire_storm",
@@ -1017,8 +1439,9 @@
           },
           "gather_secs": 4.0,
           "respawn_secs": 320,
-          "density": 0.003,
-          "sprite": "tree_ironwood"
+          "density": 0.00315,
+          "sprite": "tree_ironwood",
+          "min_biome_tier": 3
         }
       ],
       "rocks": [
@@ -1035,7 +1458,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 160,
           "density": 0.00725,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -1052,7 +1476,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 360,
           "density": 0.00325,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -1069,7 +1494,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0042,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         },
         {
           "id": "starmetal_outcrop",
@@ -1083,8 +1509,9 @@
           },
           "gather_secs": 6.0,
           "respawn_secs": 480,
-          "density": 0.00144,
-          "sprite": "ore_starmetal"
+          "density": 0.0007920000000000001,
+          "sprite": "ore_starmetal",
+          "min_biome_tier": 4
         }
       ],
       "crystals": [
@@ -1100,25 +1527,74 @@
           },
           "gather_secs": 5.5,
           "respawn_secs": 420,
-          "density": 0.00172,
-          "sprite": "crystal_void"
+          "density": 0.001204,
+          "sprite": "crystal_void",
+          "min_biome_tier": 4
         }
-      ]
+      ],
+      "fauna": []
     },
     "Toxin Marshes": {
       "placement_noise": {
-        "forest": {"frequency": 0.006, "threshold": 0.25},
-        "rocky": {"frequency": 0.015, "threshold": 0.5},
-        "formations": {"frequency": 0.012, "threshold": 0.45},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.55},
-        "crystalline": {"frequency": 0.018, "threshold": 0.45}
+        "forest": {
+          "frequency": 0.006,
+          "threshold": 0.48
+        },
+        "rocky": {
+          "frequency": 0.014,
+          "threshold": 0.55
+        },
+        "formations": {
+          "frequency": 0.012,
+          "threshold": 0.52
+        },
+        "ore_rich": {
+          "frequency": 0.013,
+          "threshold": 0.58
+        },
+        "crystalline": {
+          "frequency": 0.013,
+          "threshold": 0.52
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 5,
+          "patch_radius_min": 14,
+          "patch_radius_max": 30,
+          "core_fill": 0.36,
+          "edge_fill": 0.11,
+          "outlier_density": 0.0008,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 5,
+          "cluster_count": 5,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 4,
+          "cluster_count": 4,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 7,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 4,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -1133,8 +1609,9 @@
           },
           "gather_secs": 2.5,
           "respawn_secs": 240,
-          "density": 0.00675,
-          "sprite": "tree_glass_cactus"
+          "density": 0.0077624999999999994,
+          "sprite": "tree_glass_cactus",
+          "min_biome_tier": 1
         },
         {
           "id": "withered_oak_toxic",
@@ -1148,8 +1625,9 @@
           },
           "gather_secs": 3.5,
           "respawn_secs": 280,
-          "density": 0.003,
-          "sprite": "tree_withered_oak"
+          "density": 0.00345,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -1166,7 +1644,8 @@
           "gather_secs": 2.2,
           "respawn_secs": 180,
           "density": 0.00507,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -1183,7 +1662,8 @@
           "gather_secs": 3.0,
           "respawn_secs": 280,
           "density": 0.00325,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -1199,8 +1679,9 @@
           },
           "gather_secs": 5.0,
           "respawn_secs": 360,
-          "density": 0.0018,
-          "sprite": "ore_copper"
+          "density": 0.00153,
+          "sprite": "ore_copper",
+          "min_biome_tier": 2
         },
         {
           "id": "iron_outcrop",
@@ -1215,7 +1696,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0012,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         }
       ],
       "crystals": [
@@ -1231,24 +1713,74 @@
           },
           "gather_secs": 5.5,
           "respawn_secs": 420,
-          "density": 0.00172,
-          "sprite": "crystal_void"
+          "density": 0.00086,
+          "sprite": "crystal_void",
+          "min_biome_tier": 4
         }
-      ]
+      ],
+      "fauna": []
     },
     "Dead City Outskirts": {
       "placement_noise": {
-        "forest": {"frequency": 0.012, "threshold": 0.55},
-        "rocky": {"frequency": 0.01, "threshold": 0.4},
-        "formations": {"frequency": 0.006, "threshold": 0.25},
-        "ore_rich": {"frequency": 0.015, "threshold": 0.5}
+        "forest": {
+          "frequency": 0.008,
+          "threshold": 0.58
+        },
+        "rocky": {
+          "frequency": 0.011,
+          "threshold": 0.48
+        },
+        "formations": {
+          "frequency": 0.008,
+          "threshold": 0.4
+        },
+        "ore_rich": {
+          "frequency": 0.012,
+          "threshold": 0.52
+        },
+        "crystalline": {
+          "frequency": 0.016,
+          "threshold": 0.65
+        }
       },
       "category_defaults": {
-        "trees": {"noise_channel": "forest", "cluster_radius": 3, "cluster_count": 3},
-        "rocks": {"noise_channel": "rocky", "cluster_radius": 2, "cluster_count": 3},
-        "formations": {"noise_channel": "formations", "cluster_radius": 3, "cluster_count": 2},
-        "ore": {"noise_channel": "ore_rich", "cluster_radius": 0, "cluster_count": 1},
-        "crystals": {"noise_channel": "crystalline", "cluster_radius": 0, "cluster_count": 1}
+        "trees": {
+          "placement_mode": "forest_patch",
+          "noise_channel": "forest",
+          "patch_count": 3,
+          "patch_radius_min": 10,
+          "patch_radius_max": 20,
+          "core_fill": 0.28,
+          "edge_fill": 0.08,
+          "outlier_density": 0.0007,
+          "min_spacing": 1
+        },
+        "rocks": {
+          "placement_mode": "field",
+          "noise_channel": "rocky",
+          "cluster_radius": 5,
+          "cluster_count": 6,
+          "min_spacing": 1
+        },
+        "formations": {
+          "placement_mode": "field",
+          "noise_channel": "formations",
+          "cluster_radius": 7,
+          "cluster_count": 8,
+          "min_spacing": 2
+        },
+        "ore": {
+          "placement_mode": "vein",
+          "noise_channel": "ore_rich",
+          "vein_length": 8,
+          "min_spacing": 2
+        },
+        "crystals": {
+          "placement_mode": "pocket",
+          "noise_channel": "crystalline",
+          "pocket_size": 3,
+          "min_spacing": 1
+        }
       },
       "trees": [
         {
@@ -1263,8 +1795,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 240,
-          "density": 0.00375,
-          "sprite": "tree_withered_oak"
+          "density": 0.0035624999999999997,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         },
         {
           "id": "lightning_pine_city",
@@ -1278,8 +1811,9 @@
           },
           "gather_secs": 2.5,
           "respawn_secs": 200,
-          "density": 0.003,
-          "sprite": "tree_pine"
+          "density": 0.00285,
+          "sprite": "tree_pine",
+          "min_biome_tier": 1
         },
         {
           "id": "dead_tree_city",
@@ -1293,8 +1827,9 @@
           },
           "gather_secs": 3.0,
           "respawn_secs": 240,
-          "density": 0.00225,
-          "sprite": "tree_withered_oak"
+          "density": 0.0021374999999999996,
+          "sprite": "tree_withered_oak",
+          "min_biome_tier": 1
         }
       ],
       "rocks": [
@@ -1311,7 +1846,8 @@
           "gather_secs": 2.0,
           "respawn_secs": 160,
           "density": 0.00652,
-          "sprite": "decor_rock_charged"
+          "sprite": "decor_rock_charged",
+          "min_biome_tier": 1
         }
       ],
       "formations": [
@@ -1328,7 +1864,8 @@
           "gather_secs": 3.5,
           "respawn_secs": 300,
           "density": 0.0065,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         },
         {
           "id": "collapsed_wall",
@@ -1343,7 +1880,8 @@
           "gather_secs": 5.5,
           "respawn_secs": 420,
           "density": 0.00195,
-          "sprite": "formation_rust_pipe"
+          "sprite": "formation_rust_pipe",
+          "min_biome_tier": 1
         }
       ],
       "ore": [
@@ -1360,7 +1898,8 @@
           "gather_secs": 4.0,
           "respawn_secs": 300,
           "density": 0.0042,
-          "sprite": "ore_iron"
+          "sprite": "ore_iron",
+          "min_biome_tier": 2
         },
         {
           "id": "copper_outcrop",
@@ -1374,11 +1913,13 @@
           },
           "gather_secs": 5.0,
           "respawn_secs": 360,
-          "density": 0.0012,
-          "sprite": "ore_copper"
+          "density": 0.0010199999999999999,
+          "sprite": "ore_copper",
+          "min_biome_tier": 2
         }
       ],
-      "crystals": []
+      "crystals": [],
+      "fauna": []
     }
   },
   "decor": {
@@ -1390,21 +1931,24 @@
           "name": "Ash Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00313
+          "density": 0.00313,
+          "placement_mode": "ruin"
         },
         {
           "id": "rusted_wall_section",
           "name": "Rusted Wall Section",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         },
         {
           "id": "ash_tower_base",
           "name": "Ruined Tower Base",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.00125
+          "density": 0.00125,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1420,21 +1964,24 @@
           "name": "Dead Shrub",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.0084
+          "density": 0.00924,
+          "placement_mode": "understory"
         },
         {
           "id": "scattered_bones_ash",
           "name": "Scattered Bones",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.0056
+          "density": 0.0064399999999999995,
+          "placement_mode": "meadow"
         },
         {
           "id": "ash_flowers",
           "name": "Ash Blooms",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0042
+          "density": 0.004829999999999999,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1445,21 +1992,24 @@
           "name": "Collapsed Structure",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00438
+          "density": 0.00438,
+          "placement_mode": "ruin"
         },
         {
           "id": "wrecked_machinery",
           "name": "Wrecked Machinery",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.0025
+          "density": 0.0025,
+          "placement_mode": "ruin"
         },
         {
           "id": "canyon_crater",
           "name": "Impact Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1475,21 +2025,24 @@
           "name": "Rust Scraps",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.007
+          "density": 0.00805,
+          "placement_mode": "meadow"
         },
         {
           "id": "canyon_shrub",
           "name": "Rust Shrub",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.0056
+          "density": 0.0061600000000000005,
+          "placement_mode": "understory"
         },
         {
           "id": "canyon_flowers",
           "name": "Rust Blooms",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0035
+          "density": 0.004025,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1500,21 +2053,24 @@
           "name": "Sunken Ruin",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00313
+          "density": 0.00313,
+          "placement_mode": "ruin"
         },
         {
           "id": "bog_pool",
           "name": "Bog Pool",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00375
+          "density": 0.00375,
+          "placement_mode": "ruin"
         },
         {
           "id": "bog_vent",
           "name": "Bog Vent",
           "sprite": "decor_vent_toxic",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1537,14 +2093,16 @@
           "name": "Marsh Grass",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0126
+          "density": 0.01449,
+          "placement_mode": "meadow"
         },
         {
           "id": "bog_bones",
           "name": "Bog Bones",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.0042
+          "density": 0.004829999999999999,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1555,21 +2113,24 @@
           "name": "Impact Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00313
+          "density": 0.0011,
+          "placement_mode": "ruin"
         },
         {
           "id": "burned_vehicle",
           "name": "Burned Vehicle Wreck",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.00187
+          "density": 0.0007,
+          "placement_mode": "ruin"
         },
         {
           "id": "plains_ruin",
           "name": "Burned Ruin",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00125
+          "density": 0.0005,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1578,28 +2139,30 @@
           "name": "Scorched Rocks",
           "sprite": "decor_rock_charged",
           "passable": false,
-          "density": 0.0112
+          "density": 0.004
         },
         {
           "id": "glass_shards",
           "name": "Glass Shards",
           "sprite": "decor_pillar_glass",
           "passable": false,
-          "density": 0.007
+          "density": 0.0025
         },
         {
           "id": "dried_weeds",
           "name": "Dried Weeds",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.0084
+          "density": 0.0033000000000000004,
+          "placement_mode": "understory"
         },
         {
           "id": "plains_flowers",
           "name": "Ash Flowers",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0042
+          "density": 0.001725,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1610,21 +2173,24 @@
           "name": "Iron Stump",
           "sprite": "decor_rock_charged",
           "passable": false,
-          "density": 0.00375
+          "density": 0.00375,
+          "placement_mode": "ruin"
         },
         {
           "id": "vine_tangle",
           "name": "Vine Tangle",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.00313
+          "density": 0.0034430000000000003,
+          "placement_mode": "understory"
         },
         {
           "id": "thicket_ruin",
           "name": "Overgrown Ruin",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00125
+          "density": 0.00125,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1640,14 +2206,16 @@
           "name": "Metal Flowers",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0126
+          "density": 0.01449,
+          "placement_mode": "meadow"
         },
         {
           "id": "ironwood_sapling",
           "name": "Ironwood Sapling",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.007
+          "density": 0.007700000000000001,
+          "placement_mode": "understory"
         },
         {
           "id": "thicket_mushroom",
@@ -1665,21 +2233,24 @@
           "name": "Glass Pillar",
           "sprite": "decor_pillar_glass",
           "passable": false,
-          "density": 0.00375
+          "density": 0.00375,
+          "placement_mode": "ruin"
         },
         {
           "id": "sandstone_arch",
           "name": "Sandstone Arch",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         },
         {
           "id": "dune_crater",
           "name": "Sand Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1695,7 +2266,8 @@
           "name": "Dune Pebbles",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.0098
+          "density": 0.011269999999999999,
+          "placement_mode": "meadow"
         },
         {
           "id": "glass_fragments",
@@ -1709,7 +2281,8 @@
           "name": "Dune Shrub",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.0056
+          "density": 0.0061600000000000005,
+          "placement_mode": "understory"
         }
       ]
     },
@@ -1720,21 +2293,24 @@
           "name": "Bone Heap",
           "sprite": "decor_bone_heap",
           "passable": false,
-          "density": 0.005
+          "density": 0.005,
+          "placement_mode": "ruin"
         },
         {
           "id": "war_wreckage",
           "name": "War Wreckage",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.0025
+          "density": 0.0025,
+          "placement_mode": "ruin"
         },
         {
           "id": "field_crater",
           "name": "Battle Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.0025
+          "density": 0.0025,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1750,14 +2326,16 @@
           "name": "Scattered Bones",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.014
+          "density": 0.0161,
+          "placement_mode": "meadow"
         },
         {
           "id": "crater_rubble",
           "name": "Crater Rubble",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.007
+          "density": 0.00805,
+          "placement_mode": "meadow"
         },
         {
           "id": "field_skulls",
@@ -1771,7 +2349,8 @@
           "name": "Wilted Flowers",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0042
+          "density": 0.004829999999999999,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1782,21 +2361,24 @@
           "name": "Lightning Tower Base",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.00313
+          "density": 0.00313,
+          "placement_mode": "ruin"
         },
         {
           "id": "storm_crater",
           "name": "Storm Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.0025
+          "density": 0.0025,
+          "placement_mode": "ruin"
         },
         {
           "id": "storm_ruin",
           "name": "Storm Ruin",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1826,7 +2408,8 @@
           "name": "Static Blooms",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0042
+          "density": 0.004829999999999999,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1837,21 +2420,24 @@
           "name": "Toxic Vent",
           "sprite": "decor_vent_toxic",
           "passable": false,
-          "density": 0.00438
+          "density": 0.00438,
+          "placement_mode": "ruin"
         },
         {
           "id": "chemical_pool",
           "name": "Chemical Pool",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00313
+          "density": 0.00313,
+          "placement_mode": "ruin"
         },
         {
           "id": "marsh_ruin",
           "name": "Sunken Ruin",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1874,14 +2460,16 @@
           "name": "Sludge Moss",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0112
+          "density": 0.012879999999999999,
+          "placement_mode": "meadow"
         },
         {
           "id": "marsh_bones",
           "name": "Marsh Bones",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.0056
+          "density": 0.0064399999999999995,
+          "placement_mode": "meadow"
         }
       ]
     },
@@ -1892,21 +2480,24 @@
           "name": "Collapsed Wall",
           "sprite": "decor_wall_ruin",
           "passable": false,
-          "density": 0.005
+          "density": 0.005,
+          "placement_mode": "ruin"
         },
         {
           "id": "rubble_pile_large",
           "name": "Rubble Pile",
           "sprite": "decor_tower_base",
           "passable": false,
-          "density": 0.00313
+          "density": 0.00313,
+          "placement_mode": "ruin"
         },
         {
           "id": "city_crater",
           "name": "Bomb Crater",
           "sprite": "decor_crater",
           "passable": false,
-          "density": 0.00187
+          "density": 0.00187,
+          "placement_mode": "ruin"
         }
       ],
       "small": [
@@ -1922,21 +2513,24 @@
           "name": "Broken Concrete",
           "sprite": "decor_bones_scat",
           "passable": true,
-          "density": 0.0098
+          "density": 0.011269999999999999,
+          "placement_mode": "meadow"
         },
         {
           "id": "overgrown_vines",
           "name": "Overgrown Vines",
           "sprite": "decor_shrub_dead",
           "passable": false,
-          "density": 0.0084
+          "density": 0.00924,
+          "placement_mode": "understory"
         },
         {
           "id": "city_flowers",
           "name": "Weedy Flowers",
           "sprite": "decor_flowers",
           "passable": true,
-          "density": 0.0056
+          "density": 0.0064399999999999995,
+          "placement_mode": "meadow"
         },
         {
           "id": "city_skulls",

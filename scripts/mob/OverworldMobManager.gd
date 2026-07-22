@@ -8,7 +8,7 @@ const MobDataRef = preload("res://scripts/mob/MobData.gd")
 signal mob_reached_player(mob_data: MobDataRef)
 
 
-const CELL_SIZE := 32
+const CELL_SIZE := 64
 ## Mobs farther than this (Chebyshev cells) from the player skip AI ticking.
 const TICK_RANGE := 48
 

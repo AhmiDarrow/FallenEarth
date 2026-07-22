@@ -10,7 +10,7 @@ class_name LocalMapGenerator
 extends RefCounted
 
 const MAP_SIZE := 512
-const TERRAIN_VERSION := 1
+const TERRAIN_VERSION := 2
 const TERRAIN_GROUND := 0
 const TERRAIN_DEBRIS := 1
 const TERRAIN_VEGETATION := 2
@@ -181,7 +181,10 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		if int(terrain[i]) == TERRAIN_WATER:
 			height_band[i] = 0
 
-	# ── Step 8: Center clearing ───────────────────────────────────────────
+	# ── Step 8: Vegetation / forest canopy (Wang veg tiles + tree masks) ───
+	_paint_vegetation(terrain, height_band, local_seed, profile, rain)
+
+	# ── Step 9: Center clearing ───────────────────────────────────────────
 	var cx := int(MAP_SIZE / 2.0)
 	var cy := int(MAP_SIZE / 2.0)
 	for dy in range(-24, 25):
@@ -192,7 +195,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 				continue
 			terrain[py * MAP_SIZE + px] = TERRAIN_GROUND
 
-	# ── Step 9: Town layout ───────────────────────────────────────────────
+	# ── Step 10: Town layout ──────────────────────────────────────────────
 	var town_data: Dictionary = _get_town_for_hex(q, r)
 	var settlement_data: Dictionary = {"structures": [], "npcs": [], "town_data": town_data, "boundary": null}
 	if not town_data.is_empty():
@@ -200,17 +203,18 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 		settlement_data["structures"] = structures
 		settlement_data["boundary"] = _compute_town_boundary(structures, Vector2i(cx, cy))
 
-	# ── Step 10: Cooking table ────────────────────────────────────────────
+	# ── Step 11: Cooking table ────────────────────────────────────────────
 	var cooking_tables: Array = _emit_start_cooking_table(Vector2i(cx, cy))
 	for ct in cooking_tables:
 		var ct_cell := Vector2i(int(ct.get("x", 0)), int(ct.get("y", 0)))
 		if ct_cell.x >= 0 and ct_cell.y >= 0 and ct_cell.x < MAP_SIZE and ct_cell.y < MAP_SIZE:
 			occupied[ct_cell.y * MAP_SIZE + ct_cell.x] = 1
 
-	# ── Step 11: Entities ─────────────────────────────────────────────────
-	var resource_nodes: Array = _emit_resource_nodes(rng, biome_name, terrain, occupied, Vector2i(cx, cy), height_band)
+	# ── Step 12: Entities (patch/vein/field placement) ─────────────────────
+	var biome_tier: int = _load_biome_tier(biome_name)
+	var resource_nodes: Array = _emit_resource_nodes(rng, biome_name, biome_tier, terrain, occupied, Vector2i(cx, cy), height_band)
 	var floor_pickups: Array = _emit_floor_pickups(rng, biome_name, terrain, occupied, Vector2i(cx, cy))
-	var decor: Array = _emit_decor(rng, biome_name, terrain, occupied, Vector2i(cx, cy), height_band)
+	var decor: Array = _emit_decor(rng, biome_name, biome_tier, terrain, occupied, Vector2i(cx, cy), height_band)
 	var entity_blocked := _build_entity_blocked(resource_nodes, decor)
 
 	return {
@@ -429,9 +433,42 @@ static func _smooth_water_shores(terrain: PackedByteArray) -> void:
 
 
 # ── Resource / entity placement ──────────────────────────────────────────
+# Modes: forest_patch | vein | field | pocket | scatter
+# Tier gate: entry.min_biome_tier vs biomes.json difficulty_tier
 
-# These functions are unchanged from the original — they place trees, rocks,
-# pickups, decor etc. independently of the tile system.
+static func _paint_vegetation(terrain: PackedByteArray, height_band: PackedByteArray, local_seed: String, profile: Dictionary, rain: float) -> void:
+	var forest_noise := FastNoiseLite.new()
+	forest_noise.seed = hash_seed(local_seed + "forest_canopy")
+	forest_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	forest_noise.frequency = float(profile.get("forest_noise_freq", 0.006))
+	forest_noise.fractal_octaves = 3
+	forest_noise.fractal_lacunarity = 2.0
+	forest_noise.fractal_gain = 0.5
+
+	var edge_noise := FastNoiseLite.new()
+	edge_noise.seed = hash_seed(local_seed + "forest_edge")
+	edge_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	edge_noise.frequency = float(profile.get("forest_noise_freq", 0.006)) * 2.4
+	edge_noise.fractal_octaves = 2
+
+	var veg_base: float = float(profile.get("vegetation_base", 0.22))
+	var rain_factor: float = float(profile.get("vegetation_rain_factor", 0.12))
+	var forest_threshold: float = float(profile.get("forest_threshold", 0.58))
+	var thresh: float = clampf(forest_threshold - rain * rain_factor * 0.35 - veg_base * 0.15, 0.22, 0.78)
+
+	for y in MAP_SIZE:
+		for x in MAP_SIZE:
+			var idx := y * MAP_SIZE + x
+			if int(terrain[idx]) != TERRAIN_GROUND:
+				continue
+			var hb := int(height_band[idx])
+			if hb < 1 or hb > 2:
+				continue
+			var n: float = forest_noise.get_noise_2d(float(x), float(y)) * 0.5 + 0.5
+			var e: float = edge_noise.get_noise_2d(float(x), float(y)) * 0.5 + 0.5
+			if n * 0.72 + e * 0.28 >= thresh:
+				terrain[idx] = TERRAIN_VEGETATION
+
 
 static func _terrain_ok_for_category(category: String, terrain_type: int) -> bool:
 	if terrain_type == TERRAIN_WATER:
@@ -490,7 +527,40 @@ static func _decor_band_ok(entry: Dictionary, cell: Vector2i, height_band: Packe
 	return band <= 2
 
 
-static func _emit_resource_nodes(rng: RandomNumberGenerator, biome_name: String, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray = PackedByteArray()) -> Array:
+static func _append_node(out: Array, entry: Dictionary, category: String, pos: Vector2i, occupied: PackedByteArray) -> void:
+	occupied[pos.y * MAP_SIZE + pos.x] = 1
+	var placed: Dictionary = entry.duplicate(true)
+	placed["x"] = pos.x
+	placed["y"] = pos.y
+	placed["category"] = category
+	if not placed.has("passable"):
+		placed["passable"] = false
+	out.append(placed)
+
+
+static func _spacing_clear(occupied: PackedByteArray, pos: Vector2i, spacing: int) -> bool:
+	if spacing <= 0:
+		return true
+	for dy in range(-spacing, spacing + 1):
+		for dx in range(-spacing, spacing + 1):
+			if dx == 0 and dy == 0:
+				continue
+			var px := pos.x + dx
+			var py := pos.y + dy
+			if px < 0 or py < 0 or px >= MAP_SIZE or py >= MAP_SIZE:
+				continue
+			if int(occupied[py * MAP_SIZE + px]) != 0:
+				return false
+	return true
+
+
+static func _noise_pass(noise_gen: FastNoiseLite, threshold: float, x: int, y: int) -> bool:
+	if noise_gen == null:
+		return true
+	return noise_gen.get_noise_2d(float(x), float(y)) * 0.5 + 0.5 >= threshold
+
+
+static func _emit_resource_nodes(rng: RandomNumberGenerator, biome_name: String, biome_tier: int, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray = PackedByteArray()) -> Array:
 	var biome_data: Dictionary = _load_biome_resource_nodes(biome_name)
 	if biome_data.is_empty():
 		return []
@@ -507,13 +577,14 @@ static func _emit_resource_nodes(rng: RandomNumberGenerator, biome_name: String,
 		for entry in entries:
 			if entry == null or not (entry is Dictionary):
 				continue
+			var min_tier: int = int(entry.get("min_biome_tier", cat_def.get("min_biome_tier", 0)))
+			if biome_tier < min_tier:
+				continue
 			var density: float = float(entry.get("density", 0.0))
 			if density <= 0.0:
 				continue
-			var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+			var mode: String = str(entry.get("placement_mode", cat_def.get("placement_mode", "scatter")))
 			var noise_channel: String = str(entry.get("noise_channel", cat_def.get("noise_channel", "")))
-			var cluster_radius: int = int(entry.get("cluster_radius", cat_def.get("cluster_radius", 0)))
-			var cluster_count: int = maxi(1, int(entry.get("cluster_count", cat_def.get("cluster_count", 0))))
 			var min_spacing: int = int(entry.get("min_spacing", cat_def.get("min_spacing", 0)))
 
 			var noise_gen: FastNoiseLite = null
@@ -525,90 +596,265 @@ static func _emit_resource_nodes(rng: RandomNumberGenerator, biome_name: String,
 					n.seed = hash_seed("%s#%s" % [biome_name, noise_channel])
 					n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 					n.frequency = float(nc.get("frequency", 0.01))
-					n.fractal_octaves = 2
+					n.fractal_octaves = 3
 					noise_cache[noise_channel] = n
 				noise_gen = noise_cache[noise_channel] as FastNoiseLite
 				noise_threshold = float(placement_noise[noise_channel].get("threshold", 0.5))
 
-			var placed_positions: Array = []
-			if cluster_count > 1 and cluster_radius > 0:
-				var placed_total := 0
-				var max_attempts := ceili(count / cluster_count) * 30 + 60
-				var attempts := 0
-				while placed_total < count and attempts < max_attempts:
-					attempts += 1
-					var center: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
-					if center.x < 0:
-						break
-					if noise_gen != null:
-						var nval := noise_gen.get_noise_2d(center.x, center.y) * 0.5 + 0.5
-						if nval < noise_threshold:
-							continue
-					if height_band.size() > 0 and not _band_ok_for_category(category, center, height_band):
-						continue
-					occupied[center.y * MAP_SIZE + center.x] = 1
-					var in_this_cluster := mini(cluster_count, count - placed_total)
-					for j in in_this_cluster:
-						var pos: Vector2i
-						if j == 0:
-							pos = center
-						else:
-							var ox := rng.randi_range(-cluster_radius, cluster_radius)
-							var oy := rng.randi_range(-cluster_radius, cluster_radius)
-							pos = Vector2i(center.x + ox, center.y + oy)
-							if pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE:
-								continue
-							var idx2 := pos.y * MAP_SIZE + pos.x
-							if not _terrain_ok_for_category(category, int(terrain[idx2])):
-								continue
-							if int(occupied[idx2]) != 0:
-								continue
-							if min_spacing > 0:
-								var too_close := false
-								for pp in placed_positions:
-									if abs(pp.x - pos.x) <= min_spacing and abs(pp.y - pos.y) <= min_spacing:
-										too_close = true
-										break
-								if too_close:
-									continue
-							if height_band.size() > 0 and not _band_ok_for_category(category, pos, height_band):
-								continue
-							occupied[idx2] = 1
-						placed_positions.append(pos)
-						var placed: Dictionary = (entry as Dictionary).duplicate(true)
-						placed["x"] = pos.x; placed["y"] = pos.y; placed["category"] = category
-						if not placed.has("passable"): placed["passable"] = false
-						out.append(placed)
-						placed_total += 1
-			else:
-				var placed_total := 0
-				var max_attempts := count * 8
-				var attempts := 0
-				while placed_total < count and attempts < max_attempts:
-					attempts += 1
-					var pos: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
-					if pos.x < 0:
-						break
-					if noise_gen != null:
-						if noise_gen.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5 < noise_threshold:
-							continue
-					if height_band.size() > 0 and not _band_ok_for_category(category, pos, height_band):
-						continue
-					if min_spacing > 0:
-						var too_close := false
-						for pp in placed_positions:
-							if abs(pp.x - pos.x) <= min_spacing and abs(pp.y - pos.y) <= min_spacing:
-								too_close = true; break
-						if too_close:
-							continue
-					occupied[pos.y * MAP_SIZE + pos.x] = 1
-					placed_positions.append(pos)
-					var placed: Dictionary = (entry as Dictionary).duplicate(true)
-					placed["x"] = pos.x; placed["y"] = pos.y; placed["category"] = category
-					if not placed.has("passable"): placed["passable"] = false
-					out.append(placed)
-					placed_total += 1
+			match mode:
+				"forest_patch":
+					_place_forest_patch(out, entry as Dictionary, category, density, rng, terrain, occupied, spawn, height_band, noise_gen, noise_threshold, min_spacing, cat_def)
+				"vein":
+					_place_vein(out, entry as Dictionary, category, density, rng, terrain, occupied, spawn, height_band, noise_gen, noise_threshold, min_spacing, cat_def)
+				"field":
+					_place_field(out, entry as Dictionary, category, density, rng, terrain, occupied, spawn, height_band, noise_gen, noise_threshold, min_spacing, cat_def)
+				"pocket":
+					_place_pocket(out, entry as Dictionary, category, density, rng, terrain, occupied, spawn, height_band, noise_gen, noise_threshold, min_spacing, cat_def)
+				_:
+					_place_scatter(out, entry as Dictionary, category, density, rng, terrain, occupied, spawn, height_band, noise_gen, noise_threshold, min_spacing, cat_def)
 	return out
+
+
+static func _place_forest_patch(out: Array, entry: Dictionary, category: String, density: float, rng: RandomNumberGenerator, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray, noise_gen: FastNoiseLite, noise_threshold: float, min_spacing: int, cat_def: Dictionary) -> void:
+	var target: int = int(round(MAP_SIZE * MAP_SIZE * density))
+	if target <= 0:
+		return
+	var patch_count: int = int(entry.get("patch_count", cat_def.get("patch_count", 0)))
+	if patch_count <= 0:
+		patch_count = clampi(int(round(float(target) / 140.0)), 2, 14)
+	var radius_min: int = int(entry.get("patch_radius_min", cat_def.get("patch_radius_min", 14)))
+	var radius_max: int = int(entry.get("patch_radius_max", cat_def.get("patch_radius_max", 36)))
+	var core_fill: float = float(entry.get("core_fill", cat_def.get("core_fill", 0.38)))
+	var edge_fill: float = float(entry.get("edge_fill", cat_def.get("edge_fill", 0.12)))
+	var outlier_density: float = float(entry.get("outlier_density", cat_def.get("outlier_density", density * 0.04)))
+	var spacing: int = maxi(min_spacing, int(entry.get("min_spacing", cat_def.get("min_spacing", 1))))
+
+	var placed := 0
+	var seed_attempts := 0
+	var patches_done := 0
+	while patches_done < patch_count and placed < target and seed_attempts < patch_count * 100:
+		seed_attempts += 1
+		var center: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
+		if center.x < 0:
+			break
+		if not _noise_pass(noise_gen, noise_threshold, center.x, center.y):
+			continue
+		# Prefer canopy seeds.
+		var ct := int(terrain[center.y * MAP_SIZE + center.x])
+		if ct != TERRAIN_VEGETATION and rng.randf() > 0.35:
+			continue
+		var radius: int = rng.randi_range(radius_min, radius_max)
+		var r2: float = float(radius * radius)
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if placed >= target:
+					break
+				var dist2: float = float(dx * dx + dy * dy)
+				if dist2 > r2:
+					continue
+				var pos := Vector2i(center.x + dx, center.y + dy)
+				if pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE:
+					continue
+				if maxi(abs(pos.x - spawn.x), abs(pos.y - spawn.y)) < 8:
+					continue
+				var idx := pos.y * MAP_SIZE + pos.x
+				if int(occupied[idx]) != 0:
+					continue
+				var tt := int(terrain[idx])
+				if not _terrain_ok_for_category(category, tt):
+					continue
+				if height_band.size() > 0 and not _band_ok_for_category(category, pos, height_band):
+					continue
+				if tt == TERRAIN_DEBRIS:
+					continue
+				var tnorm: float = sqrt(dist2) / float(maxi(radius, 1))
+				var fill_p: float = lerpf(core_fill, edge_fill, clampf(tnorm, 0.0, 1.0))
+				if tt == TERRAIN_VEGETATION:
+					fill_p = minf(fill_p * 1.35, 0.92)
+				else:
+					fill_p *= 0.5
+				if rng.randf() > fill_p:
+					continue
+				if not _spacing_clear(occupied, pos, spacing):
+					continue
+				_append_node(out, entry, category, pos, occupied)
+				placed += 1
+		patches_done += 1
+
+	var outliers: int = int(round(MAP_SIZE * MAP_SIZE * outlier_density))
+	var o_attempts := 0
+	while outliers > 0 and placed < target and o_attempts < outliers * 16:
+		o_attempts += 1
+		var pos2: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
+		if pos2.x < 0:
+			break
+		if not _spacing_clear(occupied, pos2, spacing):
+			continue
+		_append_node(out, entry, category, pos2, occupied)
+		placed += 1
+		outliers -= 1
+
+
+static func _place_vein(out: Array, entry: Dictionary, category: String, density: float, rng: RandomNumberGenerator, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray, noise_gen: FastNoiseLite, noise_threshold: float, min_spacing: int, cat_def: Dictionary) -> void:
+	var target: int = int(round(MAP_SIZE * MAP_SIZE * density))
+	if target <= 0:
+		return
+	var per_vein: int = clampi(int(entry.get("vein_length", cat_def.get("vein_length", 8))), 3, 20)
+	var vein_count: int = int(entry.get("vein_count", cat_def.get("vein_count", 0)))
+	if vein_count <= 0:
+		vein_count = clampi(int(ceili(float(target) / float(per_vein))), 1, 48)
+	var spacing: int = maxi(min_spacing, int(entry.get("min_spacing", cat_def.get("min_spacing", 2))))
+
+	var placed := 0
+	var attempts := 0
+	while placed < target and attempts < vein_count * 50:
+		attempts += 1
+		var center: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
+		if center.x < 0:
+			break
+		if not _noise_pass(noise_gen, noise_threshold, center.x, center.y):
+			continue
+		var angle: float = rng.randf() * TAU
+		var dx: float = cos(angle)
+		var dy: float = sin(angle)
+		var pxf: float = float(center.x)
+		var pyf: float = float(center.y)
+		var vein_len: int = rng.randi_range(maxi(3, per_vein - 3), per_vein + 4)
+		for _step in vein_len:
+			if placed >= target:
+				break
+			var pos := Vector2i(int(round(pxf)) + rng.randi_range(-1, 1), int(round(pyf)) + rng.randi_range(-1, 1))
+			if pos.x >= 0 and pos.y >= 0 and pos.x < MAP_SIZE and pos.y < MAP_SIZE:
+				if maxi(abs(pos.x - spawn.x), abs(pos.y - spawn.y)) >= 8:
+					var idx := pos.y * MAP_SIZE + pos.x
+					if int(occupied[idx]) == 0 and _terrain_ok_for_category(category, int(terrain[idx])):
+						if height_band.size() <= 0 or _band_ok_for_category(category, pos, height_band):
+							if _spacing_clear(occupied, pos, spacing):
+								_append_node(out, entry, category, pos, occupied)
+								placed += 1
+			pxf += dx + rng.randf_range(-0.25, 0.25)
+			pyf += dy + rng.randf_range(-0.25, 0.25)
+
+
+static func _place_field(out: Array, entry: Dictionary, category: String, density: float, rng: RandomNumberGenerator, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray, noise_gen: FastNoiseLite, noise_threshold: float, min_spacing: int, cat_def: Dictionary) -> void:
+	var target: int = int(round(MAP_SIZE * MAP_SIZE * density))
+	if target <= 0:
+		return
+	var cluster_radius: int = int(entry.get("cluster_radius", cat_def.get("cluster_radius", 6)))
+	var cluster_count: int = maxi(1, int(entry.get("cluster_count", cat_def.get("cluster_count", 8))))
+	var field_count: int = clampi(int(ceili(float(target) / float(cluster_count))), 2, 60)
+	var spacing: int = maxi(min_spacing, int(entry.get("min_spacing", cat_def.get("min_spacing", 1))))
+
+	var placed := 0
+	var attempts := 0
+	while placed < target and attempts < field_count * 50:
+		attempts += 1
+		var center: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
+		if center.x < 0:
+			break
+		if not _noise_pass(noise_gen, noise_threshold, center.x, center.y):
+			continue
+		for _c in cluster_count:
+			if placed >= target:
+				break
+			var pos := Vector2i(center.x + rng.randi_range(-cluster_radius, cluster_radius), center.y + rng.randi_range(-cluster_radius, cluster_radius))
+			if pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE:
+				continue
+			if maxi(abs(pos.x - spawn.x), abs(pos.y - spawn.y)) < 8:
+				continue
+			var idx := pos.y * MAP_SIZE + pos.x
+			if int(occupied[idx]) != 0:
+				continue
+			if not _terrain_ok_for_category(category, int(terrain[idx])):
+				continue
+			if height_band.size() > 0 and not _band_ok_for_category(category, pos, height_band):
+				continue
+			if not _spacing_clear(occupied, pos, spacing):
+				continue
+			_append_node(out, entry, category, pos, occupied)
+			placed += 1
+
+
+static func _place_pocket(out: Array, entry: Dictionary, category: String, density: float, rng: RandomNumberGenerator, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray, noise_gen: FastNoiseLite, noise_threshold: float, min_spacing: int, cat_def: Dictionary) -> void:
+	var target: int = int(round(MAP_SIZE * MAP_SIZE * density))
+	if target <= 0:
+		return
+	var pocket_size: int = clampi(int(entry.get("pocket_size", cat_def.get("pocket_size", 4))), 2, 10)
+	var pocket_count: int = clampi(int(ceili(float(target) / float(pocket_size))), 1, 24)
+	var spacing: int = maxi(min_spacing, int(entry.get("min_spacing", cat_def.get("min_spacing", 1))))
+
+	var placed := 0
+	var attempts := 0
+	while placed < target and attempts < pocket_count * 60:
+		attempts += 1
+		var center: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
+		if center.x < 0:
+			break
+		if not _noise_pass(noise_gen, noise_threshold, center.x, center.y):
+			continue
+		var rad: int = rng.randi_range(2, 4)
+		for _c in pocket_size:
+			if placed >= target:
+				break
+			var pos := Vector2i(center.x + rng.randi_range(-rad, rad), center.y + rng.randi_range(-rad, rad))
+			if pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE:
+				continue
+			if maxi(abs(pos.x - spawn.x), abs(pos.y - spawn.y)) < 8:
+				continue
+			var idx := pos.y * MAP_SIZE + pos.x
+			if int(occupied[idx]) != 0:
+				continue
+			if not _terrain_ok_for_category(category, int(terrain[idx])):
+				continue
+			if height_band.size() > 0 and not _band_ok_for_category(category, pos, height_band):
+				continue
+			if not _spacing_clear(occupied, pos, spacing):
+				continue
+			_append_node(out, entry, category, pos, occupied)
+			placed += 1
+
+
+static func _place_scatter(out: Array, entry: Dictionary, category: String, density: float, rng: RandomNumberGenerator, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray, noise_gen: FastNoiseLite, noise_threshold: float, min_spacing: int, cat_def: Dictionary) -> void:
+	var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+	if count <= 0:
+		return
+	var cluster_radius: int = int(entry.get("cluster_radius", cat_def.get("cluster_radius", 0)))
+	var cluster_count: int = maxi(1, int(entry.get("cluster_count", cat_def.get("cluster_count", 1))))
+	var spacing: int = min_spacing
+	var placed_total := 0
+	var attempts := 0
+	var max_attempts: int = count * 12
+	while placed_total < count and attempts < max_attempts:
+		attempts += 1
+		var center: Vector2i = _peek_category_cell(rng, terrain, occupied, spawn, category, height_band)
+		if center.x < 0:
+			break
+		if not _noise_pass(noise_gen, noise_threshold, center.x, center.y):
+			continue
+		if not _spacing_clear(occupied, center, spacing):
+			continue
+		_append_node(out, entry, category, center, occupied)
+		placed_total += 1
+		if cluster_radius > 0 and cluster_count > 1:
+			for _c in range(cluster_count - 1):
+				if placed_total >= count:
+					break
+				var pos := Vector2i(center.x + rng.randi_range(-cluster_radius, cluster_radius), center.y + rng.randi_range(-cluster_radius, cluster_radius))
+				if pos.x < 0 or pos.y < 0 or pos.x >= MAP_SIZE or pos.y >= MAP_SIZE:
+					continue
+				if maxi(abs(pos.x - spawn.x), abs(pos.y - spawn.y)) < 8:
+					continue
+				var idx := pos.y * MAP_SIZE + pos.x
+				if int(occupied[idx]) != 0:
+					continue
+				if not _terrain_ok_for_category(category, int(terrain[idx])):
+					continue
+				if height_band.size() > 0 and not _band_ok_for_category(category, pos, height_band):
+					continue
+				if not _spacing_clear(occupied, pos, spacing):
+					continue
+				_append_node(out, entry, category, pos, occupied)
+				placed_total += 1
 
 
 static func _build_entity_blocked(resource_nodes: Array, decor: Array) -> PackedByteArray:
@@ -648,61 +894,96 @@ static func _emit_floor_pickups(rng: RandomNumberGenerator, biome_name: String, 
 	return out
 
 
-static func _emit_decor(rng: RandomNumberGenerator, biome_name: String, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray = PackedByteArray()) -> Array:
+static func _emit_decor(rng: RandomNumberGenerator, biome_name: String, biome_tier: int, terrain: PackedByteArray, occupied: PackedByteArray, spawn: Vector2i, height_band: PackedByteArray = PackedByteArray()) -> Array:
 	var decor_data: Dictionary = _load_biome_decor(biome_name)
-	if decor_data.is_empty(): return []
+	if decor_data.is_empty():
+		return []
 	var profile: Dictionary = _load_biome_decor_profile(biome_name)
 	var out: Array = []
 
-	var large_noise := FastNoiseLite.new()
-	large_noise.seed = hash_seed("%s#decor_cluster" % biome_name)
-	large_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	large_noise.frequency = profile.get("cluster_noise_freq", 0.02)
-	large_noise.fractal_octaves = 2
-	var large_threshold: float = profile.get("cluster_threshold", 0.6)
+	var large_mult: float = float(profile.get("large_density_mult", 1.0))
+	var small_mult: float = float(profile.get("small_density_mult", 1.0))
 
-	var small_noise := FastNoiseLite.new()
-	small_noise.seed = hash_seed("%s#decor_small" % biome_name)
-	small_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-	small_noise.frequency = profile.get("small_cluster_noise_freq", 0.025)
-	small_noise.fractal_octaves = 2
-	var small_threshold: float = profile.get("small_cluster_threshold", 0.35)
+	var meadow_noise := FastNoiseLite.new()
+	meadow_noise.seed = hash_seed("%s#decor_meadow" % biome_name)
+	meadow_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	meadow_noise.frequency = float(profile.get("small_cluster_noise_freq", 0.018))
+	meadow_noise.fractal_octaves = 3
+	var meadow_threshold: float = float(profile.get("meadow_threshold", profile.get("small_cluster_threshold", 0.42)))
 
-	# Large decor
-	for entry in decor_data.get("large", []):
-		if entry == null or not (entry is Dictionary): continue
-		var density: float = float(entry.get("density", 0.0))
-		if density <= 0.0: continue
-		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
-		var placed_total := 0; var attempts := 0
-		while placed_total < count and attempts < count * 8:
-			attempts += 1
-			var pos: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
-			if pos.x < 0: break
-			if large_noise.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5 < large_threshold: continue
-			if height_band.size() > 0 and not _decor_band_ok(entry, pos, height_band): continue
-			occupied[pos.y * MAP_SIZE + pos.x] = 1
-			var placed: Dictionary = (entry as Dictionary).duplicate(true)
-			placed["x"] = pos.x; placed["y"] = pos.y; placed["category"] = "decor_large"
-			out.append(placed); placed_total += 1
+	var ruin_noise := FastNoiseLite.new()
+	ruin_noise.seed = hash_seed("%s#decor_ruin" % biome_name)
+	ruin_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	ruin_noise.frequency = float(profile.get("cluster_noise_freq", 0.014))
+	ruin_noise.fractal_octaves = 2
+	var ruin_threshold: float = float(profile.get("cluster_threshold", 0.62))
 
-	# Small decor
-	for entry in decor_data.get("small", []):
-		if entry == null or not (entry is Dictionary): continue
-		var density: float = float(entry.get("density", 0.0))
-		if density <= 0.0: continue
-		var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
-		var placed_total := 0; var attempts := 0
-		while placed_total < count and attempts < count * 8:
-			attempts += 1
-			var pos: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
-			if pos.x < 0: break
-			if small_noise.get_noise_2d(pos.x, pos.y) * 0.5 + 0.5 < small_threshold: continue
-			if height_band.size() > 0 and not _decor_band_ok(entry, pos, height_band): continue
-			occupied[pos.y * MAP_SIZE + pos.x] = 1
-			var placed: Dictionary = (entry as Dictionary).duplicate(true)
-			placed["x"] = pos.x; placed["y"] = pos.y; placed["category"] = "decor_small"
-			out.append(placed); placed_total += 1
+	var understory_noise := FastNoiseLite.new()
+	understory_noise.seed = hash_seed("%s#decor_under" % biome_name)
+	understory_noise.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	understory_noise.frequency = 0.04
+	understory_noise.fractal_octaves = 2
+
+	for size_key in ["large", "small"]:
+		var dens_mult: float = large_mult if size_key == "large" else small_mult
+		var cat_name: String = "decor_large" if size_key == "large" else "decor_small"
+		for entry in decor_data.get(size_key, []):
+			if entry == null or not (entry is Dictionary):
+				continue
+			if biome_tier < int(entry.get("min_biome_tier", 0)):
+				continue
+			var density: float = float(entry.get("density", 0.0)) * dens_mult
+			if density <= 0.0:
+				continue
+			var sprite: String = str(entry.get("sprite", ""))
+			var passable: bool = bool(entry.get("passable", false))
+			var mode: String = str(entry.get("placement_mode", ""))
+			if mode.is_empty():
+				if size_key == "large":
+					mode = "ruin"
+				elif passable and (sprite.find("flower") >= 0 or sprite.find("mushroom") >= 0 or sprite.find("grass") >= 0 or sprite.find("bone") >= 0):
+					mode = "meadow"
+				elif sprite.find("shrub") >= 0:
+					mode = "understory"
+				else:
+					mode = "scatter"
+			var count: int = int(round(MAP_SIZE * MAP_SIZE * density))
+			var placed_total := 0
+			var attempts := 0
+			while placed_total < count and attempts < count * 12:
+				attempts += 1
+				var pos: Vector2i = _peek_walkable_cell(rng, terrain, occupied, spawn)
+				if pos.x < 0:
+					break
+				var tt := int(terrain[pos.y * MAP_SIZE + pos.x])
+				match mode:
+					"meadow":
+						if tt == TERRAIN_VEGETATION:
+							continue
+						if tt != TERRAIN_GROUND and tt != TERRAIN_DEBRIS:
+							continue
+						if meadow_noise.get_noise_2d(float(pos.x), float(pos.y)) * 0.5 + 0.5 < meadow_threshold:
+							continue
+					"understory":
+						if tt != TERRAIN_VEGETATION:
+							continue
+						if understory_noise.get_noise_2d(float(pos.x), float(pos.y)) * 0.5 + 0.5 < 0.4:
+							continue
+					"ruin":
+						if ruin_noise.get_noise_2d(float(pos.x), float(pos.y)) * 0.5 + 0.5 < ruin_threshold:
+							continue
+					_:
+						if meadow_noise.get_noise_2d(float(pos.x) * 1.3, float(pos.y) * 1.3) * 0.5 + 0.5 < meadow_threshold * 0.85:
+							continue
+				if height_band.size() > 0 and not _decor_band_ok(entry, pos, height_band):
+					continue
+				occupied[pos.y * MAP_SIZE + pos.x] = 1
+				var placed: Dictionary = (entry as Dictionary).duplicate(true)
+				placed["x"] = pos.x
+				placed["y"] = pos.y
+				placed["category"] = cat_name
+				out.append(placed)
+				placed_total += 1
 	return out
 
 
@@ -898,6 +1179,32 @@ static var _fp_cache: Dictionary = {}; static var _fp_cache_mtime: int = -1
 static var _tp_cache: Dictionary = {}; static var _tp_cache_mtime: int = -1
 static var _decor_cache: Dictionary = {}; static var _decor_cache_mtime: int = -1
 static var _dp_cache: Dictionary = {}; static var _dp_cache_mtime: int = -1
+static var _tier_cache: Dictionary = {}; static var _tier_cache_mtime: int = -1
+
+
+static func _load_biome_tier(biome_name: String) -> int:
+	var path := "res://data/biomes.json"
+	if not ResourceLoader.exists(path):
+		return 1
+	var ftime := FileAccess.get_modified_time(path)
+	if _tier_cache_mtime != ftime:
+		var raw = load(path)
+		if raw != null:
+			var data: Array = []
+			if raw is Array:
+				data = raw
+			elif "data" in raw:
+				var d = raw.data
+				if d is Array:
+					data = d
+			_tier_cache.clear()
+			for entry in data:
+				if entry is Dictionary:
+					var nm: String = str(entry.get("name", ""))
+					if not nm.is_empty():
+						_tier_cache[nm] = int(entry.get("difficulty_tier", 1))
+			_tier_cache_mtime = ftime
+	return int(_tier_cache.get(biome_name, 1))
 
 
 static func _load_biome_resource_nodes(biome_name: String) -> Dictionary:
@@ -961,7 +1268,6 @@ static func _load_biome_terrain_profile(biome_name: String) -> Dictionary:
 		"vegetation_base": 0.22, "vegetation_rain_factor": 0.12, "debris_threshold": 0.42,
 		"forest_noise_freq": 0.006, "forest_threshold": 0.58,
 	})
-	})
 
 
 static func _load_biome_decor(biome_name: String) -> Dictionary:
@@ -1002,7 +1308,7 @@ static func _load_biome_decor_profile(biome_name: String) -> Dictionary:
 						_dp_cache[nm] = prof
 			_dp_cache_mtime = ftime
 	return _dp_cache.get(biome_name, {
-		"cluster_noise_freq": 0.02, "cluster_threshold": 0.65,
-		"small_cluster_noise_freq": 0.025, "small_cluster_threshold": 0.35,
-		"large_density": 0.003, "small_density": 0.014,
+		"cluster_noise_freq": 0.014, "cluster_threshold": 0.62,
+		"small_cluster_noise_freq": 0.018, "small_cluster_threshold": 0.42,
+		"meadow_threshold": 0.42, "large_density_mult": 1.0, "small_density_mult": 1.0,
 	})

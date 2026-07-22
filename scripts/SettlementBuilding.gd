@@ -7,7 +7,7 @@
 class_name SettlementBuilding
 extends Node2D
 
-const CELL_SIZE := 32
+const CELL_SIZE := 64
 
 var building_id: String = ""
 var role: String = ""

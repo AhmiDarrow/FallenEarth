@@ -41,10 +41,46 @@ func _ready() -> void:
 
 func setup(data: Dictionary) -> void:
 	node_data = data
+	_sync_collision_shape()
 
 
 func _refresh_sprite() -> void:
 	pass
+
+
+## Match Area2D footprint to the visual base (RVM bottom-aligns sprites).
+func _sync_collision_shape() -> void:
+	var shape_node := get_node_or_null("Area2D/CollisionShape2D") as CollisionShape2D
+	if shape_node == null:
+		return
+	var sprite_id: String = str(node_data.get("sprite", ""))
+	var scale_val := 1.0
+	var radius := 18.0
+	var foot_y := 0.0
+	if sprite_id.begins_with("tree_"):
+		scale_val = 1.5
+		radius = 22.0
+		foot_y = 4.0
+	elif sprite_id.begins_with("formation_"):
+		scale_val = 1.25
+		radius = 24.0
+		foot_y = 3.0
+	elif sprite_id.begins_with("ore_") or sprite_id.begins_with("crystal_"):
+		scale_val = 0.9
+		radius = 16.0
+		foot_y = 2.0
+	elif sprite_id.begins_with("decor_rock"):
+		radius = 20.0
+		foot_y = 2.0
+	elif sprite_id.begins_with("decor_"):
+		scale_val = 0.95
+		radius = 16.0
+		foot_y = 1.0
+	var circle := CircleShape2D.new()
+	circle.radius = radius * scale_val
+	shape_node.shape = circle
+	# Feet sit near node origin (cell center); keep collider on the base, not canopy.
+	shape_node.position = Vector2(0.0, foot_y)
 
 
 func is_decoration() -> bool:
@@ -164,7 +200,14 @@ func _process(delta: float) -> void:
 
 
 func get_cell(cell_size: int = 64) -> Vector2i:
+	# Prefer stored grid coords — position.y includes height_band offset so
+	# floor(pos/cell_size) drifts by ~1 cell per elevation step.
+	if node_data.has("x") and node_data.has("y"):
+		return Vector2i(int(node_data.x), int(node_data.y))
+	if has_meta("cell"):
+		return get_meta("cell") as Vector2i
+	var _cs := cell_size
 	return Vector2i(
-		int(floor(global_position.x / cell_size)),
-		int(floor(global_position.y / cell_size)),
+		int(floor(global_position.x / float(_cs))),
+		int(floor(global_position.y / float(_cs))),
 	)

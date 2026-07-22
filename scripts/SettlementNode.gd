@@ -79,9 +79,12 @@ func _refresh_sprite() -> void:
 
 
 func get_cell(cell_size: int = 64) -> Vector2i:
+	if has_meta("cell"):
+		return get_meta("cell") as Vector2i
+	var _cs := cell_size
 	return Vector2i(
-		int(floor(global_position.x / cell_size)),
-		int(floor(global_position.y / cell_size)),
+		int(floor(global_position.x / float(_cs))),
+		int(floor(global_position.y / float(_cs))),
 	)
 
 
