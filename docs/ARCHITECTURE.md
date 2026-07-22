@@ -159,16 +159,19 @@ Autoload singleton. **Runtime theme switching** with persistence to `user://opti
 ### Constants (`scripts/Constants.gd`)
 `class_name Constants extends RefCounted`
 
-Minimal global constants: `CELL_SIZE`(32), `MAP_SIZE`(512), `TILE_SIZE`(16), `HALF_MAP`(256).
+Minimal global constants: `CELL_SIZE`(64), `MAP_SIZE`(512), `TILE_SIZE`(16), `HALF_MAP`(256).
+
+### Terrain System (`scripts/terrain/TerrainSystem.gd`)
+`class_name TerrainSystem extends RefCounted`
+
+Unified terrain tile pipeline: loads PixelLab Wang metadata+PNG pairs, builds single atlas TileSet, paints vertex-Wang terrain onto TileMapLayer. See `docs/WANG_TERRAIN.md` for full architecture.
 
 ### Other shared scripts (non-autoload, preloaded as needed):
 | Script | Import Path | Purpose |
 |--------|-------------|---------|
-| `Base.gd` | Direct instantiation | Player home base interior UI screen |
-| `BaseNode.gd` | Scene-instanced | World-map base node representation |
-| `BaseShopUI.gd` | `res://scripts/ui/BaseShopUI.gd` | Base shop interface |
-| `SpriteLoader.gd` | `res://scripts/SpriteLoader.gd` | Sprite asset loading utility |
-| `CombatEncounterBuilder.gd` | `res://scripts/CombatEncounterBuilder.gd` | Combat encounter construction |
+| `TerrainSystem.gd` | `res://scripts/terrain/TerrainSystem.gd` | Terrain tile loading + painting |
+| `LocalMapGenerator.gd` | `res://scripts/LocalMapGenerator.gd` | Procedural 512x512 terrain generation |
+| `LocalMapView.gd` | `res://scripts/LocalMapView.gd` | Terrain rendering + entity management |
 
 ---
 
