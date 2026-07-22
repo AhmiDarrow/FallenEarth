@@ -279,7 +279,7 @@ func _adjacent_settlement_hex() -> String:
 			# The settlement node may be on the cell the player is on too
 			var s_node: Node2D = _hw._map_view.get_settlement_at(cell)
 			if s_node != null:
-				return s_node.get_cell(32) if s_node.has_method("get_cell") else str(s_node.get_meta("hex", ""))
+				return s_node.get_cell(Constants.CELL_SIZE) if s_node.has_method("get_cell") else str(s_node.get_meta("hex", ""))
 	return ""
 
 
@@ -413,7 +413,7 @@ func _open_mission_board() -> void:
 ## settlement > base > harvest > equipment tab.
 func _has_adjacent_base() -> bool:
 	if _hw._base_node != null and is_instance_valid(_hw._base_node):
-		var cell: Vector2i = _hw._base_node.get_cell(32) if _hw._base_node.has_method("get_cell") else Vector2i.ZERO
+		var cell: Vector2i = _hw._base_node.get_cell(Constants.CELL_SIZE) if _hw._base_node.has_method("get_cell") else Vector2i.ZERO
 		# Base is "adjacent" if the player is on the same cell (base is
 		# the player's home; they spawn on top of it) or on an
 		# immediate-neighbor cell.
@@ -549,7 +549,7 @@ func _adjacent_sleeping_bag() -> Node2D:
 func _interact_sleeping_bag(bag: Node2D) -> void:
 	if not is_instance_valid(bag):
 		return
-	var cell: Vector2i = bag.get_cell(32) if bag.has_method("get_cell") else Vector2i(_hw._local_x, _hw._local_y)
+	var cell: Vector2i = bag.get_cell(Constants.CELL_SIZE) if bag.has_method("get_cell") else Vector2i(_hw._local_x, _hw._local_y)
 	var rm: Node = get_node_or_null("/root/RespawnManager")
 	if is_instance_valid(rm) and rm.has_method("set_respawn_point"):
 		rm.set_respawn_point("sleeping_bag", cell.x, cell.y)
@@ -576,7 +576,7 @@ func _place_sleeping_bag() -> bool:
 	inv.remove_item("sleeping_bag", 1)
 	# Create sleeping bag node
 	var bag := SleepingBag.new()
-	var cell_size: int = _hw._map_view.get_cell_size() if _hw._map_view.has_method("get_cell_size") else 32
+	var cell_size: int = _hw._map_view.get_cell_size() if _hw._map_view.has_method("get_cell_size") else 64
 	bag.position = Vector2(_hw._local_x * cell_size + cell_size * 0.5, _hw._local_y * cell_size + cell_size * 0.5)
 	var world_node: Node2D = _hw.get_node_or_null("World")
 	if world_node != null:

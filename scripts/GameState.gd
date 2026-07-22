@@ -722,14 +722,13 @@ func get_discovered_hexes() -> Array[String]:
 
 
 func ensure_hex_state(q: int, r: int) -> Dictionary:
-	# v0.9.1c: shallow copy. The deep copy was costing 25+ ms per
-	# move when called via get_current_hex_state. Callers don't
-	# mutate the returned dict in place (HubWorld._mark_explored
-	# writes explored_pct then immediately saves, not holding the
-	# reference long-term).
 	var key := LocalMapGen.hex_key(q, r)
 	if _hex_states.has(key):
-		return (_hex_states[key] as Dictionary).duplicate(false)
+		var cached: Dictionary = _hex_states[key] as Dictionary
+		# Regenerate if terrain version doesn't match current generator
+		if int(cached.get("terrain_version", 0)) >= LocalMapGen.TERRAIN_VERSION:
+			return cached.duplicate(false)
+		_hex_states.erase(key)
 
 	var tile: Dictionary = get_tile_map().get(key, {})
 	if tile.is_empty():

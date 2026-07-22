@@ -651,7 +651,7 @@ func _restore_sleeping_bag() -> void:
 	if lx < 0 or ly < 0:
 		return
 	var bag := SleepingBag.new()
-	var cell_size: int = _map_view.get_cell_size() if _map_view.has_method("get_cell_size") else 32
+	var cell_size: int = _map_view.get_cell_size() if _map_view.has_method("get_cell_size") else 64
 	bag.position = Vector2(lx * cell_size + cell_size * 0.5, ly * cell_size + cell_size * 0.5)
 	if _map_view.has_method("add_sleeping_bag"):
 		_map_view.add_sleeping_bag(Vector2i(lx, ly), bag)

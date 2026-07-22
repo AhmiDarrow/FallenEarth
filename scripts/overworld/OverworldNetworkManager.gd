@@ -153,7 +153,7 @@ func _ensure_remote_player(peer_id: int) -> RemotePlayer:
 	if nm != null and nm.has_method("get_player_name"):
 		pname = nm.get_player_name(peer_id)
 	rp.set_player_info(pname, peer_id)
-	rp.cell_size = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 32
+	rp.cell_size = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 64
 	_hw._remote_players[peer_id] = rp
 	# Add to the world grid
 	if is_instance_valid(_hw.world_grid):

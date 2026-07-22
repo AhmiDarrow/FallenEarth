@@ -168,9 +168,12 @@ func _hit_test_at_world(world_pos: Vector2) -> String:
 func _terrain_label_at_cell(cell: Vector2i) -> String:
 	if not is_instance_valid(_hw._map_view):
 		return ""
-	var t: int = _hw._map_view.get_ground_layer().get_cell_source_id(Vector2i(cell.x, cell.y))
-	var atlas: Vector2i = _hw._map_view.get_ground_layer().get_cell_atlas_coords(Vector2i(cell.x, cell.y))
-	var t_id: int = atlas.y
+	var map_data: Dictionary = _hw._map_view.get_map_data()
+	var terrain: PackedByteArray = map_data.get("terrain", PackedByteArray())
+	var size: int = int(map_data.get("size", 512))
+	if terrain.is_empty() or cell.x < 0 or cell.y < 0 or cell.x >= size or cell.y >= size:
+		return ""
+	var t_id: int = int(terrain[cell.y * size + cell.x])
 	if t_id == LocalMapGen.TERRAIN_GROUND:
 		return "Ground"
 	if t_id == LocalMapGen.TERRAIN_DEBRIS:
@@ -179,6 +182,8 @@ func _terrain_label_at_cell(cell: Vector2i) -> String:
 		return "Vegetation"
 	if t_id == LocalMapGen.TERRAIN_BLOCKED:
 		return "Blocked"
+	if t_id == LocalMapGen.TERRAIN_WATER:
+		return "Water"
 	return ""
 
 

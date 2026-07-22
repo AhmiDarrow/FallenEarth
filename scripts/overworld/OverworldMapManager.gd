@@ -95,10 +95,14 @@ func _setup_player_visual() -> void:
 	var race: String = str(char_data.get("race", "human"))
 	var gender: String = str(char_data.get("gender", "male"))
 	_hw._player_visual.call("set_base_sprite", race, gender)
-	_hw._player_visual.position = Vector2(
-		_hw._local_x * _hw._map_view.get_cell_size() + _hw._map_view.get_cell_size() * 0.5,
-		_hw._local_y * _hw._map_view.get_cell_size() + _hw._map_view.get_cell_size() * 0.5
-	)
+	if is_instance_valid(_hw._map_view) and _hw._map_view.has_method("cell_to_world"):
+		_hw._player_visual.position = _hw._map_view.cell_to_world(Vector2i(_hw._local_x, _hw._local_y))
+	else:
+		var cs: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 64
+		_hw._player_visual.position = Vector2(
+			_hw._local_x * cs + cs * 0.5,
+			_hw._local_y * cs + cs * 0.5
+		)
 	_hw._player_visual.z_index = 10
 	# Point follow camera at the player visual
 	var follow: FollowCamera = _hw.camera as FollowCamera
@@ -113,11 +117,14 @@ func _setup_player_visual() -> void:
 
 func _build_local_view() -> void:
 	if is_instance_valid(_hw._player_visual):
-		var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 32
-		_hw._player_visual.position = Vector2(
-			_hw._local_x * cell_size + cell_size * 0.5,
-			_hw._local_y * cell_size + cell_size * 0.5
-		)
+		if is_instance_valid(_hw._map_view) and _hw._map_view.has_method("cell_to_world"):
+			_hw._player_visual.position = _hw._map_view.cell_to_world(Vector2i(_hw._local_x, _hw._local_y))
+		else:
+			var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 64
+			_hw._player_visual.position = Vector2(
+				_hw._local_x * cell_size + cell_size * 0.5,
+				_hw._local_y * cell_size + cell_size * 0.5
+			)
 	# v0.9.1c: Only refresh markers when the underlying world state
 	# actually changed. Walking the player does NOT change which mobs,
 	# rifts, or NPCs are on the map. Mobs change when combat ends (in
@@ -142,7 +149,7 @@ func _refresh_markers() -> void:
 		_hw._mob_pool.return_all()
 	if _hw._mob_manager != null and is_instance_valid(_hw._mob_manager):
 		_hw._mob_manager.clear_all()
-	var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 32
+	var cell_size: int = _hw._map_view.get_cell_size() if is_instance_valid(_hw._map_view) else 64
 
 	# Player visual is handled by _player_visual node — skip circle marker
 	var gs := _hw._gs
@@ -188,6 +195,12 @@ func _refresh_markers() -> void:
 
 
 ## Phase 5: spawn a procedural 3D rift visual (large glow geometry).
+func _cell_world(x: int, y: int, cell_size: int = 64) -> Vector2:
+	if is_instance_valid(_hw._map_view) and _hw._map_view.has_method("cell_to_world"):
+		return _hw._map_view.cell_to_world(Vector2i(x, y))
+	return Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+
+
 func _add_rift_procedural_visual(rd: Dictionary, cell_size: int) -> void:
 	var key: String = "riftvis|%s" % str(rd.get("id", "%d,%d" % [int(rd.get("local_x", 0)), int(rd.get("local_y", 0))]))
 	if _hw._marker_nodes.has(key):
@@ -201,7 +214,7 @@ func _add_rift_procedural_visual(rd: Dictionary, cell_size: int) -> void:
 	var node: Node2D = Node2D.new()
 	var rx: int = int(rd.get("local_x", 0))
 	var ry: int = int(rd.get("local_y", 0))
-	node.position = Vector2(rx * cell_size + cell_size * 0.5, ry * cell_size + cell_size * 0.5)
+	node.position = _cell_world(rx, ry, cell_size)
 	node.z_index = 900
 	node.scale = Vector2(1.6, 1.6)
 	_hw.world_grid.add_child(node)
@@ -228,7 +241,7 @@ func _add_npc_procedural_visual(npc: Dictionary, npos: Vector2i, cell_size: int)
 		"faction": npc.get("faction", ""),
 	}
 	var node: Node2D = Node2D.new()
-	node.position = Vector2(npos.x * cell_size + cell_size * 0.5, npos.y * cell_size + cell_size * 0.5)
+	node.position = _cell_world(npos.x, npos.y, cell_size)
 	node.z_index = 1000
 	_hw.world_grid.add_child(node)
 	var pv: Node = _attach_procedural_visual(node, npc_vis)
@@ -248,7 +261,7 @@ func _faction_color(faction_key: String) -> Color:
 	return Color.from_hsv(h, 0.6, 0.9)
 
 
-func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 32) -> void:
+func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cell_size: int = 64) -> void:
 	if not is_instance_valid(_hw._map_view):
 		return
 	var node: Node2D = _hw._map_view.call("add_marker", Vector2i(x, y), color, symbol, kind) as Node2D
@@ -256,7 +269,7 @@ func _add_marker(x: int, y: int, color: Color, symbol: String, kind: String, cel
 		_hw._marker_nodes["%s|%s" % [kind, LocalMapGen.local_key(x, y)]] = node
 
 
-func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 32, mob_data: Dictionary = {}) -> void:
+func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 64, mob_data: Dictionary = {}) -> void:
 	if sprite_id.is_empty():
 		return
 	# New system: MobInstance from pool + MobData + MobManager.
@@ -266,7 +279,7 @@ func _add_mob_sprite(x: int, y: int, sprite_id: String, cell_size: int = 32, mob
 	# Reparent from pool to World/Mobs so local position == global position
 	if is_instance_valid(_hw._mobs_container):
 		_hw._mobs_container.add_child(mob_node)
-	mob_node.global_position = Vector2(x * cell_size + cell_size * 0.5, y * cell_size + cell_size * 0.5)
+	mob_node.global_position = _cell_world(x, y, cell_size)
 	mob_node.z_index = 0
 	mob_node.setup(data)
 	_hw._mob_manager.add_mob(data, mob_node)

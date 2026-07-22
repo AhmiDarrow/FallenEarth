@@ -29,7 +29,7 @@ EXPECTED_DIRS = {
 
 
 def check_tilesets() -> list[str]:
-    """Phase 0: 10 biomes × 4 terrains (ground, debris, vegetation, blocked)."""
+    """Phase 0+: 10 biomes x ground_64.png (primary) + per-terrain files."""
     missing: list[str] = []
     base = EXPECTED_DIRS["tilesets"]
     if not base.exists():
@@ -37,6 +37,10 @@ def check_tilesets() -> list[str]:
     for biome_dir in base.iterdir():
         if not biome_dir.is_dir():
             continue
+        # Primary texture (PixelLab-sized)
+        if not (biome_dir / "ground_64.png").exists():
+            missing.append(f"{biome_dir.name}/ground_64.png")
+        # Legacy per-terrain files
         for terrain in ("ground.png", "debris.png", "vegetation.png", "blocked.png"):
             if not (biome_dir / terrain).exists():
                 missing.append(f"{biome_dir.name}/{terrain}")

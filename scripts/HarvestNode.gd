@@ -163,7 +163,7 @@ func _process(delta: float) -> void:
 		_respawn_remaining = 0.0
 
 
-func get_cell(cell_size: int = 32) -> Vector2i:
+func get_cell(cell_size: int = 64) -> Vector2i:
 	return Vector2i(
 		int(floor(global_position.x / cell_size)),
 		int(floor(global_position.y / cell_size)),

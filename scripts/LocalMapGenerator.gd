@@ -10,6 +10,7 @@ class_name LocalMapGenerator
 extends RefCounted
 
 const MAP_SIZE := 512
+const TERRAIN_VERSION := 1
 const TERRAIN_GROUND := 0
 const TERRAIN_DEBRIS := 1
 const TERRAIN_VEGETATION := 2
@@ -214,6 +215,7 @@ static func generate(world_seed: String, q: int, r: int, biome_tile: Dictionary)
 
 	return {
 		"size": MAP_SIZE,
+		"terrain_version": TERRAIN_VERSION,
 		"hex_key": hex_key(q, r),
 		"q": q,
 		"r": r,
@@ -953,9 +955,12 @@ static func _load_biome_terrain_profile(biome_name: String) -> Dictionary:
 						_tp_cache[nm] = prof
 			_tp_cache_mtime = ftime
 	return _tp_cache.get(biome_name, {
-		"height_noise_freq": 0.004, "height_t0": 0.28, "height_t1": 0.48, "height_t2": 0.68,
+		"height_noise_freq": 0.0035, "height_t0": 0.28, "height_t1": 0.48, "height_t2": 0.68,
 		"path_noise_freq": 0.009, "path_threshold": 0.72, "path_half_width": 0.08,
 		"wash_threshold": 0.48, "noise_freq": 0.008, "blocked_base": 0.10, "blocked_elev_factor": 0.06,
+		"vegetation_base": 0.22, "vegetation_rain_factor": 0.12, "debris_threshold": 0.42,
+		"forest_noise_freq": 0.006, "forest_threshold": 0.58,
+	})
 	})
 
 
