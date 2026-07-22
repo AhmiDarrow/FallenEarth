@@ -96,13 +96,22 @@ func _try_cross_edge(dx: int, dy: int) -> void:
 	var edge := LocalMapGen.edge_from_delta(dx, dy)
 	if edge < 0:
 		return
-	var neighbor: Vector2i = LocalMapGen.get_neighbor_hex(_hw._player_q, _hw._player_r, edge)
-	var nkey := LocalMapGen.hex_key(neighbor.x, neighbor.y)
-	if not _hw._tile_map.has(nkey):
-		return
 
 	var gs := _hw._gs
 	if not is_instance_valid(gs):
+		return
+
+	var tile_key := LocalMapGen.hex_key(_hw._player_q, _hw._player_r)
+	var sphere_nbr := WorldGenerator.neighbor_for_edge(tile_key, edge, _hw._tile_map)
+
+	var neighbor: Vector2i
+	if not sphere_nbr.is_empty():
+		neighbor = Vector2i(int(sphere_nbr.get("q", 0)), int(sphere_nbr.get("r", 0)))
+	else:
+		neighbor = LocalMapGen.get_neighbor_hex(_hw._player_q, _hw._player_r, edge)
+
+	var nkey := LocalMapGen.hex_key(neighbor.x, neighbor.y)
+	if not _hw._tile_map.has(nkey):
 		return
 
 	var opposite_edge := -1

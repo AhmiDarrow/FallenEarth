@@ -737,6 +737,15 @@ func _build_context_box(cell: Vector2i) -> Dictionary:
 		var ct: Node2D = _hw._map_view.get_cooking_table_at(cell)
 		if is_instance_valid(ct):
 			options.append({"label": "Cook", "action": "cook"})
+		# Check for mob — allows player to initiate combat via click
+		var gs := _hw._gs
+		if is_instance_valid(gs):
+			var mob: Dictionary = gs.get_local_mob(_hw._player_q, _hw._player_r, cell.x, cell.y)
+			if not mob.is_empty():
+				var mob_name: String = str(mob.get("name", "Mob"))
+				var mob_level: int = int(mob.get("level", 1))
+				info.append("%s (Lv.%d)" % [mob_name, mob_level])
+				options.append({"label": "Fight", "action": "fight"})
 
 	return {"options": options, "info": info}
 
@@ -822,6 +831,12 @@ func _on_context_action(action: String, target_cell: Vector2i) -> void:
 			var ct: Node2D = _hw._map_view.get_cooking_table_at(target_cell)
 			if is_instance_valid(ct):
 				_open_cooking_table_ui()
+		"fight":
+			var gs := _hw._gs
+			if is_instance_valid(gs):
+				var mob: Dictionary = gs.get_local_mob(_hw._player_q, _hw._player_r, target_cell.x, target_cell.y)
+				if not mob.is_empty():
+					_hw._start_local_combat(target_cell.x, target_cell.y, mob, {})
 
 
 func _start_gather_at_cell(cell: Vector2i) -> void:

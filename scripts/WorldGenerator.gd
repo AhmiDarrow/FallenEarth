@@ -284,6 +284,16 @@ static func hexasphere_tile_count(frequency: int) -> int:
 	return 10 * f * f + 2
 
 
+## Rough detect UI size (8/12/18) from tile count.
+static func detect_hex_radius(tile_count: int) -> int:
+	if tile_count <= 260:
+		return 8
+	if tile_count <= 550:
+		return 12
+	return 18
+
+
+
 func _pick_biome_by_climate(
 	temp: float,
 	rain: float,
@@ -844,6 +854,159 @@ static func make_uniform_sphere_points(count: int, radius: float) -> Array[Vecto
 
 func get_hex_radius() -> int:
 	return _hex_radius
+
+
+## Static biome color mapping (single source for globe renderers).
+static func biome_color(biome: String) -> Color:
+	match biome:
+		"Ash Wastes":
+			return Color(0.75, 0.65, 0.5)
+		"Rust Canyons":
+			return Color(0.85, 0.45, 0.35)
+		"Neon Bogs":
+			return Color(0.4, 0.85, 0.55)
+		"Scorched Plains":
+			return Color(0.9, 0.6, 0.3)
+		"Ironwood Thicket":
+			return Color(0.35, 0.6, 0.35)
+		"Glass Dunes":
+			return Color(0.7, 0.8, 0.95)
+		"Corpse Fields":
+			return Color(0.55, 0.45, 0.5)
+		"Stormspire Highlands":
+			return Color(0.5, 0.55, 0.75)
+		"Toxin Marshes":
+			return Color(0.45, 0.7, 0.4)
+		"Dead City Outskirts":
+			return Color(0.5, 0.5, 0.55)
+		"Riftspire":
+			return Color(1.0, 0.85, 0.2)
+		_:
+			return Color(0.35, 0.35, 0.4)
+
+
+## BFS shortest path through sphere neighbor_keys, only traversing allowed_keys.
+## Set allowed_keys empty to allow all tiles in the sphere graph.
+static func find_path(from_key: String, to_key: String, allowed_keys: Dictionary = {}) -> Array[String]:
+	if from_key == to_key:
+		return [from_key]
+	if not _sphere_neighbors.has(from_key) or not _sphere_neighbors.has(to_key):
+		return []
+
+	var all_allowed: bool = allowed_keys.is_empty()
+	if not all_allowed and (not allowed_keys.has(from_key) or not allowed_keys.has(to_key)):
+		return []
+
+	var visited: Dictionary = {}
+	var parent: Dictionary = {}
+	var queue: Array[String] = [from_key]
+	visited[from_key] = true
+
+	while queue.size() > 0:
+		var current: String = queue.pop_front()
+		if current == to_key:
+			var path: Array[String] = [to_key]
+			while current != from_key:
+				current = parent[current]
+				path.push_front(current)
+			return path
+
+		for nk in _sphere_neighbors.get(current, []):
+			var nks: String = str(nk)
+			if not visited.has(nks):
+				if all_allowed or allowed_keys.has(nks):
+					visited[nks] = true
+					parent[nks] = current
+					queue.append(nks)
+
+	return []
+
+
+## Warm static sphere caches from a tile_map (call once after generation or load).
+static func warm_sphere_cache(tile_map: Dictionary) -> void:
+	_sphere_unit.clear()
+	_sphere_neighbors.clear()
+	_sphere_tile_count = tile_map.size()
+	for key in tile_map:
+		var t: Dictionary = tile_map[key]
+		if t.has("unit_pos"):
+			_sphere_unit[key] = unit_pos_vec(t)
+		if t.has("neighbor_keys"):
+			_sphere_neighbors[key] = t["neighbor_keys"]
+
+
+static func _has_sphere_cache() -> bool:
+	return not _sphere_neighbors.is_empty()
+
+
+## Hop count via BFS using sphere neighbor graph. Returns -1 if unreachable.
+## Falls back to angular hex_distance when sphere cache is empty.
+static func graph_distance(from_key: String, to_key: String) -> int:
+	if not _has_sphere_cache():
+		var p1: PackedStringArray = from_key.split(",")
+		var p2: PackedStringArray = to_key.split(",")
+		if p1.size() >= 2 and p2.size() >= 2:
+			return hex_distance(int(p1[0]), int(p1[1]), int(p2[0]), int(p2[1]))
+		return -1
+	if from_key == to_key:
+		return 0
+	var path: Array[String] = find_path(from_key, to_key, {})
+	if path.is_empty():
+		return -1
+	return path.size() - 1
+
+
+## True if two tile keys are graph neighbors on the sphere.
+static func are_neighbors(key_a: String, key_b: String) -> bool:
+	if not _sphere_neighbors.has(key_a):
+		return false
+	for nk in _sphere_neighbors[key_a]:
+		if str(nk) == key_b:
+			return true
+	return false
+
+
+## Map a local cardinal edge (N=0,S=1,E=2,W=3) to the best sphere neighbor
+## by comparing edge tangent direction with neighbor direction vectors.
+## Returns {q,r,tile,key} or {} if no suitable neighbor found.
+static func neighbor_for_edge(tile_key: String, edge: int, tile_map: Dictionary) -> Dictionary:
+	var tile: Dictionary = tile_map.get(tile_key, {})
+	if tile.is_empty() or not tile.has("unit_pos"):
+		return {}
+	var u: Vector3 = _coerce_vec3(tile["unit_pos"])
+
+	var radial: Vector3 = u.normalized()
+	var north_pole: Vector3 = Vector3(0, 1, 0)
+	if abs(radial.dot(north_pole)) > 0.99:
+		north_pole = Vector3(0, 0, 1)
+
+	var north: Vector3 = (north_pole - radial * radial.dot(north_pole)).normalized()
+	var east: Vector3 = radial.cross(north).normalized()
+
+	var edge_dirs: Array[Vector3] = [-north, north, east, -east]
+	if edge < 0 or edge >= edge_dirs.size():
+		return {}
+	var edge_dir: Vector3 = edge_dirs[edge]
+
+	var nkeys: Array = tile.get("neighbor_keys", [])
+	var best_key: String = ""
+	var best_score: float = -999.0
+	for nk in nkeys:
+		var nks: String = str(nk)
+		var nt: Dictionary = tile_map.get(nks, {})
+		if nt.is_empty():
+			continue
+		var np: Vector3 = _coerce_vec3(nt["unit_pos"])
+		var dir: Vector3 = (np - u).normalized()
+		var score: float = dir.dot(edge_dir)
+		if score > best_score:
+			best_score = score
+			best_key = nks
+
+	if best_key == "":
+		return {}
+	var bt: Dictionary = tile_map.get(best_key, {})
+	return {"q": int(bt.get("q", 0)), "r": int(bt.get("r", 0)), "tile": bt, "key": best_key}
 
 
 ## Graph neighbors on the hexasphere (5 at pentagons, 6 at hexes).

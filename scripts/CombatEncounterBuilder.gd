@@ -232,7 +232,7 @@ static func _pick_enemy_tile(
 			continue
 		var q := int(parts[0])
 		var r := int(parts[1])
-		var dist: int = WorldGenerator.hex_distance(q, r, start_q, start_r)
+		var dist: int = WorldGenerator.graph_distance(key, start_tile_key)
 		if dist < 2 or dist > 9:
 			continue
 		var tile: Dictionary = tile_map[key] as Dictionary

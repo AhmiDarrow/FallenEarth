@@ -472,6 +472,21 @@ func _unhandled_input(event: InputEvent) -> void:
 		if _npc_manager_ui._is_near_npc():
 			_npc_manager_ui._open_npc_dialogue()
 			return
+		# Check for adjacent mob → initiate combat on interact
+		if is_instance_valid(_gs):
+			var map_sz: int = int(_local_map.get("size", 512))
+			for mob_dx in [-1, 0, 1]:
+				for mob_dy in [-1, 0, 1]:
+					if mob_dx == 0 and mob_dy == 0:
+						continue
+					var mx: int = _local_x + mob_dx
+					var my: int = _local_y + mob_dy
+					if mx < 0 or my < 0 or mx >= map_sz or my >= map_sz:
+						continue
+					var adj_mob: Dictionary = _gs.get_local_mob(_player_q, _player_r, mx, my)
+					if not adj_mob.is_empty():
+						_start_local_combat(mx, my, adj_mob, {})
+						return
 		# v0.4.0 polish: gather LAST so cascade resolution is the gather
 		# itself (after the player walks adjacent to a harvestable with the
 		# correct tool equipped). Sleeping bag placement is no longer fired

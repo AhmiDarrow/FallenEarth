@@ -161,7 +161,7 @@ static func _pick_target_tile(
 			continue
 		var q: int = int(parts[0])
 		var r: int = int(parts[1])
-		var dist: int = WorldGenerator.hex_distance(q, r, player_q, player_r)
+		var dist: int = WorldGenerator.graph_distance(key, "%d,%d" % [player_q, player_r])
 		if dist < min_dist or dist > max_dist:
 			continue
 		tile["key"] = str(key)
@@ -178,7 +178,7 @@ static func _pick_target_tile(
 				continue
 			var q: int = int(parts[0])
 			var r: int = int(parts[1])
-			if WorldGenerator.hex_distance(q, r, player_q, player_r) < 1:
+			if WorldGenerator.graph_distance(key, "%d,%d" % [player_q, player_r]) < 1:
 				continue
 			tile["key"] = str(key)
 			tile["q"] = q

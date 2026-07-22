@@ -18,9 +18,6 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.02, 0.03, 0.06, 1)
 
-[node name="WorldGrid" type="Node2D" parent="."]
-position = Vector2(640, 360)
-
 [node name="CharInfoBar" type="HBoxContainer" parent="."]
 anchors_preset = 15
 anchor_left = 0.1

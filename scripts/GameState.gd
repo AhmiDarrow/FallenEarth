@@ -659,6 +659,7 @@ func set_world_data(seed_string: String, tile_map: Dictionary) -> void:
 		"tile_map": tile_map.duplicate(true),
 		"generated_at": Time.get_unix_time_from_system()
 	}
+	WorldGenerator.warm_sphere_cache(tile_map)
 	print("[GameState] World data stored for seed: ", seed_string)
 
 func set_start_tile(tile_key: String, tile_data: Dictionary) -> void:
