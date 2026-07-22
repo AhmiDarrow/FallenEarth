@@ -69,14 +69,15 @@ No weighted priority — just count which terrain appears most often.
 
 | Stem       | lower → upper    |
 |------------|------------------|
-| primary    | debris → ground  |
-| g_debris   | debris → ground  |
+| primary    | ground → debris  |
+| g_debris   | ground → debris  |
 | g_veg      | debris → vegetation |
 | g_water    | water → ground   |
 | g_blocked  | blocked → ground |
 
-Cliff water tilesets (25-tile) are ingested for their transitional shore tiles only.
-Solid fills always come from the standard 16-tile pairs.
+Scorched Plains primary art: PixelLab lower is sandy gravel, upper is cracked hardpan.
+We map sandy → ground (majority floor) and cracked → debris so open plains are not lava-like.
+`g_water_cliff` is not ingested (magma bank art). Solid fills come from the 16-tile pairs.
 
 ## Cell Size
 
@@ -87,12 +88,12 @@ Solid fills always come from the standard 16-tile pairs.
 
 | Status | Count |
 |--------|-------|
-| Full Wang data (wang/ folder) | 1 (Scorched Plains) |
-| ground_64.png fallback | 9 (all others) |
+| Wang data (wang/ folder) | 10 (all biomes) |
+| ground_64.png fallback | 0 |
 
-Non-Scorched biomes render with solid ground_64 textures until PixelLab Wang
-tilesets are generated for them. The system auto-detects: wang/ folder → full
-corner matching; otherwise → ground_64 fallback.
+Every biome has at least one PixelLab pair under `wang/`. Auto-detect: any
+pair metadata → corner matching; otherwise → ground_64 fallback.
+`g_water_cliff` is not ingested (magma bank art).
 
 ## File Map
 

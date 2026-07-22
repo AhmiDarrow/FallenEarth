@@ -67,3 +67,7 @@ maps/
 
 # Vanished third-party addon (we use our own InventoryHandler now)
 addons/wyvernbox/
+
+# PixelLab wang download cache
+tools/_wang_cache/
+

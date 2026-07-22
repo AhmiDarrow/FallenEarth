@@ -1,0 +1,120 @@
+{
+  "_comment": "Stable terrain IDs and PixelLab pair stems per biome slug. IDs must match TileSetService / LocalMapGenerator.",
+  "terrain_ids": {
+    "ground": 0,
+    "debris": 1,
+    "vegetation": 2,
+    "blocked": 3,
+    "water": 4
+  },
+  "terrain_names": ["ground", "debris", "vegetation", "blocked", "water"],
+  "pairs": [
+    {"stem": "primary", "lower": "ground", "upper": "debris", "_note": "art swap: sandy lower=ground, cracked upper=debris (PixelLab upper looked like lava)"},
+    {"stem": "g_debris", "lower": "ground", "upper": "debris"},
+    {"stem": "g_veg", "lower": "debris", "upper": "vegetation"},
+    {"stem": "g_water", "lower": "water", "upper": "ground"},
+    {"stem": "g_blocked", "lower": "blocked", "upper": "ground"}
+  ],
+  "biomes": {
+    "scorched_plains": {
+      "display_name": "Scorched Plains",
+      "prompts": {
+        "ground": "sparse scorched dry grass clumps on hard packed earth, flat square top-down seamless tileable texture, no isometric, no diamond, no rhombus edges",
+        "debris": "sandy gravel surface with scattered pebbles and dust, flat square top-down seamless tileable path, no isometric, no diamond",
+        "vegetation": "dry yellow scrub and tufts on hard ground, flat square top-down seamless, no isometric diamond",
+        "blocked": "dark scorched rock and stone shelf, flat square top-down seamless, no isometric diamond",
+        "water": "shallow muddy oil-slick puddle surface, flat square top-down seamless, no isometric diamond"
+      }
+    },
+    "ash_wastes": {
+      "display_name": "Ash Wastes",
+      "prompts": {
+        "ground": "grey ash dirt floor, flat square top-down seamless, no isometric diamond",
+        "debris": "cinder and scrap debris floor, flat square top-down seamless",
+        "vegetation": "dead grey scrub ground, flat square top-down seamless",
+        "blocked": "charred rock floor, flat square top-down seamless",
+        "water": "toxic grey sludge water, flat square top-down seamless"
+      }
+    },
+    "rust_canyons": {
+      "display_name": "Rust Canyons",
+      "prompts": {
+        "ground": "rust red canyon dirt, flat square top-down seamless, no isometric diamond",
+        "debris": "rust metal scrap debris floor, flat square top-down seamless",
+        "vegetation": "sparse rusty scrub ground, flat square top-down seamless",
+        "blocked": "iron ore rock floor, flat square top-down seamless",
+        "water": "orange rust runoff water, flat square top-down seamless"
+      }
+    },
+    "neon_bogs": {
+      "display_name": "Neon Bogs",
+      "prompts": {
+        "ground": "dark wet bog soil, flat square top-down seamless, no isometric diamond",
+        "debris": "bioluminescent sludge debris, flat square top-down seamless",
+        "vegetation": "neon moss ground cover, flat square top-down seamless",
+        "blocked": "wet dark stone floor, flat square top-down seamless",
+        "water": "glowing neon bog water, flat square top-down seamless"
+      }
+    },
+    "ironwood_thicket": {
+      "display_name": "Ironwood Thicket",
+      "prompts": {
+        "ground": "forest dirt path floor, flat square top-down seamless, no isometric diamond",
+        "debris": "leaf litter and twigs debris, flat square top-down seamless",
+        "vegetation": "lush grass ground cover, flat square top-down seamless",
+        "blocked": "ironwood root stone floor, flat square top-down seamless",
+        "water": "clear forest stream water, flat square top-down seamless"
+      }
+    },
+    "glass_dunes": {
+      "display_name": "Glass Dunes",
+      "prompts": {
+        "ground": "pale glass sand floor, flat square top-down seamless, no isometric diamond",
+        "debris": "shattered glass grit debris, flat square top-down seamless",
+        "vegetation": "sparse crystal scrub ground, flat square top-down seamless",
+        "blocked": "fused glass rock floor, flat square top-down seamless",
+        "water": "mirage-blue shallow water, flat square top-down seamless"
+      }
+    },
+    "corpse_fields": {
+      "display_name": "Corpse Fields",
+      "prompts": {
+        "ground": "blood-dark dirt floor, flat square top-down seamless, no isometric diamond",
+        "debris": "bone fragment debris floor, flat square top-down seamless",
+        "vegetation": "wilted dark grass ground, flat square top-down seamless",
+        "blocked": "grave stone floor, flat square top-down seamless",
+        "water": "stagnant dark pool water, flat square top-down seamless"
+      }
+    },
+    "stormspire_highlands": {
+      "display_name": "Stormspire Highlands",
+      "prompts": {
+        "ground": "wind-scoured highland dirt, flat square top-down seamless, no isometric diamond",
+        "debris": "storm gravel debris, flat square top-down seamless",
+        "vegetation": "tough alpine scrub ground, flat square top-down seamless",
+        "blocked": "storm-grey rock floor, flat square top-down seamless",
+        "water": "cold mountain runoff water, flat square top-down seamless"
+      }
+    },
+    "toxin_marshes": {
+      "display_name": "Toxin Marshes",
+      "prompts": {
+        "ground": "sickly green marsh mud, flat square top-down seamless, no isometric diamond",
+        "debris": "toxic sludge debris, flat square top-down seamless",
+        "vegetation": "poison moss ground cover, flat square top-down seamless",
+        "blocked": "corroded stone floor, flat square top-down seamless",
+        "water": "bright toxic marsh water, flat square top-down seamless"
+      }
+    },
+    "dead_city_outskirts": {
+      "display_name": "Dead City Outskirts",
+      "prompts": {
+        "ground": "cracked asphalt dirt floor, flat square top-down seamless, no isometric diamond",
+        "debris": "concrete rubble debris floor, flat square top-down seamless",
+        "vegetation": "urban weed ground cover, flat square top-down seamless",
+        "blocked": "ruined concrete floor, flat square top-down seamless",
+        "water": "polluted city runoff water, flat square top-down seamless"
+      }
+    }
+  }
+}

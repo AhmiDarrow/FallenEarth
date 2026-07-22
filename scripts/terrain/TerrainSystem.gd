@@ -49,9 +49,12 @@ const BIOME_DIRS := {
 # Each pair stems from create_topdown_tileset(lower_description, upper_description).
 # The pair maps two terrain types; tiles handle all 16 corner combinations.
 
+# primary art: lower=sandy gravel (walkable plains), upper=cracked hardpan.
+# PixelLab labeled upper as "ground" but the cracked upper reads as lava;
+# map sandy lower → GROUND (majority floor) and cracked upper → DEBRIS.
 const WANG_PAIRS: Array[Dictionary] = [
-	{"stem": "primary",   "lower": TERRAIN_DEBRIS, "upper": TERRAIN_GROUND},
-	{"stem": "g_debris",  "lower": TERRAIN_DEBRIS, "upper": TERRAIN_GROUND},
+	{"stem": "primary",   "lower": TERRAIN_GROUND, "upper": TERRAIN_DEBRIS},
+	{"stem": "g_debris",  "lower": TERRAIN_GROUND, "upper": TERRAIN_DEBRIS},
 	{"stem": "g_veg",     "lower": TERRAIN_DEBRIS, "upper": TERRAIN_VEGETATION},
 	{"stem": "g_water",   "lower": TERRAIN_WATER,  "upper": TERRAIN_GROUND},
 	{"stem": "g_blocked", "lower": TERRAIN_BLOCKED,"upper": TERRAIN_GROUND},
@@ -76,7 +79,10 @@ static func has_wang_data(biome_name: String) -> bool:
 	if dir.is_empty():
 		return false
 	var wang_dir := "res://assets/tilesets/%s/wang" % dir
-	return FileAccess.file_exists("%s/primary_metadata.json" % wang_dir)
+	for pair in WANG_PAIRS:
+		if FileAccess.file_exists("%s/%s_metadata.json" % [wang_dir, pair.stem]):
+			return true
+	return false
 
 
 static func tileset_for_biome(biome_name: String) -> TileSet:
@@ -264,12 +270,8 @@ static func _build_from_wang(biome_name: String, base_path: String) -> bool:
 		if _ingest_pair(meta_path, img_path, lo, hi, tile_map):
 			any_found = true
 
-	# Cliff water (25-tile): only use transitional tiles — banks, not the solid water fill.
-	# The solid water comes from the g_water pair. Cliff tiles add shore variety.
-	var cw_meta := "%s/cliff/g_water_cliff_metadata.json" % wang_dir
-	var cw_img := "%s/cliff/g_water_cliff_image.png" % wang_dir
-	if FileAccess.file_exists(cw_meta) and FileAccess.file_exists(cw_img):
-		_ingest_pair(cw_meta, cw_img, TERRAIN_WATER, TERRAIN_GROUND, tile_map)
+	# g_water_cliff intentionally skipped: its "ground" side is magma/lava art and
+	# made water shores look like lava lakes. Flat g_water already covers shores.
 
 	# Cliff earth → blocked when g_blocked is missing
 	var solid_blocked := "%d,%d,%d,%d" % [TERRAIN_BLOCKED, TERRAIN_BLOCKED, TERRAIN_BLOCKED, TERRAIN_BLOCKED]
@@ -281,6 +283,13 @@ static func _build_from_wang(biome_name: String, base_path: String) -> bool:
 
 	if not any_found:
 		return false
+
+	# Biomes without g_water still need a solid water fill so lakes aren't ground-colored.
+	var solid_water := "%d,%d,%d,%d" % [TERRAIN_WATER, TERRAIN_WATER, TERRAIN_WATER, TERRAIN_WATER]
+	if not tile_map.has(solid_water):
+		var water_img := _make_solid_water_tile(base_path)
+		if water_img != null:
+			tile_map[solid_water] = water_img
 
 	_pack_atlas(tile_map, biome_name)
 	return true
@@ -339,6 +348,26 @@ static func _label_to_terrain(label, lo: int, hi: int) -> int:
 	match str(label).to_lower():
 		"upper": return hi
 		_: return lo
+
+
+## Solid water tile when biome has no g_water pair. Prefers biome water_*.png,
+## then shared _water_base.png, then a cool oily blue fill.
+static func _make_solid_water_tile(base_path: String) -> Image:
+	for rel in ["water_oily_64.png", "water.png", "../_water_base.png"]:
+		var p := "%s/%s" % [base_path, rel]
+		var img := _load_image(p)
+		if img == null:
+			continue
+		var cell := Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
+		var src_w := mini(CELL_SIZE, img.get_width())
+		var src_h := mini(CELL_SIZE, img.get_height())
+		cell.blit_rect(img, Rect2i(0, 0, src_w, src_h), Vector2i.ZERO)
+		if img.get_width() != CELL_SIZE or img.get_height() != CELL_SIZE:
+			cell.resize(CELL_SIZE, CELL_SIZE, Image.INTERPOLATE_NEAREST)
+		return cell
+	var fill := Image.create(CELL_SIZE, CELL_SIZE, false, Image.FORMAT_RGBA8)
+	fill.fill(Color(0.32, 0.38, 0.57, 1.0))
+	return fill
 
 
 # ── Tile loading: ground_64 fallback mode ────────────────────────────────

@@ -1,0 +1,143 @@
+{
+  "_comment": "Existing PixelLab topdown Wang tilesets (do not regen). Map biome → pair stems + IDs.",
+  "tilesets": {
+    "93197911-e853-4c33-a84f-17f499265dd8": {
+      "name": "sandy gravel → scorched dry grass",
+      "tiles": 16,
+      "tile_size": 64,
+      "lower": "ground",
+      "upper": "debris",
+      "biomes": ["scorched_plains"],
+      "stem": "primary"
+    },
+    "e6f2b9db-ae0e-4644-a0af-2fe11a821346": {
+      "name": "vivid oil slick water → primary grass (CHAINED upper=d7efeca3)",
+      "tiles": 16,
+      "tile_size": 64,
+      "lower": "water",
+      "upper": "ground",
+      "lower_base": "0ad34945-907f-40b3-acc4-ddfd8e21c910",
+      "upper_base": "d7efeca3-7ae6-4b17-ad59-6d321a4ddd7d",
+      "biomes": ["scorched_plains"],
+      "stem": "g_water",
+      "active": true
+    },
+    "bff069e5-5fd5-4ca9-8e0e-ad19e59a7333": {
+      "name": "water → primary grass OLD muddy (superseded by e6f2b9db)",
+      "tiles": 16,
+      "tile_size": 64,
+      "mvp": false
+    },
+    "aa0ac765-a54b-4e2b-9be5-11077a156e29": {
+      "name": "oily water → scorched shoreline (OLD unchained — superseded)",
+      "tiles": 16,
+      "tile_size": 64,
+      "mvp": false
+    },
+    "bf59d255-3a31-45b3-a289-ae510e1a9724": {
+      "name": "water→grass 25-tile cliff banks",
+      "tiles": 25,
+      "path": "wang/cliff/g_water_cliff",
+      "mvp": false
+    },
+    "75afccde-0594-4e3a-b55f-ff1ef83c0fd1": {
+      "name": "ashy scorched earth → burnt shrubs",
+      "tiles": 16,
+      "tile_size": 64,
+      "lower": "debris",
+      "upper": "vegetation",
+      "biomes": ["scorched_plains", "ash_wastes"],
+      "stem": "g_veg"
+    },
+    "0a68bddc-074c-45fc-8a46-a372f0943822": {
+      "name": "baked scorched earth → grey ash (25 cliff — skip MVP)",
+      "tiles": 25,
+      "tile_size": 64,
+      "mvp": false
+    },
+    "01a09e4a-0410-4f50-86b9-d769642a7b7d": {
+      "name": "scorched barren → boneyard (25 cliff — skip MVP)",
+      "tiles": 25,
+      "tile_size": 64,
+      "mvp": false
+    },
+    "d6cbcdff-dccf-484a-821a-9cbaee46ef5b": {
+      "name": "glass sand → crystal",
+      "tiles": 16,
+      "biomes": ["glass_dunes"],
+      "stem": "primary"
+    },
+    "1e369362-d81f-4d24-838e-449a3715dd91": {
+      "name": "muddy battlefield",
+      "tiles": 16,
+      "biomes": ["corpse_fields"],
+      "stem": "primary"
+    },
+    "b5ce3676-1db4-4e2b-acf7-db924fb44089": {
+      "name": "cracked dry mud",
+      "tiles": 16,
+      "biomes": ["ash_wastes"],
+      "stem": "primary"
+    },
+    "908788aa-83c7-4f64-9051-bc9b6bd75de4": {
+      "name": "rusty polluted water",
+      "tiles": 16,
+      "biomes": ["rust_canyons"],
+      "stem": "g_water"
+    },
+    "11b07356-ce30-4410-8677-4772df17752f": {
+      "name": "rocky lightning plateau",
+      "tiles": 16,
+      "biomes": ["stormspire_highlands"],
+      "stem": "primary"
+    },
+    "be7d1bf5-4de1-4b3f-8ea2-eac98fbbb342": {
+      "name": "neon swamp water",
+      "tiles": 16,
+      "biomes": ["neon_bogs"],
+      "stem": "g_water"
+    },
+    "505c9777-a072-44ae-a19f-1d1c1d915e58": {
+      "name": "metallic forest floor",
+      "tiles": 16,
+      "biomes": ["ironwood_thicket"],
+      "stem": "primary"
+    },
+    "c00cb3c4-a484-4524-bbea-41857de26666": {
+      "name": "cracked dry earth toxic",
+      "tiles": 16,
+      "biomes": ["toxin_marshes"],
+      "stem": "primary"
+    },
+    "ab3743e1-3b39-4dc2-b953-aee2aa3cd193": {
+      "name": "rusted metal wreckage",
+      "tiles": 16,
+      "biomes": ["rust_canyons"],
+      "stem": "primary"
+    },
+    "64c4a1ff-f31c-4535-9b65-ac56f82da962": {
+      "name": "cracked urban asphalt",
+      "tiles": 16,
+      "biomes": ["dead_city_outskirts"],
+      "stem": "primary"
+    },
+    "6caeaa0c-74a3-43f6-a563-f97c63638051": {
+      "name": "toxic chemical sludge",
+      "tiles": 16,
+      "biomes": ["toxin_marshes"],
+      "stem": "g_water"
+    },
+    "ee7af436-eaaf-4dbd-81a6-13a6b8fb0990": {
+      "name": "toxic green water",
+      "tiles": 16,
+      "biomes": ["neon_bogs", "toxin_marshes"],
+      "stem": "g_water"
+    },
+    "155fea98-db1f-4b8a-8040-35c133aeb866": {
+      "name": "sun-baked hardpan → glass sand",
+      "tiles": 16,
+      "biomes": ["glass_dunes"],
+      "stem": "g_debris"
+    }
+  }
+}
